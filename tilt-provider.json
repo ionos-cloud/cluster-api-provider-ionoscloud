@@ -1,0 +1,18 @@
+[
+  {
+    "name": "ionoscloud",
+    "config": {
+      "image": "ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:dev",
+      "live_reload_deps": [
+        "cmd",
+        "go.mod",
+        "go.sum",
+        "api",
+        "internal",
+        "pkg"
+      ],
+      "label": "CAPIC",
+      "go_main": "cmd/main.go"
+    }
+  }
+]
