@@ -22,9 +22,6 @@ import (
 	"sigs.k8s.io/cluster-api/errors"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine
 type IonosCloudMachineSpec struct {
 	// ProviderID is the ionos provider ID
