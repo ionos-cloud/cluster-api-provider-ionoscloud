@@ -1,8 +1,25 @@
-# cluster-api-provider-ionoscloud
-// TODO(user): Add simple overview of use/purpose
+# Kubernetes Cluster API Provider for IONOS Cloud - CAPIC
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+## Overview
+
+The [Cluster API](https://github.com/kubernetes-sigs/cluster-api) brings declarative, Kubernetes-style APIs to cluster creation, configuration and management.
+Cluster API Provider for Proxmox is a concrete implementation of Cluster API for Proxmox VE.
+
+## Documentation
+
+Documentation can be found in the ./docs folder. 
+
+To get started with developing, please see [our development docs](./docs/Development.md)
+
+
+## Maintainers
+
+| Username              |
+|-----------------------|
+| @piepmatz             |
+| @gfariasalves-ionos   |
+| @lubedacht            |
+
 
 ## Getting Started
 You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
