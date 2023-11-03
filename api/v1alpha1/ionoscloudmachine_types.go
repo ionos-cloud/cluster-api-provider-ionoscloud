@@ -49,8 +49,8 @@ type IonosCloudMachineStatus struct {
 	// spec, values that are unsupported by the controller, or the
 	// responsible controller itself being critically misconfigured.
 	//
-	// Any transient errors that occur during the reconciliation of ProxmoxMachines
-	// can be added as events to the ProxmoxMachine object and/or logged in the
+	// Any transient errors that occur during the reconciliation of IonosCloudMachines
+	// can be added as events to the IonosCloudMachine object and/or logged in the
 	// controller's output.
 	// +optional
 	FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
@@ -68,13 +68,13 @@ type IonosCloudMachineStatus struct {
 	// spec, values that are unsupported by the controller, or the
 	// responsible controller itself being critically misconfigured.
 	//
-	// Any transient errors that occur during the reconciliation of ProxmoxMachines
-	// can be added as events to the ProxmoxMachine object and/or logged in the
+	// Any transient errors that occur during the reconciliation of IonosCloudMachines
+	// can be added as events to the IonosCloudMachine object and/or logged in the
 	// controller's output.
 	// +optional
 	FailureMessage *string `json:"failureMessage,omitempty"`
 
-	// Conditions defines current service state of the ProxmoxMachine.
+	// Conditions defines current service state of the IonosCloudMachine.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }

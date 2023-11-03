@@ -3,7 +3,6 @@
 ## Overview
 
 The [Cluster API](https://github.com/kubernetes-sigs/cluster-api) brings declarative, Kubernetes-style APIs to cluster creation, configuration and management.
-Cluster API Provider for Proxmox is a concrete implementation of Cluster API for Proxmox VE.
 
 ## Documentation
 
