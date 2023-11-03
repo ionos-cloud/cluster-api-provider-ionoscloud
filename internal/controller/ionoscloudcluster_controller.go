@@ -14,11 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package controller contains the main reconciliation logic for this application.
+// the controllers make sure to perform actions according to the state of the resource,
+// which is being watched.
 package controller
 
 import (
 	"context"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,7 +31,7 @@ import (
 	infrastructurev1alpha1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 )
 
-// IonosCloudClusterReconciler reconciles a IonosCloudCluster object
+// IonosCloudClusterReconciler reconciles a IonosCloudCluster object.
 type IonosCloudClusterReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
@@ -50,6 +54,14 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	_ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
+	ionosCloudCluster := &infrastructurev1alpha1.IonosCloudCluster{}
+	if err := r.Client.Get(ctx, req.NamespacedName, ionosCloudCluster); err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
+
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }

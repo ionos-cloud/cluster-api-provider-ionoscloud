@@ -24,18 +24,18 @@ import (
 
 const (
 	// ClusterFinalizer allows cleanup of resources, which are
-	// associated with the IonosCloudCluster before removing it from the apiserver
+	// associated with the IonosCloudCluster before removing it from the apiserver.
 	ClusterFinalizer = "ionoscloudcluster.infrastructure.cluster.x-k8s.io"
 )
 
-// IonosCloudClusterSpec defines the desired state of IonosCloudCluster
+// IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
 type IonosCloudClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 }
 
-// IonosCloudClusterStatus defines the observed state of IonosCloudCluster
+// IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
 type IonosCloudClusterStatus struct {
 	// Ready indicates that the cluster is ready.
 	// +optional
@@ -46,7 +46,7 @@ type IonosCloudClusterStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// IonosCloudCluster is the Schema for the ionoscloudclusters API
+// IonosCloudCluster is the Schema for the ionoscloudclusters API.
 type IonosCloudCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -57,7 +57,7 @@ type IonosCloudCluster struct {
 
 //+kubebuilder:object:root=true
 
-// IonosCloudClusterList contains a list of IonosCloudCluster
+// IonosCloudClusterList contains a list of IonosCloudCluster.
 type IonosCloudClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

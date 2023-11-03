@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,7 +28,7 @@ import (
 	infrastructurev1alpha1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 )
 
-// IonosCloudMachineReconciler reconciles a IonosCloudMachine object
+// IonosCloudMachineReconciler reconciles a IonosCloudMachine object.
 type IonosCloudMachineReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
@@ -50,6 +51,13 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	_ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
+	ionosCloudMachine := &infrastructurev1alpha1.IonosCloudMachine{}
+	if err := r.Client.Get(ctx, req.NamespacedName, ionosCloudMachine); err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }

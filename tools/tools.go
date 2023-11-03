@@ -1,27 +1,7 @@
-# Kubernetes Cluster API Provider for IONOS Cloud - CAPIC
+//go:build tools
+// +build tools
 
-## Overview
-
-The [Cluster API](https://github.com/kubernetes-sigs/cluster-api) brings declarative, Kubernetes-style APIs to cluster creation, configuration and management.
-
-## Documentation
-
-Documentation can be found in the ./docs folder. 
-
-To get started with developing, please see [our development docs](./docs/Development.md)
-
-
-## Maintainers
-
-| Username              |
-|-----------------------|
-| @piepmatz             |
-| @gfariasalves-ionos   |
-| @lubedacht            |
-
-
-## License
-
+/*
 Copyright 2023 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,4 +15,12 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+*/
 
+package tools
+
+import (
+	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
+	_ "github.com/google/yamlfmt"
+	_ "github.com/vektra/mockery/v2"
+)

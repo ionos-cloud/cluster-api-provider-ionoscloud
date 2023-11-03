@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/cluster-api/errors"
 )
 
-// IonosCloudMachineSpec defines the desired state of IonosCloudMachine
+// IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
 type IonosCloudMachineSpec struct {
 	// ProviderID is the ionos provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
@@ -30,9 +30,9 @@ type IonosCloudMachineSpec struct {
 	ProviderID string `json:"providerId,omitempty"`
 }
 
-// IonosCloudMachineStatus defines the observed state of IonosCloudMachine
+// IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
 type IonosCloudMachineStatus struct {
-	// Ready indicates the machine has been provisioned and is ready
+	// Ready indicates the machine has been provisioned and is ready.
 	// +optional
 	Ready bool `json:"ready"`
 
@@ -49,8 +49,8 @@ type IonosCloudMachineStatus struct {
 	// spec, values that are unsupported by the controller, or the
 	// responsible controller itself being critically misconfigured.
 	//
-	// Any transient errors that occur during the reconciliation of ProxmoxMachines
-	// can be added as events to the ProxmoxMachine object and/or logged in the
+	// Any transient errors that occur during the reconciliation of IonosCloudMachines
+	// can be added as events to the IonosCloudMachine object and/or logged in the
 	// controller's output.
 	// +optional
 	FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
@@ -68,13 +68,13 @@ type IonosCloudMachineStatus struct {
 	// spec, values that are unsupported by the controller, or the
 	// responsible controller itself being critically misconfigured.
 	//
-	// Any transient errors that occur during the reconciliation of ProxmoxMachines
-	// can be added as events to the ProxmoxMachine object and/or logged in the
+	// Any transient errors that occur during the reconciliation of IonosCloudMachines
+	// can be added as events to the IonosCloudMachine object and/or logged in the
 	// controller's output.
 	// +optional
 	FailureMessage *string `json:"failureMessage,omitempty"`
 
-	// Conditions defines current service state of the ProxmoxMachine.
+	// Conditions defines current service state of the IonosCloudMachine.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
@@ -82,7 +82,7 @@ type IonosCloudMachineStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// IonosCloudMachine is the Schema for the ionoscloudmachines API
+// IonosCloudMachine is the Schema for the ionoscloudmachines API.
 type IonosCloudMachine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -93,7 +93,7 @@ type IonosCloudMachine struct {
 
 //+kubebuilder:object:root=true
 
-// IonosCloudMachineList contains a list of IonosCloudMachine
+// IonosCloudMachineList contains a list of IonosCloudMachine.
 type IonosCloudMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
