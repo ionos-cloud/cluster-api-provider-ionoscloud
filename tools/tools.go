@@ -1,5 +1,5 @@
-//go:build tpols
-// +build tpols
+//go:build tools
+// +build tools
 
 /*
 Copyright 2023 IONOS Cloud.
