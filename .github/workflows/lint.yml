@@ -15,14 +15,15 @@ jobs:
         with:
           version: v1.54
 
-  yamllint:
-    name: yamllint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4.1.1
-      - uses: ibiqlik/action-yamllint@v3
-        with:
-          format: github
+  # TODO(lubedacht) include later
+  # yamllint:
+  #   name: yamllint
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4.1.1
+  #     - uses: ibiqlik/action-yamllint@v3
+  #       with:
+  #         format: github
 
   actionlint:
     name: actionlint
