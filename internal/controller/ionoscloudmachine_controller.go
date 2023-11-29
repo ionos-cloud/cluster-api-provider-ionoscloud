@@ -58,7 +58,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 		return ctrl.Result{}, err
 	}
-
 	return ctrl.Result{}, nil
 }
 

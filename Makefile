@@ -56,6 +56,10 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 lint: ## Run lint.
 	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml
 
+.PHONY: lint-fix
+lint-fix: ## Run lint.
+	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml --fix
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...

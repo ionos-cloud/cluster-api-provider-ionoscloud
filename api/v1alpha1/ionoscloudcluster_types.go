@@ -26,6 +26,12 @@ const (
 	// ClusterFinalizer allows cleanup of resources, which are
 	// associated with the IonosCloudCluster before removing it from the apiserver.
 	ClusterFinalizer = "ionoscloudcluster.infrastructure.cluster.x-k8s.io"
+
+	// IonosCloudClusterReady is the condition for the IonosCloudCluster, which indicates that the cluster is ready.
+	IonosCloudClusterReady clusterv1.ConditionType = "ClusterReady"
+
+	// IonosCloudClusterKind is the string resource kind of the IonosCloudCluster resource.
+	IonosCloudClusterKind = "IonosCloudCluster"
 )
 
 // IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
@@ -33,6 +39,10 @@ type IonosCloudClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+
+	// Contract number is the contract number of the IONOS Cloud account.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
+	ContractNumber string `json:"contractNumber"`
 }
 
 // IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
@@ -41,6 +51,10 @@ type IonosCloudClusterStatus struct {
 	// +optional
 	// +kubebuilder:default=false
 	Ready bool `json:"ready"`
+
+	// Conditions defines current service state of the IonosCloudCluster.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -66,4 +80,14 @@ type IonosCloudClusterList struct {
 
 func init() {
 	SchemeBuilder.Register(&IonosCloudCluster{}, &IonosCloudClusterList{})
+}
+
+// GetConditions returns the conditions from the status.
+func (i *IonosCloudCluster) GetConditions() clusterv1.Conditions {
+	return i.Status.Conditions
+}
+
+// SetConditions sets the conditions in the status.
+func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
+	i.Status.Conditions = conditions
 }
