@@ -108,6 +108,11 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Make sure to persist the changes to the cluster before exiting the function.
 	defer func() {
 		if err := clusterScope.Finalize(); err != nil {
+			if retErr != nil {
+				retErr = fmt.Errorf("%w %w", err, retErr)
+				return
+			}
+
 			retErr = err
 		}
 	}()
