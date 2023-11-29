@@ -19,10 +19,10 @@ package scope
 
 import (
 	"context"
-	"errors"
+	"github.com/pkg/errors"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
-	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -51,7 +51,7 @@ type ClusterScopeParams struct {
 	Logger       *logr.Logger
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
-	IonosClient  *ionoscloud.APIClient
+	IonosClient  ionos.Client
 }
 
 // NewClusterScope creates a new scope for the supplied parameters.
@@ -72,7 +72,26 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		return nil, errors.New("IonosCluster is required when creating a ClusterScope")
 	}
 
-	return nil, nil
+	if params.Logger == nil {
+		logger := log.FromContext(context.Background())
+		params.Logger = &logger
+	}
+
+	helper, err := patch.NewHelper(params.IonosCluster, params.Client)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to init patch helper")
+	}
+
+	clusterScope := &ClusterScope{
+		Logger:       params.Logger,
+		Cluster:      params.Cluster,
+		IonosCluster: params.IonosCluster,
+		IonosClient:  params.IonosClient,
+		client:       params.Client,
+		patchHelper:  helper,
+	}
+
+	return clusterScope, nil
 }
 
 // PatchObject will apply all changes from the IonosCloudCluster.
