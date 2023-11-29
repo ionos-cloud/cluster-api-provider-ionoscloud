@@ -22,6 +22,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/scope"
 	"k8s.io/klog/v2"
@@ -61,7 +62,7 @@ type IonosCloudClusterReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.0/pkg/reconcile
-func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, retErr error) {
 	logger := log.FromContext(ctx)
 
 	// TODO(user): your logic here
@@ -92,16 +93,34 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	if !ionosCloudCluster.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, nil)
+	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+		Client:       r.Client,
+		Logger:       &logger,
+		Cluster:      cluster,
+		IonosCluster: ionosCloudCluster,
+		IonosClient:  nil,
+	})
+
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("unable to create scope %w", err)
 	}
 
-	return r.reconcileNormal(ctx, nil)
+	// Make sure to persist the changes to the cluster before exiting the function.
+	defer func() {
+		if err := clusterScope.Finalize(); err != nil {
+			retErr = err
+		}
+	}()
+
+	if !ionosCloudCluster.DeletionTimestamp.IsZero() {
+		return r.reconcileDelete(ctx, clusterScope)
+	}
+
+	return r.reconcileNormal(ctx, clusterScope)
 }
 
 func (r *IonosCloudClusterReconciler) reconcileNormal(_ context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
 	// TODO setup cloud resources which are required before we create the machines
-
 	controllerutil.AddFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
 
 	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
