@@ -124,6 +124,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.reconcileNormal(ctx, clusterScope)
 }
 
+//nolint:unparam
 func (r *IonosCloudClusterReconciler) reconcileNormal(_ context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
 	// TODO setup cloud resources which are required before we create the machines
 	controllerutil.AddFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
@@ -134,6 +135,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(_ context.Context, cluster
 	return ctrl.Result{}, nil
 }
 
+//nolint:unparam
 func (r *IonosCloudClusterReconciler) reconcileDelete(_ context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
 	if !clusterScope.Cluster.DeletionTimestamp.IsZero() {
 		clusterScope.Error(errors.New("deletion was requested but owning cluster wasn't deleted"), "unable to delete IonosCloudCluster")

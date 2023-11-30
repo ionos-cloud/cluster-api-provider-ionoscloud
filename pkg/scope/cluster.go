@@ -19,6 +19,7 @@ package scope
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -35,7 +36,7 @@ import (
 // ClusterScope defines the basic context for an actuator to operate upon.
 type ClusterScope struct {
 	*logr.Logger
-	//nolint:unused
+
 	client      client.Client
 	patchHelper *patch.Helper
 
