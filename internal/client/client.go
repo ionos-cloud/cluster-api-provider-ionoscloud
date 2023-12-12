@@ -24,8 +24,6 @@ import (
 )
 
 // Client is an interface for abstracting Cloud API sdk, making it possible to create mocks for testing purposes.
-//
-//go:generate go run github.com/vektra/mockery/v2 --dir . --inpackage --name Client --testonly
 type Client interface {
 	// CreateDataCenter creates a new data center with its specification based on provided properties.
 	CreateDataCenter(ctx context.Context, properties ionoscloud.DatacenterProperties) (
@@ -33,31 +31,31 @@ type Client interface {
 	// GetDataCenter returns a data center that contains the provided id.
 	GetDataCenter(ctx context.Context, id string) (*ionoscloud.Datacenter, error)
 	// CreateServer creates a new server with provided properties in the specified data center.
-	CreateServer(ctx context.Context, datacenterID string, properties ionoscloud.ServerProperties) (
+	CreateServer(ctx context.Context, dataCenterID string, properties ionoscloud.ServerProperties) (
 		*ionoscloud.Server, error)
 	// ListServers returns a list with the created servers in the specified data center.
-	ListServers(ctx context.Context, datacenterID string) (*ionoscloud.Servers, error)
+	ListServers(ctx context.Context, dataCenterID string) (*ionoscloud.Servers, error)
 	// GetServer returns the server that matches the provided serverID in the specified data center.
-	GetServer(ctx context.Context, datacenterID, serverID string) (*ionoscloud.Server, error)
+	GetServer(ctx context.Context, dataCenterID, serverID string) (*ionoscloud.Server, error)
 	// DestroyServer deletes the server that matches the provided serverID in the specified data center.
-	DestroyServer(ctx context.Context, datacenterID, serverID string) error
+	DestroyServer(ctx context.Context, dataCenterID, serverID string) error
 	// CreateLan creates a new LAN with the provided properties in the specified data center.
-	CreateLan(ctx context.Context, datacenterID string, properties ionoscloud.LanPropertiesPost) (
+	CreateLan(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost) (
 		*ionoscloud.LanPost, error)
 	// UpdateLan updates a LAN with the provided properties in the specified data center.
-	UpdateLan(ctx context.Context, datacenterID string, lanID string, properties ionoscloud.LanProperties) (
+	UpdateLan(ctx context.Context, dataCenterID string, lanID string, properties ionoscloud.LanProperties) (
 		*ionoscloud.Lan, error)
 	// AttachToLan attaches a provided NIC to a provided LAN in a specified data center.
-	AttachToLan(ctx context.Context, datacenterID, lanID string, nic ionoscloud.Nic) (
+	AttachToLan(ctx context.Context, dataCenterID, lanID string, nic ionoscloud.Nic) (
 		*ionoscloud.Nic, error)
 	// ListLans returns a list of LANs in the specified data center.
-	ListLans(ctx context.Context, datacenterID string) (*ionoscloud.Lans, error)
+	ListLans(ctx context.Context, dataCenterID string) (*ionoscloud.Lans, error)
 	// GetLan returns the LAN that matches lanID in the specified data center.
-	GetLan(ctx context.Context, datacenterID, lanID string) (*ionoscloud.Lan, error)
+	GetLan(ctx context.Context, dataCenterID, lanID string) (*ionoscloud.Lan, error)
 	// ListVolumes returns a list of volumes in a specified data center.
-	ListVolumes(ctx context.Context, datacenterID string) (*ionoscloud.Volumes, error)
+	ListVolumes(ctx context.Context, dataCenterID string) (*ionoscloud.Volumes, error)
 	// GetVolume returns the volume that matches volumeID in the specified data center.
-	GetVolume(ctx context.Context, datacenterID, volumeID string) (*ionoscloud.Volume, error)
+	GetVolume(ctx context.Context, dataCenterID, volumeID string) (*ionoscloud.Volume, error)
 	// DestroyVolume deletes the volume that matches volumeID in the specified data center.
-	DestroyVolume(ctx context.Context, datacenterID, volumeID string) error
+	DestroyVolume(ctx context.Context, dataCenterID, volumeID string) error
 }
