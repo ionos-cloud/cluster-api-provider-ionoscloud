@@ -81,7 +81,7 @@ func getEnvTest() *envtest.Environment {
 	}
 }
 
-func (s *ClientTestSuite) TestNewClientFromSecret_Ok() {
+func (s *ClientTestSuite) TestNewClientFromSecretOk() {
 	var err error
 	s.T().Setenv(ionoscloud.IonosApiUrlEnvVar, "localhost")
 	s.env = getEnvTest()
@@ -123,7 +123,7 @@ func (s *ClientTestSuite) TestNewClientFromSecret_Ok() {
 	s.Equal("localhost", ionosCfg.Host)
 }
 
-func (s *ClientTestSuite) TestNewClientFromSecret_Error() {
+func (s *ClientTestSuite) TestNewClientFromSecretError() {
 	var err error
 	s.T().Setenv(ionoscloud.IonosApiUrlEnvVar, "localhost")
 	s.env = getEnvTest()
