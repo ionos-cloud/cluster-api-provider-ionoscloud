@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package client offers an interface for abstracting Cloud API sdk, making it testable.
-package client
+// Package ionos offers an interface for abstracting Cloud API sdk, making it testable.
+package ionos
 
 import (
 	"context"

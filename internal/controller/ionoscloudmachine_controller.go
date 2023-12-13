@@ -19,6 +19,8 @@ package controller
 import (
 	"context"
 
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -31,7 +33,8 @@ import (
 // IonosCloudMachineReconciler reconciles a IonosCloudMachine object.
 type IonosCloudMachineReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme      *runtime.Scheme
+	IonosClient ionos.Client
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines,verbs=get;list;watch;create;update;patch;delete
