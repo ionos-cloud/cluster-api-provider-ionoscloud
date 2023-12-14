@@ -64,7 +64,6 @@ lint-fix: ## Fix linter problems
 fmt: ## Run gofumpt against code.
 	go run -modfile ./tools/go.mod mvdan.cc/gofumpt -l -w .
 
-
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
