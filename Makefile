@@ -56,16 +56,21 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 lint: ## Run lint.
 	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml
 
+.PHONY: lint-fix
+lint-fix: ## Fix linter problems
+	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml --fix
+
 .PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
+fmt: ## Run gofumpt against code.
+	go run -modfile ./tools/go.mod mvdan.cc/gofumpt -l -w .
+
 
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: generate-mocks manifests generate fmt vet envtest ## Run tests.
+test: generate-mocks manifests generate lint-fix vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build

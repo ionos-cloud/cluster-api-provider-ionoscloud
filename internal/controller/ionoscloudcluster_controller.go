@@ -22,7 +22,6 @@ package controller
 import (
 	"context"
 
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -30,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	infrastructurev1alpha1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos"
 )
 
 // IonosCloudClusterReconciler reconciles a IonosCloudCluster object.

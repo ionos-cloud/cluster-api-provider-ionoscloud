@@ -20,9 +20,10 @@ package ionosclient
 import (
 	"context"
 
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos"
 	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/pkg/errors"
+
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos"
 )
 
 // IonosClient is a concrete implementation of the IonosClient interface defined in the internal client package, that
