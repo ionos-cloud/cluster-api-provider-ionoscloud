@@ -33,7 +33,7 @@ type Client interface {
 	// CreateServer creates a new server with provided properties in the specified data center.
 	CreateServer(ctx context.Context, dataCenterID string, properties ionoscloud.ServerProperties) (
 		*ionoscloud.Server, error)
-	// ListServers returns a list with the created servers in the specified data center.
+	// ListServers returns a list with the servers in the specified data center.
 	ListServers(ctx context.Context, dataCenterID string) (*ionoscloud.Servers, error)
 	// GetServer returns the server that matches the provided serverID in the specified data center.
 	GetServer(ctx context.Context, dataCenterID, serverID string) (*ionoscloud.Server, error)
