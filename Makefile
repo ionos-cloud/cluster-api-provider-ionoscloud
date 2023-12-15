@@ -60,26 +60,22 @@ lint: ## Run lint.
 lint-fix: ## Fix linter problems
 	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml --fix
 
-.PHONY: fmt
-fmt: ## Run gofumpt against code.
-	go run -modfile ./tools/go.mod mvdan.cc/gofumpt -l -w .
-
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: generate-mocks manifests generate lint-fix vet envtest ## Run tests.
+test: mocks manifests generate lint-fix vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
 
 .PHONY: build
-build: manifests generate fmt vet ## Build manager binary.
+build: manifests generate lint-fix vet ## Build manager binary.
 	go build -o bin/manager cmd/main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
+run: manifests generate lint-fix vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
@@ -170,6 +166,6 @@ envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
-.PHONY: generate-mocks
-generate-mocks:
+.PHONY: mocks
+mocks:
 	go generate ./...

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ionosclient
+package client
 
 import "errors"
 
@@ -23,9 +23,8 @@ var (
 	errServerIDIsEmpty     = errors.New("error parsing server id: value cannot be empty")
 	errLanIDIsEmpty        = errors.New("error parsing lan id: value cannot be empty")
 	errVolumeIDIsEmpty     = errors.New("error parsing volume id: value cannot be empty")
-	errContextIsNil        = errors.New("ionos cloud client doesn't accept nil contexts")
 )
 
 const (
-	apiCallErrWrapper = "request to cloud api has failed"
+	apiCallErrWrapper = "request to cloud API has failed"
 )

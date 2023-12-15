@@ -20,17 +20,12 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -38,7 +33,7 @@ import (
 
 	infrastructurev1alpha1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/controller"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos/ionosclient"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos/client"
 )
 
 var (
@@ -47,7 +42,7 @@ var (
 	ionosCloudToken    string
 	ionosCloudUsername string
 	ionosCloudPassword string
-	ionosCloudApiUrl   string //nolint:stylecheck,revive
+	ionosCloudAPIURL   string
 )
 
 func init() {
@@ -96,10 +91,11 @@ func main() {
 		setupLog.Error(err, "unable to create manager")
 		os.Exit(1)
 	}
-	populateAndValidateIonosCloudCredentials()
-	ionosClient, err := ionosclient.NewClient(ionosCloudUsername, ionosCloudPassword, ionosCloudToken, ionosCloudApiUrl)
+	populateIonosCloudCredentials()
+	ionosClient, err := client.NewClient(ionosCloudUsername, ionosCloudPassword, ionosCloudToken, ionosCloudAPIURL)
 	if err != nil {
 		setupLog.Error(err, "could not create ionos client")
+		os.Exit(1)
 	}
 
 	if err = (&controller.IonosCloudClusterReconciler{
@@ -136,29 +132,9 @@ func main() {
 	}
 }
 
-func populateAndValidateIonosCloudCredentials() {
+func populateIonosCloudCredentials() {
 	ionosCloudUsername = os.Getenv(ionoscloud.IonosUsernameEnvVar)
 	ionosCloudPassword = os.Getenv(ionoscloud.IonosPasswordEnvVar)
 	ionosCloudToken = os.Getenv(ionoscloud.IonosTokenEnvVar)
-	ionosCloudApiUrl = os.Getenv(ionoscloud.IonosApiUrlEnvVar)
-	if err := validate(); err != nil {
-		setupLog.Error(err, "validation of ionos cloud credentials failed")
-		os.Exit(1)
-	}
-}
-
-func validate() error {
-	if ionosCloudUsername != "" && ionosCloudPassword == "" {
-		return fmt.Errorf("%s is set but %s is not",
-			ionoscloud.IonosUsernameEnvVar, ionoscloud.IonosPasswordEnvVar)
-	}
-	if ionosCloudUsername == "" && ionosCloudPassword != "" {
-		return fmt.Errorf("%s is set but %s is not",
-			ionoscloud.IonosPasswordEnvVar, ionoscloud.IonosUsernameEnvVar)
-	}
-	if ionosCloudUsername == "" && ionosCloudPassword == "" && ionosCloudToken == "" {
-		return fmt.Errorf("%s or %s and %s need to be set",
-			ionoscloud.IonosTokenEnvVar, ionoscloud.IonosUsernameEnvVar, ionoscloud.IonosPasswordEnvVar)
-	}
-	return nil
+	ionosCloudAPIURL = os.Getenv(ionoscloud.IonosApiUrlEnvVar)
 }

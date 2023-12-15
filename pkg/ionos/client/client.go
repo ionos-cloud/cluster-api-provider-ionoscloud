@@ -14,14 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package ionosclient contains an implementation of the IonosClient interface defined in the internal client package.
-package ionosclient
+// Package client contains an implementation of the IonosClient interface defined in pkg/ionos.
+package client
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
-	"github.com/pkg/errors"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos"
 )
@@ -35,41 +36,48 @@ type IonosClient struct {
 // NewClient instantiates a usable IonosClient. The client needs the username AND password OR the token to work.
 // Failing to provide both will result in an error.
 func NewClient(username, password, token, apiURL string) (ionos.Client, error) {
-	if token != "" || username != "" && password != "" {
-		cfg := ionoscloud.NewConfiguration(username, password, token, apiURL)
-		apiClient := ionoscloud.NewAPIClient(cfg)
-		return &IonosClient{
-			API: apiClient,
-		}, nil
+	if err := validate(username, password, token); err != nil {
+		return nil, fmt.Errorf("incomplete credentials provided: %w", err)
 	}
-	return nil, errors.New("credentials are not valid")
+	cfg := ionoscloud.NewConfiguration(username, password, token, apiURL)
+	apiClient := ionoscloud.NewAPIClient(cfg)
+	return &IonosClient{
+		API: apiClient,
+	}, nil
+}
+
+func validate(username, password, token string) error {
+	if username != "" && password == "" {
+		return errors.New("username is set but password is not")
+	}
+	if username == "" && password != "" {
+		return errors.New("password is set but username is not")
+	}
+	if username == "" && password == "" && token == "" {
+		return errors.New("token or username and password need to be set")
+	}
+	return nil
 }
 
 // CreateDataCenter creates a new data center with its specification based on provided properties.
 func (c *IonosClient) CreateDataCenter(ctx context.Context, properties ionoscloud.DatacenterProperties,
 ) (*ionoscloud.Datacenter, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
 	dc := ionoscloud.Datacenter{Properties: &properties}
 	dc, _, err := c.API.DataCentersApi.DatacentersPost(ctx).Datacenter(dc).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &dc, nil
 }
 
-// GetDataCenter returns a data center that contains the provided id.
+// GetDataCenter returns the data center that matches the provided datacenterID.
 func (c *IonosClient) GetDataCenter(ctx context.Context, id string) (*ionoscloud.Datacenter, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
 	if id == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
 	dc, _, err := c.API.DataCentersApi.DatacentersFindById(ctx, id).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &dc, nil
 }
@@ -78,9 +86,6 @@ func (c *IonosClient) GetDataCenter(ctx context.Context, id string) (*ionoscloud
 func (c *IonosClient) CreateServer(
 	ctx context.Context, dataCenterID string, properties ionoscloud.ServerProperties,
 ) (*ionoscloud.Server, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
@@ -89,31 +94,25 @@ func (c *IonosClient) CreateServer(
 	}
 	s, _, err := c.API.ServersApi.DatacentersServersPost(ctx, dataCenterID).Server(server).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &s, nil
 }
 
-// ListServers returns a list with the created servers in the specified data center.
+// ListServers returns a list with servers in the specified data center.
 func (c *IonosClient) ListServers(ctx context.Context, dataCenterID string) (*ionoscloud.Servers, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
 	servers, _, err := c.API.ServersApi.DatacentersServersGet(ctx, dataCenterID).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &servers, nil
 }
 
 // GetServer returns the server that matches the provided serverID in the specified data center.
 func (c *IonosClient) GetServer(ctx context.Context, dataCenterID, serverID string) (*ionoscloud.Server, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
@@ -122,16 +121,13 @@ func (c *IonosClient) GetServer(ctx context.Context, dataCenterID, serverID stri
 	}
 	server, _, err := c.API.ServersApi.DatacentersServersFindById(ctx, dataCenterID, serverID).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &server, nil
 }
 
 // DestroyServer deletes the server that matches the provided serverID in the specified data center.
 func (c *IonosClient) DestroyServer(ctx context.Context, dataCenterID, serverID string) error {
-	if ctx == nil {
-		return errContextIsNil
-	}
 	if dataCenterID == "" {
 		return errDataCenterIDIsEmpty
 	}
@@ -140,17 +136,14 @@ func (c *IonosClient) DestroyServer(ctx context.Context, dataCenterID, serverID 
 	}
 	_, err := c.API.ServersApi.DatacentersServersDelete(ctx, dataCenterID, serverID).Execute()
 	if err != nil {
-		return errors.Wrap(err, apiCallErrWrapper)
+		return fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return err
 }
 
-// CreateLan creates a new LAN with the provided properties in the specified data center.
-func (c *IonosClient) CreateLan(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost,
+// CreateLAN creates a new LAN with the provided properties in the specified data center.
+func (c *IonosClient) CreateLAN(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost,
 ) (*ionoscloud.LanPost, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
@@ -159,18 +152,15 @@ func (c *IonosClient) CreateLan(ctx context.Context, dataCenterID string, proper
 	}
 	lp, _, err := c.API.LANsApi.DatacentersLansPost(ctx, dataCenterID).Lan(lanPost).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &lp, nil
 }
 
-// UpdateLan updates a LAN with the provided properties in the specified data center.
-func (c *IonosClient) UpdateLan(
+// UpdateLAN updates a LAN with the provided properties in the specified data center.
+func (c *IonosClient) UpdateLAN(
 	ctx context.Context, dataCenterID string, lanID string, properties ionoscloud.LanProperties,
 ) (*ionoscloud.Lan, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
@@ -180,17 +170,14 @@ func (c *IonosClient) UpdateLan(
 	l, _, err := c.API.LANsApi.DatacentersLansPatch(ctx, dataCenterID, lanID).
 		Lan(properties).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &l, nil
 }
 
-// AttachToLan attaches a provided NIC to a provided LAN in a specified data center.
-func (c *IonosClient) AttachToLan(ctx context.Context, dataCenterID, lanID string, nic ionoscloud.Nic,
+// AttachToLAN attaches a provided NIC to a provided LAN in the specified data center.
+func (c *IonosClient) AttachToLAN(ctx context.Context, dataCenterID, lanID string, nic ionoscloud.Nic,
 ) (*ionoscloud.Nic, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
@@ -199,31 +186,25 @@ func (c *IonosClient) AttachToLan(ctx context.Context, dataCenterID, lanID strin
 	}
 	n, _, err := c.API.LANsApi.DatacentersLansNicsPost(ctx, dataCenterID, lanID).Nic(nic).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &n, nil
 }
 
-// ListLans returns a list of LANs in the specified data center.
-func (c *IonosClient) ListLans(ctx context.Context, dataCenterID string) (*ionoscloud.Lans, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
+// ListLANs returns a list of LANs in the specified data center.
+func (c *IonosClient) ListLANs(ctx context.Context, dataCenterID string) (*ionoscloud.Lans, error) {
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
 	lans, _, err := c.API.LANsApi.DatacentersLansGet(ctx, dataCenterID).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &lans, nil
 }
 
-// GetLan returns the LAN that matches lanID in the specified data center.
-func (c *IonosClient) GetLan(ctx context.Context, dataCenterID, lanID string) (*ionoscloud.Lan, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
+// GetLAN returns the LAN that matches lanID in the specified data center.
+func (c *IonosClient) GetLAN(ctx context.Context, dataCenterID, lanID string) (*ionoscloud.Lan, error) {
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
@@ -232,23 +213,35 @@ func (c *IonosClient) GetLan(ctx context.Context, dataCenterID, lanID string) (*
 	}
 	lan, _, err := c.API.LANsApi.DatacentersLansFindById(ctx, dataCenterID, lanID).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &lan, nil
 }
 
-// ListVolumes returns a list of volumes in a specified data center.
+// DestroyLAN deletes the LAN that matches the provided lanID in the specified data center.
+func (c *IonosClient) DestroyLAN(ctx context.Context, dataCenterID, lanID string) error {
+	if dataCenterID == "" {
+		return errDataCenterIDIsEmpty
+	}
+	if lanID == "" {
+		return errLanIDIsEmpty
+	}
+	_, err := c.API.LANsApi.DatacentersLansDelete(ctx, dataCenterID, lanID).Execute()
+	if err != nil {
+		return fmt.Errorf("%s: %w", apiCallErrWrapper, err)
+	}
+	return nil
+}
+
+// ListVolumes returns a list of volumes in the specified data center.
 func (c *IonosClient) ListVolumes(ctx context.Context, dataCenterID string,
 ) (*ionoscloud.Volumes, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
 	volumes, _, err := c.API.VolumesApi.DatacentersVolumesGet(ctx, dataCenterID).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &volumes, nil
 }
@@ -256,9 +249,6 @@ func (c *IonosClient) ListVolumes(ctx context.Context, dataCenterID string,
 // GetVolume returns the volume that matches volumeID in the specified data center.
 func (c *IonosClient) GetVolume(ctx context.Context, dataCenterID, volumeID string,
 ) (*ionoscloud.Volume, error) {
-	if ctx == nil {
-		return nil, errContextIsNil
-	}
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
@@ -267,16 +257,13 @@ func (c *IonosClient) GetVolume(ctx context.Context, dataCenterID, volumeID stri
 	}
 	volume, _, err := c.API.VolumesApi.DatacentersVolumesFindById(ctx, dataCenterID, volumeID).Execute()
 	if err != nil {
-		return nil, errors.Wrap(err, apiCallErrWrapper)
+		return nil, fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return &volume, nil
 }
 
 // DestroyVolume deletes the volume that matches volumeID in the specified data center.
 func (c *IonosClient) DestroyVolume(ctx context.Context, dataCenterID, volumeID string) error {
-	if ctx == nil {
-		return errContextIsNil
-	}
 	if dataCenterID == "" {
 		return errDataCenterIDIsEmpty
 	}
@@ -285,7 +272,7 @@ func (c *IonosClient) DestroyVolume(ctx context.Context, dataCenterID, volumeID 
 	}
 	_, err := c.API.VolumesApi.DatacentersVolumesDelete(ctx, dataCenterID, volumeID).Execute()
 	if err != nil {
-		return errors.Wrap(err, apiCallErrWrapper)
+		return fmt.Errorf("%s: %w", apiCallErrWrapper, err)
 	}
 	return nil
 }

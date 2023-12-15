@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package ionos offers an interface for abstracting Cloud API sdk, making it testable.
+// Package ionos offers an interface for abstracting Cloud API SDK, making it testable.
 package ionos
 
 import (
@@ -23,13 +23,13 @@ import (
 	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
 )
 
-// Client is an interface for abstracting Cloud API sdk, making it possible to create mocks for testing purposes.
+// Client is an interface for abstracting Cloud API SDK, making it possible to create mocks for testing purposes.
 type Client interface {
 	// CreateDataCenter creates a new data center with its specification based on provided properties.
 	CreateDataCenter(ctx context.Context, properties ionoscloud.DatacenterProperties) (
 		*ionoscloud.Datacenter, error)
-	// GetDataCenter returns a data center that contains the provided id.
-	GetDataCenter(ctx context.Context, id string) (*ionoscloud.Datacenter, error)
+	// GetDataCenter returns the data center that matches the provided datacenterID.
+	GetDataCenter(ctx context.Context, dataCenterID string) (*ionoscloud.Datacenter, error)
 	// CreateServer creates a new server with provided properties in the specified data center.
 	CreateServer(ctx context.Context, dataCenterID string, properties ionoscloud.ServerProperties) (
 		*ionoscloud.Server, error)
@@ -39,19 +39,21 @@ type Client interface {
 	GetServer(ctx context.Context, dataCenterID, serverID string) (*ionoscloud.Server, error)
 	// DestroyServer deletes the server that matches the provided serverID in the specified data center.
 	DestroyServer(ctx context.Context, dataCenterID, serverID string) error
-	// CreateLan creates a new LAN with the provided properties in the specified data center.
-	CreateLan(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost) (
+	// CreateLAN creates a new LAN with the provided properties in the specified data center.
+	CreateLAN(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost) (
 		*ionoscloud.LanPost, error)
-	// UpdateLan updates a LAN with the provided properties in the specified data center.
-	UpdateLan(ctx context.Context, dataCenterID string, lanID string, properties ionoscloud.LanProperties) (
+	// UpdateLAN updates a LAN with the provided properties in the specified data center.
+	UpdateLAN(ctx context.Context, dataCenterID string, lanID string, properties ionoscloud.LanProperties) (
 		*ionoscloud.Lan, error)
-	// AttachToLan attaches a provided NIC to a provided LAN in a specified data center.
-	AttachToLan(ctx context.Context, dataCenterID, lanID string, nic ionoscloud.Nic) (
+	// AttachToLAN attaches a provided NIC to a provided LAN in a specified data center.
+	AttachToLAN(ctx context.Context, dataCenterID, lanID string, nic ionoscloud.Nic) (
 		*ionoscloud.Nic, error)
-	// ListLans returns a list of LANs in the specified data center.
-	ListLans(ctx context.Context, dataCenterID string) (*ionoscloud.Lans, error)
-	// GetLan returns the LAN that matches lanID in the specified data center.
-	GetLan(ctx context.Context, dataCenterID, lanID string) (*ionoscloud.Lan, error)
+	// ListLANs returns a list of LANs in the specified data center.
+	ListLANs(ctx context.Context, dataCenterID string) (*ionoscloud.Lans, error)
+	// GetLAN returns the LAN that matches lanID in the specified data center.
+	GetLAN(ctx context.Context, dataCenterID, lanID string) (*ionoscloud.Lan, error)
+	// DestroyLAN deletes the LAN that matches the provided lanID in the specified data center.
+	DestroyLAN(ctx context.Context, dataCenterID, lanID string) error
 	// ListVolumes returns a list of volumes in a specified data center.
 	ListVolumes(ctx context.Context, dataCenterID string) (*ionoscloud.Volumes, error)
 	// GetVolume returns the volume that matches volumeID in the specified data center.
