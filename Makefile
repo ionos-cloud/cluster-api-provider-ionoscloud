@@ -168,4 +168,26 @@ $(ENVTEST): $(LOCALBIN)
 
 .PHONY: mocks
 mocks:
-	go generate ./...
+	go run -modfile ./tools/go.mod github.com/vektra/mockery/v2
+
+# CI
+
+.PHONY: tidy
+tidy: ## Run go mod tidy.
+	go mod tidy
+	cd ./tools && go mod tidy
+
+.PHONY: verify-tidy
+verify-tidy: tidy ## Verify that the dependencies are tidied.
+	@if !(git diff --quiet HEAD); then \
+		echo "run go mod tidy"; exit 1; \
+	fi
+
+.PHONY: verify-gen
+verify-gen: manifests generate ## Verify that the generated files are up to date.
+	@if !(git diff --quiet HEAD); then \
+		echo "generated files are out of date"; PAGER= git diff HEAD; exit 1; \
+	fi
+
+.PHONY: verify
+verify: verify-gen verify-tidy ## Run all verifications.

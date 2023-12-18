@@ -26,14 +26,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	infrastructurev1alpha1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos"
+	ionoscloud "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 )
 
 // IonosCloudMachineReconciler reconciles a IonosCloudMachine object.
 type IonosCloudMachineReconciler struct {
 	client.Client
-	Scheme      *runtime.Scheme
-	IonosClient ionos.Client
+	Scheme           *runtime.Scheme
+	IonosCloudClient ionoscloud.Client
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines,verbs=get;list;watch;create;update;patch;delete

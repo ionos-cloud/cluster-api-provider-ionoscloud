@@ -48,9 +48,9 @@ func TestNewClient(t *testing.T) {
 			tt.username, tt.password, tt.token, tt.apiURL, tt.shouldPass), func(t *testing.T) {
 			c, err := NewClient(tt.username, tt.password, tt.token, tt.apiURL)
 			if tt.shouldPass {
-				require.NotNil(t, c, "NewClient returned a nil IonosClient")
+				require.NotNil(t, c, "NewClient returned a nil IonosCloudClient")
 				require.NoError(t, err, "NewClient returned an error")
-				cfg := (c.(*IonosClient)).API.GetConfig()
+				cfg := c.API.GetConfig()
 				require.Equal(t, tt.username, cfg.Username, "username didn't match")
 				require.Equal(t, tt.password, cfg.Password, "password didn't match")
 				require.Equal(t, tt.token, cfg.Token, "token didn't match")

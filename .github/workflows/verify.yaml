@@ -1,0 +1,24 @@
+---
+name: Verify
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+env:
+  GIT_CI_BOT_TOKEN: ${{ secrets.GIT_HUB_CI_TOKEN }}
+
+# don't waste resources and time on outdated commits
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download Dependencies
+        uses: ionos-cloud/paas-github-actions/go/dependencies@master
+      - name: Run verifications
+        run: make verify

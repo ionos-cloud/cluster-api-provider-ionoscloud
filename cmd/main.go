@@ -33,16 +33,12 @@ import (
 
 	infrastructurev1alpha1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/controller"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos/client"
+	icc "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
 )
 
 var (
-	scheme             = runtime.NewScheme()
-	setupLog           = ctrl.Log.WithName("setup")
-	ionosCloudToken    string
-	ionosCloudUsername string
-	ionosCloudPassword string
-	ionosCloudAPIURL   string
+	scheme   = runtime.NewScheme()
+	setupLog = ctrl.Log.WithName("setup")
 )
 
 func init() {
@@ -91,25 +87,26 @@ func main() {
 		setupLog.Error(err, "unable to create manager")
 		os.Exit(1)
 	}
-	populateIonosCloudCredentials()
-	ionosClient, err := client.NewClient(ionosCloudUsername, ionosCloudPassword, ionosCloudToken, ionosCloudAPIURL)
+	ionosCloudClient, err := icc.NewClient(
+		os.Getenv(ionoscloud.IonosUsernameEnvVar), os.Getenv(ionoscloud.IonosPasswordEnvVar),
+		os.Getenv(ionoscloud.IonosTokenEnvVar), os.Getenv(ionoscloud.IonosApiUrlEnvVar))
 	if err != nil {
-		setupLog.Error(err, "could not create ionos client")
+		setupLog.Error(err, "could not create IONOS client")
 		os.Exit(1)
 	}
 
 	if err = (&controller.IonosCloudClusterReconciler{
-		Client:      mgr.GetClient(),
-		Scheme:      mgr.GetScheme(),
-		IonosClient: ionosClient,
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		IonosCloudClient: ionosCloudClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudCluster")
 		os.Exit(1)
 	}
 	if err = (&controller.IonosCloudMachineReconciler{
-		Client:      mgr.GetClient(),
-		Scheme:      mgr.GetScheme(),
-		IonosClient: ionosClient,
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		IonosCloudClient: ionosCloudClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
 		os.Exit(1)
@@ -130,11 +127,4 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
-}
-
-func populateIonosCloudCredentials() {
-	ionosCloudUsername = os.Getenv(ionoscloud.IonosUsernameEnvVar)
-	ionosCloudPassword = os.Getenv(ionoscloud.IonosPasswordEnvVar)
-	ionosCloudToken = os.Getenv(ionoscloud.IonosTokenEnvVar)
-	ionosCloudAPIURL = os.Getenv(ionoscloud.IonosApiUrlEnvVar)
 }

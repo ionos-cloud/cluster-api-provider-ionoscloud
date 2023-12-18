@@ -19,12 +19,12 @@ package client
 import "errors"
 
 var (
-	errDataCenterIDIsEmpty = errors.New("error parsing data center id: value cannot be empty")
-	errServerIDIsEmpty     = errors.New("error parsing server id: value cannot be empty")
-	errLanIDIsEmpty        = errors.New("error parsing lan id: value cannot be empty")
-	errVolumeIDIsEmpty     = errors.New("error parsing volume id: value cannot be empty")
+	errDataCenterIDIsEmpty = errors.New("error parsing data center ID: value cannot be empty")
+	errServerIDIsEmpty     = errors.New("error parsing server ID: value cannot be empty")
+	errLanIDIsEmpty        = errors.New("error parsing lan ID: value cannot be empty")
+	errVolumeIDIsEmpty     = errors.New("error parsing volume ID: value cannot be empty")
 )
 
 const (
-	apiCallErrWrapper = "request to cloud API has failed"
+	apiCallErrWrapper = "request to Cloud API has failed"
 )
