@@ -180,7 +180,7 @@ tidy: ## Run go mod tidy.
 .PHONY: verify-tidy
 verify-tidy: tidy ## Verify that the dependencies are tidied.
 	@if !(git diff --quiet HEAD); then \
-		echo "run go mod tidy"; exit 1; \
+		echo "run go mod tidy"; PAGER= git diff HEAD; exit 1; \
 	fi
 
 .PHONY: verify-gen
