@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Setup Go environment
+        uses: actions/setup-go@v5.0.0
       - name: Run verifications
         run: make verify
       - name: Lint
