@@ -22,11 +22,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
-
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/util"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 )
 
 // IonosCloudClient is a concrete implementation of the Client interface defined in the internal client package, that
@@ -69,7 +67,7 @@ func (c *IonosCloudClient) CreateDataCenter(ctx context.Context, properties sdk.
 	dc := sdk.Datacenter{Properties: &properties}
 	dc, _, err := c.API.DataCentersApi.DatacentersPost(ctx).Datacenter(dc).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &dc, nil
 }
@@ -81,7 +79,7 @@ func (c *IonosCloudClient) GetDataCenter(ctx context.Context, id string) (*sdk.D
 	}
 	dc, _, err := c.API.DataCentersApi.DatacentersFindById(ctx, id).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &dc, nil
 }
@@ -98,7 +96,7 @@ func (c *IonosCloudClient) CreateServer(
 	}
 	s, _, err := c.API.ServersApi.DatacentersServersPost(ctx, dataCenterID).Server(server).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &s, nil
 }
@@ -110,7 +108,7 @@ func (c *IonosCloudClient) ListServers(ctx context.Context, dataCenterID string)
 	}
 	servers, _, err := c.API.ServersApi.DatacentersServersGet(ctx, dataCenterID).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &servers, nil
 }
@@ -125,7 +123,7 @@ func (c *IonosCloudClient) GetServer(ctx context.Context, dataCenterID, serverID
 	}
 	server, _, err := c.API.ServersApi.DatacentersServersFindById(ctx, dataCenterID, serverID).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &server, nil
 }
@@ -140,7 +138,7 @@ func (c *IonosCloudClient) DestroyServer(ctx context.Context, dataCenterID, serv
 	}
 	_, err := c.API.ServersApi.DatacentersServersDelete(ctx, dataCenterID, serverID).Execute()
 	if err != nil {
-		return util.WrapError(err, apiCallErrWrapper)
+		return fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return err
 }
@@ -156,7 +154,7 @@ func (c *IonosCloudClient) CreateLAN(ctx context.Context, dataCenterID string, p
 	}
 	lp, _, err := c.API.LANsApi.DatacentersLansPost(ctx, dataCenterID).Lan(lanPost).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &lp, nil
 }
@@ -174,7 +172,7 @@ func (c *IonosCloudClient) UpdateLAN(
 	l, _, err := c.API.LANsApi.DatacentersLansPatch(ctx, dataCenterID, lanID).
 		Lan(properties).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &l, nil
 }
@@ -190,7 +188,7 @@ func (c *IonosCloudClient) AttachToLAN(ctx context.Context, dataCenterID, lanID 
 	}
 	n, _, err := c.API.LANsApi.DatacentersLansNicsPost(ctx, dataCenterID, lanID).Nic(nic).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &n, nil
 }
@@ -202,7 +200,7 @@ func (c *IonosCloudClient) ListLANs(ctx context.Context, dataCenterID string) (*
 	}
 	lans, _, err := c.API.LANsApi.DatacentersLansGet(ctx, dataCenterID).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &lans, nil
 }
@@ -217,7 +215,7 @@ func (c *IonosCloudClient) GetLAN(ctx context.Context, dataCenterID, lanID strin
 	}
 	lan, _, err := c.API.LANsApi.DatacentersLansFindById(ctx, dataCenterID, lanID).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &lan, nil
 }
@@ -232,7 +230,7 @@ func (c *IonosCloudClient) DestroyLAN(ctx context.Context, dataCenterID, lanID s
 	}
 	_, err := c.API.LANsApi.DatacentersLansDelete(ctx, dataCenterID, lanID).Execute()
 	if err != nil {
-		return util.WrapError(err, apiCallErrWrapper)
+		return fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return nil
 }
@@ -245,7 +243,7 @@ func (c *IonosCloudClient) ListVolumes(ctx context.Context, dataCenterID string,
 	}
 	volumes, _, err := c.API.VolumesApi.DatacentersVolumesGet(ctx, dataCenterID).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &volumes, nil
 }
@@ -261,7 +259,7 @@ func (c *IonosCloudClient) GetVolume(ctx context.Context, dataCenterID, volumeID
 	}
 	volume, _, err := c.API.VolumesApi.DatacentersVolumesFindById(ctx, dataCenterID, volumeID).Execute()
 	if err != nil {
-		return nil, util.WrapError(err, apiCallErrWrapper)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &volume, nil
 }
@@ -276,7 +274,7 @@ func (c *IonosCloudClient) DestroyVolume(ctx context.Context, dataCenterID, volu
 	}
 	_, err := c.API.VolumesApi.DatacentersVolumesDelete(ctx, dataCenterID, volumeID).Execute()
 	if err != nil {
-		return util.WrapError(err, apiCallErrWrapper)
+		return fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return nil
 }

@@ -26,5 +26,5 @@ var (
 )
 
 const (
-	apiCallErrWrapper = "request to Cloud API has failed"
+	apiCallErrWrapper = "request to Cloud API has failed: %w"
 )

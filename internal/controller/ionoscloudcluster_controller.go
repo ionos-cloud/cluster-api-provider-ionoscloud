@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	infrastructurev1alpha1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	ionoscloud "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 )
 
 // IonosCloudClusterReconciler reconciles a IonosCloudCluster object.
