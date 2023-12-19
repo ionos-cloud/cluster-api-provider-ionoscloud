@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package client contains an implementation of the IonosCloudClient interface defined in internal/ionoscloud.
+// Package client contains an implementation of the Client interface defined in internal/ionoscloud.
 package client
 
 import (

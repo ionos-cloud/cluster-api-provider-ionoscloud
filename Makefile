@@ -174,8 +174,7 @@ mocks:
 
 .PHONY: tidy
 tidy: ## Run go mod tidy.
-	go mod tidy -v
-	cd ./tools && go mod tidy -v
+	go mod tidy -v && go -C tools mod tidy -v
 
 .PHONY: verify-tidy
 verify-tidy: tidy ## Verify that the dependencies are tidied.
