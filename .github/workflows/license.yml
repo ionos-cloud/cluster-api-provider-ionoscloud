@@ -6,7 +6,7 @@ jobs:
   license:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4
       - uses: viperproject/check-license-header@v2
         with:
           path: .
