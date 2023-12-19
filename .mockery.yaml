@@ -8,6 +8,6 @@ packages:
     interfaces:
       Client:
         configs:
-          - filename: "mock_{{.InterfaceNameSnake}}.go"
+          - filename: "mock_{{ .InterfaceName | snakecase }}.go"
             dir: "{{.InterfaceDir}}/clienttest"
             outpkg: "client_test"

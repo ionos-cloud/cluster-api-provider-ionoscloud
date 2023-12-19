@@ -35,7 +35,7 @@ type IonosCloudClient struct {
 
 var _ ionoscloud.Client = &IonosCloudClient{}
 
-// NewClient instantiates a usable Client. The client needs the username AND password OR the token to work.
+// NewClient instantiates a usable IonosCloudClient. The client needs the username AND password OR the token to work.
 // Failing to provide both will result in an error.
 func NewClient(username, password, token, apiURL string) (*IonosCloudClient, error) {
 	if err := validate(username, password, token); err != nil {
