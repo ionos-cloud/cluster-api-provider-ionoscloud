@@ -56,26 +56,26 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 lint: ## Run lint.
 	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml
 
-.PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
+.PHONY: lint-fix
+lint-fix: ## Fix linter problems
+	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml --fix
 
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
+test: mocks manifests generate lint-fix vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
 
 .PHONY: build
-build: manifests generate fmt vet ## Build manager binary.
+build: manifests generate lint-fix vet ## Build manager binary.
 	go build -o bin/manager cmd/main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
+run: manifests generate lint-fix vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
@@ -165,3 +165,28 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+
+.PHONY: mocks
+mocks:
+	go run -modfile ./tools/go.mod github.com/vektra/mockery/v2
+
+# CI
+
+.PHONY: tidy
+tidy: ## Run go mod tidy.
+	go mod tidy -v && go -C tools mod tidy -v
+
+.PHONY: verify-tidy
+verify-tidy: tidy ## Verify that the dependencies are tidied.
+	@if !(git diff --quiet HEAD); then \
+		echo "run go mod tidy"; PAGER= git diff HEAD; exit 1; \
+	fi
+
+.PHONY: verify-gen
+verify-gen: manifests generate ## Verify that the generated files are up to date.
+	@if !(git diff --quiet HEAD); then \
+		echo "generated files are out of date"; PAGER= git diff HEAD; exit 1; \
+	fi
+
+.PHONY: verify
+verify: verify-gen verify-tidy ## Run all verifications.

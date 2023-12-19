@@ -1,0 +1,24 @@
+---
+name: Verify
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+# don't waste resources and time on outdated commits
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go environment
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Run verifications
+        run: make verify
