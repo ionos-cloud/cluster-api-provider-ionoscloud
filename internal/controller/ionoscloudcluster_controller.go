@@ -136,7 +136,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(_ context.Context, cluster
 func (r *IonosCloudClusterReconciler) reconcileDelete(_ context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
 	if !clusterScope.Cluster.DeletionTimestamp.IsZero() {
 		clusterScope.Error(errors.New("deletion was requested but owning cluster wasn't deleted"), "unable to delete IonosCloudCluster")
-		// No need to reconcile again until the owning cluster was deleted. If
+		// No need to reconcile again until the owning cluster was deleted.
 		return ctrl.Result{}, nil
 	}
 
