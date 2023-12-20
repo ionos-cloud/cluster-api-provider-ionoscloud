@@ -123,7 +123,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 //nolint:unparam
 func (r *IonosCloudClusterReconciler) reconcileNormal(_ context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
-	// TODO setup cloud resources which are required before we create the machines
+	// TODO(lubedacht): setup cloud resources which are required before we create the machines
 	controllerutil.AddFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
 
 	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
@@ -140,10 +140,10 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(_ context.Context, cluster
 		return ctrl.Result{}, nil
 	}
 
-	// TODO check if there are any more machine CRs existing.
+	// TODO(lubedacht): check if there are any more machine CRs existing.
 	// If there are requeue with an offset.
 
-	// TODO delete remaining cloud resources.
+	// TODO(lubedacht): delete remaining cloud resources.
 
 	return ctrl.Result{}, nil
 }
