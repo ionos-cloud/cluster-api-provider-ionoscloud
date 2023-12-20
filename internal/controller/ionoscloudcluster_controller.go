@@ -106,7 +106,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	defer func() {
 		if err := clusterScope.Finalize(); err != nil {
 			if retErr != nil {
-				retErr = fmt.Errorf("%w %w", err, retErr)
+				retErr = errors.Join(err, retErr)
 				return
 			}
 
