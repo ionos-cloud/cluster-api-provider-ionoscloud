@@ -14,7 +14,20 @@ spec:
     singular: ionoscloudcluster
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Cluster
+      jsonPath: .metadata.labels['cluster\.x-k8s\.io/cluster-name']
+      name: Cluster
+      type: string
+    - description: Cluster infrastructure is ready
+      jsonPath: .status.ready
+      name: Ready
+      type: string
+    - description: API Endpoint
+      jsonPath: .spec.controlPlaneEndpoint
+      name: Endpoint
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: IonosCloudCluster is the Schema for the ionoscloudclusters API.
