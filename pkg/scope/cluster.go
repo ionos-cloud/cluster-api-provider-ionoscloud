@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/ionos"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 )
 
 // ClusterScope defines the basic context for an actuator to operate upon.
@@ -43,7 +43,7 @@ type ClusterScope struct {
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
 
-	IonosClient ionos.Client
+	IonosClient ionoscloud.Client
 }
 
 // ClusterScopeParams are the parameters, which are used to create a cluster scope.
@@ -52,7 +52,7 @@ type ClusterScopeParams struct {
 	Logger       *logr.Logger
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
-	IonosClient  ionos.Client
+	IonosClient  ionoscloud.Client
 }
 
 // NewClusterScope creates a new scope for the supplied parameters.
