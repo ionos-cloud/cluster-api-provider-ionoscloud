@@ -102,6 +102,12 @@ func (c *ClusterScope) PatchObject() error {
 	conditions.SetSummary(c.IonosCluster,
 		conditions.WithConditions(infrav1.IonosCloudClusterReady))
 
+	// NOTE(piepmatz): We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
+	//  aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation
+	//  would cause the patch to be aborted as well.
+
+	// TODO(piepmatz): We should use a context with a timeout here to avoid waiting indefinitely. Otherwise, this could
+	//  become a DoS problem.
 	return c.patchHelper.Patch(context.TODO(), c.IonosCluster)
 }
 
