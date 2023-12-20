@@ -22,10 +22,7 @@ import (
 	"flag"
 	"os"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
+	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -36,7 +33,7 @@ import (
 
 	infrastructurev1alpha1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/controller"
-	//+kubebuilder:scaffold:imports
+	icc "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
 )
 
 var (
@@ -87,22 +84,31 @@ func main() {
 		// LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		setupLog.Error(err, "unable to create manager")
+		os.Exit(1)
+	}
+	ionosCloudClient, err := icc.NewClient(
+		os.Getenv(ionoscloud.IonosUsernameEnvVar), os.Getenv(ionoscloud.IonosPasswordEnvVar),
+		os.Getenv(ionoscloud.IonosTokenEnvVar), os.Getenv(ionoscloud.IonosApiUrlEnvVar))
+	if err != nil {
+		setupLog.Error(err, "could not create IONOS client")
 		os.Exit(1)
 	}
 
 	ctx := ctrl.SetupSignalHandler()
 
 	if err = (&controller.IonosCloudClusterReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		IonosCloudClient: ionosCloudClient,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudCluster")
 		os.Exit(1)
 	}
 	if err = (&controller.IonosCloudMachineReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		IonosCloudClient: ionosCloudClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
 		os.Exit(1)

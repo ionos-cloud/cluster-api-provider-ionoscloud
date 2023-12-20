@@ -24,7 +24,7 @@ import (
 
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
 type IonosCloudMachineSpec struct {
-	// ProviderID is the ionos provider ID
+	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
 	// +optional
 	ProviderID string `json:"providerId,omitempty"`
