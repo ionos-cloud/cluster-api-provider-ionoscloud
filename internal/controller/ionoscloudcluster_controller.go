@@ -59,7 +59,7 @@ type IonosCloudClusterReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.0/pkg/reconcile
 func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, retErr error) {
-	logger := log.FromContext(ctx)
+	logger := ctrl.LoggerFrom(ctx)
 
 	// TODO(user): your logic here
 	ionosCloudCluster := &infrav1.IonosCloudCluster{}
@@ -78,7 +78,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	if cluster == nil {
 		logger.Info("Waiting for cluster controller to set OwnerRef on IonosCloudCluster")
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
 	logger = logger.WithValues("cluster", klog.KObj(cluster))
