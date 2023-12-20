@@ -24,9 +24,6 @@ import (
 	"errors"
 	"fmt"
 
-	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/scope"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
@@ -40,6 +37,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/scope"
 )
 
 // IonosCloudClusterReconciler reconciles a IonosCloudCluster object.

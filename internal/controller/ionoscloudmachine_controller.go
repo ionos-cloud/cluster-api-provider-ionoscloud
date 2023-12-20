@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrastructurev1alpha1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 )
 
@@ -52,7 +52,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	_ = ctrl.LoggerFrom(ctx)
 
 	// TODO(user): your logic here
-	ionosCloudMachine := &infrastructurev1alpha1.IonosCloudMachine{}
+	ionosCloudMachine := &infrav1.IonosCloudMachine{}
 	if err := r.Client.Get(ctx, req.NamespacedName, ionosCloudMachine); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -65,6 +65,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 // SetupWithManager sets up the controller with the Manager.
 func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1alpha1.IonosCloudMachine{}).
+		For(&infrav1.IonosCloudMachine{}).
 		Complete(r)
 }
