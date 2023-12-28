@@ -69,8 +69,8 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	if params.IonosCluster == nil {
 		return nil, errors.New("IonosCluster is required when creating a ClusterScope")
 	}
-	if params.Client == nil {
-		return nil, errors.New("IonosCluster is required when creating a ClusterScope")
+	if params.IonosClient == nil {
+		return nil, errors.New("IonosClient is required when creating a ClusterScope")
 	}
 
 	if params.Logger == nil {
