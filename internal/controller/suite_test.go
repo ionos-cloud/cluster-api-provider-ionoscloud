@@ -44,6 +44,9 @@ var (
 )
 
 func TestControllers(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping as only short tests should run")
+	}
 	RegisterFailHandler(Fail)
 
 	RunSpecs(t, "Controller Suite")

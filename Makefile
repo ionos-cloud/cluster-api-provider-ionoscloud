@@ -22,6 +22,8 @@ CONTAINER_TOOL ?= docker
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
+override COVERAGE = coverage.out
+
 .PHONY: all
 all: build
 
@@ -52,6 +54,10 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
+.PHONY: cover
+cover: ## Print the test coverage.
+	go tool cover -func=$(COVERAGE)
+
 .PHONY: lint
 lint: ## Run lint.
 	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml
@@ -65,8 +71,34 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: mocks manifests generate lint-fix vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
+test: unit-test lint-fix vet integration-test ## Run tests.
+
+.PHONY: unit-test
+unit-test: generate mocks ## Run unit tests.
+	CGO_ENABLED=1 go test ./... -v -race -shuffle on -coverprofile $(COVERAGE).tmp -timeout=5m -short
+	@grep -vE 'generated|mock' $(COVERAGE).tmp > $(COVERAGE)
+	@rm $(COVERAGE).tmp
+
+.PHONY: integration-test
+integration-test: manifests api-integration-test ## Run integration tests.
+
+.PHONY: api-integration-test
+api-integration-test: envtest ## Run API integration tests.
+	cd api && $(call run-ginkgo,v1alpha1)
+
+.PHONY: controller-integration-test
+controller-integration-test: envtest ## Run controller integration tests.
+	$(call run-ginkgo,controllers)
+
+define run-ginkgo
+KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" \
+	CGO_ENABLED=1 go run github.com/onsi/ginkgo/v2/ginkgo \
+	--randomize-all --randomize-suites \
+	--fail-fast --fail-on-pending \
+	-v --trace --show-node-events \
+	--race \
+	$(1)
+endef
 
 ##@ Build
 
