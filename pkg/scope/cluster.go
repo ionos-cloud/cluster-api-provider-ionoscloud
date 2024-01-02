@@ -118,6 +118,9 @@ func (c *ClusterScope) patchObject() error {
 // It also implements a retry mechanism to increase the chance of success
 // in case the patch operation was not successful.
 func (c *ClusterScope) Finalize() error {
+	// NOTE(lubedacht) retry is only a way to reduce the failure chance,
+	// but in general, the reconciliation logic must be resilient
+	// to handle an outdated resource from that API server.
 	shouldRetry := func(error) bool { return true }
 	return retry.OnError(
 		retry.DefaultBackoff,
