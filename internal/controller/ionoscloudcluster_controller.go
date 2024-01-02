@@ -108,7 +108,6 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 				retErr = errors.Join(err, retErr)
 				return
 			}
-
 			retErr = err
 		}
 	}()

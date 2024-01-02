@@ -21,6 +21,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
+	"k8s.io/client-go/util/retry"
 
 	"github.com/go-logr/logr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -95,9 +98,9 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	return clusterScope, nil
 }
 
-// PatchObject will apply all changes from the IonosCloudCluster.
+// patchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
-func (c *ClusterScope) PatchObject() error {
+func (c *ClusterScope) patchObject() error {
 	// always set the ready condition
 	conditions.SetSummary(c.IonosCluster,
 		conditions.WithConditions(infrav1.IonosCloudClusterReady))
@@ -106,12 +109,18 @@ func (c *ClusterScope) PatchObject() error {
 	//  aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation
 	//  would cause the patch to be aborted as well.
 
-	// TODO(piepmatz): We should use a context with a timeout here to avoid waiting indefinitely. Otherwise, this could
-	//  become a DoS problem.
-	return c.patchHelper.Patch(context.TODO(), c.IonosCluster)
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster)
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudCluster.
+// It also implements a retry mechanism to increase the chance of success
+// in case the patch operation was not successful.
 func (c *ClusterScope) Finalize() error {
-	return c.PatchObject()
+	shouldRetry := func(error) bool { return true }
+	return retry.OnError(
+		retry.DefaultBackoff,
+		shouldRetry,
+		c.patchObject)
 }
