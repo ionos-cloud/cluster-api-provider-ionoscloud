@@ -34,10 +34,98 @@ spec:
           spec:
             description: IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
             properties:
+              cpuFamily:
+                description: CPUFamily defines the CPU architecture, which will be
+                  used for this enterprise server. The not all CPU architectures are
+                  available in all datacenters.
+                example: AMD_OPTERON
+                type: string
+              datacenterID:
+                description: DatacenterID is the ID of the datacenter, where the machine
+                  should be created.
+                type: string
+                x-kubernetes-validations:
+                - message: DatacenterID is immutable
+                  rule: self == oldSelf
+              disk:
+                description: Disk defines the boot volume of the machine.
+                properties:
+                  SSHKeys:
+                    description: SSHKeys contains a set of public ssh keys which will
+                      be added to the list of authorized keys.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  availabilityZone:
+                    default: AUTO
+                    description: AvailabilityZone is the availabilityZone where the
+                      volume will be created.
+                    type: string
+                  diskType:
+                    default: HDD
+                    description: DiskType defines the type of the hard drive.
+                    enum:
+                    - HDD
+                    - SSD
+                    type: string
+                  name:
+                    description: Name is the name of the volume
+                    type: string
+                  sizeGB:
+                    description: SizeGB defines the size of the volume in GB
+                    minimum: 5
+                    type: integer
+                required:
+                - sizeGB
+                type: object
+              memoryMiB:
+                default: 1024
+                description: MemoryMiB is the memory size for the enterprise server
+                  in MB. Size must be specified in multiples of 256 MB with a minimum
+                  of 1024 MB which is required as we are using hot-pluggable RAM by
+                  default.
+                format: int32
+                minimum: 1024
+                multipleOf: 256
+                type: integer
+              network:
+                description: Network defines the network configuration for the enterprise
+                  server.
+                properties:
+                  ips:
+                    description: IPs is an optional set of IP addresses, which have
+                      been reserved in the corresponding datacenter.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  useDhcp:
+                    default: true
+                    description: UseDHCP sets whether dhcp should be used or not.
+                      NOTE(lubedacht) currently we do not support private clusters
+                      therefore dhcp must be set to true.
+                    type: boolean
+                type: object
+              numCores:
+                default: 1
+                description: Cores defines the total number of cores for the enterprise
+                  server.
+                format: int32
+                minimum: 1
+                type: integer
               providerId:
                 description: ProviderID is the IONOS Cloud provider ID will be in
                   the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                 type: string
+              serverID:
+                description: ServerID is the unique identifier for a server in the
+                  IONOS Cloud context. The value will be set, once the server was
+                  created.
+                type: string
+            required:
+            - cpuFamily
+            - datacenterID
             type: object
           status:
             description: IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
@@ -87,6 +175,33 @@ spec:
                   - type
                   type: object
                 type: array
+              currentRequest:
+                description: CurrentRequest shows the current provisioning request
+                  for any cloud resource, that is being created.
+                properties:
+                  failureMessage:
+                    description: Message is the request message, which can also contain
+                      error information.
+                    type: string
+                  method:
+                    description: Method is the request method
+                    type: string
+                  requestPath:
+                    description: RequestPath is the sub path for the request URL
+                    type: string
+                  state:
+                    description: RequestStatus is the status of the request in the
+                      queue.
+                    enum:
+                    - QUEUED
+                    - RUNNING
+                    - DONE
+                    - FAILED
+                    type: string
+                required:
+                - method
+                - requestPath
+                type: object
               failureMessage:
                 description: "FailureMessage will be set in the event that there is
                   a terminal problem reconciling the Machine and will contain a more
