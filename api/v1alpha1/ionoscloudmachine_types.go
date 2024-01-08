@@ -185,10 +185,6 @@ type IonosCloudMachineStatus struct {
 	// Conditions defines current service state of the IonosCloudMachine.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
-
-	// CurrentRequest shows the current provisioning request for any
-	// cloud resource, that is being created.
-	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
 }
 
 //+kubebuilder:object:root=true

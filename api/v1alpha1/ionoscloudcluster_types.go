@@ -54,7 +54,11 @@ type IonosCloudClusterStatus struct {
 	// Conditions defines current service state of the IonosCloudCluster.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	PendingRequests PendingRequests `json:"PendingRequests,omitEmpty"`
 }
+
+type PendingRequests map[string]*ProvisioningRequest
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
