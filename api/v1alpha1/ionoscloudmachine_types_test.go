@@ -99,8 +99,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		It("Should fail when providing duplicate ip address", func() {
 			m := defaultMachine()
 
-			m.Spec.Network.IPs = append(m.Spec.Network.IPs, "10.0.0.0", "10.0.0.1", "10.0.0.1")
-			Expect(k8sClient.Create(context.Background(), m)).To(MatchError(ContainSubstring("Duplicate value: \"10.0.0.1\"")))
+			m.Spec.Network.IPs = append(m.Spec.Network.IPs, "192.0.2.0", "192.0.2.1", "192.0.2.1")
+			Expect(k8sClient.Create(context.Background(), m)).To(MatchError(ContainSubstring("Duplicate value: \"192.0.2.1\"")))
 		})
 	})
 })
