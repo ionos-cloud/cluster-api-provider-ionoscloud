@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/go-logr/logr v1.3.0
-	github.com/ionos-cloud/sdk-go/v6 v6.1.10
+	github.com/ionos-cloud/sdk-go/v6 v6.1.11
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
 	github.com/stretchr/testify v1.8.4
