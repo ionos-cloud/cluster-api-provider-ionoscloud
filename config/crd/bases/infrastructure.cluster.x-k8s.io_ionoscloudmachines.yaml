@@ -177,7 +177,7 @@ spec:
                 type: array
               currentRequest:
                 description: CurrentRequest shows the current provisioning request
-                  for any cloud resource, that is being created.
+                  for any cloud resource, that is being provisioned.
                 properties:
                   failureMessage:
                     description: Message is the request message, which can also contain
