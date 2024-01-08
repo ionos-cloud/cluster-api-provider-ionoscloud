@@ -42,13 +42,13 @@ type AvailabilityZone string
 
 const (
 	// AvailabilityZoneAuto selected an automatic availability zone.
-	AvailabilityZoneAuto = "AUTO"
+	AvailabilityZoneAuto AvailabilityZone = "AUTO"
 	// AvailabilityZoneOne zone 1.
-	AvailabilityZoneOne = "ZONE_1"
+	AvailabilityZoneOne AvailabilityZone = "ZONE_1"
 	// AvailabilityZoneTwo zone 2.
-	AvailabilityZoneTwo = "ZONE_2"
+	AvailabilityZoneTwo AvailabilityZone = "ZONE_2"
 	// AvailabilityZoneThree zone 3.
-	AvailabilityZoneThree = "ZONE_3"
+	AvailabilityZoneThree AvailabilityZone = "ZONE_3"
 )
 
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
