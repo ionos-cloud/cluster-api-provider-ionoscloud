@@ -23,7 +23,6 @@ import (
 	"net/http"
 
 	"github.com/go-logr/logr"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/scope"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,6 +37,7 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/scope"
 )
 
 // IonosCloudMachineReconciler reconciles a IonosCloudMachine object.
