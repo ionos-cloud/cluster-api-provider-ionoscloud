@@ -187,7 +187,7 @@ type IonosCloudMachineStatus struct {
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
 	// CurrentRequest shows the current provisioning request for any
-	// cloud resource, that is being created.
+	// cloud resource, that is being provisioned.
 	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
 }
 
