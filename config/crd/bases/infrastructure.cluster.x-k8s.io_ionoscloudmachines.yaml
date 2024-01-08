@@ -175,33 +175,6 @@ spec:
                   - type
                   type: object
                 type: array
-              currentRequest:
-                description: CurrentRequest shows the current provisioning request
-                  for any cloud resource, that is being created.
-                properties:
-                  failureMessage:
-                    description: Message is the request message, which can also contain
-                      error information.
-                    type: string
-                  method:
-                    description: Method is the request method
-                    type: string
-                  requestPath:
-                    description: RequestPath is the sub path for the request URL
-                    type: string
-                  state:
-                    description: RequestStatus is the status of the request in the
-                      queue.
-                    enum:
-                    - QUEUED
-                    - RUNNING
-                    - DONE
-                    - FAILED
-                    type: string
-                required:
-                - method
-                - requestPath
-                type: object
               failureMessage:
                 description: "FailureMessage will be set in the event that there is
                   a terminal problem reconciling the Machine and will contain a more
