@@ -61,4 +61,6 @@ type Client interface {
 	GetVolume(ctx context.Context, dataCenterID, volumeID string) (*ionoscloud.Volume, error)
 	// DestroyVolume deletes the volume that matches volumeID in the specified data center.
 	DestroyVolume(ctx context.Context, dataCenterID, volumeID string) error
+	// WaitForRequest waits for the completion of the provided request, return an error if it fails.
+	WaitForRequest(ctx context.Context, requestURL string) error
 }

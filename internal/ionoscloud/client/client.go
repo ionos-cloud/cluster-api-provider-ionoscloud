@@ -282,6 +282,7 @@ func (c *IonosCloudClient) DestroyVolume(ctx context.Context, dataCenterID, volu
 	return nil
 }
 
+// CheckRequestStatus returns the status of a request and an error if checking for it fails.
 func (c *IonosCloudClient) CheckRequestStatus(ctx context.Context, requestURL string) (*sdk.RequestStatus, error) {
 	if requestURL == "" {
 		return nil, errRequestURLIsEmpty
@@ -293,6 +294,7 @@ func (c *IonosCloudClient) CheckRequestStatus(ctx context.Context, requestURL st
 	return requestStatus, nil
 }
 
+// WaitForRequest waits for the completion of the provided request, return an error if it fails.
 func (c *IonosCloudClient) WaitForRequest(ctx context.Context, requestURL string) error {
 	if requestURL == "" {
 		return errRequestURLIsEmpty

@@ -20,22 +20,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/go-logr/logr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/scope"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
-	"k8s.io/klog/v2"
-	"k8s.io/utils/pointer"
-	"net/http"
-	"sigs.k8s.io/cluster-api/util/annotations"
-
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
+	"k8s.io/utils/pointer"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/annotations"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
@@ -88,7 +87,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
 		logger.Info("machine is missing cluster label or cluster does not exist")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, err
 	}
 
 	if annotations.IsPaused(cluster, ionosCloudMachine) {
@@ -122,11 +121,11 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	//// Always close the scope when exiting this function, so we can persist any ProxmoxMachine changes.
-	//defer func() {
+	// defer func() {
 	//	if err := machineScope.Close(); err != nil && reterr == nil {
 	//		reterr = err
 	//	}
-	//}()
+	// }()
 
 	if !ionosCloudMachine.ObjectMeta.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, machineScope)

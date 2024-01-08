@@ -21,14 +21,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/go-logr/logr"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 )
 
+// MachineScope defines a basic context for primary use in IonosCloudMachineReconciler.
 type MachineScope struct {
 	*logr.Logger
 
@@ -38,18 +41,20 @@ type MachineScope struct {
 	Machine     *clusterv1.Machine
 
 	ClusterScope      *ClusterScope
-	IonosCloudMachine *v1alpha1.IonosCloudMachine
+	IonosCloudMachine *infrav1.IonosCloudMachine
 }
 
+// MachineScopeParams is a struct that contains the params used to create a new MachineScope through NewMachineScope.
 type MachineScopeParams struct {
 	Client            client.Client
 	Logger            *logr.Logger
 	Cluster           *clusterv1.Cluster
 	Machine           *clusterv1.Machine
 	InfraCluster      *ClusterScope
-	IonosCloudMachine *v1alpha1.IonosCloudMachine
+	IonosCloudMachine *infrav1.IonosCloudMachine
 }
 
+// NewMachineScope creates a new MachineScope using the provided params.
 func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	if params.Client == nil {
 		return nil, errors.New("machine scope params lack a client")
