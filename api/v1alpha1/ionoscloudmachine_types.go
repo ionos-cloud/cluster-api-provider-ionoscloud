@@ -42,13 +42,13 @@ type AvailabilityZone string
 
 const (
 	// AvailabilityZoneAuto selected an automatic availability zone.
-	AvailabilityZoneAuto = "AUTO"
+	AvailabilityZoneAuto AvailabilityZone = "AUTO"
 	// AvailabilityZoneOne zone 1.
-	AvailabilityZoneOne = "ZONE_1"
+	AvailabilityZoneOne AvailabilityZone = "ZONE_1"
 	// AvailabilityZoneTwo zone 2.
-	AvailabilityZoneTwo = "ZONE_2"
+	AvailabilityZoneTwo AvailabilityZone = "ZONE_2"
 	// AvailabilityZoneThree zone 3.
-	AvailabilityZoneThree = "ZONE_3"
+	AvailabilityZoneThree AvailabilityZone = "ZONE_3"
 )
 
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
@@ -185,6 +185,10 @@ type IonosCloudMachineStatus struct {
 	// Conditions defines current service state of the IonosCloudMachine.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	// CurrentRequest shows the current provisioning request for any
+	// cloud resource, that is being provisioned.
+	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
 }
 
 //+kubebuilder:object:root=true

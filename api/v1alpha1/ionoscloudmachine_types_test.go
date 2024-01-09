@@ -96,10 +96,11 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(k8sClient.Create(context.Background(), m)).To(MatchError(ContainSubstring("should be greater than or equal to 5")))
 		})
 
-		It("Should make sure to have unique ip addresses", func() {
+		It("Should fail when providing duplicate ip address", func() {
 			m := defaultMachine()
 
-			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			m.Spec.Network.IPs = append(m.Spec.Network.IPs, "192.0.2.0", "192.0.2.1", "192.0.2.1")
+			Expect(k8sClient.Create(context.Background(), m)).To(MatchError(ContainSubstring("Duplicate value: \"192.0.2.1\"")))
 		})
 	})
 })
