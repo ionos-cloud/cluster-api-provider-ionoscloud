@@ -1,5 +1,5 @@
 /*
-Copyright 2023 IONOS Cloud.
+Copyright 2023-2024 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -143,20 +143,23 @@ func (c *IonosCloudClient) DestroyServer(ctx context.Context, dataCenterID, serv
 	return err
 }
 
-// CreateLAN creates a new LAN with the provided properties in the specified data center.
+// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request ID.
 func (c *IonosCloudClient) CreateLAN(ctx context.Context, dataCenterID string, properties sdk.LanPropertiesPost,
-) (*sdk.LanPost, error) {
+) (string, error) {
 	if dataCenterID == "" {
-		return nil, errDataCenterIDIsEmpty
+		return "", errDataCenterIDIsEmpty
 	}
 	lanPost := sdk.LanPost{
 		Properties: &properties,
 	}
-	lp, _, err := c.API.LANsApi.DatacentersLansPost(ctx, dataCenterID).Lan(lanPost).Execute()
+	_, req, err := c.API.LANsApi.DatacentersLansPost(ctx, dataCenterID).Lan(lanPost).Execute()
 	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
+		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	return &lp, nil
+	if location := req.Header.Get("Location"); location != "" {
+		return location, nil
+	}
+	return "", errors.New(apiNoLocationErrWrapper)
 }
 
 // UpdateLAN updates a LAN with the provided properties in the specified data center.
@@ -221,18 +224,18 @@ func (c *IonosCloudClient) GetLAN(ctx context.Context, dataCenterID, lanID strin
 }
 
 // DestroyLAN deletes the LAN that matches the provided lanID in the specified data center.
-func (c *IonosCloudClient) DestroyLAN(ctx context.Context, dataCenterID, lanID string) error {
+func (c *IonosCloudClient) DestroyLAN(ctx context.Context, dataCenterID, lanID string) (string, error) {
 	if dataCenterID == "" {
-		return errDataCenterIDIsEmpty
+		return "", errDataCenterIDIsEmpty
 	}
 	if lanID == "" {
-		return errLanIDIsEmpty
+		return "", errLanIDIsEmpty
 	}
-	_, err := c.API.LANsApi.DatacentersLansDelete(ctx, dataCenterID, lanID).Execute()
+	req, err := c.API.LANsApi.DatacentersLansDelete(ctx, dataCenterID, lanID).Execute()
 	if err != nil {
-		return fmt.Errorf(apiCallErrWrapper, err)
+		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	return nil
+	return req.Header.Get("Location"), nil
 }
 
 // ListVolumes returns a list of volumes in the specified data center.
@@ -273,6 +276,30 @@ func (c *IonosCloudClient) DestroyVolume(ctx context.Context, dataCenterID, volu
 		return errVolumeIDIsEmpty
 	}
 	_, err := c.API.VolumesApi.DatacentersVolumesDelete(ctx, dataCenterID, volumeID).Execute()
+	if err != nil {
+		return fmt.Errorf(apiCallErrWrapper, err)
+	}
+	return nil
+}
+
+// CheckRequestStatus returns the status of a request and an error if checking for it fails.
+func (c *IonosCloudClient) CheckRequestStatus(ctx context.Context, requestURL string) (*sdk.RequestStatus, error) {
+	if requestURL == "" {
+		return nil, errRequestURLIsEmpty
+	}
+	requestStatus, _, err := c.API.GetRequestStatus(ctx, requestURL)
+	if err != nil {
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
+	}
+	return requestStatus, nil
+}
+
+// WaitForRequest waits for the completion of the provided request, return an error if it fails.
+func (c *IonosCloudClient) WaitForRequest(ctx context.Context, requestURL string) error {
+	if requestURL == "" {
+		return errRequestURLIsEmpty
+	}
+	_, err := c.API.WaitForRequest(ctx, requestURL)
 	if err != nil {
 		return fmt.Errorf(apiCallErrWrapper, err)
 	}

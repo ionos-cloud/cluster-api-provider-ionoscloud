@@ -54,6 +54,10 @@ type IonosCloudClusterStatus struct {
 	// Conditions defines current service state of the IonosCloudCluster.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	// PendingRequests is a map that maps data centers IDs with a pending provisioning request made during reconciliation.
+	// +optional
+	PendingRequests map[string]*ProvisioningRequest `json:"pendingRequests,omitempty"`
 }
 
 //+kubebuilder:object:root=true

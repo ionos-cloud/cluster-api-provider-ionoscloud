@@ -1,5 +1,5 @@
 /*
-Copyright 2023 IONOS Cloud.
+Copyright 2023-2024 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@ var (
 	errServerIDIsEmpty     = errors.New("error parsing server ID: value cannot be empty")
 	errLanIDIsEmpty        = errors.New("error parsing lan ID: value cannot be empty")
 	errVolumeIDIsEmpty     = errors.New("error parsing volume ID: value cannot be empty")
+	errRequestURLIsEmpty   = errors.New("a request url is necessary for the operation")
 )
 
 const (
-	apiCallErrWrapper = "request to Cloud API has failed: %w"
+	apiCallErrWrapper       = "request to Cloud API has failed: %w"
+	apiNoLocationErrWrapper = "request to Cloud API did not return the request url"
 )

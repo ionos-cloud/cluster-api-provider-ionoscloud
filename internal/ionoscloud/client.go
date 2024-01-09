@@ -1,5 +1,5 @@
 /*
-Copyright 2023 IONOS Cloud.
+Copyright 2023-2024 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,8 +40,7 @@ type Client interface {
 	// DestroyServer deletes the server that matches the provided serverID in the specified data center.
 	DestroyServer(ctx context.Context, dataCenterID, serverID string) error
 	// CreateLAN creates a new LAN with the provided properties in the specified data center.
-	CreateLAN(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost) (
-		*ionoscloud.LanPost, error)
+	CreateLAN(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost) (string, error)
 	// UpdateLAN updates a LAN with the provided properties in the specified data center.
 	UpdateLAN(ctx context.Context, dataCenterID string, lanID string, properties ionoscloud.LanProperties) (
 		*ionoscloud.Lan, error)
@@ -53,11 +52,15 @@ type Client interface {
 	// GetLAN returns the LAN that matches lanID in the specified data center.
 	GetLAN(ctx context.Context, dataCenterID, lanID string) (*ionoscloud.Lan, error)
 	// DestroyLAN deletes the LAN that matches the provided lanID in the specified data center.
-	DestroyLAN(ctx context.Context, dataCenterID, lanID string) error
+	DestroyLAN(ctx context.Context, dataCenterID, lanID string) (string, error)
+	// CheckRequestStatus checks the status of a provided request identified by requestID
+	CheckRequestStatus(ctx context.Context, requestID string) (*ionoscloud.RequestStatus, error)
 	// ListVolumes returns a list of volumes in a specified data center.
 	ListVolumes(ctx context.Context, dataCenterID string) (*ionoscloud.Volumes, error)
 	// GetVolume returns the volume that matches volumeID in the specified data center.
 	GetVolume(ctx context.Context, dataCenterID, volumeID string) (*ionoscloud.Volume, error)
 	// DestroyVolume deletes the volume that matches volumeID in the specified data center.
 	DestroyVolume(ctx context.Context, dataCenterID, volumeID string) error
+	// WaitForRequest waits for the completion of the provided request, return an error if it fails.
+	WaitForRequest(ctx context.Context, requestURL string) error
 }
