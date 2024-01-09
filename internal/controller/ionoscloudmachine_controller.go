@@ -37,7 +37,7 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/pkg/scope"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 // IonosCloudMachineReconciler reconciles a IonosCloudMachine object.
