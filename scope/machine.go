@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/client-go/util/retry"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/go-logr/logr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -87,4 +89,34 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		ClusterScope:      params.InfraCluster,
 		IonosCloudMachine: params.IonosCloudMachine,
 	}, nil
+}
+
+func (m *MachineScope) HasFailed() bool {
+	status := m.IonosCloudMachine.Status
+	return status.FailureReason != nil || status.FailureMessage != nil
+}
+
+func (m *MachineScope) PatchObject() error {
+	conditions.SetSummary(m.IonosCloudMachine,
+		conditions.WithConditions(
+			infrav1.MachineProvisionedCondition))
+
+	return m.patchHelper.Patch(
+		context.TODO(),
+		m.IonosCloudMachine,
+		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
+			clusterv1.ReadyCondition,
+			infrav1.MachineProvisionedCondition,
+		}})
+}
+
+func (m *MachineScope) Finalize() error {
+	// NOTE(lubedacht) retry is only a way to reduce the failure chance,
+	// but in general, the reconciliation logic must be resilient
+	// to handle an outdated resource from that API server.
+	shouldRetry := func(error) bool { return true }
+	return retry.OnError(
+		retry.DefaultBackoff,
+		shouldRetry,
+		m.PatchObject)
 }

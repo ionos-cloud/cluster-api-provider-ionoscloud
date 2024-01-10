@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package service offers infra resources services for IONOS Cloud machine reconciliation.
-package service
+// Package cloud offers infra resources services for IONOS Cloud machine reconciliation.
+package cloud
 
 import (
 	"context"
@@ -25,24 +25,24 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-// MachineService offers infra resources services for IONOS Cloud machine reconciliation.
-type MachineService struct {
+// Service offers infra resources services for IONOS Cloud machine reconciliation.
+type Service struct {
 	scope *scope.MachineScope
 	ctx   context.Context
 }
 
-// NewMachineService returns a new MachineService.
-func NewMachineService(ctx context.Context, s *scope.MachineScope) (*MachineService, error) {
+// NewService returns a new Service.
+func NewService(ctx context.Context, s *scope.MachineScope) (*Service, error) {
 	if s == nil {
-		return nil, errors.New("machine service cannot use a nil machine scope")
+		return nil, errors.New("cloud service cannot use a nil machine scope")
 	}
-	return &MachineService{
+	return &Service{
 		scope: s,
 		ctx:   ctx,
 	}, nil
 }
 
 // API is a shortcut for the IONOS Cloud Client.
-func (s *MachineService) API() ionoscloud.Client {
+func (s *Service) API() ionoscloud.Client {
 	return s.scope.ClusterScope.IonosClient
 }

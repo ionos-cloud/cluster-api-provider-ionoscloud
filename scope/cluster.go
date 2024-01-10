@@ -98,9 +98,9 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	return clusterScope, nil
 }
 
-// patchObject will apply all changes from the IonosCloudCluster.
+// PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
-func (c *ClusterScope) patchObject() error {
+func (c *ClusterScope) PatchObject() error {
 	// always set the ready condition
 	conditions.SetSummary(c.IonosCluster,
 		conditions.WithConditions(infrav1.IonosCloudClusterReady))
@@ -125,5 +125,5 @@ func (c *ClusterScope) Finalize() error {
 	return retry.OnError(
 		retry.DefaultBackoff,
 		shouldRetry,
-		c.patchObject)
+		c.PatchObject)
 }

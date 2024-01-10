@@ -304,11 +304,13 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 	if method == "" {
 		return nil, errors.New("method needs to be provided")
 	}
-	yesterday := time.Now().Add(-24 * time.Hour).Format(time.DateTime)
+
+	lookback := time.Now().Add(-24 * time.Hour).Format(time.DateTime)
 	reqs, _, err := c.API.RequestsApi.RequestsGet(ctx).
+		Depth(3).
 		FilterMethod(method).
 		FilterUrl(path).
-		FilterCreatedAfter(yesterday).
+		FilterCreatedAfter(lookback).
 		Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get requests: %w", err)
@@ -318,6 +320,7 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 		// We invert the value to sort in descending order
 		return -a.Metadata.CreatedDate.Compare(b.Metadata.CreatedDate.Time)
 	})
+
 	return &items, nil
 }
 

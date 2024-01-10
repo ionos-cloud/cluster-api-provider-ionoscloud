@@ -104,11 +104,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Make sure to persist the changes to the cluster before exiting the function.
 	defer func() {
 		if err := clusterScope.Finalize(); err != nil {
-			if retErr != nil {
-				retErr = errors.Join(err, retErr)
-				return
-			}
-			retErr = err
+			retErr = errors.Join(err, retErr)
 		}
 	}()
 
@@ -121,9 +117,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 //nolint:unparam
 func (r *IonosCloudClusterReconciler) reconcileNormal(_ context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
-	// TODO(lubedacht): setup cloud resources which are required before we create the machines
 	controllerutil.AddFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
-
 	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
 	clusterScope.IonosCluster.Status.Ready = true
 

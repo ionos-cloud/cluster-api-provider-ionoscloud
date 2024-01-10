@@ -25,6 +25,24 @@ import (
 const (
 	// IonosCloudMachineType is the named type for the API object.
 	IonosCloudMachineType = "IonosCloudMachine"
+
+	// MachineFinalizer is the finalizer for the IonosCloudMachine resources.
+	// It will prevent the deletion of the resource until it was removed by the controller
+	// to ensure that related cloud resources will be deleted before the IonosCloudMachine resource
+	// will be removed from the API server.
+	MachineFinalizer = "ionoscloudmachine.infrastructure.cluster.x-k8s.io"
+
+	// MachineProvisionedCondition documents the status of the provisioning of a IonosCloudMachine and
+	// the underlying enterprise VM.
+	MachineProvisionedCondition clusterv1.ConditionType = "MachineProvisioned"
+
+	// WaitingForClusterInfrastructureReason (Severity=Info) indicates, that the IonosCloudMachine is currently
+	// waiting for the cluster infrastructure to become ready.
+	WaitingForClusterInfrastructureReason = "WaitingForClusterInfrastructure"
+
+	// WaitingForBootstrapDataReason (Severity=Info) indicates, that the bootstrap provider has not yet finished
+	// creating the bootstrap data secret and store it in the Cluster API Machine.
+	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
 )
 
 // VolumeDiskType specifies the type of  hard disk.
