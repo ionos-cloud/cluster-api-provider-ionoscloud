@@ -39,7 +39,7 @@ type Client interface {
 	GetServer(ctx context.Context, dataCenterID, serverID string) (*ionoscloud.Server, error)
 	// DestroyServer deletes the server that matches the provided serverID in the specified data center.
 	DestroyServer(ctx context.Context, dataCenterID, serverID string) error
-	// CreateLAN creates a new LAN with the provided properties in the specified data center.
+	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
 	CreateLAN(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost) (string, error)
 	// UpdateLAN updates a LAN with the provided properties in the specified data center.
 	UpdateLAN(ctx context.Context, dataCenterID string, lanID string, properties ionoscloud.LanProperties) (
@@ -63,4 +63,6 @@ type Client interface {
 	DestroyVolume(ctx context.Context, dataCenterID, volumeID string) error
 	// WaitForRequest waits for the completion of the provided request, return an error if it fails.
 	WaitForRequest(ctx context.Context, requestURL string) error
+	// GetRequests returns the requests made in the last 24 hours that match the provided method and path.
+	GetRequests(ctx context.Context, method, path string) (*[]ionoscloud.Request, error)
 }

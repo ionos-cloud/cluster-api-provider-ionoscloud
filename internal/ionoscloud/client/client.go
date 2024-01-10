@@ -21,6 +21,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"time"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
@@ -143,7 +145,7 @@ func (c *IonosCloudClient) DestroyServer(ctx context.Context, dataCenterID, serv
 	return err
 }
 
-// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request ID.
+// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
 func (c *IonosCloudClient) CreateLAN(ctx context.Context, dataCenterID string, properties sdk.LanPropertiesPost,
 ) (string, error) {
 	if dataCenterID == "" {
@@ -292,6 +294,31 @@ func (c *IonosCloudClient) CheckRequestStatus(ctx context.Context, requestURL st
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return requestStatus, nil
+}
+
+// GetRequests returns the requests made in the last 24 hours that match the provided method and path.
+func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string) (*[]sdk.Request, error) {
+	if path == "" {
+		return nil, errors.New("path needs to be provided")
+	}
+	if method == "" {
+		return nil, errors.New("method needs to be provided")
+	}
+	yesterday := time.Now().Add(-24 * time.Hour).Format(time.DateTime)
+	reqs, _, err := c.API.RequestsApi.RequestsGet(ctx).
+		FilterMethod(method).
+		FilterUrl(path).
+		FilterCreatedAfter(yesterday).
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get requests: %w", err)
+	}
+	items := *reqs.Items
+	slices.SortFunc(items, func(a, b sdk.Request) int {
+		// We invert the value to sort in descending order
+		return -a.Metadata.CreatedDate.Compare(b.Metadata.CreatedDate.Time)
+	})
+	return &items, nil
 }
 
 // WaitForRequest waits for the completion of the provided request, return an error if it fails.

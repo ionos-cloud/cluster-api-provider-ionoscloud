@@ -18,16 +18,12 @@ package controller
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/go-logr/logr"
-	sdk "github.com/ionos-cloud/sdk-go/v6"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -37,6 +33,7 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -127,36 +124,38 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	//	}
 	// }()
 
+	machineService, err := service.NewMachineService(ctx, machineScope)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("could not create machine service")
+	}
 	if !ionosCloudMachine.ObjectMeta.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, machineScope)
+		return r.reconcileDelete(machineService)
 	}
 
-	return r.reconcileNormal(ctx, machineScope)
+	return r.reconcileNormal(machineService)
 }
 
-func (r *IonosCloudMachineReconciler) reconcileNormal(
-	ctx context.Context, machineScope *scope.MachineScope,
-) (ctrl.Result, error) {
-	lan, err := r.reconcileLAN(ctx, machineScope)
+func (r *IonosCloudMachineReconciler) reconcileNormal(machineService *service.MachineService) (ctrl.Result, error) {
+	lan, err := machineService.GetLAN()
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("could not ensure lan: %w", err)
+		return ctrl.Result{}, fmt.Errorf("could not reconcile LAN: %w", err)
 	}
 	if lan == nil {
 		return ctrl.Result{Requeue: true}, nil
 	}
+
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudMachineReconciler) reconcileDelete(
-	ctx context.Context, machineScope *scope.MachineScope,
-) (ctrl.Result, error) {
-	shouldProceed, err := r.reconcileLANDelete(ctx, machineScope)
+func (r *IonosCloudMachineReconciler) reconcileDelete(machineService *service.MachineService) (ctrl.Result, error) {
+	isLANGone, err := machineService.DeleteLAN("placeholder for LAN ID")
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("could not ensure lan: %w", err)
+		return ctrl.Result{}, fmt.Errorf("could not delete LAN: %w", err)
 	}
-	if err == nil && !shouldProceed {
+	if err == nil && !isLANGone {
 		return ctrl.Result{Requeue: true}, nil
 	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -201,176 +200,4 @@ func (r *IonosCloudMachineReconciler) getInfraCluster(
 	}
 
 	return clusterScope, nil
-}
-
-const lanFormatString = "%s-k8s-lan"
-
-func (r *IonosCloudMachineReconciler) reconcileLAN(
-	ctx context.Context, machineScope *scope.MachineScope,
-) (*sdk.Lan, error) {
-	logger := machineScope.Logger
-	dataCenterID := machineScope.IonosCloudMachine.Spec.DatacenterID
-	ionos := r.IonosCloudClient
-	clusterScope := machineScope.ClusterScope
-	clusterName := clusterScope.Cluster.Name
-	var err error
-	var lan *sdk.Lan
-
-	// try to find available LAN
-	lan, err = r.findLANWithinDatacenterLANs(ctx, machineScope)
-	if err != nil {
-		return nil, fmt.Errorf("could not search for LAN within LAN list: %w", err)
-	}
-	if lan == nil {
-		// check if there is a provisioning request
-		reqStatus, err := r.checkProvisioningRequest(ctx, machineScope)
-		if err != nil && reqStatus == "" {
-			return nil, fmt.Errorf("could not check status of provisioning request: %w", err)
-		}
-		if reqStatus != "" {
-			req := clusterScope.IonosCluster.Status.PendingRequests[dataCenterID]
-			l := logger.WithValues(
-				"requestURL", req.RequestPath,
-				"requestMethod", req.Method,
-				"requestStatus", req.State)
-			switch reqStatus {
-			case string(infrav1.RequestStatusFailed):
-				delete(clusterScope.IonosCluster.Status.PendingRequests, dataCenterID)
-				return nil, fmt.Errorf("provisioning request has failed: %w", err)
-			case string(infrav1.RequestStatusQueued), string(infrav1.RequestStatusRunning):
-				l.Info("provisioning request hasn't finished yet. trying again later.")
-				return nil, nil
-			case string(infrav1.RequestStatusDone):
-				lan, err = r.findLANWithinDatacenterLANs(ctx, machineScope)
-				if err != nil {
-					return nil, fmt.Errorf("could not search for lan within lan list: %w", err)
-				}
-				if lan == nil {
-					l.Info("pending provisioning request has finished, but lan could not be found. trying again later.")
-					return nil, nil
-				}
-			}
-		}
-	} else {
-		return lan, nil
-	}
-	// request LAN creation
-	requestURL, err := ionos.CreateLAN(ctx, dataCenterID, sdk.LanPropertiesPost{
-		Name:   pointer.String(fmt.Sprintf(lanFormatString, clusterName)),
-		Public: pointer.Bool(true),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("could not create a new LAN: %w ", err)
-	}
-	clusterScope.IonosCluster.Status.PendingRequests[dataCenterID] = &infrav1.ProvisioningRequest{Method: requestURL}
-	logger.WithValues("requestURL", requestURL).Info("new LAN creation was requested")
-
-	return nil, nil
-}
-
-func (r *IonosCloudMachineReconciler) findLANWithinDatacenterLANs(
-	ctx context.Context, machineScope *scope.MachineScope,
-) (lan *sdk.Lan, err error) {
-	dataCenterID := machineScope.IonosCloudMachine.Spec.DatacenterID
-	ionos := r.IonosCloudClient
-	clusterScope := machineScope.ClusterScope
-	clusterName := clusterScope.Cluster.Name
-
-	lans, err := ionos.ListLANs(ctx, dataCenterID)
-	if err != nil {
-		return nil, fmt.Errorf("could not list lans: %w", err)
-	}
-	if lans.Items != nil {
-		for _, lan := range *(lans.Items) {
-			if name := lan.Properties.Name; name != nil && *name == fmt.Sprintf(lanFormatString, clusterName) {
-				return &lan, nil
-			}
-		}
-	}
-	return nil, nil
-}
-
-func (r *IonosCloudMachineReconciler) checkProvisioningRequest(
-	ctx context.Context, machineScope *scope.MachineScope,
-) (string, error) {
-	clusterScope := machineScope.ClusterScope
-	ionos := r.IonosCloudClient
-	dataCenterID := machineScope.IonosCloudMachine.Spec.DatacenterID
-	request, requestExists := clusterScope.IonosCluster.Status.PendingRequests[dataCenterID]
-
-	if requestExists {
-		reqStatus, err := ionos.CheckRequestStatus(ctx, request.RequestPath)
-		if err != nil {
-			return "", fmt.Errorf("could not check status of provisioning request: %w", err)
-		}
-		clusterScope.IonosCluster.Status.PendingRequests[dataCenterID].State = infrav1.RequestStatus(*reqStatus.Metadata.Status)
-		clusterScope.IonosCluster.Status.PendingRequests[dataCenterID].Message = *reqStatus.Metadata.Message
-		if *reqStatus.Metadata.Status != sdk.RequestStatusDone {
-			if metadata := *reqStatus.Metadata; *metadata.Status == sdk.RequestStatusFailed {
-				return sdk.RequestStatusFailed, errors.New(*metadata.Message)
-			}
-			return *reqStatus.Metadata.Status, nil
-		}
-	}
-	return "", nil
-}
-
-func (r *IonosCloudMachineReconciler) reconcileLANDelete(ctx context.Context, machineScope *scope.MachineScope) (bool, error) {
-	logger := machineScope.Logger
-	clusterScope := machineScope.ClusterScope
-	dataCenterID := machineScope.IonosCloudMachine.Spec.DatacenterID
-	lan, err := r.findLANWithinDatacenterLANs(ctx, machineScope)
-	if err != nil {
-		return false, fmt.Errorf("error while trying to find lan: %w", err)
-	}
-	// Check if there is a provisioning request going on
-	if lan != nil {
-		reqStatus, err := r.checkProvisioningRequest(ctx, machineScope)
-		if err != nil && reqStatus == "" {
-			return false, fmt.Errorf("could not check status of provisioning request: %w", err)
-		}
-		if reqStatus != "" {
-			req := clusterScope.IonosCluster.Status.PendingRequests[dataCenterID]
-			l := logger.WithValues(
-				"requestURL", req.RequestPath,
-				"requestMethod", req.Method,
-				"requestStatus", req.State)
-			switch reqStatus {
-			case string(infrav1.RequestStatusFailed):
-				delete(clusterScope.IonosCluster.Status.PendingRequests, dataCenterID)
-				return false, fmt.Errorf("provisioning request has failed: %w", err)
-			case string(infrav1.RequestStatusQueued), string(infrav1.RequestStatusRunning):
-				l.Info("provisioning request hasn't finished yet. trying again later.")
-				return false, nil
-			case string(infrav1.RequestStatusDone):
-				lan, err = r.findLANWithinDatacenterLANs(ctx, machineScope)
-				if err != nil {
-					return false, fmt.Errorf("could not search for lan within lan list: %w", err)
-				}
-				if lan != nil {
-					l.Info("pending provisioning request has finished, but lan could still be found. trying again later.")
-					return false, nil
-				}
-			}
-		}
-	}
-	if lan == nil {
-		logger.Info("lan seems to be deleted.")
-		return true, nil
-	}
-	if lan.Entities.HasNics() {
-		logger.Info("lan seems like it is still being used. let whoever still uses it delete it.")
-		// NOTE: the LAN isn't deleted, but we can use the bool to signalize that we can proceed with the machine deletion.
-		return true, nil
-	}
-	requestURL, err := r.IonosCloudClient.DestroyLAN(ctx, dataCenterID, *lan.Id)
-	if err != nil {
-		return false, fmt.Errorf("could not destroy lan: %w", err)
-	}
-	machineScope.ClusterScope.IonosCluster.Status.PendingRequests[dataCenterID] = &infrav1.ProvisioningRequest{
-		Method:      http.MethodDelete,
-		RequestPath: requestURL,
-	}
-	logger.WithValues("requestURL", requestURL).Info("requested LAN deletion")
-	return false, nil
 }
