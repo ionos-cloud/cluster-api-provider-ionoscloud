@@ -50,7 +50,7 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 	}
 
 	// if we didn't find a lan, we check if a lan is already in creation
-	requestStatus, err := s.checkForPendingLanRequest(http.MethodPost, "")
+	requestStatus, err := s.checkForPendingLANRequest(http.MethodPost, "")
 	if err != nil {
 		return false, fmt.Errorf("unable to list pending lan requests: %w", err)
 	}
@@ -105,6 +105,56 @@ func (s *Service) GetLAN() (*sdk.Lan, error) {
 	return foundLan, nil
 }
 
+func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
+	log := s.scope.Logger.WithName("ReconcileLANDeletion")
+
+	// try to retrieve the cluster LAN
+	clusterLAN, err := s.GetLAN()
+	if clusterLAN == nil {
+		err = s.removeLANPendingRequestFromCluster()
+		return err != nil, err
+	}
+	if err != nil {
+		return false, err
+	}
+
+	// if we found a LAN, we check if there is a deletion already in process
+	requestStatus, err := s.checkForPendingLANRequest(http.MethodDelete, *clusterLAN.Id)
+	if err != nil {
+		return false, fmt.Errorf("unable to list pending LAN requests: %w", err)
+	}
+	if requestStatus != "" {
+		// We want to requeue and check again after some time
+		if requestStatus == sdk.RequestStatusRunning || requestStatus == sdk.RequestStatusQueued {
+			return true, nil
+		}
+
+		if requestStatus == sdk.RequestStatusDone {
+			// Here we can check if the LAN is indeed gone or there's some inconsistency in the last request or
+			// this request points to an old, far gone LAN with the same ID.
+			clusterLAN, err = s.GetLAN()
+			if clusterLAN == nil {
+				err = s.removeLANPendingRequestFromCluster()
+				return err != nil, err
+			}
+			if err != nil {
+				return false, err
+			}
+		}
+	}
+
+	if clusterLAN != nil && len(*clusterLAN.Entities.Nics.Items) > 0 {
+		log.Info("the cluster LAN is still being used by another resource. skipping deletion")
+		return false, nil
+	}
+	// Request for LAN destruction
+	err = s.DeleteLAN(*clusterLAN.Id)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (s *Service) CreateLAN() error {
 	log := s.scope.Logger.WithName("CreateLAN")
 
@@ -114,7 +164,7 @@ func (s *Service) CreateLAN() error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("unable to create lan in datacenter %s: %w", s.DataCenterID(), err)
+		return fmt.Errorf("unable to create lan in data center %s: %w", s.DataCenterID(), err)
 	}
 
 	s.scope.ClusterScope.IonosCluster.Status.PendingRequests[s.DataCenterID()] = &infrav1.ProvisioningRequest{
@@ -133,46 +183,31 @@ func (s *Service) CreateLAN() error {
 	return nil
 }
 
-// DeleteLAN deletes the lan used by the cluster. A bool indicates if the LAN still exists.
-//func (s *Service) DeleteLAN(lanID string) (bool, error) {
-//	var err error
-//	log := s.scope.Logger.WithName("DestroyLAN")
-//
-//	// Check for LAN deletion requests
-//	requestExists, err := s.checkForPendingLanRequest(http.MethodDelete, lanID)
-//	if err != nil {
-//		return false, fmt.Errorf("could not check if a LAN request exists: %w", err)
-//	}
-//	if requestExists {
-//		log.Info("the latest deletion request has not finished yet, so let's try again later.")
-//		return false, nil
-//	}
-//	// Search for LAN
-//	lan, err := s.API().GetLAN(s.ctx, s.DataCenterID(), lanID)
-//	if err != nil {
-//		return false, fmt.Errorf("could not check if LAN exists: %w", err)
-//	}
-//	if lan != nil && len(*lan.Entities.Nics.Items) > 0 {
-//		log.Info("the cluster still has more than node. skipping LAN deletion.")
-//		return false, nil
-//	}
-//	if lan == nil {
-//		log.Info("lan could not be found")
-//		return true, nil
-//	}
-//	// Destroy LAN
-//	log.Info("requesting deletion of LAN")
-//	requestPath, err := s.API().DestroyLAN(s.ctx, s.DataCenterID(), lanID)
-//	if err != nil {
-//		return false, fmt.Errorf("could not request deletion of LAN: %w", err)
-//	}
-//	log.WithValues("requestPath", requestPath).Info("successfully requested lan deletion.")
-//	return false, nil
-//}
+func (s *Service) DeleteLAN(lanID string) error {
+	log := s.scope.Logger.WithName("DeleteLAN")
 
-// checkForPendingLanRequest checks if there is a request for the creation, update or deletion of a LAN in the data center.
+	requestPath, err := s.API().DestroyLAN(s.ctx, s.DataCenterID(), lanID)
+	if err != nil {
+		return fmt.Errorf("unable to request lan deletion in data center: %w", err)
+	}
+
+	s.scope.ClusterScope.IonosCluster.Status.PendingRequests[s.DataCenterID()] = &infrav1.ProvisioningRequest{
+		Method:      http.MethodDelete,
+		RequestPath: requestPath,
+		State:       infrav1.RequestStatusQueued,
+	}
+
+	err = s.scope.ClusterScope.PatchObject()
+	if err != nil {
+		return fmt.Errorf("unable to patch cluster: %w", err)
+	}
+	log.WithValues("requestPath", requestPath).Info("Successfully requested for LAN deletion")
+	return nil
+}
+
+// checkForPendingLANRequest checks if there is a request for the creation, update or deletion of a LAN in the data center.
 // For update and deletion requests, it is also necessary to provide the LAN ID (value will be ignored for creation).
-func (s *Service) checkForPendingLanRequest(method string, lanID string) (status string, err error) {
+func (s *Service) checkForPendingLANRequest(method string, lanID string) (status string, err error) {
 	switch method {
 	default:
 		return "", fmt.Errorf("unsupported method %s, allowed methods are %s", method, strings.Join(
@@ -223,4 +258,12 @@ func (s *Service) checkForPendingLanRequest(method string, lanID string) (status
 		return status, nil
 	}
 	return "", nil
+}
+
+func (s *Service) removeLANPendingRequestFromCluster() error {
+	s.scope.ClusterScope.IonosCluster.Status.PendingRequests[s.DataCenterID()] = nil
+	if err := s.scope.ClusterScope.PatchObject(); err != nil {
+		return fmt.Errorf("could not remove stale LAN pending request from cluster: %w", err)
+	}
+	return nil
 }

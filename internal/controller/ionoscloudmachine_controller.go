@@ -211,16 +211,14 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.Machin
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudMachineReconciler) reconcileDelete(machineService *cloud.Service) (ctrl.Result, error) {
-	isLANGone, err := machineService.DeleteLAN("placeholder for LAN ID")
+func (r *IonosCloudMachineReconciler) reconcileDelete(cloudService *cloud.Service) (ctrl.Result, error) {
+	requeue, err := cloudService.ReconcileLANDeletion()
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("could not delete LAN: %w", err)
+		return ctrl.Result{}, fmt.Errorf("could not reconcile LAN deletion: %w", err)
 	}
-	if err == nil && !isLANGone {
-		return ctrl.Result{Requeue: true}, nil
-	}
-
-	return ctrl.Result{}, nil
+	return ctrl.Result{
+		Requeue: requeue,
+	}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
