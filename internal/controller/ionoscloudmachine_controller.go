@@ -153,7 +153,7 @@ func (r *IonosCloudMachineReconciler) isInfrastructureReady(machineScope *scope.
 
 	// Make sure to wait until the data secret was created
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
-		machineScope.Info("Boostrap data secret is not available yet")
+		machineScope.Info("Bootstrap data secret is not available yet")
 		conditions.MarkFalse(
 			machineScope.IonosCloudMachine,
 			infrav1.MachineProvisionedCondition,
