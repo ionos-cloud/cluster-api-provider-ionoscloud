@@ -43,8 +43,8 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLAN")
 
 	// try to retrieve the cluster LAN
-	clusterLan, err := s.GetLAN()
-	if clusterLan != nil || err != nil {
+	clusterLAN, err := s.GetLAN()
+	if clusterLAN != nil || err != nil {
 		// If we found the LAN, we don't need to create one.
 		// TODO(lubedacht) check if patching is required => future task.
 		return false, err
@@ -64,8 +64,8 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 	// check again as the request might be done right after we checked
 	// to prevent duplicate creation
 	if requestStatus == sdk.RequestStatusDone {
-		clusterLan, err = s.GetLAN()
-		if clusterLan != nil || err != nil {
+		clusterLAN, err = s.GetLAN()
+		if clusterLAN != nil || err != nil {
 			return false, err
 		}
 

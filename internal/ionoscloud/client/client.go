@@ -172,7 +172,7 @@ func (c *IonosCloudClient) UpdateLAN(
 		return nil, errDataCenterIDIsEmpty
 	}
 	if lanID == "" {
-		return nil, errLanIDIsEmpty
+		return nil, errLANIDIsEmpty
 	}
 	l, _, err := c.API.LANsApi.DatacentersLansPatch(ctx, dataCenterID, lanID).
 		Lan(properties).Execute()
@@ -189,7 +189,7 @@ func (c *IonosCloudClient) AttachToLAN(ctx context.Context, dataCenterID, lanID 
 		return nil, errDataCenterIDIsEmpty
 	}
 	if lanID == "" {
-		return nil, errLanIDIsEmpty
+		return nil, errLANIDIsEmpty
 	}
 	n, _, err := c.API.LANsApi.DatacentersLansNicsPost(ctx, dataCenterID, lanID).Nic(nic).Execute()
 	if err != nil {
@@ -216,7 +216,7 @@ func (c *IonosCloudClient) GetLAN(ctx context.Context, dataCenterID, lanID strin
 		return nil, errDataCenterIDIsEmpty
 	}
 	if lanID == "" {
-		return nil, errLanIDIsEmpty
+		return nil, errLANIDIsEmpty
 	}
 	lan, _, err := c.API.LANsApi.DatacentersLansFindById(ctx, dataCenterID, lanID).Execute()
 	if err != nil {
@@ -231,7 +231,7 @@ func (c *IonosCloudClient) DestroyLAN(ctx context.Context, dataCenterID, lanID s
 		return "", errDataCenterIDIsEmpty
 	}
 	if lanID == "" {
-		return "", errLanIDIsEmpty
+		return "", errLANIDIsEmpty
 	}
 	req, err := c.API.LANsApi.DatacentersLansDelete(ctx, dataCenterID, lanID).Execute()
 	if err != nil {
