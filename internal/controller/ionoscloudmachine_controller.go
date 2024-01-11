@@ -201,13 +201,6 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.Machin
 		return ctrl.Result{}, fmt.Errorf("could not reconcile LAN %w", err)
 	}
 
-	//if err != nil {
-	//	return ctrl.Result{}, fmt.Errorf("could not reconcile LAN: %w", err)
-	//}
-	//if lan == nil {
-	//	return ctrl.Result{Requeue: true}, nil
-	//}
-
 	return ctrl.Result{}, nil
 }
 
