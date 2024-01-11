@@ -209,6 +209,7 @@ func (s *Service) deleteLAN(lanID string) error {
 func (s *Service) checkForPendingLANRequest(method string, lanID string) (status string, err error) {
 	switch method {
 	case http.MethodPost:
+		break
 	case http.MethodDelete, http.MethodPatch:
 		if lanID == "" {
 			return "", errors.New("lanID cannot be empty for DELETE and PATCH requests")
