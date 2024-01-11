@@ -195,7 +195,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.Machin
 	//		* Queued, Running => Requeue the current request
 	// 		* Failed => We need to discuss this, log error and continue (retry last request in the corresponding reconcile function)
 
-	// Ensure that a lan is created in the datacenter
+	// Ensure that a LAN is created in the datacenter
 	if requeue, err := cloudService.ReconcileLAN(); err != nil || requeue {
 		if requeue {
 			return ctrl.Result{RequeueAfter: time.Second * 30}, err

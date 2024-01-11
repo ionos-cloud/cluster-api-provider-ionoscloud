@@ -21,7 +21,7 @@ import "errors"
 var (
 	errDataCenterIDIsEmpty = errors.New("error parsing data center ID: value cannot be empty")
 	errServerIDIsEmpty     = errors.New("error parsing server ID: value cannot be empty")
-	errLanIDIsEmpty        = errors.New("error parsing lan ID: value cannot be empty")
+	errLanIDIsEmpty        = errors.New("error parsing LAN ID: value cannot be empty")
 	errVolumeIDIsEmpty     = errors.New("error parsing volume ID: value cannot be empty")
 	errRequestURLIsEmpty   = errors.New("a request url is necessary for the operation")
 )
