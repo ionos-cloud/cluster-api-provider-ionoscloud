@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
@@ -91,11 +92,14 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	}, nil
 }
 
+// HasFailed Checks if the IonosCloudMachine is in a failed state.
 func (m *MachineScope) HasFailed() bool {
 	status := m.IonosCloudMachine.Status
 	return status.FailureReason != nil || status.FailureMessage != nil
 }
 
+// PatchObject will apply all changes from the IonosCloudMachine.
+// It will also make sure to patch the status subresource.
 func (m *MachineScope) PatchObject() error {
 	conditions.SetSummary(m.IonosCloudMachine,
 		conditions.WithConditions(
@@ -110,6 +114,9 @@ func (m *MachineScope) PatchObject() error {
 		}})
 }
 
+// Finalize will make sure to apply a patch to the current IonosCloudMachine.
+// It also implements a retry mechanism to increase the chance of success
+// in case the patch operation was not successful.
 func (m *MachineScope) Finalize() error {
 	// NOTE(lubedacht) retry is only a way to reduce the failure chance,
 	// but in general, the reconciliation logic must be resilient
