@@ -55,7 +55,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 	Context("Validation", func() {
 		It("Should set defaults for Volumes", func() {
 			m := defaultMachine()
-			m.Spec.Disk = &Volume{
+			m.Spec.Disk = Volume{
 				Name:   "test-volume",
 				SizeGB: 5,
 			}
@@ -88,7 +88,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 
 		It("Should fail if size is less than 5", func() {
 			m := defaultMachine()
-			m.Spec.Disk = &Volume{
+			m.Spec.Disk = Volume{
 				Name:   "test-volume",
 				SizeGB: 4,
 			}

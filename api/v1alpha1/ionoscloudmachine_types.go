@@ -113,8 +113,7 @@ type IonosCloudMachineSpec struct {
 	CPUFamily string `json:"cpuFamily"`
 
 	// Disk defines the boot volume of the VM.
-	// +optional
-	Disk *Volume `json:"disk,omitempty"`
+	Disk Volume `json:"disk"`
 
 	// Network defines the network configuration for the VM.
 	Network *Network `json:"network,omitempty"`

@@ -140,6 +140,7 @@ spec:
             - availabilityZone
             - cpuFamily
             - datacenterId
+            - disk
             - numCores
             type: object
           status:
