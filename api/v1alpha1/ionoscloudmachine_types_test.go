@@ -65,7 +65,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 
 			spec := m.Spec
 			Expect(spec.NumCores).To(Equal(int32(1)))
-			Expect(spec.MemoryMiB).To(Equal(int32(1024)))
+			Expect(spec.MemoryMb).To(Equal(int32(1024)))
 
 			Expect(spec.Disk.DiskType).To(Equal(VolumeDiskTypeHDD))
 			Expect(spec.Disk.AvailabilityZone).To(Equal("AUTO"))

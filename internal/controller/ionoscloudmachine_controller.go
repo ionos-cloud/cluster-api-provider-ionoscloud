@@ -63,7 +63,7 @@ type IonosCloudMachineReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.0/pkg/reconcile
-func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, retErr error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	ionosCloudMachine := &infrav1.IonosCloudMachine{}
@@ -125,7 +125,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	defer func() {
 		if err := machineScope.Finalize(); err != nil {
-			reterr = errors.Join(err, reterr)
+			retErr = errors.Join(err, retErr)
 		}
 	}()
 

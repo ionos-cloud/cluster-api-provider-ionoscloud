@@ -20,16 +20,16 @@ package v1alpha1
 type RequestStatus string
 
 const (
-	// RequestStatusQueued indicates, that the request is queued and not yet being processed.
+	// RequestStatusQueued indicates that the request is queued and not yet being processed.
 	RequestStatusQueued RequestStatus = "QUEUED"
 
-	// RequestStatusRunning indicates, that the request is currently being processed.
+	// RequestStatusRunning indicates that the request is currently being processed.
 	RequestStatusRunning RequestStatus = "RUNNING"
 
-	// RequestStatusDone indicates, that the request has been successfully processed.
+	// RequestStatusDone indicates that the request has been successfully processed.
 	RequestStatusDone RequestStatus = "DONE"
 
-	// RequestStatusFailed indicates, that the request has failed.
+	// RequestStatusFailed indicates that the request has failed.
 	RequestStatusFailed RequestStatus = "FAILED"
 )
 
@@ -45,9 +45,9 @@ type ProvisioningRequest struct {
 	// RequestStatus is the status of the request in the queue.
 	// +kubebuilder:validation:Enum=QUEUED;RUNNING;DONE;FAILED
 	// +optional
-	State RequestStatus `json:"state"`
+	State RequestStatus `json:"state,omitempty"`
 
 	// Message is the request message, which can also contain error information.
 	// +optional
-	Message string `json:"failureMessage,omitempty"`
+	Message *string `json:"message,omitempty"`
 }

@@ -125,7 +125,7 @@ spec:
                   description: ProvisioningRequest is a definition of a provisioning
                     request in the IONOS Cloud.
                   properties:
-                    failureMessage:
+                    message:
                       description: Message is the request message, which can also
                         contain error information.
                       type: string
@@ -148,8 +148,8 @@ spec:
                   - method
                   - requestPath
                   type: object
-                description: PendingRequests is a map that maps data centers IDs with
-                  a pending provisioning request made during reconciliation.
+                description: PendingRequests maps data center IDs to a pending provisioning
+                  request made during reconciliation.
                 type: object
               ready:
                 default: false

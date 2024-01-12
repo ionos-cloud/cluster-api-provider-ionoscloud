@@ -34,33 +34,41 @@ spec:
           spec:
             description: IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
             properties:
+              availabilityZone:
+                default: AUTO
+                description: AvailabilityZone is the availability zone in which the
+                  VM should be provisioned.
+                enum:
+                - AUTO
+                - ZONE_1
+                - ZONE_2
+                - ZONE_3
+                type: string
               cpuFamily:
                 description: CPUFamily defines the CPU architecture, which will be
-                  used for this enterprise server. The not all CPU architectures are
-                  available in all datacenters.
+                  used for this VM. The not all CPU architectures are available in
+                  all datacenters.
                 example: AMD_OPTERON
                 type: string
-              datacenterID:
-                description: DatacenterID is the ID of the datacenter, where the machine
-                  should be created.
+              datacenterId:
+                description: DatacenterID is the ID of the datacenter where the machine
+                  should be created in.
                 type: string
                 x-kubernetes-validations:
-                - message: DatacenterID is immutable
+                - message: datacenterID is immutable
                   rule: self == oldSelf
               disk:
-                description: Disk defines the boot volume of the machine.
+                description: Disk defines the boot volume of the VM.
                 properties:
-                  SSHKeys:
-                    description: SSHKeys contains a set of public ssh keys which will
-                      be added to the list of authorized keys.
-                    items:
-                      type: string
-                    type: array
-                    x-kubernetes-list-type: set
                   availabilityZone:
                     default: AUTO
-                    description: AvailabilityZone is the availabilityZone where the
+                    description: AvailabilityZone is the availability zone where the
                       volume will be created.
+                    enum:
+                    - AUTO
+                    - ZONE_1
+                    - ZONE_2
+                    - ZONE_3
                     type: string
                   diskType:
                     default: HDD
@@ -76,22 +84,29 @@ spec:
                     description: SizeGB defines the size of the volume in GB
                     minimum: 5
                     type: integer
+                  sshKeys:
+                    description: SSHKeys contains a set of public SSH keys which will
+                      be added to the list of authorized keys.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
                 required:
+                - availabilityZone
+                - diskType
                 - sizeGB
                 type: object
-              memoryMiB:
+              memoryMb:
                 default: 1024
-                description: MemoryMiB is the memory size for the enterprise server
-                  in MB. Size must be specified in multiples of 256 MB with a minimum
-                  of 1024 MB which is required as we are using hot-pluggable RAM by
-                  default.
+                description: MemoryMb is the memory size for the VM in MB. Size must
+                  be specified in multiples of 256 MB with a minimum of 1024 MB which
+                  is required as we are using hot-pluggable RAM by default.
                 format: int32
                 minimum: 1024
                 multipleOf: 256
                 type: integer
               network:
-                description: Network defines the network configuration for the enterprise
-                  server.
+                description: Network defines the network configuration for the VM.
                 properties:
                   ips:
                     description: IPs is an optional set of IP addresses, which have
@@ -102,15 +117,14 @@ spec:
                     x-kubernetes-list-type: set
                   useDhcp:
                     default: true
-                    description: UseDHCP sets whether dhcp should be used or not.
+                    description: UseDHCP sets whether DHCP should be used or not.
                       NOTE(lubedacht) currently we do not support private clusters
                       therefore dhcp must be set to true.
                     type: boolean
                 type: object
               numCores:
                 default: 1
-                description: Cores defines the total number of cores for the enterprise
-                  server.
+                description: NumCores defines the number of cores for the VM.
                 format: int32
                 minimum: 1
                 type: integer
@@ -118,14 +132,15 @@ spec:
                 description: ProviderID is the IONOS Cloud provider ID will be in
                   the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                 type: string
-              serverID:
-                description: ServerID is the unique identifier for a server in the
-                  IONOS Cloud context. The value will be set, once the server was
-                  created.
+              serverId:
+                description: ServerID is the ID for a VM in the IONOS Cloud context.
+                  The value will be set once the server was created.
                 type: string
             required:
+            - availabilityZone
             - cpuFamily
-            - datacenterID
+            - datacenterId
+            - numCores
             type: object
           status:
             description: IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
@@ -177,9 +192,9 @@ spec:
                 type: array
               currentRequest:
                 description: CurrentRequest shows the current provisioning request
-                  for any cloud resource, that is being provisioned.
+                  for any cloud resource that is being provisioned.
                 properties:
-                  failureMessage:
+                  message:
                     description: Message is the request message, which can also contain
                       error information.
                     type: string

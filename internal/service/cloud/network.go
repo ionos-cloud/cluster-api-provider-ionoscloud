@@ -166,7 +166,7 @@ func (s *Service) createLAN() error {
 		return fmt.Errorf("unable to create LAN in data center %s: %w", s.DataCenterID(), err)
 	}
 
-	s.scope.ClusterScope.IonosCluster.Status.PendingRequests[s.DataCenterID()] = &infrav1.ProvisioningRequest{
+	s.scope.ClusterScope.IonosCluster.Status.PendingRequests[s.DataCenterID()] = infrav1.ProvisioningRequest{
 		Method:      http.MethodPost,
 		RequestPath: requestPath,
 		State:       infrav1.RequestStatusQueued,
@@ -190,7 +190,7 @@ func (s *Service) deleteLAN(lanID string) error {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
 
-	s.scope.ClusterScope.IonosCluster.Status.PendingRequests[s.DataCenterID()] = &infrav1.ProvisioningRequest{
+	s.scope.ClusterScope.IonosCluster.Status.PendingRequests[s.DataCenterID()] = infrav1.ProvisioningRequest{
 		Method:      http.MethodDelete,
 		RequestPath: requestPath,
 		State:       infrav1.RequestStatusQueued,
@@ -258,7 +258,7 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 }
 
 func (s *Service) removeLANPendingRequestFromCluster() error {
-	s.scope.ClusterScope.IonosCluster.Status.PendingRequests[s.DataCenterID()] = nil
+	delete(s.scope.ClusterScope.IonosCluster.Status.PendingRequests, s.DataCenterID())
 	if err := s.scope.ClusterScope.PatchObject(); err != nil {
 		return fmt.Errorf("could not remove stale LAN pending request from cluster: %w", err)
 	}
