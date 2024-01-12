@@ -120,7 +120,7 @@ spec:
                   - type
                   type: object
                 type: array
-              pendingRequests:
+              currentRequest:
                 additionalProperties:
                   description: ProvisioningRequest is a definition of a provisioning
                     request in the IONOS Cloud.
@@ -148,7 +148,7 @@ spec:
                   - method
                   - requestPath
                   type: object
-                description: PendingRequests maps data center IDs to a pending provisioning
+                description: CurrentRequest maps data center IDs to a pending provisioning
                   request made during reconciliation.
                 type: object
               ready:

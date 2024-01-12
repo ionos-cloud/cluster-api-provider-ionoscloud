@@ -96,6 +96,61 @@ func (_c *MockClient_AttachToLAN_Call) RunAndReturn(run func(context.Context, st
 	return _c
 }
 
+// CheckRequestStatus provides a mock function with given fields: ctx, requestID
+func (_m *MockClient) CheckRequestStatus(ctx context.Context, requestID string) (*ionoscloud.RequestStatus, error) {
+	ret := _m.Called(ctx, requestID)
+
+	var r0 *ionoscloud.RequestStatus
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*ionoscloud.RequestStatus, error)); ok {
+		return rf(ctx, requestID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *ionoscloud.RequestStatus); ok {
+		r0 = rf(ctx, requestID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*ionoscloud.RequestStatus)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, requestID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_CheckRequestStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CheckRequestStatus'
+type MockClient_CheckRequestStatus_Call struct {
+	*mock.Call
+}
+
+// CheckRequestStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - requestID string
+func (_e *MockClient_Expecter) CheckRequestStatus(ctx interface{}, requestID interface{}) *MockClient_CheckRequestStatus_Call {
+	return &MockClient_CheckRequestStatus_Call{Call: _e.mock.On("CheckRequestStatus", ctx, requestID)}
+}
+
+func (_c *MockClient_CheckRequestStatus_Call) Run(run func(ctx context.Context, requestID string)) *MockClient_CheckRequestStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_CheckRequestStatus_Call) Return(_a0 *ionoscloud.RequestStatus, _a1 error) *MockClient_CheckRequestStatus_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_CheckRequestStatus_Call) RunAndReturn(run func(context.Context, string) (*ionoscloud.RequestStatus, error)) *MockClient_CheckRequestStatus_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateDataCenter provides a mock function with given fields: ctx, properties
 func (_m *MockClient) CreateDataCenter(ctx context.Context, properties ionoscloud.DatacenterProperties) (*ionoscloud.Datacenter, error) {
 	ret := _m.Called(ctx, properties)
@@ -152,20 +207,18 @@ func (_c *MockClient_CreateDataCenter_Call) RunAndReturn(run func(context.Contex
 }
 
 // CreateLAN provides a mock function with given fields: ctx, dataCenterID, properties
-func (_m *MockClient) CreateLAN(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost) (*ionoscloud.LanPost, error) {
+func (_m *MockClient) CreateLAN(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost) (string, error) {
 	ret := _m.Called(ctx, dataCenterID, properties)
 
-	var r0 *ionoscloud.LanPost
+	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.LanPropertiesPost) (*ionoscloud.LanPost, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.LanPropertiesPost) (string, error)); ok {
 		return rf(ctx, dataCenterID, properties)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.LanPropertiesPost) *ionoscloud.LanPost); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.LanPropertiesPost) string); ok {
 		r0 = rf(ctx, dataCenterID, properties)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ionoscloud.LanPost)
-		}
+		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, ionoscloud.LanPropertiesPost) error); ok {
@@ -197,12 +250,12 @@ func (_c *MockClient_CreateLAN_Call) Run(run func(ctx context.Context, dataCente
 	return _c
 }
 
-func (_c *MockClient_CreateLAN_Call) Return(_a0 *ionoscloud.LanPost, _a1 error) *MockClient_CreateLAN_Call {
+func (_c *MockClient_CreateLAN_Call) Return(_a0 string, _a1 error) *MockClient_CreateLAN_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockClient_CreateLAN_Call) RunAndReturn(run func(context.Context, string, ionoscloud.LanPropertiesPost) (*ionoscloud.LanPost, error)) *MockClient_CreateLAN_Call {
+func (_c *MockClient_CreateLAN_Call) RunAndReturn(run func(context.Context, string, ionoscloud.LanPropertiesPost) (string, error)) *MockClient_CreateLAN_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -264,17 +317,27 @@ func (_c *MockClient_CreateServer_Call) RunAndReturn(run func(context.Context, s
 }
 
 // DestroyLAN provides a mock function with given fields: ctx, dataCenterID, lanID
-func (_m *MockClient) DestroyLAN(ctx context.Context, dataCenterID string, lanID string) error {
+func (_m *MockClient) DestroyLAN(ctx context.Context, dataCenterID string, lanID string) (string, error) {
 	ret := _m.Called(ctx, dataCenterID, lanID)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+		return rf(ctx, dataCenterID, lanID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
 		r0 = rf(ctx, dataCenterID, lanID)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(string)
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, dataCenterID, lanID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockClient_DestroyLAN_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DestroyLAN'
@@ -297,12 +360,12 @@ func (_c *MockClient_DestroyLAN_Call) Run(run func(ctx context.Context, dataCent
 	return _c
 }
 
-func (_c *MockClient_DestroyLAN_Call) Return(_a0 error) *MockClient_DestroyLAN_Call {
-	_c.Call.Return(_a0)
+func (_c *MockClient_DestroyLAN_Call) Return(_a0 string, _a1 error) *MockClient_DestroyLAN_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockClient_DestroyLAN_Call) RunAndReturn(run func(context.Context, string, string) error) *MockClient_DestroyLAN_Call {
+func (_c *MockClient_DestroyLAN_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DestroyLAN_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -502,6 +565,62 @@ func (_c *MockClient_GetLAN_Call) Return(_a0 *ionoscloud.Lan, _a1 error) *MockCl
 }
 
 func (_c *MockClient_GetLAN_Call) RunAndReturn(run func(context.Context, string, string) (*ionoscloud.Lan, error)) *MockClient_GetLAN_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetRequests provides a mock function with given fields: ctx, method, path
+func (_m *MockClient) GetRequests(ctx context.Context, method string, path string) (*[]ionoscloud.Request, error) {
+	ret := _m.Called(ctx, method, path)
+
+	var r0 *[]ionoscloud.Request
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*[]ionoscloud.Request, error)); ok {
+		return rf(ctx, method, path)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *[]ionoscloud.Request); ok {
+		r0 = rf(ctx, method, path)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]ionoscloud.Request)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, method, path)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_GetRequests_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRequests'
+type MockClient_GetRequests_Call struct {
+	*mock.Call
+}
+
+// GetRequests is a helper method to define mock.On call
+//   - ctx context.Context
+//   - method string
+//   - path string
+func (_e *MockClient_Expecter) GetRequests(ctx interface{}, method interface{}, path interface{}) *MockClient_GetRequests_Call {
+	return &MockClient_GetRequests_Call{Call: _e.mock.On("GetRequests", ctx, method, path)}
+}
+
+func (_c *MockClient_GetRequests_Call) Run(run func(ctx context.Context, method string, path string)) *MockClient_GetRequests_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_GetRequests_Call) Return(_a0 *[]ionoscloud.Request, _a1 error) *MockClient_GetRequests_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_GetRequests_Call) RunAndReturn(run func(context.Context, string, string) (*[]ionoscloud.Request, error)) *MockClient_GetRequests_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -836,6 +955,49 @@ func (_c *MockClient_UpdateLAN_Call) Return(_a0 *ionoscloud.Lan, _a1 error) *Moc
 }
 
 func (_c *MockClient_UpdateLAN_Call) RunAndReturn(run func(context.Context, string, string, ionoscloud.LanProperties) (*ionoscloud.Lan, error)) *MockClient_UpdateLAN_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// WaitForRequest provides a mock function with given fields: ctx, requestURL
+func (_m *MockClient) WaitForRequest(ctx context.Context, requestURL string) error {
+	ret := _m.Called(ctx, requestURL)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, requestURL)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockClient_WaitForRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WaitForRequest'
+type MockClient_WaitForRequest_Call struct {
+	*mock.Call
+}
+
+// WaitForRequest is a helper method to define mock.On call
+//   - ctx context.Context
+//   - requestURL string
+func (_e *MockClient_Expecter) WaitForRequest(ctx interface{}, requestURL interface{}) *MockClient_WaitForRequest_Call {
+	return &MockClient_WaitForRequest_Call{Call: _e.mock.On("WaitForRequest", ctx, requestURL)}
+}
+
+func (_c *MockClient_WaitForRequest_Call) Run(run func(ctx context.Context, requestURL string)) *MockClient_WaitForRequest_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_WaitForRequest_Call) Return(_a0 error) *MockClient_WaitForRequest_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockClient_WaitForRequest_Call) RunAndReturn(run func(context.Context, string) error) *MockClient_WaitForRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -79,33 +79,32 @@ type IonosCloudMachineSpec struct {
 	// +optional
 	ProviderID string `json:"providerId,omitempty"`
 
-	// DatacenterID is the ID of the datacenter where the machine should be created in.
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
-	DatacenterID string `json:"datacenterId"`
-
-	// ServerID is the ID for a VM in the IONOS Cloud context.
-	// The value will be set once the server was created.
-	// +optional
-	ServerID string `json:"serverId,omitempty"`
+	// DataCenterID is the ID of the datacenter where the machine should be created in.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterId is immutable"
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:Format=uuid
+	DataCenterID string `json:"datacenterId"`
 
 	// NumCores defines the number of cores for the VM.
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:default=1
-	NumCores int32 `json:"numCores"`
+	// +optional
+	NumCores int32 `json:"numCores,omitempty"`
 
 	// AvailabilityZone is the availability zone in which the VM should be provisioned.
 	// +kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2;ZONE_3
 	// +kubebuilder:default=AUTO
-	AvailabilityZone AvailabilityZone `json:"availabilityZone"`
+	// +optional
+	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
-	// MemoryMb is the memory size for the VM in MB.
+	// MemoryMB is the memory size for the VM in MB.
 	// Size must be specified in multiples of 256 MB with a minimum of 1024 MB
 	// which is required as we are using hot-pluggable RAM by default.
-	// +kubebuilder:validation:MultipleOf=256
-	// +kubebuilder:validation:Minimum=1024
-	// +kubebuilder:default=1024
+	// +kubebuilder:validation:MultipleOf=1024
+	// +kubebuilder:validation:Minimum=2048
+	// +kubebuilder:default=3072
 	// +optional
-	MemoryMb int32 `json:"memoryMb,omitempty"`
+	MemoryMB int32 `json:"memoryMb,omitempty"`
 
 	// CPUFamily defines the CPU architecture, which will be used for this VM.
 	// The not all CPU architectures are available in all datacenters.
@@ -116,6 +115,7 @@ type IonosCloudMachineSpec struct {
 	Disk Volume `json:"disk"`
 
 	// Network defines the network configuration for the VM.
+	// +optional
 	Network *Network `json:"network,omitempty"`
 }
 
@@ -132,7 +132,7 @@ type Network struct {
 	// therefore dhcp must be set to true.
 	// +kubebuilder:default=true
 	// +optional
-	UseDHCP *bool `json:"useDhcp"`
+	UseDHCP *bool `json:"useDhcp,omitempty"`
 }
 
 // Volume is the physical storage on the machine.
@@ -142,22 +142,27 @@ type Volume struct {
 	Name string `json:"name,omitempty"`
 
 	// DiskType defines the type of the hard drive.
-	// +kubebuilder:validation:Enum=HDD;SSD
+	// +kubebuilder:validation:Enum=HDD;SSD Standard;SSD Premium
 	// +kubebuilder:default=HDD
-	DiskType VolumeDiskType `json:"diskType"`
+	// +optional
+	DiskType VolumeDiskType `json:"diskType,omitempty"`
 
 	// SizeGB defines the size of the volume in GB
 	// +kubebuilder:validation:Minimum=5
-	SizeGB int `json:"sizeGB"`
+	// +kubebuilder:default=5
+	// +optional
+	SizeGB int `json:"sizeGB,omitempty"`
 
 	// AvailabilityZone is the availability zone where the volume will be created.
 	// +kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2;ZONE_3
 	// +kubebuilder:default=AUTO
-	AvailabilityZone AvailabilityZone `json:"availabilityZone"`
+	// +optional
+	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	// SSHKeys contains a set of public SSH keys which will be added to the
 	// list of authorized keys.
 	// +listType=set
+	// +optional
 	SSHKeys []string `json:"sshKeys,omitempty"`
 }
 
@@ -211,6 +216,7 @@ type IonosCloudMachineStatus struct {
 
 	// CurrentRequest shows the current provisioning request for any
 	// cloud resource that is being provisioned.
+	// +optional
 	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
 }
 

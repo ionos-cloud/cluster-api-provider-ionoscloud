@@ -51,11 +51,12 @@ spec:
                 example: AMD_OPTERON
                 type: string
               datacenterId:
-                description: DatacenterID is the ID of the datacenter where the machine
+                description: DataCenterID is the ID of the datacenter where the machine
                   should be created in.
+                format: uuid
                 type: string
                 x-kubernetes-validations:
-                - message: datacenterID is immutable
+                - message: datacenterId is immutable
                   rule: self == oldSelf
               disk:
                 description: Disk defines the boot volume of the VM.
@@ -75,12 +76,14 @@ spec:
                     description: DiskType defines the type of the hard drive.
                     enum:
                     - HDD
-                    - SSD
+                    - SSD Standard
+                    - SSD Premium
                     type: string
                   name:
                     description: Name is the name of the volume
                     type: string
                   sizeGB:
+                    default: 5
                     description: SizeGB defines the size of the volume in GB
                     minimum: 5
                     type: integer
@@ -92,18 +95,16 @@ spec:
                     type: array
                     x-kubernetes-list-type: set
                 required:
-                - availabilityZone
-                - diskType
                 - sizeGB
                 type: object
               memoryMb:
-                default: 1024
-                description: MemoryMb is the memory size for the VM in MB. Size must
+                default: 3072
+                description: MemoryMB is the memory size for the VM in MB. Size must
                   be specified in multiples of 256 MB with a minimum of 1024 MB which
                   is required as we are using hot-pluggable RAM by default.
                 format: int32
-                minimum: 1024
-                multipleOf: 256
+                minimum: 2048
+                multipleOf: 1024
                 type: integer
               network:
                 description: Network defines the network configuration for the VM.
@@ -132,16 +133,10 @@ spec:
                 description: ProviderID is the IONOS Cloud provider ID will be in
                   the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                 type: string
-              serverId:
-                description: ServerID is the ID for a VM in the IONOS Cloud context.
-                  The value will be set once the server was created.
-                type: string
             required:
-            - availabilityZone
             - cpuFamily
             - datacenterId
             - disk
-            - numCores
             type: object
           status:
             description: IonosCloudMachineStatus defines the observed state of IonosCloudMachine.

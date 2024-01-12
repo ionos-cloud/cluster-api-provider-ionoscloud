@@ -111,8 +111,8 @@ func (in *IonosCloudClusterStatus) DeepCopyInto(out *IonosCloudClusterStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.PendingRequests != nil {
-		in, out := &in.PendingRequests, &out.PendingRequests
+	if in.CurrentRequest != nil {
+		in, out := &in.CurrentRequest, &out.CurrentRequest
 		*out = make(map[string]ProvisioningRequest, len(*in))
 		for key, val := range *in {
 			(*out)[key] = *val.DeepCopy()
