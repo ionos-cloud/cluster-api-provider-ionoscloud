@@ -20,17 +20,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/go-logr/logr"
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 )
 
 // MachineScope defines a basic context for primary use in IonosCloudMachineReconciler.
@@ -48,12 +47,12 @@ type MachineScope struct {
 
 // MachineScopeParams is a struct that contains the params used to create a new MachineScope through NewMachineScope.
 type MachineScopeParams struct {
-	Client            client.Client
-	Logger            *logr.Logger
-	Cluster           *clusterv1.Cluster
-	Machine           *clusterv1.Machine
-	InfraCluster      *ClusterScope
-	IonosCloudMachine *infrav1.IonosCloudMachine
+	Client       client.Client
+	Logger       *logr.Logger
+	Cluster      *clusterv1.Cluster
+	Machine      *clusterv1.Machine
+	InfraCluster *ClusterScope
+	IonosMachine *infrav1.IonosCloudMachine
 }
 
 // NewMachineScope creates a new MachineScope using the provided params.
@@ -65,19 +64,19 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, errors.New("machine scope params lack a cluster")
 	}
 	if params.Machine == nil {
-		return nil, errors.New("machine scope params lack a cluster api machine")
+		return nil, errors.New("machine scope params lack a Cluster API machine")
 	}
-	if params.IonosCloudMachine == nil {
+	if params.IonosMachine == nil {
 		return nil, errors.New("machine scope params lack a ionos cloud machine")
 	}
 	if params.InfraCluster == nil {
 		return nil, errors.New("machine scope params need a ionos cloud cluster scope")
 	}
 	if params.Logger == nil {
-		logger := log.FromContext(context.Background())
+		logger := ctrl.Log
 		params.Logger = &logger
 	}
-	helper, err := patch.NewHelper(params.IonosCloudMachine, params.Client)
+	helper, err := patch.NewHelper(params.IonosMachine, params.Client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init patch helper: %w", err)
 	}
@@ -88,7 +87,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		Cluster:           params.Cluster,
 		Machine:           params.Machine,
 		ClusterScope:      params.InfraCluster,
-		IonosCloudMachine: params.IonosCloudMachine,
+		IonosCloudMachine: params.IonosMachine,
 	}, nil
 }
 

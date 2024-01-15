@@ -57,7 +57,7 @@ type IonosCloudMachineReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the IonosCloudMachine object against the actual cluster state, and then
+// the IonosMachine object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
@@ -111,12 +111,12 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Create the machine scope
 	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
-		Client:            r.Client,
-		Cluster:           cluster,
-		Machine:           machine,
-		InfraCluster:      clusterScope,
-		IonosCloudMachine: ionosCloudMachine,
-		Logger:            &logger,
+		Client:       r.Client,
+		Cluster:      cluster,
+		Machine:      machine,
+		InfraCluster: clusterScope,
+		IonosMachine: ionosCloudMachine,
+		Logger:       &logger,
 	})
 	if err != nil {
 		logger.Error(err, "failed to create scope")
