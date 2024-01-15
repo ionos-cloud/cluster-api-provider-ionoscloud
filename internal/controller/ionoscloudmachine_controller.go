@@ -145,7 +145,7 @@ func (r *IonosCloudMachineReconciler) isInfrastructureReady(machineScope *scope.
 	if !machineScope.Cluster.Status.InfrastructureReady {
 		machineScope.Info("Cluster infrastructure is not ready yet")
 		conditions.MarkFalse(
-			machineScope.IonosCloudMachine,
+			machineScope.IonosMachine,
 			infrav1.MachineProvisionedCondition,
 			infrav1.WaitingForClusterInfrastructureReason,
 			clusterv1.ConditionSeverityInfo, "")
@@ -157,7 +157,7 @@ func (r *IonosCloudMachineReconciler) isInfrastructureReady(machineScope *scope.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
 		machineScope.Info("Bootstrap data secret is not available yet")
 		conditions.MarkFalse(
-			machineScope.IonosCloudMachine,
+			machineScope.IonosMachine,
 			infrav1.MachineProvisionedCondition,
 			infrav1.WaitingForBootstrapDataReason,
 			clusterv1.ConditionSeverityInfo, "",
@@ -181,7 +181,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.Machin
 		return ctrl.Result{}, nil
 	}
 
-	if controllerutil.AddFinalizer(machineScope.IonosCloudMachine, infrav1.MachineFinalizer) {
+	if controllerutil.AddFinalizer(machineScope.IonosMachine, infrav1.MachineFinalizer) {
 		if err := machineScope.PatchObject(); err != nil {
 			machineScope.Error(err, "unable to update finalizer on object")
 			return ctrl.Result{}, err

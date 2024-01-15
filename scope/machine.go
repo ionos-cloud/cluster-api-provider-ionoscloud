@@ -44,8 +44,8 @@ type MachineScope struct {
 	Cluster     *clusterv1.Cluster
 	Machine     *clusterv1.Machine
 
-	ClusterScope      *ClusterScope
-	IonosCloudMachine *infrav1.IonosCloudMachine
+	ClusterScope *ClusterScope
+	IonosMachine *infrav1.IonosCloudMachine
 }
 
 // MachineScopeParams is a struct that contains the params used to create a new MachineScope through NewMachineScope.
@@ -84,26 +84,26 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, fmt.Errorf("failed to init patch helper: %w", err)
 	}
 	return &MachineScope{
-		Logger:            params.Logger,
-		client:            params.Client,
-		patchHelper:       helper,
-		Cluster:           params.Cluster,
-		Machine:           params.Machine,
-		ClusterScope:      params.InfraCluster,
-		IonosCloudMachine: params.IonosMachine,
+		Logger:       params.Logger,
+		client:       params.Client,
+		patchHelper:  helper,
+		Cluster:      params.Cluster,
+		Machine:      params.Machine,
+		ClusterScope: params.InfraCluster,
+		IonosMachine: params.IonosMachine,
 	}, nil
 }
 
 // HasFailed checks if the IonosCloudMachine is in a failed state.
 func (m *MachineScope) HasFailed() bool {
-	status := m.IonosCloudMachine.Status
+	status := m.IonosMachine.Status
 	return status.FailureReason != nil || status.FailureMessage != nil
 }
 
 // PatchObject will apply all changes from the IonosCloudMachine.
 // It will also make sure to patch the status subresource.
 func (m *MachineScope) PatchObject() error {
-	conditions.SetSummary(m.IonosCloudMachine,
+	conditions.SetSummary(m.IonosMachine,
 		conditions.WithConditions(
 			infrav1.MachineProvisionedCondition))
 
@@ -115,7 +115,7 @@ func (m *MachineScope) PatchObject() error {
 	// would cause the patch to be aborted as well.
 	return m.patchHelper.Patch(
 		timeoutCtx,
-		m.IonosCloudMachine,
+		m.IonosMachine,
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 			infrav1.MachineProvisionedCondition,

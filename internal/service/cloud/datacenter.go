@@ -18,5 +18,5 @@ package cloud
 
 // dataCenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
 func (s *Service) dataCenterID() string {
-	return s.scope.IonosCloudMachine.Spec.DataCenterID
+	return s.scope.IonosMachine.Spec.DataCenterID
 }
