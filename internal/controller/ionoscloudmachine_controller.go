@@ -114,7 +114,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		Client:       r.Client,
 		Cluster:      cluster,
 		Machine:      machine,
-		InfraCluster: clusterScope,
+		ClusterScope: clusterScope,
 		IonosMachine: ionosCloudMachine,
 		Logger:       &logger,
 	})

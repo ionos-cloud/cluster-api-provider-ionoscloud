@@ -54,7 +54,7 @@ type MachineScopeParams struct {
 	Logger       *logr.Logger
 	Cluster      *clusterv1.Cluster
 	Machine      *clusterv1.Machine
-	InfraCluster *ClusterScope
+	ClusterScope *ClusterScope
 	IonosMachine *infrav1.IonosCloudMachine
 }
 
@@ -72,7 +72,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	if params.IonosMachine == nil {
 		return nil, errors.New("machine scope params lack a IONOS Cloud machine")
 	}
-	if params.InfraCluster == nil {
+	if params.ClusterScope == nil {
 		return nil, errors.New("machine scope params need a IONOS Cloud cluster scope")
 	}
 	if params.Logger == nil {
@@ -89,7 +89,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		patchHelper:  helper,
 		Cluster:      params.Cluster,
 		Machine:      params.Machine,
-		ClusterScope: params.InfraCluster,
+		ClusterScope: params.ClusterScope,
 		IonosMachine: params.IonosMachine,
 	}, nil
 }
@@ -100,7 +100,7 @@ func (m *MachineScope) HasFailed() bool {
 	return status.FailureReason != nil || status.FailureMessage != nil
 }
 
-// PatchObject will apply all changes from the IonosCloudMachine.
+// PatchObject will apply all changes from the IonosMachine.
 // It will also make sure to patch the status subresource.
 func (m *MachineScope) PatchObject() error {
 	conditions.SetSummary(m.IonosMachine,
