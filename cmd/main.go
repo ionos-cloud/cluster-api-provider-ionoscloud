@@ -22,7 +22,7 @@ import (
 	"flag"
 	"os"
 
-	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
+	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -88,8 +88,8 @@ func main() {
 		os.Exit(1)
 	}
 	ionosCloudClient, err := icc.NewClient(
-		os.Getenv(ionoscloud.IonosUsernameEnvVar), os.Getenv(ionoscloud.IonosPasswordEnvVar),
-		os.Getenv(ionoscloud.IonosTokenEnvVar), os.Getenv(ionoscloud.IonosApiUrlEnvVar))
+		os.Getenv(sdk.IonosUsernameEnvVar), os.Getenv(sdk.IonosPasswordEnvVar),
+		os.Getenv(sdk.IonosTokenEnvVar), os.Getenv(sdk.IonosApiUrlEnvVar))
 	if err != nil {
 		setupLog.Error(err, "could not create IONOS client")
 		os.Exit(1)
