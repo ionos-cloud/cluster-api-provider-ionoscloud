@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -106,8 +107,14 @@ func (m *MachineScope) PatchObject() error {
 		conditions.WithConditions(
 			infrav1.MachineProvisionedCondition))
 
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	// We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
+	// aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation
+	// would cause the patch to be aborted as well.
 	return m.patchHelper.Patch(
-		context.TODO(),
+		timeoutCtx,
 		m.IonosCloudMachine,
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
