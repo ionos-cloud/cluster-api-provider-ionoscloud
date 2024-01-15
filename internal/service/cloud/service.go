@@ -42,7 +42,7 @@ func NewService(ctx context.Context, s *scope.MachineScope) (*Service, error) {
 	}, nil
 }
 
-// API is a shortcut for the IONOS Cloud Client.
-func (s *Service) API() ionoscloud.Client {
+// api is a shortcut for the IONOS Cloud Client.
+func (s *Service) api() ionoscloud.Client {
 	return s.scope.ClusterScope.IonosClient
 }

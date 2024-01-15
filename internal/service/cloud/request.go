@@ -23,7 +23,7 @@ import (
 )
 
 func (s *Service) getPendingRequests(method, resourcePath string) ([]sdk.Request, error) {
-	requests, err := s.API().GetRequests(s.ctx, method, resourcePath)
+	requests, err := s.api().GetRequests(s.ctx, method, resourcePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not get requests: %w", err)
 	}

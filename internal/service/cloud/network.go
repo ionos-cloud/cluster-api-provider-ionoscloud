@@ -90,7 +90,7 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 // GetLAN tries to retrieve the cluster related LAN in the datacenter.
 func (s *Service) GetLAN() (*sdk.Lan, error) {
 	// check if the LAN exists
-	lans, err := s.API().ListLANs(s.ctx, s.dataCenterID())
+	lans, err := s.api().ListLANs(s.ctx, s.dataCenterID())
 	if err != nil {
 		return nil, fmt.Errorf("could not list lans in datacenter %s: %w", s.dataCenterID(), err)
 	}
@@ -158,7 +158,7 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 func (s *Service) createLAN() error {
 	log := s.scope.Logger.WithName("CreateLAN")
 
-	requestPath, err := s.API().CreateLAN(s.ctx, s.dataCenterID(), sdk.LanPropertiesPost{
+	requestPath, err := s.api().CreateLAN(s.ctx, s.dataCenterID(), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.LANName()),
 		Public: ptr.To(true),
 	})
@@ -185,7 +185,7 @@ func (s *Service) createLAN() error {
 func (s *Service) deleteLAN(lanID string) error {
 	log := s.scope.Logger.WithName("DeleteLAN")
 
-	requestPath, err := s.API().DeleteLAN(s.ctx, s.dataCenterID(), lanID)
+	requestPath, err := s.api().DeleteLAN(s.ctx, s.dataCenterID(), lanID)
 	if err != nil {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
