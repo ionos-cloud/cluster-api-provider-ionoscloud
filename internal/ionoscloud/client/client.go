@@ -237,7 +237,10 @@ func (c *IonosCloudClient) DeleteLAN(ctx context.Context, dataCenterID, lanID st
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	return req.Header.Get("Location"), nil
+	if location := req.Header.Get("Location"); location != "" {
+		return location, nil
+	}
+	return "", errors.New(apiNoLocationErrMessage)
 }
 
 // ListVolumes returns a list of volumes in the specified data center.
