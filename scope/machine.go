@@ -20,16 +20,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/go-logr/logr"
-	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 )
 
 // MachineScope defines a basic context for primary use in IonosCloudMachineReconciler.

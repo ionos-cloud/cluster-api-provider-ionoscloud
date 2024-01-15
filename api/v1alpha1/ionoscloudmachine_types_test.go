@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	"net/http"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -64,18 +64,6 @@ func completeMachine() *IonosCloudMachine {
 				IPs:     []string{"1.2.3.4"},
 				UseDHCP: ptr.To(true),
 			},
-		},
-	}
-}
-
-func completeStatus() *IonosCloudMachineStatus {
-	return &IonosCloudMachineStatus{
-		Ready: false,
-		CurrentRequest: &ProvisioningRequest{
-			Method:      http.MethodPost,
-			RequestPath: "requestPath",
-			State:       RequestStatusRunning,
-			Message:     ptr.To("requestMessage"),
 		},
 	}
 }

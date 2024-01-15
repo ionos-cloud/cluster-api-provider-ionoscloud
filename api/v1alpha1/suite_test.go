@@ -48,7 +48,7 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "..", "config", "crd", "bases"),
 		},
 		// NOTE(gfariasalves): To be removed after I finish the PR comments
-		//BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s", "1.28.0-linux-amd64"),
+		// BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s", "1.28.0-linux-amd64"),
 
 		ErrorIfCRDPathMissing: true,
 	}
