@@ -53,14 +53,14 @@ type Client interface {
 	GetLAN(ctx context.Context, dataCenterID, lanID string) (*ionoscloud.Lan, error)
 	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
 	DeleteLAN(ctx context.Context, dataCenterID, lanID string) (string, error)
-	// CheckRequestStatus checks the status of a provided request identified by requestID
-	CheckRequestStatus(ctx context.Context, requestID string) (*ionoscloud.RequestStatus, error)
 	// ListVolumes returns a list of volumes in a specified data center.
 	ListVolumes(ctx context.Context, dataCenterID string) (*ionoscloud.Volumes, error)
 	// GetVolume returns the volume that matches volumeID in the specified data center.
 	GetVolume(ctx context.Context, dataCenterID, volumeID string) (*ionoscloud.Volume, error)
 	// DestroyVolume deletes the volume that matches volumeID in the specified data center.
 	DestroyVolume(ctx context.Context, dataCenterID, volumeID string) error
+	// CheckRequestStatus checks the status of a provided request identified by requestID
+	CheckRequestStatus(ctx context.Context, requestID string) (*ionoscloud.RequestStatus, error)
 	// WaitForRequest waits for the completion of the provided request, return an error if it fails.
 	WaitForRequest(ctx context.Context, requestURL string) error
 	// GetRequests returns the requests made in the last 24 hours that match the provided method and path.
