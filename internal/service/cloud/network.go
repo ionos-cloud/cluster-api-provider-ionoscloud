@@ -58,6 +58,7 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 
 	// We want to requeue and check again after some time
 	if requestStatus == sdk.RequestStatusRunning || requestStatus == sdk.RequestStatusQueued {
+		log.Info("request is ongoing, re-triggering reconciliaton", "request status", requestStatus)
 		return true, nil
 	}
 
@@ -78,7 +79,7 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 		//  is bigger than the created time of the LAN POST request.
 	}
 
-	log.V(4).Info("No LAN was found. Creating new LAN")
+	log.V(4).Info("no LAN was found. Creating new LAN")
 	if err := s.createLAN(); err != nil {
 		return false, err
 	}
@@ -264,9 +265,8 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 		}
 
 		status := *r.Metadata.RequestStatus.Metadata.Status
-
 		if status == sdk.RequestStatusFailed {
-			// We just log the error but not return it, so we can retry the request.
+			// We just log the error but do not return it, so we can retry the request.
 			message := r.Metadata.RequestStatus.Metadata.Message
 			s.scope.Logger.WithValues("requestID", r.Id, "requestStatus", status).
 				Error(errors.New(*message), "last request for LAN has failed. logging it for debugging purposes")

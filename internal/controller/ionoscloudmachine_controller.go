@@ -170,10 +170,10 @@ func (r *IonosCloudMachineReconciler) isInfrastructureReady(machineScope *scope.
 }
 
 func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.MachineScope, _ *scope.ClusterScope, cloudService *cloud.Service) (ctrl.Result, error) {
-	machineScope.V(4).Info("Reconciling IonosCloudMachine")
+	machineScope.V(4).Info("reconciling IonosCloudMachine")
 
 	if machineScope.HasFailed() {
-		machineScope.Info("Error state detected, skipping reconciliation")
+		machineScope.Info("error state detected, skipping reconciliation")
 		return ctrl.Result{}, nil
 	}
 

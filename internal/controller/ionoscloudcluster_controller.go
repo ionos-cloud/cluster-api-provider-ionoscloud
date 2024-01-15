@@ -78,7 +78,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	if cluster == nil {
-		logger.Info("Waiting for cluster controller to set OwnerRef on IonosCloudCluster")
+		logger.Info("waiting for cluster controller to set OwnerRef on IonosCloudCluster")
 		return ctrl.Result{}, nil
 	}
 
@@ -86,7 +86,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	ctx = ctrl.LoggerInto(ctx, logger)
 
 	if annotations.IsPaused(cluster, ionosCloudCluster) {
-		logger.Info("Either IonosCloudCluster or owner cluster is marked as paused. Reconciliation is skipped")
+		logger.Info("either IonosCloudCluster or owner cluster is marked as paused. Reconciliation is skipped")
 		return ctrl.Result{}, nil
 	}
 
