@@ -241,6 +241,7 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 		return "", fmt.Errorf("could not get requests: %w", err)
 	}
 
+	expectedLANName := s.LANName()
 	for _, r := range requests {
 		if method != http.MethodPost {
 			targets := *r.Metadata.RequestStatus.Metadata.Targets
@@ -257,7 +258,7 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 			if err != nil {
 				return "", fmt.Errorf("could not unmarshal request into LAN: %w", err)
 			}
-			if *lan.Properties.Name != s.LANName() {
+			if *lan.Properties.Name != expectedLANName {
 				continue
 			}
 		}
