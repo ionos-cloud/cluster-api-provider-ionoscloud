@@ -172,7 +172,7 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 }
 
 func (s *Service) createLAN() error {
-	log := s.scope.Logger.WithName("CreateLAN")
+	log := s.scope.Logger.WithName("createLAN")
 
 	requestPath, err := s.api().CreateLAN(s.ctx, s.dataCenterID(), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.LANName()),
@@ -199,7 +199,7 @@ func (s *Service) createLAN() error {
 }
 
 func (s *Service) deleteLAN(lanID string) error {
-	log := s.scope.Logger.WithName("DeleteLAN")
+	log := s.scope.Logger.WithName("deleteLAN")
 
 	requestPath, err := s.api().DeleteLAN(s.ctx, s.dataCenterID(), lanID)
 	if err != nil {
