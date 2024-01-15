@@ -61,7 +61,7 @@ type Client interface {
 	DestroyVolume(ctx context.Context, dataCenterID, volumeID string) error
 	// CheckRequestStatus checks the status of a provided request identified by requestID
 	CheckRequestStatus(ctx context.Context, requestID string) (*ionoscloud.RequestStatus, error)
-	// WaitForRequest waits for the completion of the provided request, return an error if it fails.
+	// WaitForRequest waits for the completion of the provided request.
 	WaitForRequest(ctx context.Context, requestURL string) error
 	// GetRequests returns the requests made in the last 24 hours that match the provided method and path.
 	GetRequests(ctx context.Context, method, path string) ([]ionoscloud.Request, error)

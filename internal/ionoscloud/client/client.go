@@ -331,7 +331,7 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 	return items, nil
 }
 
-// WaitForRequest waits for the completion of the provided request, return an error if it fails.
+// WaitForRequest waits for the completion of the provided request.
 func (c *IonosCloudClient) WaitForRequest(ctx context.Context, requestURL string) error {
 	if requestURL == "" {
 		return errRequestURLIsEmpty
