@@ -93,7 +93,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	}, nil
 }
 
-// HasFailed Checks if the IonosCloudMachine is in a failed state.
+// HasFailed checks if the IonosCloudMachine is in a failed state.
 func (m *MachineScope) HasFailed() bool {
 	status := m.IonosCloudMachine.Status
 	return status.FailureReason != nil || status.FailureMessage != nil
