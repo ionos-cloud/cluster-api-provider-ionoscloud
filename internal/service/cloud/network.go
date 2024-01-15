@@ -235,7 +235,7 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 		))
 	}
 
-	lanPath := path.Join("datacenters", s.dataCenterID(), "lan")
+	lanPath := path.Join("datacenters", s.dataCenterID(), "lans")
 	requests, err := s.api().GetRequests(s.ctx, method, lanPath)
 	if err != nil {
 		return "", fmt.Errorf("could not get requests: %w", err)
