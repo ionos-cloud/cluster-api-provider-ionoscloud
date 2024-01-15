@@ -570,19 +570,19 @@ func (_c *MockClient_GetLAN_Call) RunAndReturn(run func(context.Context, string,
 }
 
 // GetRequests provides a mock function with given fields: ctx, method, path
-func (_m *MockClient) GetRequests(ctx context.Context, method string, path string) (*[]ionoscloud.Request, error) {
+func (_m *MockClient) GetRequests(ctx context.Context, method string, path string) ([]ionoscloud.Request, error) {
 	ret := _m.Called(ctx, method, path)
 
-	var r0 *[]ionoscloud.Request
+	var r0 []ionoscloud.Request
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*[]ionoscloud.Request, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) ([]ionoscloud.Request, error)); ok {
 		return rf(ctx, method, path)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *[]ionoscloud.Request); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) []ionoscloud.Request); ok {
 		r0 = rf(ctx, method, path)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*[]ionoscloud.Request)
+			r0 = ret.Get(0).([]ionoscloud.Request)
 		}
 	}
 
@@ -615,12 +615,12 @@ func (_c *MockClient_GetRequests_Call) Run(run func(ctx context.Context, method 
 	return _c
 }
 
-func (_c *MockClient_GetRequests_Call) Return(_a0 *[]ionoscloud.Request, _a1 error) *MockClient_GetRequests_Call {
+func (_c *MockClient_GetRequests_Call) Return(_a0 []ionoscloud.Request, _a1 error) *MockClient_GetRequests_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockClient_GetRequests_Call) RunAndReturn(run func(context.Context, string, string) (*[]ionoscloud.Request, error)) *MockClient_GetRequests_Call {
+func (_c *MockClient_GetRequests_Call) RunAndReturn(run func(context.Context, string, string) ([]ionoscloud.Request, error)) *MockClient_GetRequests_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -64,5 +64,5 @@ type Client interface {
 	// WaitForRequest waits for the completion of the provided request, return an error if it fails.
 	WaitForRequest(ctx context.Context, requestURL string) error
 	// GetRequests returns the requests made in the last 24 hours that match the provided method and path.
-	GetRequests(ctx context.Context, method, path string) (*[]ionoscloud.Request, error)
+	GetRequests(ctx context.Context, method, path string) ([]ionoscloud.Request, error)
 }

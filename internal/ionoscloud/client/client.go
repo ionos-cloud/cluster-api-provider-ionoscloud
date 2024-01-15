@@ -297,7 +297,7 @@ func (c *IonosCloudClient) CheckRequestStatus(ctx context.Context, requestURL st
 }
 
 // GetRequests returns the requests made in the last 24 hours that match the provided method and path.
-func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string) (*[]sdk.Request, error) {
+func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string) ([]sdk.Request, error) {
 	if path == "" {
 		return nil, errors.New("path needs to be provided")
 	}
@@ -305,7 +305,8 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 		return nil, errors.New("method needs to be provided")
 	}
 
-	lookback := time.Now().Add(-24 * time.Hour).Format(time.DateTime)
+	const defaultLookbackTime = 24 * time.Hour
+	lookback := time.Now().Add(-defaultLookbackTime).Format(time.DateTime)
 	reqs, _, err := c.API.RequestsApi.RequestsGet(ctx).
 		Depth(3).
 		FilterMethod(method).
@@ -315,13 +316,19 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get requests: %w", err)
 	}
+	if reqs.Items == nil {
+		// NOTE(lubedacht): This shouldn't happen, but we shouldn't deref
+		// a pointer without a nil check
+		return nil, nil
+	}
+
 	items := *reqs.Items
 	slices.SortFunc(items, func(a, b sdk.Request) int {
 		// We invert the value to sort in descending order
 		return -a.Metadata.CreatedDate.Compare(b.Metadata.CreatedDate.Time)
 	})
 
-	return &items, nil
+	return items, nil
 }
 
 // WaitForRequest waits for the completion of the provided request, return an error if it fails.
