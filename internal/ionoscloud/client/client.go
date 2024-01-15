@@ -317,7 +317,7 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 		FilterCreatedAfter(lookback).
 		Execute()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get requests: %w", err)
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	if reqs.Items == nil {
 		// NOTE(lubedacht): This shouldn't happen, but we shouldn't deref
