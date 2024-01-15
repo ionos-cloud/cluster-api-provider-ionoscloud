@@ -23,10 +23,10 @@ var (
 	errServerIDIsEmpty     = errors.New("error parsing server ID: value cannot be empty")
 	errLANIDIsEmpty        = errors.New("error parsing LAN ID: value cannot be empty")
 	errVolumeIDIsEmpty     = errors.New("error parsing volume ID: value cannot be empty")
-	errRequestURLIsEmpty   = errors.New("a request url is necessary for the operation")
+	errRequestURLIsEmpty   = errors.New("a request URL is necessary for the operation")
 )
 
 const (
 	apiCallErrWrapper       = "request to Cloud API has failed: %w"
-	apiNoLocationErrWrapper = "request to Cloud API did not return the request url"
+	apiNoLocationErrWrapper = "request to Cloud API did not return the request URL"
 )
