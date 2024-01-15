@@ -22,7 +22,7 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 )
 
-func (s *Service) getPendingRequests(method, resourcePath string) ([]sdk.Request, error) {
+func (s *Service) findRelatedRequests(method, resourcePath string) ([]sdk.Request, error) {
 	requests, err := s.api().GetRequests(s.ctx, method, resourcePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not get requests: %w", err)
