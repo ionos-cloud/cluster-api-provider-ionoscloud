@@ -92,7 +92,7 @@ func (s *Service) GetLAN() (*sdk.Lan, error) {
 	// check if the LAN exists
 	lans, err := s.api().ListLANs(s.ctx, s.dataCenterID())
 	if err != nil {
-		return nil, fmt.Errorf("could not list lans in datacenter %s: %w", s.dataCenterID(), err)
+		return nil, fmt.Errorf("could not list LANs in datacenter %s: %w", s.dataCenterID(), err)
 	}
 
 	for _, l := range *lans.Items {
