@@ -258,7 +258,7 @@ func (r *IonosCloudMachineReconciler) getClusterScope(
 		IonosClient:  r.IonosCloudClient,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to creat cluster scope: %w", err)
+		return nil, fmt.Errorf("failed to create cluster scope: %w", err)
 	}
 
 	return clusterScope, nil
