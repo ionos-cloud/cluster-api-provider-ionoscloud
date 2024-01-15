@@ -95,8 +95,9 @@ func (s *Service) GetLAN() (*sdk.Lan, error) {
 		return nil, fmt.Errorf("could not list LANs in datacenter %s: %w", s.dataCenterID(), err)
 	}
 
+	expectedName := s.LANName()
 	for _, l := range *lans.Items {
-		if name := l.Properties.Name; name != nil && *l.Properties.Name == s.LANName() {
+		if l.Properties.HasName() && *l.Properties.Name == expectedName {
 			return &l, nil
 		}
 	}
