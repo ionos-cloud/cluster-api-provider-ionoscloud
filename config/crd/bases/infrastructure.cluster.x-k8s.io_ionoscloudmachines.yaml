@@ -50,13 +50,13 @@ spec:
                   all datacenters.
                 example: AMD_OPTERON
                 type: string
-              datacenterId:
+              datacenterID:
                 description: DataCenterID is the ID of the datacenter where the machine
                   should be created in.
                 format: uuid
                 type: string
                 x-kubernetes-validations:
-                - message: datacenterId is immutable
+                - message: datacenterID is immutable
                   rule: self == oldSelf
               disk:
                 description: Disk defines the boot volume of the VM.
@@ -95,7 +95,7 @@ spec:
                     type: array
                     x-kubernetes-list-type: set
                 type: object
-              memoryMb:
+              memoryMB:
                 default: 3072
                 description: MemoryMB is the memory size for the VM in MB. Size must
                   be specified in multiples of 256 MB with a minimum of 1024 MB which
@@ -114,7 +114,7 @@ spec:
                       type: string
                     type: array
                     x-kubernetes-list-type: set
-                  useDhcp:
+                  useDHCP:
                     default: true
                     description: UseDHCP sets whether DHCP should be used or not.
                       NOTE(lubedacht) currently we do not support private clusters
@@ -127,13 +127,13 @@ spec:
                 format: int32
                 minimum: 1
                 type: integer
-              providerId:
+              providerID:
                 description: ProviderID is the IONOS Cloud provider ID will be in
                   the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                 type: string
             required:
             - cpuFamily
-            - datacenterId
+            - datacenterID
             - disk
             type: object
           status:

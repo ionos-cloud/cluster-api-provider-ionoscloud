@@ -77,13 +77,13 @@ type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
 	// +optional
-	ProviderID string `json:"providerId,omitempty"`
+	ProviderID string `json:"providerID,omitempty"`
 
 	// DataCenterID is the ID of the datacenter where the machine should be created in.
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterId is immutable"
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Format=uuid
-	DataCenterID string `json:"datacenterId"`
+	DataCenterID string `json:"datacenterID"`
 
 	// NumCores defines the number of cores for the VM.
 	// +kubebuilder:validation:Minimum=1
@@ -104,7 +104,7 @@ type IonosCloudMachineSpec struct {
 	// +kubebuilder:validation:Minimum=2048
 	// +kubebuilder:default=3072
 	// +optional
-	MemoryMB int32 `json:"memoryMb,omitempty"`
+	MemoryMB int32 `json:"memoryMB,omitempty"`
 
 	// CPUFamily defines the CPU architecture, which will be used for this VM.
 	// The not all CPU architectures are available in all datacenters.
@@ -132,7 +132,7 @@ type Network struct {
 	// therefore dhcp must be set to true.
 	// +kubebuilder:default=true
 	// +optional
-	UseDHCP *bool `json:"useDhcp,omitempty"`
+	UseDHCP *bool `json:"useDHCP,omitempty"`
 }
 
 // Volume is the physical storage on the machine.
