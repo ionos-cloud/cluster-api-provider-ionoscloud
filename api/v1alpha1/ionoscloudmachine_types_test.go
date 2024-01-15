@@ -34,20 +34,6 @@ func defaultMachine() *IonosCloudMachine {
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: IonosCloudMachineSpec{
-			ProviderID: "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
-			Network:    &Network{},
-		},
-		Status: IonosCloudMachineStatus{},
-	}
-}
-
-func completeMachine() *IonosCloudMachine {
-	return &IonosCloudMachine{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-machine",
-			Namespace: metav1.NamespaceDefault,
-		},
-		Spec: IonosCloudMachineSpec{
 			ProviderID:       "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
 			DataCenterID:     "ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
 			NumCores:         1,
@@ -71,18 +57,24 @@ func completeMachine() *IonosCloudMachine {
 
 var _ = Describe("IonosCloudMachine Tests", func() {
 	AfterEach(func() {
-		err := k8sClient.Delete(context.Background(), defaultMachine())
-		Expect(client.IgnoreNotFound(err)).To(Succeed())
+		m := &IonosCloudMachine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-machine",
+				Namespace: metav1.NamespaceDefault,
+			},
+		}
+		err := k8sClient.Delete(context.Background(), m)
+		Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred())
 	})
 
 	Context("Validation", func() {
 		It("shouldn't fail if everything is seems to be properly set", func() {
-			m := completeMachine()
+			m := defaultMachine()
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 		})
 
 		It("should not fail if providerId is empty", func() {
-			m := completeMachine()
+			m := defaultMachine()
 			want := ""
 			m.Spec.ProviderID = want
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
@@ -91,16 +83,15 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 
 		When("data center id", func() {
 			It("it should fail if dataCenterId is not a uuid", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				want := ""
 				m.Spec.DataCenterID = want
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
-				Expect(m.Spec.DataCenterID).To(Equal(want))
 			})
 			It("should be immutable", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(m.Spec.DataCenterID).To(Equal(completeMachine().Spec.DataCenterID))
+				Expect(m.Spec.DataCenterID).To(Equal(defaultMachine().Spec.DataCenterID))
 				m.Spec.DataCenterID = "6ded8c5f-8df2-46ef-b4ce-61833daf0961"
 				Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 			})
@@ -108,19 +99,19 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 
 		When("the number of cores, ", func() {
 			It("is less than 1, it should fail", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				m.Spec.NumCores = -1
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 			It("should have a minimum value of 1", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				want := int32(1)
 				m.Spec.NumCores = want
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.NumCores).To(Equal(want))
 			})
 			It("isn't set, it should work and default to 1", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				// because NumCores is int32, setting the value as 0 is the same as not setting anything
 				m.Spec.NumCores = 0
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
@@ -130,19 +121,19 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 
 		When("the number of cores, ", func() {
 			It("is less than 1, it should fail", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				m.Spec.NumCores = -1
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 			It("should have a minimum value of 1", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				want := int32(1)
 				m.Spec.NumCores = want
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.NumCores).To(Equal(want))
 			})
 			It("isn't set, it should work and default to 1", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				m.Spec.NumCores = 0
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.NumCores).To(Equal(int32(1)))
@@ -151,20 +142,20 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 
 		When("the machine availability zone", func() {
 			It("isn't set, should default to AUTO", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				// because AvailabilityZone is a string, setting the value as "" is the same as not setting anything
 				m.Spec.AvailabilityZone = ""
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.AvailabilityZone).To(Equal(AvailabilityZoneAuto))
 			})
 			It("it not part of the enum it should not work", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				m.Spec.AvailabilityZone = "this-should-not-work"
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 			DescribeTable("should work for these values",
 				func(zone AvailabilityZone) {
-					m := completeMachine()
+					m := defaultMachine()
 					m.Spec.AvailabilityZone = zone
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 					Expect(m.Spec.AvailabilityZone).To(Equal(zone))
@@ -178,31 +169,31 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 
 		When("the machine memory size", func() {
 			It("isn't set, should default to 3072MB", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				// because MemoryMB is an int32, setting the value as 0 is the same as not setting anything
 				m.Spec.MemoryMB = 0
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.MemoryMB).To(Equal(int32(3072)))
 			})
 			It("should be at least 2048, therefore less than it should not work", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				m.Spec.MemoryMB = 1024
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 			It("should be at least 2048, therefore 2048 should work", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				want := int32(2048)
 				m.Spec.MemoryMB = want
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.MemoryMB).To(Equal(want))
 			})
 			It("it should be a multiple of 1024", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				m.Spec.MemoryMB = 2100
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 			It("should be at least 2048 and a multiple of 1024, therefore 4096 should work", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				want := int32(4096)
 				m.Spec.MemoryMB = want
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
@@ -212,7 +203,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 
 		Context("Volume", func() {
 			It("can have an optional name", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				want := ""
 				m.Spec.Disk.Name = want
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
@@ -220,20 +211,20 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 			When("the disk availability zone", func() {
 				It("isn't set, should default to AUTO", func() {
-					m := completeMachine()
+					m := defaultMachine()
 					// because AvailabilityZone is a string, setting the value as "" is the same as not setting anything
 					m.Spec.Disk.AvailabilityZone = ""
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 					Expect(m.Spec.Disk.AvailabilityZone).To(Equal(AvailabilityZoneAuto))
 				})
 				It("is not part of the enum it should not work", func() {
-					m := completeMachine()
+					m := defaultMachine()
 					m.Spec.Disk.AvailabilityZone = "this-should-not-work"
 					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 				})
 				DescribeTable("should work for these values",
 					func(zone AvailabilityZone) {
-						m := completeMachine()
+						m := defaultMachine()
 						m.Spec.Disk.AvailabilityZone = zone
 						Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 						Expect(m.Spec.Disk.AvailabilityZone).To(Equal(zone))
@@ -245,39 +236,39 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				)
 			})
 			It("can be created without SSH keys", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				var want []string
 				m.Spec.Disk.SSHKeys = want
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.Disk.SSHKeys).To(Equal(want))
 			})
 			It("should prevent setting identical SSH keys", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				m.Spec.Disk.SSHKeys = []string{"Key1", "Key1", "Key2", "Key3"}
-				Expect(k8sClient.Create(context.Background(), m)).To(HaveOccurred())
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 			When("the disk size (in GB)", func() {
 				It("is less than 5, it should fail", func() {
-					m := completeMachine()
+					m := defaultMachine()
 					m.Spec.Disk.SizeGB = 4
 					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 				})
 				It("it is not set, it should default to 5", func() {
-					m := completeMachine()
+					m := defaultMachine()
 					// Because disk size is an int, setting it as 0 is the same as not setting anything
 					m.Spec.Disk.SizeGB = 0
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 					Expect(m.Spec.Disk.SizeGB).To(Equal(5))
 				})
-				It("It should be at least 5; therefore 5 should work", func() {
-					m := completeMachine()
+				It("should be at least 5; therefore 5 should work", func() {
+					m := defaultMachine()
 					want := 5
 					m.Spec.Disk.SizeGB = want
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 					Expect(m.Spec.Disk.SizeGB).To(Equal(want))
 				})
-				It("It should be at least 5; therefore 6 should work", func() {
-					m := completeMachine()
+				It("should be at least 5; therefore 6 should work", func() {
+					m := defaultMachine()
 					want := 6
 					m.Spec.Disk.SizeGB = want
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
@@ -286,20 +277,20 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 			When("the disk type", func() {
 				It("isn't set, should default to HDD", func() {
-					m := completeMachine()
+					m := defaultMachine()
 					// because DiskType is a string, setting the value as "" is the same as not setting anything
 					m.Spec.Disk.DiskType = ""
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 					Expect(m.Spec.Disk.DiskType).To(Equal(VolumeDiskTypeHDD))
 				})
 				It("is not part of the enum it should not work", func() {
-					m := completeMachine()
+					m := defaultMachine()
 					m.Spec.Disk.AvailabilityZone = "tape"
 					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 				})
 				DescribeTable("should work for these values",
 					func(diskType VolumeDiskType) {
-						m := completeMachine()
+						m := defaultMachine()
 						m.Spec.Disk.DiskType = diskType
 						Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 						Expect(m.Spec.Disk.DiskType).To(Equal(diskType))
@@ -312,13 +303,13 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		})
 		Context("Network", func() {
 			It("network config should be optional", func() {
-				m := completeMachine()
+				m := defaultMachine()
 				m.Spec.Network = nil
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.Network).To(BeNil())
 			})
-			It("If UseDHCP is not set, it should default to true", func() {
-				m := completeMachine()
+			It("if UseDHCP is not set, it should default to true", func() {
+				m := defaultMachine()
 				m.Spec.Network.UseDHCP = nil
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.Network.UseDHCP).ToNot(BeNil())
@@ -326,7 +317,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 			DescribeTable("if set UseDHCP can be",
 				func(useDHCP *bool) {
-					m := completeMachine()
+					m := defaultMachine()
 					m.Spec.Network.UseDHCP = useDHCP
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 					Expect(m.Spec.Network.UseDHCP).To(Equal(useDHCP))
@@ -334,8 +325,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				Entry("true", ptr.To(true)),
 				Entry("false", ptr.To(false)),
 			)
-			It("reserved ips should be optional", func() {
-				m := completeMachine()
+			It("reserved IPs should be optional", func() {
+				m := defaultMachine()
 				m.Spec.Network.IPs = nil
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.Network.IPs).To(BeNil())
