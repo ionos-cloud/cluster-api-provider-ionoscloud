@@ -29,6 +29,10 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 )
 
+const (
+	depthRequestsMetadataStatusMetadata = 2 // for LISTing requests and their metadata status metadata
+)
+
 // IonosCloudClient is a concrete implementation of the Client interface defined in the internal client package, that
 // communicates with Cloud API using its SDK.
 type IonosCloudClient struct {
@@ -311,7 +315,7 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 	const defaultLookbackTime = 24 * time.Hour
 	lookback := time.Now().Add(-defaultLookbackTime).Format(time.DateTime)
 	reqs, _, err := c.API.RequestsApi.RequestsGet(ctx).
-		Depth(3).
+		Depth(depthRequestsMetadataStatusMetadata).
 		FilterMethod(method).
 		FilterUrl(path).
 		FilterCreatedAfter(lookback).
@@ -327,8 +331,7 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 
 	items := *reqs.Items
 	slices.SortFunc(items, func(a, b sdk.Request) int {
-		// We invert the value to sort in descending order
-		return -a.Metadata.CreatedDate.Compare(b.Metadata.CreatedDate.Time)
+		return b.Metadata.CreatedDate.Compare(a.Metadata.CreatedDate.Time)
 	})
 
 	return items, nil
