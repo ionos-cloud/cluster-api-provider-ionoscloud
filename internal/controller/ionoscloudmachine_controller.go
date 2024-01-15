@@ -198,7 +198,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.Machin
 	// Ensure that a LAN is created in the datacenter
 	if requeue, err := cloudService.ReconcileLAN(); err != nil || requeue {
 		if requeue {
-			return ctrl.Result{RequeueAfter: time.Second * 30}, err
+			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 		}
 		return ctrl.Result{}, fmt.Errorf("could not reconcile LAN %w", err)
 	}
@@ -211,8 +211,13 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(cloudService *cloud.Servic
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("could not reconcile LAN deletion: %w", err)
 	}
+
+	var after time.Duration
+	if requeue {
+		after = defaultReconcileDuration
+	}
 	return ctrl.Result{
-		Requeue: requeue,
+		RequeueAfter: after,
 	}, nil
 }
 
