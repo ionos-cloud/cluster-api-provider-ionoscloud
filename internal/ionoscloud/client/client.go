@@ -161,7 +161,7 @@ func (c *IonosCloudClient) CreateLAN(ctx context.Context, dataCenterID string, p
 	if location := req.Header.Get("Location"); location != "" {
 		return location, nil
 	}
-	return "", errors.New(apiNoLocationErrWrapper)
+	return "", errors.New(apiNoLocationErrMessage)
 }
 
 // UpdateLAN updates a LAN with the provided properties in the specified data center.

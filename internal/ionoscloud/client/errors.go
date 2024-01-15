@@ -28,5 +28,5 @@ var (
 
 const (
 	apiCallErrWrapper       = "request to Cloud API has failed: %w"
-	apiNoLocationErrWrapper = "request to Cloud API did not return the request URL"
+	apiNoLocationErrMessage = "request to Cloud API did not return the request URL"
 )
