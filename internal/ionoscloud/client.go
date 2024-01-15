@@ -51,7 +51,7 @@ type Client interface {
 	ListLANs(ctx context.Context, dataCenterID string) (*ionoscloud.Lans, error)
 	// GetLAN returns the LAN that matches lanID in the specified data center.
 	GetLAN(ctx context.Context, dataCenterID, lanID string) (*ionoscloud.Lan, error)
-	// DestroyLAN deletes the LAN that matches the provided lanID in the specified data center.
+	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
 	DeleteLAN(ctx context.Context, dataCenterID, lanID string) (string, error)
 	// CheckRequestStatus checks the status of a provided request identified by requestID
 	CheckRequestStatus(ctx context.Context, requestID string) (*ionoscloud.RequestStatus, error)

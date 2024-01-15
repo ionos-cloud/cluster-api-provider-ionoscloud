@@ -225,7 +225,7 @@ func (c *IonosCloudClient) GetLAN(ctx context.Context, dataCenterID, lanID strin
 	return &lan, nil
 }
 
-// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center.
+// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
 func (c *IonosCloudClient) DeleteLAN(ctx context.Context, dataCenterID, lanID string) (string, error) {
 	if dataCenterID == "" {
 		return "", errDataCenterIDIsEmpty
