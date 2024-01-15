@@ -316,8 +316,8 @@ func (_c *MockClient_CreateServer_Call) RunAndReturn(run func(context.Context, s
 	return _c
 }
 
-// DestroyLAN provides a mock function with given fields: ctx, dataCenterID, lanID
-func (_m *MockClient) DestroyLAN(ctx context.Context, dataCenterID string, lanID string) (string, error) {
+// DeleteLAN provides a mock function with given fields: ctx, dataCenterID, lanID
+func (_m *MockClient) DeleteLAN(ctx context.Context, dataCenterID string, lanID string) (string, error) {
 	ret := _m.Called(ctx, dataCenterID, lanID)
 
 	var r0 string
@@ -340,32 +340,32 @@ func (_m *MockClient) DestroyLAN(ctx context.Context, dataCenterID string, lanID
 	return r0, r1
 }
 
-// MockClient_DestroyLAN_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DestroyLAN'
-type MockClient_DestroyLAN_Call struct {
+// MockClient_DeleteLAN_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteLAN'
+type MockClient_DeleteLAN_Call struct {
 	*mock.Call
 }
 
-// DestroyLAN is a helper method to define mock.On call
+// DeleteLAN is a helper method to define mock.On call
 //   - ctx context.Context
 //   - dataCenterID string
 //   - lanID string
-func (_e *MockClient_Expecter) DestroyLAN(ctx interface{}, dataCenterID interface{}, lanID interface{}) *MockClient_DestroyLAN_Call {
-	return &MockClient_DestroyLAN_Call{Call: _e.mock.On("DestroyLAN", ctx, dataCenterID, lanID)}
+func (_e *MockClient_Expecter) DeleteLAN(ctx interface{}, dataCenterID interface{}, lanID interface{}) *MockClient_DeleteLAN_Call {
+	return &MockClient_DeleteLAN_Call{Call: _e.mock.On("DeleteLAN", ctx, dataCenterID, lanID)}
 }
 
-func (_c *MockClient_DestroyLAN_Call) Run(run func(ctx context.Context, dataCenterID string, lanID string)) *MockClient_DestroyLAN_Call {
+func (_c *MockClient_DeleteLAN_Call) Run(run func(ctx context.Context, dataCenterID string, lanID string)) *MockClient_DeleteLAN_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
 	return _c
 }
 
-func (_c *MockClient_DestroyLAN_Call) Return(_a0 string, _a1 error) *MockClient_DestroyLAN_Call {
+func (_c *MockClient_DeleteLAN_Call) Return(_a0 string, _a1 error) *MockClient_DeleteLAN_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockClient_DestroyLAN_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DestroyLAN_Call {
+func (_c *MockClient_DeleteLAN_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DeleteLAN_Call {
 	_c.Call.Return(run)
 	return _c
 }

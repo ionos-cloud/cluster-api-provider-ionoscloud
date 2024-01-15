@@ -185,7 +185,7 @@ func (s *Service) createLAN() error {
 func (s *Service) deleteLAN(lanID string) error {
 	log := s.scope.Logger.WithName("DeleteLAN")
 
-	requestPath, err := s.API().DestroyLAN(s.ctx, s.DataCenterID(), lanID)
+	requestPath, err := s.API().DeleteLAN(s.ctx, s.DataCenterID(), lanID)
 	if err != nil {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
