@@ -90,9 +90,9 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 // GetLAN tries to retrieve the cluster related LAN in the datacenter.
 func (s *Service) GetLAN() (*sdk.Lan, error) {
 	// check if the LAN exists
-	lans, err := s.API().ListLANs(s.ctx, s.DataCenterID())
+	lans, err := s.API().ListLANs(s.ctx, s.dataCenterID())
 	if err != nil {
-		return nil, fmt.Errorf("could not list lans in datacenter %s: %w", s.DataCenterID(), err)
+		return nil, fmt.Errorf("could not list lans in datacenter %s: %w", s.dataCenterID(), err)
 	}
 
 	for _, l := range *lans.Items {
@@ -158,15 +158,15 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 func (s *Service) createLAN() error {
 	log := s.scope.Logger.WithName("CreateLAN")
 
-	requestPath, err := s.API().CreateLAN(s.ctx, s.DataCenterID(), sdk.LanPropertiesPost{
+	requestPath, err := s.API().CreateLAN(s.ctx, s.dataCenterID(), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.LANName()),
 		Public: ptr.To(true),
 	})
 	if err != nil {
-		return fmt.Errorf("unable to create LAN in data center %s: %w", s.DataCenterID(), err)
+		return fmt.Errorf("unable to create LAN in data center %s: %w", s.dataCenterID(), err)
 	}
 
-	s.scope.ClusterScope.IonosCluster.Status.CurrentRequest[s.DataCenterID()] = infrav1.ProvisioningRequest{
+	s.scope.ClusterScope.IonosCluster.Status.CurrentRequest[s.dataCenterID()] = infrav1.ProvisioningRequest{
 		Method:      http.MethodPost,
 		RequestPath: requestPath,
 		State:       infrav1.RequestStatusQueued,
@@ -185,12 +185,12 @@ func (s *Service) createLAN() error {
 func (s *Service) deleteLAN(lanID string) error {
 	log := s.scope.Logger.WithName("DeleteLAN")
 
-	requestPath, err := s.API().DeleteLAN(s.ctx, s.DataCenterID(), lanID)
+	requestPath, err := s.API().DeleteLAN(s.ctx, s.dataCenterID(), lanID)
 	if err != nil {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
 
-	s.scope.ClusterScope.IonosCluster.Status.CurrentRequest[s.DataCenterID()] = infrav1.ProvisioningRequest{
+	s.scope.ClusterScope.IonosCluster.Status.CurrentRequest[s.dataCenterID()] = infrav1.ProvisioningRequest{
 		Method:      http.MethodDelete,
 		RequestPath: requestPath,
 		State:       infrav1.RequestStatusQueued,
@@ -220,7 +220,7 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 		))
 	}
 
-	lanPath := path.Join("datacenters", s.DataCenterID(), "lan")
+	lanPath := path.Join("datacenters", s.dataCenterID(), "lan")
 	requests, err := s.getPendingRequests(method, lanPath)
 	if err != nil {
 		return "", err
@@ -258,7 +258,7 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 }
 
 func (s *Service) removeLANPendingRequestFromCluster() error {
-	delete(s.scope.ClusterScope.IonosCluster.Status.CurrentRequest, s.DataCenterID())
+	delete(s.scope.ClusterScope.IonosCluster.Status.CurrentRequest, s.dataCenterID())
 	if err := s.scope.ClusterScope.PatchObject(); err != nil {
 		return fmt.Errorf("could not remove stale LAN pending request from cluster: %w", err)
 	}
