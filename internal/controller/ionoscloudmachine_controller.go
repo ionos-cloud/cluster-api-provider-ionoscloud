@@ -94,7 +94,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	if annotations.IsPaused(cluster, ionosCloudMachine) {
-		logger.Info("ionos cloud machine or linked cluster is marked as paused, not reconciling")
+		logger.Info("IONOS Cloud machine or linked cluster is marked as paused, not reconciling")
 		return ctrl.Result{}, nil
 	}
 
@@ -105,7 +105,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, fmt.Errorf("error getting infra provider cluster or control plane object: %w", err)
 	}
 	if clusterScope == nil {
-		logger.Info("ionos cloud machine is not ready yet")
+		logger.Info("IONOS Cloud machine is not ready yet")
 		return ctrl.Result{}, nil
 	}
 

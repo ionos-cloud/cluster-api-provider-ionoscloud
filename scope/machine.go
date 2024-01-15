@@ -69,10 +69,10 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		return nil, errors.New("machine scope params lack a Cluster API machine")
 	}
 	if params.IonosMachine == nil {
-		return nil, errors.New("machine scope params lack a ionos cloud machine")
+		return nil, errors.New("machine scope params lack a IONOS Cloud machine")
 	}
 	if params.InfraCluster == nil {
-		return nil, errors.New("machine scope params need a ionos cloud cluster scope")
+		return nil, errors.New("machine scope params need a IONOS Cloud cluster scope")
 	}
 	if params.Logger == nil {
 		logger := ctrl.Log
