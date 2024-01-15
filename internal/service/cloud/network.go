@@ -95,13 +95,27 @@ func (s *Service) GetLAN() (*sdk.Lan, error) {
 		return nil, fmt.Errorf("could not list LANs in datacenter %s: %w", s.dataCenterID(), err)
 	}
 
-	expectedName := s.LANName()
+	var (
+		expectedName = s.LANName()
+		lanCount     = 0
+		foundLAN     *sdk.Lan
+	)
+
 	for _, l := range *lans.Items {
 		if l.Properties.HasName() && *l.Properties.Name == expectedName {
-			return &l, nil
+			l := l
+			foundLAN = &l
+			lanCount++
+		}
+
+		// If there are multiple LANs with the same name, we should return an error.
+		// Our logic won't be able to proceed as we cannot select the correct lan.
+		if lanCount > 1 {
+			return nil, fmt.Errorf("found multiple LANs with the name: %s", expectedName)
 		}
 	}
-	return nil, nil
+
+	return foundLAN, nil
 }
 
 // ReconcileLANDeletion ensures there's no cluster LAN available, requesting for deletion (if no other resource
