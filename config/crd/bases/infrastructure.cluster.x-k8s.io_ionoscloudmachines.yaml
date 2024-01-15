@@ -94,8 +94,6 @@ spec:
                       type: string
                     type: array
                     x-kubernetes-list-type: set
-                required:
-                - sizeGB
                 type: object
               memoryMb:
                 default: 3072
