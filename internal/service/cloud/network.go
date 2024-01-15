@@ -243,8 +243,12 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 
 	for _, r := range requests {
 		if method != http.MethodPost {
-			id := *(*r.Metadata.RequestStatus.Metadata.Targets)[0].Target.Id
-			if id != lanID {
+			targets := *r.Metadata.RequestStatus.Metadata.Targets
+			if targets == nil {
+				continue
+			}
+
+			if *targets[0].Target.Id != lanID {
 				continue
 			}
 		} else {
