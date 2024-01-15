@@ -119,8 +119,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		Logger:       &logger,
 	})
 	if err != nil {
-		logger.Error(err, "failed to create scope")
-		return ctrl.Result{}, err
+		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
 	}
 
 	defer func() {
