@@ -255,12 +255,17 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 					Entry("ZONE_3", AvailabilityZoneThree),
 				)
 			})
-			It("can be created without ssh keys", func() {
+			It("can be created without SSH keys", func() {
 				m := completeMachine()
 				var want []string
 				m.Spec.Disk.SSHKeys = want
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.Disk.SSHKeys).To(Equal(want))
+			})
+			It("should prevent setting identical SSH keys", func() {
+				m := completeMachine()
+				m.Spec.Disk.SSHKeys = []string{"Key1", "Key1", "Key2", "Key3"}
+				Expect(k8sClient.Create(context.Background(), m)).To(HaveOccurred())
 			})
 			When("the disk size (in GB)", func() {
 				It("is less than 5, it should fail", func() {
