@@ -312,8 +312,8 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 		return nil, errors.New("method needs to be provided")
 	}
 
-	const defaultLookbackTime = 24 * time.Hour
-	lookback := time.Now().Add(-defaultLookbackTime).Format(time.DateTime)
+	const lookbackTime = 24 * time.Hour
+	lookback := time.Now().Add(-lookbackTime).Format(time.DateTime)
 	reqs, _, err := c.API.RequestsApi.RequestsGet(ctx).
 		Depth(depthRequestsMetadataStatusMetadata).
 		FilterMethod(method).

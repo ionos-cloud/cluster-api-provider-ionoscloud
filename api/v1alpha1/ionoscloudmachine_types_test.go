@@ -261,28 +261,21 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 			When("the disk size (in GB)", func() {
-				It("is less than 5, it should fail", func() {
+				It("is less than 10, it should fail", func() {
 					m := defaultMachine()
-					m.Spec.Disk.SizeGB = 4
+					m.Spec.Disk.SizeGB = 9
 					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 				})
-				It("it is not set, it should default to 5", func() {
+				It("it is not set, it should default to 20", func() {
 					m := defaultMachine()
 					// Because disk size is an int, setting it as 0 is the same as not setting anything
 					m.Spec.Disk.SizeGB = 0
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-					Expect(m.Spec.Disk.SizeGB).To(Equal(5))
+					Expect(m.Spec.Disk.SizeGB).To(Equal(20))
 				})
-				It("should be at least 5; therefore 5 should work", func() {
+				It("should be at least 10; therefore 10 should work", func() {
 					m := defaultMachine()
-					want := 5
-					m.Spec.Disk.SizeGB = want
-					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-					Expect(m.Spec.Disk.SizeGB).To(Equal(want))
-				})
-				It("should be at least 5; therefore 6 should work", func() {
-					m := defaultMachine()
-					want := 6
+					want := 10
 					m.Spec.Disk.SizeGB = want
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 					Expect(m.Spec.Disk.SizeGB).To(Equal(want))

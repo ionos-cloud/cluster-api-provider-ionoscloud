@@ -149,8 +149,8 @@ type Volume struct {
 	DiskType VolumeDiskType `json:"diskType,omitempty"`
 
 	// SizeGB defines the size of the volume in GB
-	// +kubebuilder:validation:Minimum=5
-	// +kubebuilder:default=5
+	// +kubebuilder:validation:Minimum=10
+	// +kubebuilder:default=20
 	// +optional
 	SizeGB int `json:"sizeGB,omitempty"`
 
