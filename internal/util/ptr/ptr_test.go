@@ -1,8 +1,9 @@
 package ptr
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestPtr_To(t *testing.T) {

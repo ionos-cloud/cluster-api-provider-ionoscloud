@@ -17,8 +17,9 @@ limitations under the License.
 package scope
 
 import (
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"testing"
+
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
