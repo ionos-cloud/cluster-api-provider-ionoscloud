@@ -55,7 +55,7 @@ func defaultCluster() *IonosCloudCluster {
 var _ = Describe("IonosCloudCluster", func() {
 	AfterEach(func() {
 		err := k8sClient.Delete(context.Background(), defaultCluster())
-		Expect(client.IgnoreNotFound(err)).To(Succeed())
+		Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred())
 	})
 
 	Context("Create", func() {
