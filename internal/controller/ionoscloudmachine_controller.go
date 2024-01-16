@@ -80,7 +80,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 	if machine == nil {
-		logger.Info("machine controller has not yet set OwnerRef")
+		logger.Info("Machine controller has not yet set OwnerRef")
 		return ctrl.Result{}, nil
 	}
 
@@ -89,7 +89,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Fetch the Cluster.
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
-		logger.Info("machine is missing cluster label or cluster does not exist")
+		logger.Info("Machine is missing cluster label or cluster does not exist")
 		return ctrl.Result{}, err
 	}
 
@@ -169,10 +169,10 @@ func (r *IonosCloudMachineReconciler) isInfrastructureReady(machineScope *scope.
 }
 
 func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.MachineScope, _ *scope.ClusterScope, cloudService *cloud.Service) (ctrl.Result, error) {
-	machineScope.V(4).Info("reconciling IonosCloudMachine")
+	machineScope.V(4).Info("Reconciling IonosCloudMachine")
 
 	if machineScope.HasFailed() {
-		machineScope.Info("error state detected, skipping reconciliation")
+		machineScope.Info("Error state detected, skipping reconciliation")
 		return ctrl.Result{}, nil
 	}
 

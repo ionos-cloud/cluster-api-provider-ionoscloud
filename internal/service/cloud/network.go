@@ -58,7 +58,7 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 
 	// We want to requeue and check again after some time
 	if requestStatus == sdk.RequestStatusRunning || requestStatus == sdk.RequestStatusQueued {
-		log.Info("request is ongoing, re-triggering reconciliaton", "request status", requestStatus)
+		log.Info("Request is ongoing, re-triggering reconciliaton", "request status", requestStatus)
 		return true, nil
 	}
 
@@ -79,7 +79,7 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 		//  is bigger than the created time of the LAN POST request.
 	}
 
-	log.V(4).Info("no LAN was found. Creating new LAN")
+	log.V(4).Info("No LAN was found. Creating new LAN")
 	if err := s.createLAN(); err != nil {
 		return false, err
 	}
@@ -160,7 +160,7 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 	}
 
 	if clusterLAN != nil && len(*clusterLAN.Entities.Nics.Items) > 0 {
-		log.Info("the cluster LAN is still being used by another resource. skipping deletion")
+		log.Info("The cluster LAN is still being used by another resource. skipping deletion")
 		return false, nil
 	}
 	// Request for LAN destruction
