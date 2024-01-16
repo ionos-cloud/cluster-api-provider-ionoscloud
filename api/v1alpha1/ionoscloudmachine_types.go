@@ -58,7 +58,7 @@ const (
 	VolumeDiskTypeSSDPremium VolumeDiskType = "SSD Premium"
 )
 
-// AvailabilityZone is the availability zone where volumes are created in.
+// AvailabilityZone is the availability zone where different cloud resources are created in.
 type AvailabilityZone string
 
 const (
