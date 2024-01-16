@@ -75,7 +75,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 		})
 
-		It("should not fail if providerId is empty", func() {
+		It("should not fail if providerID is empty", func() {
 			m := defaultMachine()
 			want := ""
 			m.Spec.ProviderID = want
