@@ -92,7 +92,7 @@ type IonosCloudMachineSpec struct {
 	NumCores int32 `json:"numCores,omitempty"`
 
 	// AvailabilityZone is the availability zone in which the VM should be provisioned.
-	// +kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2;ZONE_3
+	// +kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2
 	// +kubebuilder:default=AUTO
 	// +optional
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
@@ -107,8 +107,9 @@ type IonosCloudMachineSpec struct {
 	MemoryMB int32 `json:"memoryMB,omitempty"`
 
 	// CPUFamily defines the CPU architecture, which will be used for this VM.
-	// The not all CPU architectures are available in all datacenters.
+	// Not all CPU architectures are available in all datacenters.
 	// +kubebuilder:example=AMD_OPTERON
+	// +kubebuilder:validation:MinLength=1
 	CPUFamily string `json:"cpuFamily"`
 
 	// Disk defines the boot volume of the VM.

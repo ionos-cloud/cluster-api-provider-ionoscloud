@@ -21,9 +21,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -44,7 +46,7 @@ func defaultMachine() *IonosCloudMachine {
 				Name:             "disk",
 				DiskType:         VolumeDiskTypeSSDStandard,
 				SizeGB:           23,
-				AvailabilityZone: AvailabilityZoneThree,
+				AvailabilityZone: AvailabilityZoneOne,
 				SSHKeys:          []string{"public-key"},
 			},
 			Network: &Network{
@@ -82,7 +84,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		})
 
 		When("data center id", func() {
-			It("it should fail if dataCenterId is not a uuid", func() {
+			It("it should fail if data center ID is not a UUID", func() {
 				m := defaultMachine()
 				want := ""
 				m.Spec.DataCenterID = want
@@ -163,8 +165,12 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				Entry("AUTO", AvailabilityZoneAuto),
 				Entry("ZONE_1", AvailabilityZoneOne),
 				Entry("ZONE_2", AvailabilityZoneTwo),
-				Entry("ZONE_3", AvailabilityZoneThree),
 			)
+			It("Should not work for ZONE_3", func() {
+				m := defaultMachine()
+				m.Spec.AvailabilityZone = AvailabilityZoneThree
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+			})
 		})
 
 		When("the machine memory size", func() {
@@ -198,6 +204,13 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				m.Spec.MemoryMB = want
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.MemoryMB).To(Equal(want))
+			})
+		})
+		When("the machine CPU family", func() {
+			It("isn't set, it should fail", func() {
+				m := defaultMachine()
+				m.Spec.CPUFamily = ""
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 		})
 
@@ -330,6 +343,24 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				m.Spec.Network.IPs = nil
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.Network.IPs).To(BeNil())
+			})
+		})
+		Context("Conditions", func() {
+			It("should correctly set and get the conditions", func() {
+				m := defaultMachine()
+				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+				Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+
+				// Calls SetConditions with required fields
+				conditions.MarkTrue(m, MachineProvisionedCondition)
+
+				Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
+				Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+
+				machineConditions := m.GetConditions()
+				Expect(machineConditions).To(HaveLen(1))
+				Expect(machineConditions[0].Type).To(Equal(MachineProvisionedCondition))
+				Expect(machineConditions[0].Status).To(Equal(corev1.ConditionTrue))
 			})
 		})
 	})
