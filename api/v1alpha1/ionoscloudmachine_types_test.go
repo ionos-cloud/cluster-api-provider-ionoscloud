@@ -84,7 +84,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(m.Spec.ProviderID).To(Equal(want))
 		})
 
-		When("data center id", func() {
+		Context("data center ID", func() {
 			It("it should fail if data center ID is not a UUID", func() {
 				m := defaultMachine()
 				want := ""
