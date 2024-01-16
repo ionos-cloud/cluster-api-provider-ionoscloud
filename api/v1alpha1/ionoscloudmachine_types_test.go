@@ -100,7 +100,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 		})
 
-		When("the number of cores, ", func() {
+		Context("number of cores", func() {
 			It("is less than 1, it should fail", func() {
 				m := defaultMachine()
 				m.Spec.NumCores = -1
@@ -316,6 +316,11 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				m.Spec.Network.IPs = nil
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.Network.IPs).To(BeNil())
+			})
+			It("should prevent setting identical IPs", func() {
+				m := defaultMachine()
+				m.Spec.Network.IPs = []string{"192.0.2.0", "192.0.2.0"}
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 		})
 		Context("Conditions", func() {
