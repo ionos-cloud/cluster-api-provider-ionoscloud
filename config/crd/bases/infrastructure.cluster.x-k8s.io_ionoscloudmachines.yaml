@@ -46,12 +46,12 @@ spec:
               cpuFamily:
                 description: CPUFamily defines the CPU architecture, which will be
                   used for this VM. Not all CPU architectures are available in all
-                  datacenters.
+                  data centers.
                 example: AMD_OPTERON
                 minLength: 1
                 type: string
               datacenterID:
-                description: DataCenterID is the ID of the datacenter where the machine
+                description: DataCenterID is the ID of the data center where the machine
                   should be created in.
                 format: uuid
                 type: string
@@ -109,7 +109,7 @@ spec:
                 properties:
                   ips:
                     description: IPs is an optional set of IP addresses, which have
-                      been reserved in the corresponding datacenter.
+                      been reserved in the corresponding data center.
                     items:
                       type: string
                     type: array
