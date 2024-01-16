@@ -81,7 +81,6 @@ type IonosCloudMachineSpec struct {
 
 	// DataCenterID is the ID of the data center where the machine should be created in.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
-	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Format=uuid
 	DataCenterID string `json:"datacenterID"`
 
