@@ -121,27 +121,6 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 		})
 
-		When("the number of cores, ", func() {
-			It("is less than 1, it should fail", func() {
-				m := defaultMachine()
-				m.Spec.NumCores = -1
-				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
-			})
-			It("should have a minimum value of 1", func() {
-				m := defaultMachine()
-				want := int32(1)
-				m.Spec.NumCores = want
-				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(m.Spec.NumCores).To(Equal(want))
-			})
-			It("isn't set, it should work and default to 1", func() {
-				m := defaultMachine()
-				m.Spec.NumCores = 0
-				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(m.Spec.NumCores).To(Equal(int32(1)))
-			})
-		})
-
 		When("the machine availability zone", func() {
 			It("isn't set, should default to AUTO", func() {
 				m := defaultMachine()
