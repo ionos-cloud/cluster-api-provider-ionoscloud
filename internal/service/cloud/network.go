@@ -30,10 +30,10 @@ import (
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 )
 
-// LANName returns the name of the cluster LAN.
-func (s *Service) LANName() string {
+// lanName returns the name of the cluster LAN.
+func (s *Service) lanName() string {
 	return fmt.Sprintf(
-		"k8s-lan-%s-%s",
+		"k8s-%s-%s",
 		s.scope.ClusterScope.Cluster.Namespace,
 		s.scope.ClusterScope.Cluster.Name)
 }
@@ -97,7 +97,7 @@ func (s *Service) GetLAN() (*sdk.Lan, error) {
 	}
 
 	var (
-		expectedName = s.LANName()
+		expectedName = s.lanName()
 		lanCount     = 0
 		foundLAN     *sdk.Lan
 	)
@@ -175,13 +175,16 @@ func (s *Service) createLAN() error {
 	log := s.scope.Logger.WithName("createLAN")
 
 	requestPath, err := s.api().CreateLAN(s.ctx, s.dataCenterID(), sdk.LanPropertiesPost{
-		Name:   ptr.To(s.LANName()),
+		Name:   ptr.To(s.lanName()),
 		Public: ptr.To(true),
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create LAN in data center %s: %w", s.dataCenterID(), err)
 	}
 
+	if s.scope.ClusterScope.IonosCluster.Status.CurrentRequest == nil {
+		s.scope.ClusterScope.IonosCluster.Status.CurrentRequest = make(map[string]infrav1.ProvisioningRequest)
+	}
 	s.scope.ClusterScope.IonosCluster.Status.CurrentRequest[s.dataCenterID()] = infrav1.ProvisioningRequest{
 		Method:      http.MethodPost,
 		RequestPath: requestPath,
@@ -193,7 +196,7 @@ func (s *Service) createLAN() error {
 		return fmt.Errorf("unable to patch the cluster: %w", err)
 	}
 
-	log.WithValues("requestPath", requestPath).Info("Successfully requested for LAN creation")
+	log.Info("Successfully requested for LAN creation", "requestPath", requestPath)
 
 	return nil
 }
@@ -206,6 +209,9 @@ func (s *Service) deleteLAN(lanID string) error {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
 
+	if s.scope.ClusterScope.IonosCluster.Status.CurrentRequest == nil {
+		s.scope.ClusterScope.IonosCluster.Status.CurrentRequest = make(map[string]infrav1.ProvisioningRequest)
+	}
 	s.scope.ClusterScope.IonosCluster.Status.CurrentRequest[s.dataCenterID()] = infrav1.ProvisioningRequest{
 		Method:      http.MethodDelete,
 		RequestPath: requestPath,
@@ -225,13 +231,16 @@ func (s *Service) deleteLAN(lanID string) error {
 func (s *Service) checkForPendingLANRequest(method string, lanID string) (status string, err error) {
 	switch method {
 	case http.MethodPost:
-	case http.MethodDelete, http.MethodPatch:
+		if lanID != "" {
+			return status, errors.New("lanID must be empty for POST requests")
+		}
+	case http.MethodDelete:
 		if lanID == "" {
 			return "", errors.New("lanID cannot be empty for DELETE and PATCH requests")
 		}
 	default:
 		return "", fmt.Errorf("unsupported method %s, allowed methods are %s", method, strings.Join(
-			[]string{http.MethodPost, http.MethodDelete, http.MethodPatch},
+			[]string{http.MethodPost, http.MethodDelete},
 			",",
 		))
 	}
@@ -242,9 +251,9 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 		return "", fmt.Errorf("could not get requests: %w", err)
 	}
 
-	expectedLANName := s.LANName()
+	expectedLANName := s.lanName()
 	for _, r := range requests {
-		if method != http.MethodPost {
+		if method == http.MethodDelete {
 			targets := *r.Metadata.RequestStatus.Metadata.Targets
 			if targets == nil {
 				continue
@@ -268,8 +277,8 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 		if status == sdk.RequestStatusFailed {
 			// We just log the error but do not return it, so we can retry the request.
 			message := r.Metadata.RequestStatus.Metadata.Message
-			s.scope.Logger.WithValues("requestID", r.Id, "requestStatus", status).
-				Error(errors.New(*message), "last request for LAN has failed. logging it for debugging purposes")
+			s.scope.Logger.WithValues("requestID", r.Id, "requestStatus", status, "message", *message).
+				Error(nil, "last request for LAN has failed. logging it for debugging purposes")
 		}
 
 		return status, nil
