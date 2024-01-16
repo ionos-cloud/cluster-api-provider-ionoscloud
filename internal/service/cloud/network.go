@@ -110,7 +110,7 @@ func (s *Service) GetLAN() (*sdk.Lan, error) {
 		}
 
 		// If there are multiple LANs with the same name, we should return an error.
-		// Our logic won't be able to proceed as we cannot select the correct lan.
+		// Our logic won't be able to proceed as we cannot select the correct LAN.
 		if lanCount > 1 {
 			return nil, fmt.Errorf("found multiple LANs with the name: %s", expectedName)
 		}
