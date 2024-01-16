@@ -43,7 +43,7 @@ func defaultMachine() *IonosCloudMachine {
 			AvailabilityZone: AvailabilityZoneTwo,
 			MemoryMB:         2048,
 			CPUFamily:        "AMD_OPTERON",
-			Disk: Volume{
+			Disk: &Volume{
 				Name:             "disk",
 				DiskType:         VolumeDiskTypeSSDStandard,
 				SizeGB:           23,
@@ -85,9 +85,15 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		})
 
 		Context("data center ID", func() {
+			It("should fail if not set", func() {
+				m := defaultMachine()
+				m.Spec.DataCenterID = ""
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+			})
+
 			It("it should fail if data center ID is not a UUID", func() {
 				m := defaultMachine()
-				want := ""
+				want := "not-a-UUID"
 				m.Spec.DataCenterID = want
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
@@ -186,15 +192,21 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				Expect(m.Spec.MemoryMB).To(Equal(want))
 			})
 		})
-		When("the machine CPU family", func() {
-			It("isn't set, it should fail", func() {
+
+		Context("CPU family", func() {
+			It("should fail if not set", func() {
 				m := defaultMachine()
 				m.Spec.CPUFamily = ""
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 		})
 
-		Context("Volume", func() {
+		Context("Disk", func() {
+			It("should fail if not set", func() {
+				m := defaultMachine()
+				m.Spec.Disk = nil
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+			})
 			It("can have an optional name", func() {
 				m := defaultMachine()
 				want := ""
