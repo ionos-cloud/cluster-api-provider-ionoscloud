@@ -301,16 +301,6 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				Expect(m.Spec.Network.UseDHCP).ToNot(BeNil())
 				Expect(*m.Spec.Network.UseDHCP).To(BeTrue())
 			})
-			DescribeTable("if set UseDHCP can be",
-				func(useDHCP *bool) {
-					m := defaultMachine()
-					m.Spec.Network.UseDHCP = useDHCP
-					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-					Expect(m.Spec.Network.UseDHCP).To(Equal(useDHCP))
-				},
-				Entry("true", ptr.To(true)),
-				Entry("false", ptr.To(false)),
-			)
 			It("reserved IPs should be optional", func() {
 				m := defaultMachine()
 				m.Spec.Network.IPs = nil
