@@ -28,7 +28,7 @@ type Client interface {
 	// CreateDataCenter creates a new data center with its specification based on provided properties.
 	CreateDataCenter(ctx context.Context, properties sdk.DatacenterProperties) (
 		*sdk.Datacenter, error)
-	// GetDataCenter returns the data center that matches the provided datacenterID.
+	// GetDataCenter returns the data center that matches the provided data center ID.
 	GetDataCenter(ctx context.Context, dataCenterID string) (*sdk.Datacenter, error)
 	// CreateServer creates a new server with provided properties in the specified data center.
 	CreateServer(ctx context.Context, dataCenterID string, properties sdk.ServerProperties) (

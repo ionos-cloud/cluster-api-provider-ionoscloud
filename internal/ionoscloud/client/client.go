@@ -78,7 +78,7 @@ func (c *IonosCloudClient) CreateDataCenter(ctx context.Context, properties sdk.
 	return &dc, nil
 }
 
-// GetDataCenter returns the data center that matches the provided datacenterID.
+// GetDataCenter returns the data center that matches the provided data center ID.
 func (c *IonosCloudClient) GetDataCenter(ctx context.Context, id string) (*sdk.Datacenter, error) {
 	if id == "" {
 		return nil, errDataCenterIDIsEmpty

@@ -88,12 +88,12 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 	return true, nil
 }
 
-// GetLAN tries to retrieve the cluster related LAN in the datacenter.
+// GetLAN tries to retrieve the cluster related LAN in the data center.
 func (s *Service) GetLAN() (*sdk.Lan, error) {
 	// check if the LAN exists
 	lans, err := s.api().ListLANs(s.ctx, s.dataCenterID())
 	if err != nil {
-		return nil, fmt.Errorf("could not list LANs in datacenter %s: %w", s.dataCenterID(), err)
+		return nil, fmt.Errorf("could not list LANs in data center %s: %w", s.dataCenterID(), err)
 	}
 
 	var (

@@ -79,7 +79,7 @@ type IonosCloudMachineSpec struct {
 	// +optional
 	ProviderID string `json:"providerID,omitempty"`
 
-	// DataCenterID is the ID of the datacenter where the machine should be created in.
+	// DataCenterID is the ID of the data center where the machine should be created in.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Format=uuid
@@ -107,7 +107,7 @@ type IonosCloudMachineSpec struct {
 	MemoryMB int32 `json:"memoryMB,omitempty"`
 
 	// CPUFamily defines the CPU architecture, which will be used for this VM.
-	// Not all CPU architectures are available in all datacenters.
+	// Not all CPU architectures are available in all data centers.
 	// +kubebuilder:example=AMD_OPTERON
 	// +kubebuilder:validation:MinLength=1
 	CPUFamily string `json:"cpuFamily"`
@@ -123,7 +123,7 @@ type IonosCloudMachineSpec struct {
 // Network contains a network config.
 type Network struct {
 	// IPs is an optional set of IP addresses, which have been
-	// reserved in the corresponding datacenter.
+	// reserved in the corresponding data center.
 	// +listType=set
 	// +optional
 	IPs []string `json:"ips,omitempty"`
