@@ -18,15 +18,15 @@ package v1alpha1
 
 import (
 	"context"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -331,23 +331,24 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				})
 			})
 		})
-		Context("Conditions", func() {
-			It("should correctly set and get the conditions", func() {
-				m := defaultMachine()
-				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+	})
 
-				// Calls SetConditions with required fields
-				conditions.MarkTrue(m, MachineProvisionedCondition)
+	Context("Conditions", func() {
+		It("should correctly set and get the conditions", func() {
+			m := defaultMachine()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
-				Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
-				Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+			// Calls SetConditions with required fields
+			conditions.MarkTrue(m, MachineProvisionedCondition)
 
-				machineConditions := m.GetConditions()
-				Expect(machineConditions).To(HaveLen(1))
-				Expect(machineConditions[0].Type).To(Equal(MachineProvisionedCondition))
-				Expect(machineConditions[0].Status).To(Equal(corev1.ConditionTrue))
-			})
+			Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
+			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+
+			machineConditions := m.GetConditions()
+			Expect(machineConditions).To(HaveLen(1))
+			Expect(machineConditions[0].Type).To(Equal(MachineProvisionedCondition))
+			Expect(machineConditions[0].Status).To(Equal(corev1.ConditionTrue))
 		})
 	})
 })
