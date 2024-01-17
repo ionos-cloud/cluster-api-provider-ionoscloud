@@ -17,19 +17,23 @@ limitations under the License.
 package cloud
 
 import (
-	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"net/http"
+	"path"
+
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/utils/ptr"
-	"net/http"
-	"path"
+
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 )
 
-const reqPath = "this/is/a/path"
-const lanID = "1"
+const (
+	reqPath = "this/is/a/path"
+	lanID   = "1"
+)
 
 func createLANCall() *clienttest.MockClient_CreateLAN_Call {
 	return ionosClient.EXPECT().CreateLAN(ctx, service.dataCenterID(), sdk.LanPropertiesPost{
@@ -84,10 +88,10 @@ var _ = Describe("Network tests", func() {
 			})
 
 			It("should return an error, when the API call fails", func() {
-				createLANCall().Return("", mockErr).Once()
+				createLANCall().Return("", errMock).Once()
 				err := service.createLAN()
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 			})
 		})
 
@@ -103,10 +107,10 @@ var _ = Describe("Network tests", func() {
 			})
 
 			It("should return an error, when the API call fails", func() {
-				deleteLANCall(lanID).Return("", mockErr).Once()
+				deleteLANCall(lanID).Return("", errMock).Once()
 				err := service.deleteLAN(lanID)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 			})
 		})
 
@@ -136,10 +140,10 @@ var _ = Describe("Network tests", func() {
 			})
 
 			It("should return an error, when the API call fails", func() {
-				listLANsCall().Return(nil, mockErr).Once()
+				listLANsCall().Return(nil, errMock).Once()
 				_, err := service.GetLAN()
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 			})
 
 			It("should not return an error, when the LAN is not found", func() {
@@ -162,7 +166,6 @@ var _ = Describe("Network tests", func() {
 		})
 
 		When("checking for pending LAN requests", func() {
-
 			It("should return an early error, when the method is not supported", func() {
 				_, err := service.checkForPendingLANRequest(http.MethodTrace, lanID)
 				Expect(err).To(HaveOccurred())
@@ -179,10 +182,10 @@ var _ = Describe("Network tests", func() {
 			})
 
 			It("should return an error, when the API call fails", func() {
-				getRequestsCall().Return(nil, mockErr).Once()
+				getRequestsCall().Return(nil, errMock).Once()
 				_, err := service.checkForPendingLANRequest(http.MethodDelete, lanID)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 			})
 
 			It("should return an empty status, when there are no pending requests", func() {
@@ -431,29 +434,29 @@ var _ = Describe("Network tests", func() {
 
 		Context("means an error should be returned and no requeue if the API call fails", func() {
 			Specify("when listing the LANs", func() {
-				listLANsCall().Return(nil, mockErr).Once()
+				listLANsCall().Return(nil, errMock).Once()
 				requeue, err := service.ReconcileLAN()
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 				Expect(requeue).To(BeFalse())
 			})
 
 			Specify("when getting the requests", func() {
 				listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-				getRequestsCall().Return(nil, mockErr).Once()
+				getRequestsCall().Return(nil, errMock).Once()
 				requeue, err := service.ReconcileLAN()
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 				Expect(requeue).To(BeFalse())
 			})
 
 			Specify("when creating the LAN", func() {
 				listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 				getRequestsCall().Return([]sdk.Request{}, nil).Once()
-				createLANCall().Return("", mockErr).Once()
+				createLANCall().Return("", errMock).Once()
 				requeue, err := service.ReconcileLAN()
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 				Expect(requeue).To(BeFalse())
 			})
 
@@ -476,10 +479,10 @@ var _ = Describe("Network tests", func() {
 						},
 					},
 				}, nil)
-				listLANsCall().Return(nil, mockErr).Once()
+				listLANsCall().Return(nil, errMock).Once()
 				requeue, err := service.ReconcileLAN()
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 				Expect(requeue).To(BeFalse())
 			})
 		})
@@ -610,29 +613,29 @@ var _ = Describe("Network tests", func() {
 			})
 
 			Specify("when listing the LANs", func() {
-				listLANsCall().Return(nil, mockErr).Once()
+				listLANsCall().Return(nil, errMock).Once()
 				requeue, err := service.ReconcileLANDeletion()
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 				Expect(requeue).To(BeFalse())
 			})
 
 			Specify("when getting the requests", func() {
 				listLANsCall().Return(&sdk.Lans{Items: lans}, nil).Once()
-				getRequestsCall().Return(nil, mockErr).Once()
+				getRequestsCall().Return(nil, errMock).Once()
 				requeue, err := service.ReconcileLANDeletion()
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 				Expect(requeue).To(BeFalse())
 			})
 
 			Specify("when deleting the LAN", func() {
 				listLANsCall().Return(&sdk.Lans{Items: lans}, nil).Once()
 				getRequestsCall().Return([]sdk.Request{}, nil).Once()
-				deleteLANCall(lanID).Return("", mockErr).Once()
+				deleteLANCall(lanID).Return("", errMock).Once()
 				requeue, err := service.ReconcileLANDeletion()
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 				Expect(requeue).To(BeFalse())
 			})
 
@@ -658,10 +661,10 @@ var _ = Describe("Network tests", func() {
 						},
 					},
 				}, nil)
-				listLANsCall().Return(nil, mockErr).Once()
+				listLANsCall().Return(nil, errMock).Once()
 				requeue, err := service.ReconcileLANDeletion()
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(mockErr))
+				Expect(err).To(MatchError(errMock))
 				Expect(requeue).To(BeFalse())
 			})
 		})

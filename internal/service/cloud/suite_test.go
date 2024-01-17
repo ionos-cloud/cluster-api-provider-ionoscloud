@@ -19,23 +19,24 @@ package cloud
 import (
 	"context"
 	"errors"
+	"path/filepath"
+	"testing"
+
 	"github.com/go-logr/logr"
-	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	"path/filepath"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 var (
@@ -51,7 +52,7 @@ var (
 	infraCluster *infrav1.IonosCloudCluster
 	infraMachine *infrav1.IonosCloudMachine
 	ionosClient  *clienttest.MockClient
-	mockErr      = errors.New("this is an error")
+	errMock      = errors.New("this is an error")
 )
 
 func TestAPIs(t *testing.T) {
@@ -70,9 +71,6 @@ var _ = BeforeSuite(func() {
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "..", "config", "crd", "bases"),
 		},
-		// NOTE(gfariasalves): To be removed after I finish the PR comments
-		BinaryAssetsDirectory: filepath.Join("..", "..", "..", "bin", "k8s", "1.28.0-linux-amd64"),
-
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -174,12 +172,11 @@ var _ = BeforeEach(func() {
 })
 
 var _ = BeforeEach(func() {
-	//err = k8sClient.Create(ctx, capiCluster)
-	//Expect(err).ToNot(HaveOccurred(), "could not create CAPI cluster")
+	// Expect(err).ToNot(HaveOccurred(), "could not create CAPI cluster")
 	err = k8sClient.Create(ctx, infraCluster)
 	Expect(err).ToNot(HaveOccurred(), "could not create infra cluster")
-	//err = k8sClient.Create(ctx, capiMachine)
-	//Expect(err).ToNot(HaveOccurred(), "could not create CAPI machine")
+
+	// Expect(err).ToNot(HaveOccurred(), "could not create CAPI machine")
 	err = k8sClient.Create(ctx, infraMachine)
 	Expect(err).ToNot(HaveOccurred(), "could not create infra machine")
 })
@@ -187,12 +184,12 @@ var _ = BeforeEach(func() {
 var _ = AfterEach(func() {
 	err = k8sClient.Delete(ctx, infraMachine)
 	Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete infra machine")
-	//err = k8sClient.Delete(ctx, capiMachine)
-	//Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete CAPI machine")
+
+	// Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete CAPI machine")
 	err = k8sClient.Delete(ctx, infraCluster)
 	Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete infra cluster")
-	//err = k8sClient.Delete(ctx, capiCluster)
-	//Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete CAPI cluster")
+
+	// Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete CAPI cluster")
 })
 
 var _ = Context("Helper functions", func() {
