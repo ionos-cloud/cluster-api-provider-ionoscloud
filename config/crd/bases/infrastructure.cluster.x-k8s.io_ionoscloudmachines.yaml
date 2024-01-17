@@ -34,6 +34,23 @@ spec:
           spec:
             description: IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
             properties:
+              additionalNetworks:
+                description: 'AdditionalNetworks defines the additional network configurations
+                  for the VM. NOTE(lubedacht): We currently only support networks
+                  with DHCP enabled.'
+                items:
+                  description: Network contains a network config.
+                  properties:
+                    networkID:
+                      description: NetworkID represents an ID an existing LAN in the
+                        data center. This LAN will be excluded from the deletion process.
+                      format: int32
+                      minimum: 1
+                      type: integer
+                  required:
+                  - networkID
+                  type: object
+                type: array
               availabilityZone:
                 default: AUTO
                 description: AvailabilityZone is the availability zone in which the
@@ -104,23 +121,6 @@ spec:
                 minimum: 2048
                 multipleOf: 1024
                 type: integer
-              network:
-                description: Network defines the network configuration for the VM.
-                properties:
-                  ips:
-                    description: IPs is an optional set of IP addresses, which have
-                      been reserved in the corresponding data center.
-                    items:
-                      type: string
-                    type: array
-                    x-kubernetes-list-type: set
-                  useDHCP:
-                    default: true
-                    description: UseDHCP sets whether DHCP should be used or not.
-                      NOTE(lubedacht) currently we do not support private clusters
-                      therefore dhcp must be set to true.
-                    type: boolean
-                type: object
               numCores:
                 default: 1
                 description: NumCores defines the number of cores for the VM.

@@ -114,25 +114,21 @@ type IonosCloudMachineSpec struct {
 	// Disk defines the boot volume of the VM.
 	Disk *Volume `json:"disk"`
 
-	// Network defines the network configuration for the VM.
+	// AdditionalNetworks defines the additional network configurations for the VM.
+	// NOTE(lubedacht): We currently only support networks with DHCP enabled.
 	// +optional
-	Network *Network `json:"network,omitempty"`
+	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
 }
+
+// Networks contains a list of network configs.
+type Networks []Network
 
 // Network contains a network config.
 type Network struct {
-	// IPs is an optional set of IP addresses, which have been
-	// reserved in the corresponding data center.
-	// +listType=set
-	// +optional
-	IPs []string `json:"ips,omitempty"`
-
-	// UseDHCP sets whether DHCP should be used or not.
-	// NOTE(lubedacht) currently we do not support private clusters
-	// therefore dhcp must be set to true.
-	// +kubebuilder:default=true
-	// +optional
-	UseDHCP *bool `json:"useDHCP,omitempty"`
+	// NetworkID represents an ID an existing LAN in the data center.
+	// This LAN will be excluded from the deletion process.
+	// +kubebuilder:validation:Minimum=1
+	NetworkID int32 `json:"networkID"`
 }
 
 // Volume is the physical storage on the machine.

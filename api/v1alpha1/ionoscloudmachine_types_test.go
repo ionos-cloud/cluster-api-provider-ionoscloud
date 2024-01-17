@@ -21,12 +21,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 func defaultMachine() *IonosCloudMachine {
@@ -49,9 +48,10 @@ func defaultMachine() *IonosCloudMachine {
 				AvailabilityZone: AvailabilityZoneOne,
 				SSHKeys:          []string{"public-key"},
 			},
-			Network: &Network{
-				IPs:     []string{"1.2.3.4"},
-				UseDHCP: ptr.To(true),
+			AdditionalNetworks: Networks{
+				{
+					NetworkID: 1,
+				},
 			},
 		},
 	}
@@ -302,32 +302,19 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				)
 			})
 		})
-		Context("Network", func() {
-			It("should be optional", func() {
+		Context("Additional Networks", func() {
+			It("network config should be optional", func() {
 				m := defaultMachine()
-				m.Spec.Network = nil
+				m.Spec.AdditionalNetworks = nil
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(m.Spec.Network).To(BeNil())
+				Expect(m.Spec.AdditionalNetworks).To(BeNil())
 			})
-			It("should default UseDHCP to true", func() {
+			It("network ID must be greater than 0", func() {
 				m := defaultMachine()
-				m.Spec.Network.UseDHCP = nil
-				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(m.Spec.Network.UseDHCP).ToNot(BeNil())
-				Expect(*m.Spec.Network.UseDHCP).To(BeTrue())
-			})
-			Context("IPs", func() {
-				It("should work without them", func() {
-					m := defaultMachine()
-					m.Spec.Network.IPs = nil
-					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-					Expect(m.Spec.Network.IPs).To(BeNil())
-				})
-				It("should prevent duplicates", func() {
-					m := defaultMachine()
-					m.Spec.Network.IPs = []string{"192.0.2.0", "192.0.2.0"}
-					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
-				})
+				m.Spec.AdditionalNetworks[0].NetworkID = 0
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+				m.Spec.AdditionalNetworks[0].NetworkID = -1
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 		})
 	})
