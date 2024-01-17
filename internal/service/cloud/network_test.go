@@ -118,27 +118,10 @@ func (s *ServiceTestSuite) Test_Network_CheckForPendingLANRequest_DeleteRequest(
 }
 
 func (s *ServiceTestSuite) Test_Network_CheckForPendingLANRequest_PostRequest() {
-	requests := []sdk.Request{
-		{
-			Id: ptr.To("1"),
-			Metadata: &sdk.RequestMetadata{
-				RequestStatus: &sdk.RequestStatus{
-					Metadata: &sdk.RequestStatusMetadata{
-						Status:  ptr.To(sdk.RequestStatusQueued),
-						Message: ptr.To("test"),
-					},
-				},
-			},
-			Properties: &sdk.RequestProperties{
-				Method: ptr.To(http.MethodPost),
-				Body:   ptr.To(`{"properties": {"name": "different"}}`),
-			},
-		},
-	}
-	s.getRequestsCall().Return(requests, nil).Once()
+	s.getRequestsCall().Return(s.examplePostRequest(sdk.RequestStatusQueued), nil).Once()
 	status, err := s.service.checkForPendingLANRequest(http.MethodPost, "")
 	s.NoError(err)
-	s.Empty(status)
+	s.Equal(sdk.RequestStatusQueued, status)
 }
 
 func (s *ServiceTestSuite) Test_Network_CheckForPendingLANRequest_Error_DifferentName_DeleteRequest() {
@@ -407,24 +390,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANExists_ExistingReq
 
 func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANExists_ExistingRequest_Failed() {
 	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
-	s.getRequestsCall().Return([]sdk.Request{
-		{
-			Id: ptr.To("1"),
-			Metadata: &sdk.RequestMetadata{
-				RequestStatus: &sdk.RequestStatus{
-					Metadata: &sdk.RequestStatusMetadata{
-						Status:  ptr.To(sdk.RequestStatusFailed),
-						Message: ptr.To("test"),
-						Targets: &[]sdk.RequestTarget{
-							{
-								Target: &sdk.ResourceReference{Id: ptr.To(lanID)},
-							},
-						},
-					},
-				},
-			},
-		},
-	}, nil).Once()
+	s.getRequestsCall().Return(s.exampleDeleteRequest(sdk.RequestStatusFailed), nil).Once()
 	s.deleteLANCall(lanID).Return(reqPath, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.NoError(err)
@@ -433,24 +399,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANExists_ExistingReq
 
 func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANExists_ExistingRequest_Done() {
 	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
-	s.getRequestsCall().Return([]sdk.Request{
-		{
-			Id: ptr.To("1"),
-			Metadata: &sdk.RequestMetadata{
-				RequestStatus: &sdk.RequestStatus{
-					Metadata: &sdk.RequestStatusMetadata{
-						Status:  ptr.To(sdk.RequestStatusDone),
-						Message: ptr.To("test"),
-						Targets: &[]sdk.RequestTarget{
-							{
-								Target: &sdk.ResourceReference{Id: ptr.To(lanID)},
-							},
-						},
-					},
-				},
-			},
-		},
-	}, nil).Once()
+	s.getRequestsCall().Return(s.exampleDeleteRequest(sdk.RequestStatusDone), nil).Once()
 	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.NoError(err)
@@ -494,22 +443,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_Error_API_DeleteLAN()
 
 func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_Error_API_ListingLAN_RequestSucceededMeanwhile() {
 	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
-	s.getRequestsCall().Return([]sdk.Request{
-		{
-			Id: ptr.To("1"),
-			Metadata: &sdk.RequestMetadata{
-				RequestStatus: &sdk.RequestStatus{
-					Metadata: &sdk.RequestStatusMetadata{
-						Status:  ptr.To(sdk.RequestStatusDone),
-						Message: ptr.To("test"),
-						Targets: &[]sdk.RequestTarget{
-							{Target: &sdk.ResourceReference{Id: ptr.To(lanID)}},
-						},
-					},
-				},
-			},
-		},
-	}, nil).Once()
+	s.getRequestsCall().Return(s.exampleDeleteRequest(sdk.RequestStatusDone), nil).Once()
 	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, errMock).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.Error(err)
@@ -560,6 +494,27 @@ func (s *ServiceTestSuite) examplePostRequest(status string) []sdk.Request {
 			Properties: &sdk.RequestProperties{
 				Method: ptr.To(http.MethodPost),
 				Body:   ptr.To(body),
+			},
+		},
+	}
+}
+
+func (s *ServiceTestSuite) exampleDeleteRequest(status string) []sdk.Request {
+	return []sdk.Request{
+		{
+			Id: ptr.To("1"),
+			Metadata: &sdk.RequestMetadata{
+				RequestStatus: &sdk.RequestStatus{
+					Metadata: &sdk.RequestStatusMetadata{
+						Status:  ptr.To(status),
+						Message: ptr.To("test"),
+						Targets: &[]sdk.RequestTarget{
+							{
+								Target: &sdk.ResourceReference{Id: ptr.To(lanID)},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
