@@ -148,8 +148,8 @@ spec:
                   - method
                   - requestPath
                   type: object
-                description: CurrentRequest maps data center IDs to a pending provisioning
-                  request made during reconciliation.
+                description: CurrentRequestByDatacenter maps data center IDs to a
+                  pending provisioning request made during reconciliation.
                 type: object
               ready:
                 default: false
