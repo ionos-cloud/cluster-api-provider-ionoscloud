@@ -159,7 +159,7 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 		}
 	}
 
-	if clusterLAN != nil && len(*clusterLAN.Entities.Nics.Items) > 0 {
+	if clusterLAN != nil && clusterLAN.Entities.HasNics() && len(*clusterLAN.Entities.Nics.Items) > 0 {
 		log.Info("the cluster LAN is still being used by another resource. skipping deletion")
 		return false, nil
 	}
