@@ -246,7 +246,7 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 	for _, r := range requests {
 		if method != http.MethodPost {
 			targets := *r.Metadata.RequestStatus.Metadata.Targets
-			if targets == nil {
+			if len(targets) == 0 {
 				continue
 			}
 
