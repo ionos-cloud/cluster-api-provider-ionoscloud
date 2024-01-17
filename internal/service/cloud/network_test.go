@@ -17,6 +17,7 @@ limitations under the License.
 package cloud
 
 import (
+	"fmt"
 	"net/http"
 	"path"
 
@@ -55,19 +56,28 @@ func getRequestsCall() *clienttest.MockClient_GetRequests_Call {
 		path.Join("datacenters", service.dataCenterID(), "lans"))
 }
 
+func examplePostRequest(status string) []sdk.Request {
+	body := fmt.Sprintf(`{"properties": {"name": "%s"}}`, service.lanName())
+	return []sdk.Request{
+		{
+			Id: ptr.To("1"),
+			Metadata: &sdk.RequestMetadata{
+				RequestStatus: &sdk.RequestStatus{
+					Metadata: &sdk.RequestStatusMetadata{
+						Status:  ptr.To(status),
+						Message: ptr.To("test"),
+					},
+				},
+			},
+			Properties: &sdk.RequestProperties{
+				Method: ptr.To(http.MethodPost),
+				Body:   ptr.To(body),
+			},
+		},
+	}
+}
+
 var _ = Describe("Network tests", func() {
-	/*
-	 createLAN x
-	 deleteLAN x
-	 GetLAN x
-	 checkForPendingLANRequests x
-	 removeLANRequestFromCluster x
-	 lanName x
-	 dataCenterID x
-	 api x
-	 ReconcileLAN x
-	 ReconcileLANDeletion x
-	*/
 
 	Context("Helper functions", func() {
 		It("can return the LAN name", func() {
@@ -224,27 +234,12 @@ var _ = Describe("Network tests", func() {
 			})
 
 			It("should return the status, when there is a matching POST request", func() {
-				requests := []sdk.Request{
-					{
-						Id: ptr.To("1"),
-						Metadata: &sdk.RequestMetadata{
-							RequestStatus: &sdk.RequestStatus{
-								Metadata: &sdk.RequestStatusMetadata{
-									Status:  ptr.To(sdk.RequestStatusQueued),
-									Message: ptr.To("test"),
-								},
-							},
-						},
-						Properties: &sdk.RequestProperties{
-							Method: ptr.To(http.MethodPost),
-							Body:   ptr.To(`{"properties": {"name": "k8s-default-test-cluster"}}`),
-						},
-					},
-				}
+				reqStatus := sdk.RequestStatusQueued
+				requests := examplePostRequest(reqStatus)
 				getRequestsCall().Return(requests, nil).Once()
 				status, err := service.checkForPendingLANRequest(http.MethodPost, "")
 				Expect(err).ToNot(HaveOccurred())
-				Expect(status).To(Equal(sdk.RequestStatusQueued))
+				Expect(status).To(Equal(reqStatus))
 			})
 
 			It("should return an empty status, when there is a POST request but the name is different", func() {
@@ -336,23 +331,7 @@ var _ = Describe("Network tests", func() {
 				DescribeTable("should not request the creation of the LAN",
 					func(status string) {
 						listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-						getRequestsCall().Return([]sdk.Request{
-							{
-								Id: ptr.To("1"),
-								Metadata: &sdk.RequestMetadata{
-									RequestStatus: &sdk.RequestStatus{
-										Metadata: &sdk.RequestStatusMetadata{
-											Status:  ptr.To(status),
-											Message: ptr.To("test"),
-										},
-									},
-								},
-								Properties: &sdk.RequestProperties{
-									Method: ptr.To(http.MethodPost),
-									Body:   ptr.To(`{"properties": {"name": "k8s-default-test-cluster"}}`),
-								},
-							},
-						}, nil).Once()
+						getRequestsCall().Return(examplePostRequest(status), nil).Once()
 						requeue, err := service.ReconcileLAN()
 						Expect(err).ToNot(HaveOccurred())
 						Expect(requeue).To(BeTrue())
@@ -363,23 +342,7 @@ var _ = Describe("Network tests", func() {
 
 				It("should request the creation of the LAN, when the request had failed", func() {
 					listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-					getRequestsCall().Return([]sdk.Request{
-						{
-							Id: ptr.To("1"),
-							Metadata: &sdk.RequestMetadata{
-								RequestStatus: &sdk.RequestStatus{
-									Metadata: &sdk.RequestStatusMetadata{
-										Status:  ptr.To(sdk.RequestStatusFailed),
-										Message: ptr.To("test"),
-									},
-								},
-							},
-							Properties: &sdk.RequestProperties{
-								Method: ptr.To(http.MethodPost),
-								Body:   ptr.To(`{"properties": {"name": "k8s-default-test-cluster"}}`),
-							},
-						},
-					}, nil)
+					getRequestsCall().Return(examplePostRequest(sdk.RequestStatusFailed), nil)
 					createLANCall().Return("requestPath", nil).Once()
 					requeue, err := service.ReconcileLAN()
 					Expect(err).ToNot(HaveOccurred())
@@ -388,23 +351,7 @@ var _ = Describe("Network tests", func() {
 
 				It("should retry to get the LAN, when the request has succeeded while reconciling", func() {
 					listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-					getRequestsCall().Return([]sdk.Request{
-						{
-							Id: ptr.To("1"),
-							Metadata: &sdk.RequestMetadata{
-								RequestStatus: &sdk.RequestStatus{
-									Metadata: &sdk.RequestStatusMetadata{
-										Status:  ptr.To(sdk.RequestStatusDone),
-										Message: ptr.To("test"),
-									},
-								},
-							},
-							Properties: &sdk.RequestProperties{
-								Method: ptr.To(http.MethodPost),
-								Body:   ptr.To(`{"properties": {"name": "k8s-default-test-cluster"}}`),
-							},
-						},
-					}, nil)
+					getRequestsCall().Return(examplePostRequest(sdk.RequestStatusDone), nil)
 					lan := sdk.Lan{
 						Id: ptr.To("1"),
 						Properties: &sdk.LanProperties{
@@ -462,23 +409,7 @@ var _ = Describe("Network tests", func() {
 
 			Specify("when listing the LANs again if the request has succeeded", func() {
 				listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-				getRequestsCall().Return([]sdk.Request{
-					{
-						Id: ptr.To("1"),
-						Metadata: &sdk.RequestMetadata{
-							RequestStatus: &sdk.RequestStatus{
-								Metadata: &sdk.RequestStatusMetadata{
-									Status:  ptr.To(sdk.RequestStatusDone),
-									Message: ptr.To("test"),
-								},
-							},
-						},
-						Properties: &sdk.RequestProperties{
-							Method: ptr.To(http.MethodPost),
-							Body:   ptr.To(`{"properties": {"name": "k8s-default-test-cluster"}}`),
-						},
-					},
-				}, nil)
+				getRequestsCall().Return(examplePostRequest(sdk.RequestStatusDone), nil)
 				listLANsCall().Return(nil, errMock).Once()
 				requeue, err := service.ReconcileLAN()
 				Expect(err).To(HaveOccurred())
