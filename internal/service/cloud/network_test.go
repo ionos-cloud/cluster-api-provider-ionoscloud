@@ -77,8 +77,21 @@ func examplePostRequest(status string) []sdk.Request {
 	}
 }
 
-var _ = Describe("Network tests", func() {
+func exampleLAN() sdk.Lan {
+	return sdk.Lan{
+		Id: ptr.To(lanID),
+		Properties: &sdk.LanProperties{
+			Name: ptr.To(service.lanName()),
+		},
+		Entities: &sdk.LanEntities{
+			Nics: &sdk.LanNics{
+				Items: &[]sdk.Nic{},
+			},
+		},
+	}
+}
 
+var _ = Describe("Network tests", func() {
 	Context("Helper functions", func() {
 		It("can return the LAN name", func() {
 			Expect(service.lanName()).To(Equal("k8s-default-test-cluster"))
@@ -129,12 +142,7 @@ var _ = Describe("Network tests", func() {
 			var lans *sdk.Lans
 
 			BeforeEach(func() {
-				lan = sdk.Lan{
-					Id: ptr.To(lanID),
-					Properties: &sdk.LanProperties{
-						Name: ptr.To(service.lanName()),
-					},
-				}
+				lan = exampleLAN()
 				lans = &sdk.Lans{
 					Items: &[]sdk.Lan{
 						lan,
@@ -167,7 +175,7 @@ var _ = Describe("Network tests", func() {
 			})
 
 			It("should return an error, when the LAN is not unique", func() {
-				*lans.Items = append(*lans.Items, lan)
+				*lans.Items = append(*lans.Items, exampleLAN())
 				listLANsCall().Return(lans, nil).Once()
 				foundLAN, err := service.GetLAN()
 				Expect(err).To(HaveOccurred())
@@ -352,13 +360,7 @@ var _ = Describe("Network tests", func() {
 				It("should retry to get the LAN, when the request has succeeded while reconciling", func() {
 					listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 					getRequestsCall().Return(examplePostRequest(sdk.RequestStatusDone), nil)
-					lan := sdk.Lan{
-						Id: ptr.To("1"),
-						Properties: &sdk.LanProperties{
-							Name: ptr.To(service.lanName()),
-						},
-					}
-					listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
+					listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{exampleLAN()}}, nil).Once()
 					requeue, err := service.ReconcileLAN()
 					Expect(err).ToNot(HaveOccurred())
 					Expect(requeue).To(BeFalse())
@@ -367,13 +369,7 @@ var _ = Describe("Network tests", func() {
 		})
 
 		It("should not request the creation of the LAN, if it already exists", func() {
-			lan := sdk.Lan{
-				Id: ptr.To("1"),
-				Properties: &sdk.LanProperties{
-					Name: ptr.To(service.lanName()),
-				},
-			}
-			listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
+			listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{exampleLAN()}}, nil).Once()
 			requeue, err := service.ReconcileLAN()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(requeue).To(BeFalse())
@@ -423,17 +419,7 @@ var _ = Describe("Network tests", func() {
 		When("the LAN exists", func() {
 			var lan sdk.Lan
 			BeforeEach(func() {
-				lan = sdk.Lan{
-					Id: ptr.To("1"),
-					Properties: &sdk.LanProperties{
-						Name: ptr.To(service.lanName()),
-					},
-					Entities: &sdk.LanEntities{
-						Nics: &sdk.LanNics{
-							Items: &[]sdk.Nic{},
-						},
-					},
-				}
+				lan = exampleLAN()
 				listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 			})
 
@@ -530,17 +516,7 @@ var _ = Describe("Network tests", func() {
 			var lans *[]sdk.Lan
 
 			BeforeEach(func() {
-				lans = &[]sdk.Lan{{
-					Id: ptr.To("1"),
-					Properties: &sdk.LanProperties{
-						Name: ptr.To(service.lanName()),
-					},
-					Entities: &sdk.LanEntities{
-						Nics: &sdk.LanNics{
-							Items: &[]sdk.Nic{},
-						},
-					},
-				}}
+				lans = &[]sdk.Lan{exampleLAN()}
 			})
 
 			Specify("when listing the LANs", func() {
