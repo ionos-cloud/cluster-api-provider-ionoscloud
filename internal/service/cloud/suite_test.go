@@ -19,7 +19,6 @@ package cloud
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -30,7 +29,7 @@ import (
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -67,29 +66,29 @@ var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	By("bootstrapping test environment")
-	testEnv := &envtest.Environment{
-		CRDDirectoryPaths: []string{
-			filepath.Join("..", "..", "..", "config", "crd", "bases"),
-		},
-		ErrorIfCRDPathMissing: true,
-	}
+	// testEnv := &envtest.Environment{
+	// 	CRDDirectoryPaths: []string{
+	// 		filepath.Join("..", "..", "..", "config", "crd", "bases"),
+	// 	},
+	// 	ErrorIfCRDPathMissing: true,
+	// }
 
-	scheme := runtime.NewScheme()
-	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	// scheme := runtime.NewScheme()
+	// Expect(infrav1.AddToScheme(scheme)).To(Succeed())
 
-	cfg, err := testEnv.Start()
-	Expect(err).ToNot(HaveOccurred())
-	Expect(cfg).ToNot(BeNil())
+	// cfg, err := testEnv.Start()
+	// Expect(err).ToNot(HaveOccurred())
+	// Expect(cfg).ToNot(BeNil())
+	//
+	// DeferCleanup(func() {
+	// 	By("tearing down the test environment")
+	// 	err := testEnv.Stop()
+	// 	Expect(err).ToNot(HaveOccurred())
+	// })
 
-	DeferCleanup(func() {
-		By("tearing down the test environment")
-		err := testEnv.Stop()
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	// k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
+	// Expect(err).NotTo(HaveOccurred())
+	// Expect(k8sClient).NotTo(BeNil())
 	log = logf.FromContext(ctx)
 })
 
@@ -113,14 +112,8 @@ var _ = BeforeEach(func() {
 		Spec: infrav1.IonosCloudClusterSpec{
 			ContractNumber: "12345678",
 		},
+		Status: infrav1.IonosCloudClusterStatus{},
 	}
-	clusterScope, err = scope.NewClusterScope(scope.ClusterScopeParams{
-		Client:       k8sClient,
-		Logger:       &log,
-		Cluster:      capiCluster,
-		IonosCluster: infraCluster,
-		IonosClient:  ionosClient,
-	})
 	Expect(err).ToNot(HaveOccurred(), "failed to create cluster scope")
 	capiMachine = &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
@@ -157,7 +150,18 @@ var _ = BeforeEach(func() {
 				UseDHCP: ptr.To(true),
 			},
 		},
+		Status: infrav1.IonosCloudMachineStatus{},
 	}
+	scheme := runtime.NewScheme()
+	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	k8sClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(infraMachine, infraCluster).Build()
+	clusterScope, err = scope.NewClusterScope(scope.ClusterScopeParams{
+		Client:       k8sClient,
+		Logger:       &log,
+		Cluster:      capiCluster,
+		IonosCluster: infraCluster,
+		IonosClient:  ionosClient,
+	})
 	machineScope, err = scope.NewMachineScope(scope.MachineScopeParams{
 		Client:       k8sClient,
 		Logger:       &log,
@@ -169,27 +173,27 @@ var _ = BeforeEach(func() {
 	Expect(err).ToNot(HaveOccurred(), "failed to create machine scope")
 	service, err = NewService(ctx, machineScope)
 	Expect(err).ToNot(HaveOccurred(), "failed to create service")
+	// // Expect(err).ToNot(HaveOccurred(), "could not create CAPI cluster")
+	// err = k8sClient.Create(ctx, infraCluster)
+	// Expect(err).ToNot(HaveOccurred(), "could not create infra cluster")
+	//
+	// // Expect(err).ToNot(HaveOccurred(), "could not create CAPI machine")
+	// err = k8sClient.Create(ctx, infraMachine)
+	// Expect(err).ToNot(HaveOccurred(), "could not create infra machine")
 })
 
 var _ = BeforeEach(func() {
-	// Expect(err).ToNot(HaveOccurred(), "could not create CAPI cluster")
-	err = k8sClient.Create(ctx, infraCluster)
-	Expect(err).ToNot(HaveOccurred(), "could not create infra cluster")
-
-	// Expect(err).ToNot(HaveOccurred(), "could not create CAPI machine")
-	err = k8sClient.Create(ctx, infraMachine)
-	Expect(err).ToNot(HaveOccurred(), "could not create infra machine")
 })
 
 var _ = AfterEach(func() {
-	err = k8sClient.Delete(ctx, infraMachine)
-	Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete infra machine")
-
-	// Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete CAPI machine")
-	err = k8sClient.Delete(ctx, infraCluster)
-	Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete infra cluster")
-
-	// Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete CAPI cluster")
+	// err = k8sClient.Delete(ctx, infraMachine)
+	// Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete infra machine")
+	//
+	// // Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete CAPI machine")
+	// err = k8sClient.Delete(ctx, infraCluster)
+	// Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete infra cluster")
+	//
+	// // Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred(), "could not delete CAPI cluster")
 })
 
 var _ = Context("Helper functions", func() {
