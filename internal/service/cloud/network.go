@@ -126,12 +126,12 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 
 	// try to retrieve the cluster LAN
 	clusterLAN, err := s.GetLAN()
+	if err != nil {
+		return false, err
+	}
 	if clusterLAN == nil {
 		err = s.removeLANPendingRequestFromCluster()
 		return err != nil, err
-	}
-	if err != nil {
-		return false, err
 	}
 
 	// if we found a LAN, we check if there is a deletion already in process
@@ -149,12 +149,12 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 			// Here we can check if the LAN is indeed gone or there's some inconsistency in the last request or
 			// this request points to an old, far gone LAN with the same ID.
 			clusterLAN, err = s.GetLAN()
+			if err != nil {
+				return false, err
+			}
 			if clusterLAN == nil {
 				err = s.removeLANPendingRequestFromCluster()
 				return err != nil, err
-			}
-			if err != nil {
-				return false, err
 			}
 		}
 	}
