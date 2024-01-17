@@ -41,9 +41,6 @@ type Client interface {
 	DestroyServer(ctx context.Context, dataCenterID, serverID string) error
 	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
 	CreateLAN(ctx context.Context, dataCenterID string, properties sdk.LanPropertiesPost) (string, error)
-	// UpdateLAN updates a LAN with the provided properties in the specified data center.
-	UpdateLAN(ctx context.Context, dataCenterID string, lanID string, properties sdk.LanProperties) (
-		*sdk.Lan, error)
 	// AttachToLAN attaches a provided NIC to a provided LAN in a specified data center.
 	AttachToLAN(ctx context.Context, dataCenterID, lanID string, nic sdk.Nic) (
 		*sdk.Nic, error)

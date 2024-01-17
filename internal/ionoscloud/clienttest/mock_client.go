@@ -902,63 +902,6 @@ func (_c *MockClient_ListVolumes_Call) RunAndReturn(run func(context.Context, st
 	return _c
 }
 
-// UpdateLAN provides a mock function with given fields: ctx, dataCenterID, lanID, properties
-func (_m *MockClient) UpdateLAN(ctx context.Context, dataCenterID string, lanID string, properties ionoscloud.LanProperties) (*ionoscloud.Lan, error) {
-	ret := _m.Called(ctx, dataCenterID, lanID, properties)
-
-	var r0 *ionoscloud.Lan
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.LanProperties) (*ionoscloud.Lan, error)); ok {
-		return rf(ctx, dataCenterID, lanID, properties)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.LanProperties) *ionoscloud.Lan); ok {
-		r0 = rf(ctx, dataCenterID, lanID, properties)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ionoscloud.Lan)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, ionoscloud.LanProperties) error); ok {
-		r1 = rf(ctx, dataCenterID, lanID, properties)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockClient_UpdateLAN_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateLAN'
-type MockClient_UpdateLAN_Call struct {
-	*mock.Call
-}
-
-// UpdateLAN is a helper method to define mock.On call
-//   - ctx context.Context
-//   - dataCenterID string
-//   - lanID string
-//   - properties ionoscloud.LanProperties
-func (_e *MockClient_Expecter) UpdateLAN(ctx interface{}, dataCenterID interface{}, lanID interface{}, properties interface{}) *MockClient_UpdateLAN_Call {
-	return &MockClient_UpdateLAN_Call{Call: _e.mock.On("UpdateLAN", ctx, dataCenterID, lanID, properties)}
-}
-
-func (_c *MockClient_UpdateLAN_Call) Run(run func(ctx context.Context, dataCenterID string, lanID string, properties ionoscloud.LanProperties)) *MockClient_UpdateLAN_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(ionoscloud.LanProperties))
-	})
-	return _c
-}
-
-func (_c *MockClient_UpdateLAN_Call) Return(_a0 *ionoscloud.Lan, _a1 error) *MockClient_UpdateLAN_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockClient_UpdateLAN_Call) RunAndReturn(run func(context.Context, string, string, ionoscloud.LanProperties) (*ionoscloud.Lan, error)) *MockClient_UpdateLAN_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // WaitForRequest provides a mock function with given fields: ctx, requestURL
 func (_m *MockClient) WaitForRequest(ctx context.Context, requestURL string) error {
 	ret := _m.Called(ctx, requestURL)
