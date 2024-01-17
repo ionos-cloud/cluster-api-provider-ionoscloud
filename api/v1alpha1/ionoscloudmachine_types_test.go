@@ -19,8 +19,12 @@ package v1alpha1
 import (
 	"context"
 
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/cluster-api/errors"
+
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -335,6 +339,33 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(machineConditions).To(HaveLen(1))
 			Expect(machineConditions[0].Type).To(Equal(MachineProvisionedCondition))
 			Expect(machineConditions[0].Status).To(Equal(corev1.ConditionTrue))
+		})
+	})
+	Context("Status", func() {
+		It("should correctly set and get the status", func() {
+			m := defaultMachine()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+
+			m.Status.Ready = true
+			conditions.MarkTrue(m, MachineProvisionedCondition)
+			m.Status.CurrentRequest = &ProvisioningRequest{
+				Method:      "GET",
+				RequestPath: "path/to/resource",
+				State:       RequestStatusRunning,
+				Message:     nil,
+			}
+			m.Status.FailureReason = ptr.To(errors.InvalidConfigurationMachineError)
+			m.Status.FailureMessage = ptr.To("Failure message")
+
+			want := *m.DeepCopy()
+
+			Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
+			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+
+			// Gomega matcher seems to have issues with comparing the dates.
+			diff := cmp.Diff(want.Status, m.Status)
+			Expect(diff).To(BeEmpty(), "m.Status differs from want.Status (-want +got):\n%s", diff)
 		})
 	})
 })
