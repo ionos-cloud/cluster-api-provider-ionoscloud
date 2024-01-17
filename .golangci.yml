@@ -6,6 +6,7 @@ linters:
     - dogsled
     - errcheck
     - exportloopref
+    - ginkgolinter
     - goconst
     - gocritic
     - gocyclo
