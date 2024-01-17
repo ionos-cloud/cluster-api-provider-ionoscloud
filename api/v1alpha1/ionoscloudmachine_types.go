@@ -36,11 +36,11 @@ const (
 	// the underlying VM.
 	MachineProvisionedCondition clusterv1.ConditionType = "MachineProvisioned"
 
-	// WaitingForClusterInfrastructureReason (Severity=Info) indicates, that the IonosCloudMachine is currently
+	// WaitingForClusterInfrastructureReason (Severity=Info) indicates that the IonosCloudMachine is currently
 	// waiting for the cluster infrastructure to become ready.
 	WaitingForClusterInfrastructureReason = "WaitingForClusterInfrastructure"
 
-	// WaitingForBootstrapDataReason (Severity=Info) indicates, that the bootstrap provider has not yet finished
+	// WaitingForBootstrapDataReason (Severity=Info) indicates that the bootstrap provider has not yet finished
 	// creating the bootstrap data secret and store it in the Cluster API Machine.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
 )

@@ -33,7 +33,7 @@ const (
 	depthRequestsMetadataStatusMetadata = 2 // for LISTing requests and their metadata status metadata
 )
 
-// IonosCloudClient is a concrete implementation of the Client interface defined in the internal client package, that
+// IonosCloudClient is a concrete implementation of the Client interface defined in the internal client package that
 // communicates with Cloud API using its SDK.
 type IonosCloudClient struct {
 	API *sdk.APIClient
