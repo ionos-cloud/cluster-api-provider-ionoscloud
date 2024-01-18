@@ -23,10 +23,10 @@ import (
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/mock"
-	"k8s.io/utils/ptr"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 func (s *ServiceTestSuite) TestNetworkLANName() {
