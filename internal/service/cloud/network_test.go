@@ -20,8 +20,8 @@ func (s *ServiceTestSuite) TestNetworkLANName() {
 func (s *ServiceTestSuite) Test_Network_CreateLAN_Successful() {
 	s.createLANCall().Return(reqPath, nil).Once()
 	s.NoError(s.service.createLAN())
-	s.Contains(s.infraCluster.Status.CurrentRequest, s.service.dataCenterID(), "request should be stored in status")
-	req := s.infraCluster.Status.CurrentRequest[s.service.dataCenterID()]
+	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID(), "request should be stored in status")
+	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.dataCenterID()]
 	s.Equal(reqPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodPost, req.Method, "request method should be stored in status")
 	s.Equal(infrav1.RequestStatusQueued, req.State, "request status should be stored in status")
@@ -31,15 +31,15 @@ func (s *ServiceTestSuite) Test_Network_CreateLAN_Error_API() {
 	s.createLANCall().Return("", errMock).Once()
 	err := s.service.createLAN()
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
-	s.NotContains(s.infraCluster.Status.CurrentRequest, s.service.dataCenterID(), "request should not be stored in status")
+	s.ErrorIs(err, errMock)
+	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID(), "request should not be stored in status")
 }
 
 func (s *ServiceTestSuite) Test_Network_DeleteLAN_Successful() {
 	s.deleteLANCall(lanID).Return(reqPath, nil).Once()
 	s.NoError(s.service.deleteLAN(lanID))
-	s.Contains(s.infraCluster.Status.CurrentRequest, s.service.dataCenterID(), "request should be stored in status")
-	req := s.infraCluster.Status.CurrentRequest[s.service.dataCenterID()]
+	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID(), "request should be stored in status")
+	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.dataCenterID()]
 	s.Equal(reqPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodDelete, req.Method, "request method should be stored in status")
 	s.Equal(infrav1.RequestStatusQueued, req.State, "request status should be stored in status")
@@ -49,8 +49,8 @@ func (s *ServiceTestSuite) Test_Network_DeleteLAN_Error_API() {
 	s.deleteLANCall(lanID).Return("", errMock).Once()
 	err := s.service.deleteLAN(lanID)
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
-	s.NotContains(s.infraCluster.Status.CurrentRequest, s.service.dataCenterID(), "request should not be stored in status")
+	s.ErrorIs(err, errMock)
+	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID(), "request should not be stored in status")
 }
 
 func (s *ServiceTestSuite) Test_Network_GetLAN_Successful() {
@@ -66,7 +66,7 @@ func (s *ServiceTestSuite) Test_Network_GetLAN_Error_API() {
 	s.listLANsCall().Return(nil, errMock).Once()
 	lan, err := s.service.GetLAN()
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
+	s.ErrorIs(err, errMock)
 	s.Nil(lan)
 }
 
@@ -197,12 +197,12 @@ func (s *ServiceTestSuite) Test_Network_CheckForPendingLANRequest_Error_API() {
 	s.getRequestsCall().Return(nil, errMock).Once()
 	request, err := s.service.checkForPendingLANRequest(http.MethodDelete, lanID)
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
+	s.ErrorIs(err, errMock)
 	s.Empty(request)
 }
 
 func (s *ServiceTestSuite) Test_Network_RemoveLANPendingRequestFromCluster_Successful() {
-	s.infraCluster.Status.CurrentRequest = map[string]infrav1.ProvisioningRequest{
+	s.infraCluster.Status.CurrentRequestByDatacenter = map[string]infrav1.ProvisioningRequest{
 		s.service.dataCenterID(): {
 			RequestPath: reqPath,
 			Method:      http.MethodDelete,
@@ -210,7 +210,7 @@ func (s *ServiceTestSuite) Test_Network_RemoveLANPendingRequestFromCluster_Succe
 		},
 	}
 	s.NoError(s.service.removeLANPendingRequestFromCluster())
-	s.NotContains(s.infraCluster.Status.CurrentRequest, s.service.dataCenterID(), "request should be removed from status")
+	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID(), "request should be removed from status")
 }
 
 func (s *ServiceTestSuite) Test_Network_RemoveLANPendingRequestFromCluster_NoRequest() {
@@ -224,8 +224,8 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLAN_NoExistingLAN_NoRequest_Cre
 	requeue, err := s.service.ReconcileLAN()
 	s.NoError(err)
 	s.True(requeue)
-	s.Contains(s.infraCluster.Status.CurrentRequest, s.service.dataCenterID())
-	req := s.infraCluster.Status.CurrentRequest[s.service.dataCenterID()]
+	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID())
+	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.dataCenterID()]
 	s.Equal(reqPath, req.RequestPath, "Request path is different than expected")
 	s.Equal(http.MethodPost, req.Method, "Request method is different than expected")
 	s.Equal(infrav1.RequestStatusQueued, req.State, "Request state is different than expected")
@@ -286,7 +286,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLAN_Error_API_ListingLANs() {
 	s.listLANsCall().Return(nil, errMock).Once()
 	requeue, err := s.service.ReconcileLAN()
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
+	s.ErrorIs(err, errMock)
 	s.False(requeue)
 }
 
@@ -295,7 +295,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLAN_Error_API_GetRequests() {
 	s.getRequestsCall().Return(nil, errMock).Once()
 	requeue, err := s.service.ReconcileLAN()
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
+	s.ErrorIs(err, errMock)
 	s.False(requeue)
 }
 
@@ -305,7 +305,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLAN_Error_API_CreateLAN() {
 	s.createLANCall().Return("", errMock).Once()
 	requeue, err := s.service.ReconcileLAN()
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
+	s.ErrorIs(err, errMock)
 	s.False(requeue)
 }
 
@@ -315,7 +315,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLAN_Error_API_ListingLAN_Reques
 	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, errMock).Once()
 	requeue, err := s.service.ReconcileLAN()
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
+	s.ErrorIs(err, errMock)
 	s.False(requeue)
 }
 
@@ -326,8 +326,8 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANExists_NoPendingRe
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.NoError(err)
 	s.True(requeue)
-	s.Contains(s.infraCluster.Status.CurrentRequest, s.service.dataCenterID())
-	req := s.infraCluster.Status.CurrentRequest[s.service.dataCenterID()]
+	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID())
+	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.dataCenterID()]
 	s.Equal(reqPath, req.RequestPath, "Request path is different than expected")
 	s.Equal(http.MethodDelete, req.Method, "Request method is different than expected")
 	s.Equal(infrav1.RequestStatusQueued, req.State, "Request state is different than expected")
@@ -341,7 +341,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANExists_NoPendingRe
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.NoError(err)
 	s.False(requeue)
-	s.NotContains(s.infraCluster.Status.CurrentRequest, s.service.dataCenterID())
+	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID())
 }
 
 func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANExists_ExistingRequest_InProgress() {
@@ -404,7 +404,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANExists_ExistingReq
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.NoError(err)
 	s.False(requeue)
-	s.NotContains(s.infraCluster.Status.CurrentRequest, s.service.dataCenterID())
+	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID())
 }
 
 func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANDoesNotExist() {
@@ -418,7 +418,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_Error_API_ListingLANs
 	s.listLANsCall().Return(nil, errMock).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
+	s.ErrorIs(err, errMock)
 	s.False(requeue)
 }
 
@@ -427,7 +427,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_Error_API_GetRequests
 	s.getRequestsCall().Return(nil, errMock).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
+	s.ErrorIs(err, errMock)
 	s.False(requeue)
 }
 
@@ -437,7 +437,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_Error_API_DeleteLAN()
 	s.deleteLANCall(lanID).Return("", errMock).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
+	s.ErrorIs(err, errMock)
 	s.False(requeue)
 }
 
@@ -447,7 +447,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_Error_API_ListingLAN_
 	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, errMock).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.Error(err)
-	s.ErrorIs(err, errMock, "different error returned")
+	s.ErrorIs(err, errMock)
 	s.False(requeue)
 }
 
@@ -456,7 +456,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_NoLANExists() {
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.NoError(err)
 	s.False(requeue)
-	s.NotContains(s.infraCluster.Status.CurrentRequest, s.service.dataCenterID())
+	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID())
 }
 
 const (

@@ -94,16 +94,12 @@ func (s *ServiceTestSuite) SetupTest() {
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
 			MemoryMB:         4096,
 			CPUFamily:        "AMD_OPTERON",
-			Disk: infrav1.Volume{
+			Disk: &infrav1.Volume{
 				Name:             "test-machine-hdd",
 				DiskType:         infrav1.VolumeDiskTypeHDD,
 				SizeGB:           20,
 				AvailabilityZone: infrav1.AvailabilityZoneAuto,
 				SSHKeys:          []string{"ssh-rsa AAAAB3Nz"},
-			},
-			Network: &infrav1.Network{
-				IPs:     []string{"1.2.3.4"},
-				UseDHCP: ptr.To(true),
 			},
 		},
 		Status: infrav1.IonosCloudMachineStatus{},

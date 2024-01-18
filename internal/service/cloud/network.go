@@ -182,8 +182,8 @@ func (s *Service) createLAN() error {
 		return fmt.Errorf("unable to create LAN in data center %s: %w", s.dataCenterID(), err)
 	}
 
-  if len(s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDataCenter) == 0 {
-		s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDataCenter = make(map[string]infrav1.ProvisioningRequest)
+	if len(s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter) == 0 {
+		s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter = make(map[string]infrav1.ProvisioningRequest)
 	}
 	s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter[s.dataCenterID()] = infrav1.ProvisioningRequest{
 		Method:      http.MethodPost,
@@ -209,10 +209,10 @@ func (s *Service) deleteLAN(lanID string) error {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
 
-	if s.scope.ClusterScope.IonosCluster.Status.CurrentRequest == nil {
-		s.scope.ClusterScope.IonosCluster.Status.CurrentRequest = make(map[string]infrav1.ProvisioningRequest)
+	if s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter == nil {
+		s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter = make(map[string]infrav1.ProvisioningRequest)
 	}
-	s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDataCenter[s.dataCenterID()] = infrav1.ProvisioningRequest{
+	s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter[s.dataCenterID()] = infrav1.ProvisioningRequest{
 		Method:      http.MethodDelete,
 		RequestPath: requestPath,
 		State:       infrav1.RequestStatusQueued,
