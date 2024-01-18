@@ -78,7 +78,7 @@ func (c *IonosCloudClient) CreateDataCenter(ctx context.Context, properties sdk.
 	return &dc, nil
 }
 
-// GetDataCenter returns the data center that matches the provided datacenterID.
+// GetDataCenter returns the data center that matches the provided data center ID.
 func (c *IonosCloudClient) GetDataCenter(ctx context.Context, id string) (*sdk.Datacenter, error) {
 	if id == "" {
 		return nil, errDataCenterIDIsEmpty
@@ -166,24 +166,6 @@ func (c *IonosCloudClient) CreateLAN(ctx context.Context, dataCenterID string, p
 		return location, nil
 	}
 	return "", errors.New(apiNoLocationErrMessage)
-}
-
-// UpdateLAN updates a LAN with the provided properties in the specified data center.
-func (c *IonosCloudClient) UpdateLAN(
-	ctx context.Context, dataCenterID string, lanID string, properties sdk.LanProperties,
-) (*sdk.Lan, error) {
-	if dataCenterID == "" {
-		return nil, errDataCenterIDIsEmpty
-	}
-	if lanID == "" {
-		return nil, errLANIDIsEmpty
-	}
-	l, _, err := c.API.LANsApi.DatacentersLansPatch(ctx, dataCenterID, lanID).
-		Lan(properties).Execute()
-	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
-	}
-	return &l, nil
 }
 
 // AttachToLAN attaches a provided NIC to a provided LAN in the specified data center.
@@ -312,8 +294,8 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 		return nil, errors.New("method needs to be provided")
 	}
 
-	const defaultLookbackTime = 24 * time.Hour
-	lookback := time.Now().Add(-defaultLookbackTime).Format(time.DateTime)
+	const lookbackTime = 24 * time.Hour
+	lookback := time.Now().Add(-lookbackTime).Format(time.DateTime)
 	reqs, _, err := c.API.RequestsApi.RequestsGet(ctx).
 		Depth(depthRequestsMetadataStatusMetadata).
 		FilterMethod(method).

@@ -58,7 +58,7 @@ const (
 	VolumeDiskTypeSSDPremium VolumeDiskType = "SSD Premium"
 )
 
-// AvailabilityZone is the availability zone where volumes are created in.
+// AvailabilityZone is the availability zone where different cloud resources are created in.
 type AvailabilityZone string
 
 const (
@@ -79,9 +79,8 @@ type IonosCloudMachineSpec struct {
 	// +optional
 	ProviderID string `json:"providerID,omitempty"`
 
-	// DataCenterID is the ID of the datacenter where the machine should be created in.
+	// DataCenterID is the ID of the data center where the machine should be created in.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
-	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Format=uuid
 	DataCenterID string `json:"datacenterID"`
 
@@ -107,33 +106,29 @@ type IonosCloudMachineSpec struct {
 	MemoryMB int32 `json:"memoryMB,omitempty"`
 
 	// CPUFamily defines the CPU architecture, which will be used for this VM.
-	// Not all CPU architectures are available in all datacenters.
+	// Not all CPU architectures are available in all data centers.
 	// +kubebuilder:example=AMD_OPTERON
 	// +kubebuilder:validation:MinLength=1
 	CPUFamily string `json:"cpuFamily"`
 
 	// Disk defines the boot volume of the VM.
-	Disk Volume `json:"disk"`
+	Disk *Volume `json:"disk"`
 
-	// Network defines the network configuration for the VM.
+	// AdditionalNetworks defines the additional network configurations for the VM.
+	// NOTE(lubedacht): We currently only support networks with DHCP enabled.
 	// +optional
-	Network *Network `json:"network,omitempty"`
+	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
 }
+
+// Networks contains a list of network configs.
+type Networks []Network
 
 // Network contains a network config.
 type Network struct {
-	// IPs is an optional set of IP addresses, which have been
-	// reserved in the corresponding datacenter.
-	// +listType=set
-	// +optional
-	IPs []string `json:"ips,omitempty"`
-
-	// UseDHCP sets whether DHCP should be used or not.
-	// NOTE(lubedacht) currently we do not support private clusters
-	// therefore dhcp must be set to true.
-	// +kubebuilder:default=true
-	// +optional
-	UseDHCP *bool `json:"useDHCP,omitempty"`
+	// NetworkID represents an ID an existing LAN in the data center.
+	// This LAN will be excluded from the deletion process.
+	// +kubebuilder:validation:Minimum=1
+	NetworkID int32 `json:"networkID"`
 }
 
 // Volume is the physical storage on the machine.
@@ -149,8 +144,8 @@ type Volume struct {
 	DiskType VolumeDiskType `json:"diskType,omitempty"`
 
 	// SizeGB defines the size of the volume in GB
-	// +kubebuilder:validation:Minimum=5
-	// +kubebuilder:default=5
+	// +kubebuilder:validation:Minimum=10
+	// +kubebuilder:default=20
 	// +optional
 	SizeGB int `json:"sizeGB,omitempty"`
 

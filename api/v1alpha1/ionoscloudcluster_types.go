@@ -55,9 +55,9 @@ type IonosCloudClusterStatus struct {
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
-	// CurrentRequest maps data center IDs to a pending provisioning request made during reconciliation.
+	// CurrentRequestByDatacenter maps data center IDs to a pending provisioning request made during reconciliation.
 	// +optional
-	CurrentRequest map[string]ProvisioningRequest `json:"currentRequest,omitempty"`
+	CurrentRequestByDatacenter map[string]ProvisioningRequest `json:"currentRequest,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -96,4 +96,13 @@ func (i *IonosCloudCluster) GetConditions() clusterv1.Conditions {
 // SetConditions sets the conditions in the status.
 func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
 	i.Status.Conditions = conditions
+}
+
+// SetCurrentRequest sets the current provisioning request for the given data center.
+// This function makes sure that the map is initialized before setting the request.
+func (i *IonosCloudCluster) SetCurrentRequest(dataCenterID string, request ProvisioningRequest) {
+	if i.Status.CurrentRequestByDatacenter == nil {
+		i.Status.CurrentRequestByDatacenter = map[string]ProvisioningRequest{}
+	}
+	i.Status.CurrentRequestByDatacenter[dataCenterID] = request
 }

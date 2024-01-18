@@ -28,7 +28,7 @@ type Client interface {
 	// CreateDataCenter creates a new data center with its specification based on provided properties.
 	CreateDataCenter(ctx context.Context, properties sdk.DatacenterProperties) (
 		*sdk.Datacenter, error)
-	// GetDataCenter returns the data center that matches the provided datacenterID.
+	// GetDataCenter returns the data center that matches the provided data center ID.
 	GetDataCenter(ctx context.Context, dataCenterID string) (*sdk.Datacenter, error)
 	// CreateServer creates a new server with provided properties in the specified data center.
 	CreateServer(ctx context.Context, dataCenterID string, properties sdk.ServerProperties) (
@@ -41,9 +41,6 @@ type Client interface {
 	DestroyServer(ctx context.Context, dataCenterID, serverID string) error
 	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
 	CreateLAN(ctx context.Context, dataCenterID string, properties sdk.LanPropertiesPost) (string, error)
-	// UpdateLAN updates a LAN with the provided properties in the specified data center.
-	UpdateLAN(ctx context.Context, dataCenterID string, lanID string, properties sdk.LanProperties) (
-		*sdk.Lan, error)
 	// AttachToLAN attaches a provided NIC to a provided LAN in a specified data center.
 	AttachToLAN(ctx context.Context, dataCenterID, lanID string, nic sdk.Nic) (
 		*sdk.Nic, error)

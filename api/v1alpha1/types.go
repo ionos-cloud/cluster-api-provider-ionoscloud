@@ -16,6 +16,10 @@ limitations under the License.
 
 package v1alpha1
 
+const (
+	ManagedLANAnnotation = "cloud.ionos.com/managed-lan"
+)
+
 // RequestStatus shows the status of the current request.
 type RequestStatus string
 
