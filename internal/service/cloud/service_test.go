@@ -16,7 +16,10 @@ limitations under the License.
 
 package cloud
 
-// dataCenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
-func (s *Service) dataCenterID() string {
-	return s.scope.IonosMachine.Spec.DataCenterID
+func (s *ServiceTestSuite) TestDatacenterID() {
+	s.Equal(s.service.scope.IonosMachine.Spec.DataCenterID, s.service.dataCenterID())
+}
+
+func (s *ServiceTestSuite) TestAPI() {
+	s.Equal(s.service.scope.ClusterScope.IonosClient, s.service.api())
 }
