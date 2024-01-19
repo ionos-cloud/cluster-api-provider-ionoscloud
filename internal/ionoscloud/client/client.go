@@ -31,6 +31,7 @@ import (
 
 const (
 	depthRequestsMetadataStatusMetadata = 2 // for LISTing requests and their metadata status metadata
+	depthLANEntities                    = 2 // for LISTing LANs and their NICs (w/o NIC details)
 )
 
 // IonosCloudClient is a concrete implementation of the Client interface defined in the internal client package that
@@ -189,7 +190,7 @@ func (c *IonosCloudClient) ListLANs(ctx context.Context, dataCenterID string) (*
 	if dataCenterID == "" {
 		return nil, errDataCenterIDIsEmpty
 	}
-	lans, _, err := c.API.LANsApi.DatacentersLansGet(ctx, dataCenterID).Execute()
+	lans, _, err := c.API.LANsApi.DatacentersLansGet(ctx, dataCenterID).Depth(depthLANEntities).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}

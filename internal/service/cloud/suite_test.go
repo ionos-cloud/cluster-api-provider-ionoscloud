@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -150,4 +151,48 @@ func (s *ServiceTestSuite) SetupTest() {
 
 	s.service, err = NewService(s.ctx, s.machineScope)
 	s.NoError(err, "failed to create service")
+}
+
+type requestBuildOptions struct {
+	status,
+	method,
+	url,
+	body,
+	href,
+	requestID,
+	targetID string
+	targetType sdk.Type
+}
+
+func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request {
+	req := sdk.Request{
+		Id: ptr.To(opts.requestID),
+		Metadata: &sdk.RequestMetadata{
+			RequestStatus: &sdk.RequestStatus{
+				Href: ptr.To(opts.href),
+				Metadata: &sdk.RequestStatusMetadata{
+					Status:  ptr.To(opts.status),
+					Message: ptr.To("test"),
+				},
+			},
+		},
+		Properties: &sdk.RequestProperties{
+			Url:    ptr.To(opts.url),
+			Method: ptr.To(opts.method),
+			Body:   ptr.To(opts.body),
+		},
+	}
+
+	if opts.targetType != "" || opts.targetID != "" {
+		req.Metadata.RequestStatus.Metadata.Targets = &[]sdk.RequestTarget{
+			{
+				Target: &sdk.ResourceReference{
+					Id:   ptr.To(opts.targetID),
+					Type: ptr.To(opts.targetType),
+				},
+			},
+		}
+	}
+
+	return req
 }
