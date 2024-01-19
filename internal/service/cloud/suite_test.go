@@ -89,7 +89,7 @@ func (s *ServiceTestSuite) SetupTest() {
 	}
 	s.capiMachine = &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: s.capiCluster.Namespace,
+			Namespace: metav1.NamespaceDefault,
 			Name:      "test-machine",
 		},
 		Spec: clusterv1.MachineSpec{
@@ -125,11 +125,11 @@ func (s *ServiceTestSuite) SetupTest() {
 	s.NoError(clusterv1.AddToScheme(scheme), "failed to extend scheme with Cluster API types")
 	s.NoError(infrav1.AddToScheme(scheme), "failed to extend scheme with IonosCloud types")
 
+	initObjects := []client.Object{s.infraMachine, s.infraCluster, s.capiCluster, s.capiMachine}
 	s.k8sClient = fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithObjects(s.infraMachine, s.infraCluster, s.capiCluster, s.capiMachine).
-		WithStatusSubresource(
-			&infrav1.IonosCloudMachine{}, &infrav1.IonosCloudCluster{}, &clusterv1.Cluster{}, &clusterv1.Machine{}).
+		WithObjects(initObjects...).
+		WithStatusSubresource(initObjects...).
 		Build()
 
 	s.clusterScope, err = scope.NewClusterScope(scope.ClusterScopeParams{

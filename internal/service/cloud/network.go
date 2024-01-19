@@ -236,7 +236,7 @@ func (s *Service) checkForPendingLANRequest(method string, lanID string) (status
 		}
 	case http.MethodDelete:
 		if lanID == "" {
-			return "", errors.New("lanID cannot be empty for DELETE and PATCH requests")
+			return "", errors.New("lanID cannot be empty for DELETE requests")
 		}
 	default:
 		return "", fmt.Errorf("unsupported method %s, allowed methods are %s", method, strings.Join(
