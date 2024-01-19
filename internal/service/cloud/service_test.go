@@ -16,7 +16,7 @@ limitations under the License.
 
 package cloud
 
-func (s *ServiceTestSuite) TestDataCenterID() {
+func (s *ServiceTestSuite) TestDatacenterID() {
 	s.Equal(s.service.scope.IonosMachine.Spec.DataCenterID, s.service.dataCenterID())
 }
 
