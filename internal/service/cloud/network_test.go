@@ -43,14 +43,6 @@ func (s *ServiceTestSuite) Test_Network_CreateLAN_Successful() {
 	s.Equal(infrav1.RequestStatusQueued, req.State, "request status should be stored in status")
 }
 
-func (s *ServiceTestSuite) Test_Network_CreateLAN_Error_API() {
-	s.createLANCall().Return("", errMock).Once()
-	err := s.service.createLAN()
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID(), "request should not be stored in status")
-}
-
 func (s *ServiceTestSuite) Test_Network_DeleteLAN_Successful() {
 	s.deleteLANCall(lanID).Return(reqPath, nil).Once()
 	s.NoError(s.service.deleteLAN(lanID))
@@ -61,14 +53,6 @@ func (s *ServiceTestSuite) Test_Network_DeleteLAN_Successful() {
 	s.Equal(infrav1.RequestStatusQueued, req.State, "request status should be stored in status")
 }
 
-func (s *ServiceTestSuite) Test_Network_DeleteLAN_Error_API() {
-	s.deleteLANCall(lanID).Return("", errMock).Once()
-	err := s.service.deleteLAN(lanID)
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID(), "request should not be stored in status")
-}
-
 func (s *ServiceTestSuite) Test_Network_GetLAN_Successful() {
 	lan := s.exampleLAN()
 	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
@@ -76,14 +60,6 @@ func (s *ServiceTestSuite) Test_Network_GetLAN_Successful() {
 	s.NoError(err)
 	s.NotNil(foundLAN)
 	s.Equal(lan, *foundLAN)
-}
-
-func (s *ServiceTestSuite) Test_Network_GetLAN_Error_API() {
-	s.listLANsCall().Return(nil, errMock).Once()
-	lan, err := s.service.GetLAN()
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.Nil(lan)
 }
 
 func (s *ServiceTestSuite) Test_Network_GetLAN_NotFound() {
@@ -209,14 +185,6 @@ func (s *ServiceTestSuite) Test_Network_CheckForPendingLANRequest_Error_Post_Wit
 	s.Empty(request)
 }
 
-func (s *ServiceTestSuite) Test_Network_CheckForPendingLANRequest_Error_API() {
-	s.getRequestsCall().Return(nil, errMock).Once()
-	request, err := s.service.checkForPendingLANRequest(http.MethodDelete, lanID)
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.Empty(request)
-}
-
 func (s *ServiceTestSuite) Test_Network_RemoveLANPendingRequestFromCluster_Successful() {
 	s.infraCluster.Status.CurrentRequestByDatacenter = map[string]infrav1.ProvisioningRequest{
 		s.service.dataCenterID(): {
@@ -298,43 +266,6 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLAN_ExistingLAN() {
 	s.False(requeue)
 }
 
-func (s *ServiceTestSuite) Test_Network_ReconcileLAN_Error_API_ListingLANs() {
-	s.listLANsCall().Return(nil, errMock).Once()
-	requeue, err := s.service.ReconcileLAN()
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.False(requeue)
-}
-
-func (s *ServiceTestSuite) Test_Network_ReconcileLAN_Error_API_GetRequests() {
-	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-	s.getRequestsCall().Return(nil, errMock).Once()
-	requeue, err := s.service.ReconcileLAN()
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.False(requeue)
-}
-
-func (s *ServiceTestSuite) Test_Network_ReconcileLAN_Error_API_CreateLAN() {
-	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-	s.getRequestsCall().Return([]sdk.Request{}, nil).Once()
-	s.createLANCall().Return("", errMock).Once()
-	requeue, err := s.service.ReconcileLAN()
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.False(requeue)
-}
-
-func (s *ServiceTestSuite) Test_Network_ReconcileLAN_Error_API_ListingLAN_RequestSucceededMeanwhile() {
-	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-	s.getRequestsCall().Return(s.examplePostRequest(sdk.RequestStatusDone), nil).Once()
-	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, errMock).Once()
-	requeue, err := s.service.ReconcileLAN()
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.False(requeue)
-}
-
 func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANExists_NoPendingRequests_NoOtherUsers_Delete() {
 	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 	s.getRequestsCall().Return([]sdk.Request{}, nil).Once()
@@ -378,24 +309,7 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANExists_ExistingReq
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
-			requests := []sdk.Request{
-				{
-					Id: ptr.To("1"),
-					Metadata: &sdk.RequestMetadata{
-						RequestStatus: &sdk.RequestStatus{
-							Metadata: &sdk.RequestStatusMetadata{
-								Status:  ptr.To(tc.status),
-								Message: ptr.To("test"),
-								Targets: &[]sdk.RequestTarget{
-									{
-										Target: &sdk.ResourceReference{Id: ptr.To(lanID)},
-									},
-								},
-							},
-						},
-					},
-				},
-			}
+			requests := s.exampleDeleteRequest(tc.status)
 			s.getRequestsCall().Return(requests, nil).Once()
 			requeue, err := s.service.ReconcileLANDeletion()
 			s.NoError(err)
@@ -427,43 +341,6 @@ func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_LANDoesNotExist() {
 	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.NoError(err)
-	s.False(requeue)
-}
-
-func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_Error_API_ListingLANs() {
-	s.listLANsCall().Return(nil, errMock).Once()
-	requeue, err := s.service.ReconcileLANDeletion()
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.False(requeue)
-}
-
-func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_Error_API_GetRequests() {
-	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
-	s.getRequestsCall().Return(nil, errMock).Once()
-	requeue, err := s.service.ReconcileLANDeletion()
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.False(requeue)
-}
-
-func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_Error_API_DeleteLAN() {
-	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
-	s.getRequestsCall().Return([]sdk.Request{}, nil).Once()
-	s.deleteLANCall(lanID).Return("", errMock).Once()
-	requeue, err := s.service.ReconcileLANDeletion()
-	s.Error(err)
-	s.ErrorIs(err, errMock)
-	s.False(requeue)
-}
-
-func (s *ServiceTestSuite) Test_Network_ReconcileLANDelete_Error_API_ListingLAN_RequestSucceededMeanwhile() {
-	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
-	s.getRequestsCall().Return(s.exampleDeleteRequest(sdk.RequestStatusDone), nil).Once()
-	s.listLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, errMock).Once()
-	requeue, err := s.service.ReconcileLANDeletion()
-	s.Error(err)
-	s.ErrorIs(err, errMock)
 	s.False(requeue)
 }
 

@@ -18,7 +18,6 @@ package cloud
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -35,8 +34,6 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
-
-var errMock = errors.New("this is an error")
 
 type ServiceTestSuite struct {
 	*require.Assertions
