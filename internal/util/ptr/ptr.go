@@ -22,8 +22,8 @@ func To[T any](v T) *T {
 	return &v
 }
 
-// Deref dereferences attempts to dereference a pointer
-// and returns the default value if the pointer is nil.
+// Deref attempts to dereference a pointer and return the value.
+// If the pointer is nil, the provided default value will be returned instead.
 func Deref[T any](ptr *T, def T) T {
 	if ptr != nil {
 		return *ptr
