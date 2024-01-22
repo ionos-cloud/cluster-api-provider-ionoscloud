@@ -111,7 +111,11 @@ func (c *ClusterScope) PatchObject() error {
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster)
+	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster, patch.WithOwnedConditions{
+		Conditions: []clusterv1.ConditionType{
+			clusterv1.ReadyCondition,
+		},
+	})
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudCluster.
