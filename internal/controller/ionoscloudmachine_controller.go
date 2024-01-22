@@ -242,8 +242,13 @@ func (r *IonosCloudMachineReconciler) getClusterScope(
 	}
 
 	if err := r.Client.Get(ctx, infraClusterName, ionosCloudCluster); err != nil {
-		// IonosCloudCluster is not ready
-		return nil, nil //nolint:nilerr
+		if apierrors.IsNotFound(err) {
+			// Cluster has not yet been created
+			return nil, nil 
+		}
+		// We at most expect that the cluster cannot be found.
+		// If the error is different, we should return that particular error.
+		return nil, err
 	}
 
 	// Create the cluster scope
