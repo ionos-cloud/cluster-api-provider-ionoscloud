@@ -23,9 +23,8 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/client-go/util/retry"
-
 	"github.com/go-logr/logr"
+	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"

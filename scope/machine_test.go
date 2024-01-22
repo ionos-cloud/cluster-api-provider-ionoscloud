@@ -19,8 +19,6 @@ package scope
 import (
 	"testing"
 
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
-
 	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -29,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 func exampleParams(t *testing.T) MachineScopeParams {
