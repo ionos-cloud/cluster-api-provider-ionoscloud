@@ -35,23 +35,11 @@ func (s *getMatchingRequestSuite) examplePostRequest(href, status string) sdk.Re
 	return s.exampleRequest(opts)
 }
 
-func (s *getMatchingRequestSuite) TestZeroResource() {
-	request, err := getMatchingRequest(
-		s.service,
-		http.MethodPost,
-		"/path",
-		sdk.Lan{Properties: &sdk.LanProperties{Name: ptr.To("name")}},
-	)
-	s.ErrorContains(err, "zero")
-	s.Nil(request)
-}
-
 func (s *getMatchingRequestSuite) TestUnsupportedResourceType() {
-	request, err := getMatchingRequest(
+	request, err := getMatchingRequest[int](
 		s.service,
 		http.MethodPost,
 		"/path",
-		struct{}{},
 	)
 	s.ErrorContains(err, "unsupported")
 	s.Nil(request)
@@ -87,7 +75,6 @@ func (s *getMatchingRequestSuite) TestMatching() {
 		s.service,
 		http.MethodPost,
 		"path?foo=bar&baz=qux",
-		sdk.Lan{},
 		func(resource sdk.Lan, _ sdk.Request) bool {
 			return *resource.Properties.Name == s.service.lanName()
 		},

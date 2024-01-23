@@ -18,7 +18,6 @@ package cloud
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -27,7 +26,7 @@ import (
 )
 
 // resourceTypeMap maps a resource type to its corresponding IONOS Cloud type identifier.
-// Each resource type being looked for using getMatchingRequest() needs to be present here.
+// Each type mapping for usage in getMatchingRequest() needs to be present here.
 var resourceTypeMap = map[any]sdk.Type{
 	sdk.Lan{}: sdk.LAN,
 }
@@ -36,8 +35,7 @@ var resourceTypeMap = map[any]sdk.Type{
 // such as HTTP method and URL.
 // Requests only containing the given URL, but not ending with it, will be ignored. Note that query parameters are
 // stripped before the comparison.
-// The function is generic and expects a zero value of the resource type to be looked for. It only supports types that
-// are present in resourceTypeMap.
+// The function is generic, but only supports types that are present in resourceTypeMap.
 // Moreover, it optionally allows to specify additional matcher functions for the found resource and the request it was
 // found in. If multiple matchers are given, all need to match.
 // If no matching request is found, nil is returned.
@@ -45,13 +43,9 @@ func getMatchingRequest[T any](
 	s *Service,
 	method string,
 	url string,
-	zeroResource T,
 	matchers ...func(resource T, request sdk.Request) bool,
 ) (*requestInfo, error) {
-	if !reflect.DeepEqual(zeroResource, reflect.Zero(reflect.TypeOf(zeroResource)).Interface()) {
-		return nil, errors.New("zeroResource must be a zero value")
-	}
-
+	var zeroResource T
 	resourceType := resourceTypeMap[zeroResource]
 	if resourceType == "" {
 		return nil, fmt.Errorf("unsupported resource type %T", zeroResource)
@@ -185,7 +179,7 @@ func findResource[T any](
 		}
 	}
 
-	return nil, request, nil // only a request was found
+	return nil, request, nil // found no existing resource, but at least a matching request
 }
 
 func isNil(v any) bool {

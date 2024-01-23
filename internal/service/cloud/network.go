@@ -58,13 +58,13 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 
 	if request != nil && request.isPending() {
 		// We want to requeue and check again after some time
-		log.V(4).Info("Request is pending", "location", request.location)
+		log.Info("Request is pending", "location", request.location)
 		return true, nil
 	}
 
 	if lan != nil {
 		if state := getState(lan); !isAvailable(state) {
-			log.V(4).Info("LAN is not available yet", "state", state)
+			log.Info("LAN is not available yet", "state", state)
 			return true, nil
 		}
 		return false, nil
@@ -95,7 +95,7 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 
 	if request != nil && request.isPending() {
 		// We want to requeue and check again after some time
-		log.V(4).Info("Creation request is pending", "location", request.location)
+		log.Info("Creation request is pending", "location", request.location)
 		return true, nil
 	}
 
@@ -111,7 +111,7 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 	}
 	if request != nil && request.isPending() {
 		// We want to requeue and check again after some time
-		log.V(4).Info("Deletion request is pending", "location", request.location)
+		log.Info("Deletion request is pending", "location", request.location)
 		return true, nil
 	}
 
@@ -216,7 +216,6 @@ func (s *Service) getLatestLANCreationRequest() (*requestInfo, error) {
 		s,
 		http.MethodPost,
 		path.Join("datacenters", s.dataCenterID(), "lans"),
-		sdk.Lan{},
 		func(resource sdk.Lan, _ sdk.Request) bool {
 			return *resource.Properties.Name == s.lanName()
 		},
@@ -224,11 +223,10 @@ func (s *Service) getLatestLANCreationRequest() (*requestInfo, error) {
 }
 
 func (s *Service) getLatestLANDeletionRequest(lanID string) (*requestInfo, error) {
-	return getMatchingRequest(
+	return getMatchingRequest[sdk.Lan](
 		s,
 		http.MethodDelete,
 		path.Join("datacenters", s.dataCenterID(), "lans", lanID),
-		sdk.Lan{},
 	)
 }
 
