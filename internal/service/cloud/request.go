@@ -30,7 +30,7 @@ import (
 func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (string, string, error) {
 	status, err := s.api().CheckRequestStatus(ctx, requestURL)
 	if err != nil {
-		return "", "", fmt.Errorf("unable to retrieve the reqest status: %w", err)
+		return "", "", fmt.Errorf("unable to retrieve the request status: %w", err)
 	}
 
 	if !status.HasMetadata() && !status.Metadata.HasStatus() {
