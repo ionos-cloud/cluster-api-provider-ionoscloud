@@ -173,19 +173,6 @@ func (s *findResourceSuite) TestFoundOnSecondListing() {
 	s.Equal(42, *resource)
 }
 
-func TestIsNil(t *testing.T) {
-	require.True(t, isNil(nil))
-
-	var s *struct{}
-	require.True(t, s == nil)
-
-	var i *int
-	require.True(t, i == nil)
-
-	require.False(t, isNil(&struct{}{}))
-	require.False(t, isNil(new(int)))
-}
-
 func TestRequestInfo(t *testing.T) {
 	req := requestInfo{status: sdk.RequestStatusFailed}
 	require.False(t, req.isPending())

@@ -19,7 +19,6 @@ package cloud
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -150,7 +149,7 @@ func findResource[T any](
 	if err != nil {
 		return nil, nil, err // Found multiple resources or another error occurred.
 	}
-	if !isNil(resource) {
+	if resource != nil {
 		return resource, nil, nil // Something was found, great. No need to look any further.
 	}
 
@@ -172,16 +171,12 @@ func findResource[T any](
 		if err != nil {
 			return nil, nil, err // Found multiple resources or another error occurred.
 		}
-		if !isNil(resource) {
+		if resource != nil {
 			return resource, nil, nil // Something was found this time, great.
 		}
 	}
 
 	return nil, request, nil // found no existing resource, but at least a matching request
-}
-
-func isNil(v any) bool {
-	return v == nil || reflect.ValueOf(v).IsNil()
 }
 
 // requestInfo is a stripped-down version of sdk.RequestStatus, containing only the request status and the request's
