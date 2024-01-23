@@ -42,18 +42,18 @@ func (s *lanSuite) TestNetworkLANName() {
 }
 
 func (s *lanSuite) TestLANURL() {
-	s.Equal("datacenters/"+s.service.dataCenterID()+"/lans/1", s.service.lanURL("1"))
+	s.Equal("datacenters/"+s.service.datacenterID()+"/lans/1", s.service.lanURL("1"))
 }
 
 func (s *lanSuite) TestLANURLs() {
-	s.Equal("datacenters/"+s.service.dataCenterID()+"/lans", s.service.lansURL())
+	s.Equal("datacenters/"+s.service.datacenterID()+"/lans", s.service.lansURL())
 }
 
 func (s *lanSuite) Test_Network_CreateLAN_Successful() {
 	s.mockCreateLANCall().Return(reqPath, nil).Once()
 	s.NoError(s.service.createLAN())
-	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID(), "request should be stored in status")
-	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.dataCenterID()]
+	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID(), "request should be stored in status")
+	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.datacenterID()]
 	s.Equal(reqPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodPost, req.Method, "request method should be stored in status")
 	s.Equal(infrav1.RequestStatusQueued, req.State, "request status should be stored in status")
@@ -62,8 +62,8 @@ func (s *lanSuite) Test_Network_CreateLAN_Successful() {
 func (s *lanSuite) Test_Network_DeleteLAN_Successful() {
 	s.mockDeleteLANCall(lanID).Return(reqPath, nil).Once()
 	s.NoError(s.service.deleteLAN(lanID))
-	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID(), "request should be stored in status")
-	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.dataCenterID()]
+	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID(), "request should be stored in status")
+	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.datacenterID()]
 	s.Equal(reqPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodDelete, req.Method, "request method should be stored in status")
 	s.Equal(infrav1.RequestStatusQueued, req.State, "request status should be stored in status")
@@ -94,14 +94,14 @@ func (s *lanSuite) Test_Network_GetLAN_Error_NotUnique() {
 
 func (s *lanSuite) Test_Network_RemoveLANPendingRequestFromCluster_Successful() {
 	s.infraCluster.Status.CurrentRequestByDatacenter = map[string]infrav1.ProvisioningRequest{
-		s.service.dataCenterID(): {
+		s.service.datacenterID(): {
 			RequestPath: reqPath,
 			Method:      http.MethodDelete,
 			State:       sdk.RequestStatusQueued,
 		},
 	}
 	s.NoError(s.service.removeLANPendingRequestFromCluster())
-	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID(), "request should be removed from status")
+	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID(), "request should be removed from status")
 }
 
 func (s *lanSuite) Test_Network_RemoveLANPendingRequestFromCluster_NoRequest() {
@@ -158,7 +158,7 @@ func (s *lanSuite) Test_Network_ReconcileLANDelete_LANExists_NoPendingRequests_H
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.NoError(err)
 	s.False(requeue)
-	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID())
+	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID())
 }
 
 func (s *lanSuite) Test_Network_ReconcileLANDelete_NoExistingLAN_ExistingRequest_Pending() {
@@ -184,7 +184,7 @@ func (s *lanSuite) Test_Network_ReconcileLANDelete_LANDoesNotExist() {
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.NoError(err)
 	s.False(requeue)
-	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.dataCenterID())
+	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID())
 }
 
 const (
@@ -235,18 +235,18 @@ func (s *lanSuite) exampleDeleteRequest(status string) []sdk.Request {
 }
 
 func (s *lanSuite) mockCreateLANCall() *clienttest.MockClient_CreateLAN_Call {
-	return s.ionosClient.EXPECT().CreateLAN(s.ctx, s.service.dataCenterID(), sdk.LanPropertiesPost{
+	return s.ionosClient.EXPECT().CreateLAN(s.ctx, s.service.datacenterID(), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.service.lanName()),
 		Public: ptr.To(true),
 	})
 }
 
 func (s *lanSuite) mockDeleteLANCall(id string) *clienttest.MockClient_DeleteLAN_Call {
-	return s.ionosClient.EXPECT().DeleteLAN(s.ctx, s.service.dataCenterID(), id)
+	return s.ionosClient.EXPECT().DeleteLAN(s.ctx, s.service.datacenterID(), id)
 }
 
 func (s *lanSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
-	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.service.dataCenterID())
+	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.service.datacenterID())
 }
 
 func (s *lanSuite) mockGetLANCreationRequestsCall() *clienttest.MockClient_GetRequests_Call {

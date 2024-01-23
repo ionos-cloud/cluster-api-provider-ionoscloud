@@ -39,17 +39,17 @@ func (_m *MockClient) EXPECT() *MockClient_Expecter {
 	return &MockClient_Expecter{mock: &_m.Mock}
 }
 
-// AttachToLAN provides a mock function with given fields: ctx, dataCenterID, lanID, nic
-func (_m *MockClient) AttachToLAN(ctx context.Context, dataCenterID string, lanID string, nic ionoscloud.Nic) (*ionoscloud.Nic, error) {
-	ret := _m.Called(ctx, dataCenterID, lanID, nic)
+// AttachToLAN provides a mock function with given fields: ctx, datacenterID, lanID, nic
+func (_m *MockClient) AttachToLAN(ctx context.Context, datacenterID string, lanID string, nic ionoscloud.Nic) (*ionoscloud.Nic, error) {
+	ret := _m.Called(ctx, datacenterID, lanID, nic)
 
 	var r0 *ionoscloud.Nic
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.Nic) (*ionoscloud.Nic, error)); ok {
-		return rf(ctx, dataCenterID, lanID, nic)
+		return rf(ctx, datacenterID, lanID, nic)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.Nic) *ionoscloud.Nic); ok {
-		r0 = rf(ctx, dataCenterID, lanID, nic)
+		r0 = rf(ctx, datacenterID, lanID, nic)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ionoscloud.Nic)
@@ -57,7 +57,7 @@ func (_m *MockClient) AttachToLAN(ctx context.Context, dataCenterID string, lanI
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string, ionoscloud.Nic) error); ok {
-		r1 = rf(ctx, dataCenterID, lanID, nic)
+		r1 = rf(ctx, datacenterID, lanID, nic)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -72,14 +72,14 @@ type MockClient_AttachToLAN_Call struct {
 
 // AttachToLAN is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
+//   - datacenterID string
 //   - lanID string
 //   - nic ionoscloud.Nic
-func (_e *MockClient_Expecter) AttachToLAN(ctx interface{}, dataCenterID interface{}, lanID interface{}, nic interface{}) *MockClient_AttachToLAN_Call {
-	return &MockClient_AttachToLAN_Call{Call: _e.mock.On("AttachToLAN", ctx, dataCenterID, lanID, nic)}
+func (_e *MockClient_Expecter) AttachToLAN(ctx interface{}, datacenterID interface{}, lanID interface{}, nic interface{}) *MockClient_AttachToLAN_Call {
+	return &MockClient_AttachToLAN_Call{Call: _e.mock.On("AttachToLAN", ctx, datacenterID, lanID, nic)}
 }
 
-func (_c *MockClient_AttachToLAN_Call) Run(run func(ctx context.Context, dataCenterID string, lanID string, nic ionoscloud.Nic)) *MockClient_AttachToLAN_Call {
+func (_c *MockClient_AttachToLAN_Call) Run(run func(ctx context.Context, datacenterID string, lanID string, nic ionoscloud.Nic)) *MockClient_AttachToLAN_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(ionoscloud.Nic))
 	})
@@ -151,78 +151,23 @@ func (_c *MockClient_CheckRequestStatus_Call) RunAndReturn(run func(context.Cont
 	return _c
 }
 
-// CreateDataCenter provides a mock function with given fields: ctx, properties
-func (_m *MockClient) CreateDataCenter(ctx context.Context, properties ionoscloud.DatacenterProperties) (*ionoscloud.Datacenter, error) {
-	ret := _m.Called(ctx, properties)
-
-	var r0 *ionoscloud.Datacenter
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, ionoscloud.DatacenterProperties) (*ionoscloud.Datacenter, error)); ok {
-		return rf(ctx, properties)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, ionoscloud.DatacenterProperties) *ionoscloud.Datacenter); ok {
-		r0 = rf(ctx, properties)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ionoscloud.Datacenter)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, ionoscloud.DatacenterProperties) error); ok {
-		r1 = rf(ctx, properties)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockClient_CreateDataCenter_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateDataCenter'
-type MockClient_CreateDataCenter_Call struct {
-	*mock.Call
-}
-
-// CreateDataCenter is a helper method to define mock.On call
-//   - ctx context.Context
-//   - properties ionoscloud.DatacenterProperties
-func (_e *MockClient_Expecter) CreateDataCenter(ctx interface{}, properties interface{}) *MockClient_CreateDataCenter_Call {
-	return &MockClient_CreateDataCenter_Call{Call: _e.mock.On("CreateDataCenter", ctx, properties)}
-}
-
-func (_c *MockClient_CreateDataCenter_Call) Run(run func(ctx context.Context, properties ionoscloud.DatacenterProperties)) *MockClient_CreateDataCenter_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(ionoscloud.DatacenterProperties))
-	})
-	return _c
-}
-
-func (_c *MockClient_CreateDataCenter_Call) Return(_a0 *ionoscloud.Datacenter, _a1 error) *MockClient_CreateDataCenter_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockClient_CreateDataCenter_Call) RunAndReturn(run func(context.Context, ionoscloud.DatacenterProperties) (*ionoscloud.Datacenter, error)) *MockClient_CreateDataCenter_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// CreateLAN provides a mock function with given fields: ctx, dataCenterID, properties
-func (_m *MockClient) CreateLAN(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost) (string, error) {
-	ret := _m.Called(ctx, dataCenterID, properties)
+// CreateLAN provides a mock function with given fields: ctx, datacenterID, properties
+func (_m *MockClient) CreateLAN(ctx context.Context, datacenterID string, properties ionoscloud.LanPropertiesPost) (string, error) {
+	ret := _m.Called(ctx, datacenterID, properties)
 
 	var r0 string
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.LanPropertiesPost) (string, error)); ok {
-		return rf(ctx, dataCenterID, properties)
+		return rf(ctx, datacenterID, properties)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.LanPropertiesPost) string); ok {
-		r0 = rf(ctx, dataCenterID, properties)
+		r0 = rf(ctx, datacenterID, properties)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, ionoscloud.LanPropertiesPost) error); ok {
-		r1 = rf(ctx, dataCenterID, properties)
+		r1 = rf(ctx, datacenterID, properties)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -237,13 +182,13 @@ type MockClient_CreateLAN_Call struct {
 
 // CreateLAN is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
+//   - datacenterID string
 //   - properties ionoscloud.LanPropertiesPost
-func (_e *MockClient_Expecter) CreateLAN(ctx interface{}, dataCenterID interface{}, properties interface{}) *MockClient_CreateLAN_Call {
-	return &MockClient_CreateLAN_Call{Call: _e.mock.On("CreateLAN", ctx, dataCenterID, properties)}
+func (_e *MockClient_Expecter) CreateLAN(ctx interface{}, datacenterID interface{}, properties interface{}) *MockClient_CreateLAN_Call {
+	return &MockClient_CreateLAN_Call{Call: _e.mock.On("CreateLAN", ctx, datacenterID, properties)}
 }
 
-func (_c *MockClient_CreateLAN_Call) Run(run func(ctx context.Context, dataCenterID string, properties ionoscloud.LanPropertiesPost)) *MockClient_CreateLAN_Call {
+func (_c *MockClient_CreateLAN_Call) Run(run func(ctx context.Context, datacenterID string, properties ionoscloud.LanPropertiesPost)) *MockClient_CreateLAN_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(ionoscloud.LanPropertiesPost))
 	})
@@ -260,17 +205,17 @@ func (_c *MockClient_CreateLAN_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
-// CreateServer provides a mock function with given fields: ctx, dataCenterID, properties
-func (_m *MockClient) CreateServer(ctx context.Context, dataCenterID string, properties ionoscloud.ServerProperties) (*ionoscloud.Server, error) {
-	ret := _m.Called(ctx, dataCenterID, properties)
+// CreateServer provides a mock function with given fields: ctx, datacenterID, properties
+func (_m *MockClient) CreateServer(ctx context.Context, datacenterID string, properties ionoscloud.ServerProperties) (*ionoscloud.Server, error) {
+	ret := _m.Called(ctx, datacenterID, properties)
 
 	var r0 *ionoscloud.Server
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.ServerProperties) (*ionoscloud.Server, error)); ok {
-		return rf(ctx, dataCenterID, properties)
+		return rf(ctx, datacenterID, properties)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.ServerProperties) *ionoscloud.Server); ok {
-		r0 = rf(ctx, dataCenterID, properties)
+		r0 = rf(ctx, datacenterID, properties)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ionoscloud.Server)
@@ -278,7 +223,7 @@ func (_m *MockClient) CreateServer(ctx context.Context, dataCenterID string, pro
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, ionoscloud.ServerProperties) error); ok {
-		r1 = rf(ctx, dataCenterID, properties)
+		r1 = rf(ctx, datacenterID, properties)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -293,13 +238,13 @@ type MockClient_CreateServer_Call struct {
 
 // CreateServer is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
+//   - datacenterID string
 //   - properties ionoscloud.ServerProperties
-func (_e *MockClient_Expecter) CreateServer(ctx interface{}, dataCenterID interface{}, properties interface{}) *MockClient_CreateServer_Call {
-	return &MockClient_CreateServer_Call{Call: _e.mock.On("CreateServer", ctx, dataCenterID, properties)}
+func (_e *MockClient_Expecter) CreateServer(ctx interface{}, datacenterID interface{}, properties interface{}) *MockClient_CreateServer_Call {
+	return &MockClient_CreateServer_Call{Call: _e.mock.On("CreateServer", ctx, datacenterID, properties)}
 }
 
-func (_c *MockClient_CreateServer_Call) Run(run func(ctx context.Context, dataCenterID string, properties ionoscloud.ServerProperties)) *MockClient_CreateServer_Call {
+func (_c *MockClient_CreateServer_Call) Run(run func(ctx context.Context, datacenterID string, properties ionoscloud.ServerProperties)) *MockClient_CreateServer_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(ionoscloud.ServerProperties))
 	})
@@ -316,23 +261,23 @@ func (_c *MockClient_CreateServer_Call) RunAndReturn(run func(context.Context, s
 	return _c
 }
 
-// DeleteLAN provides a mock function with given fields: ctx, dataCenterID, lanID
-func (_m *MockClient) DeleteLAN(ctx context.Context, dataCenterID string, lanID string) (string, error) {
-	ret := _m.Called(ctx, dataCenterID, lanID)
+// DeleteLAN provides a mock function with given fields: ctx, datacenterID, lanID
+func (_m *MockClient) DeleteLAN(ctx context.Context, datacenterID string, lanID string) (string, error) {
+	ret := _m.Called(ctx, datacenterID, lanID)
 
 	var r0 string
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
-		return rf(ctx, dataCenterID, lanID)
+		return rf(ctx, datacenterID, lanID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
-		r0 = rf(ctx, dataCenterID, lanID)
+		r0 = rf(ctx, datacenterID, lanID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, dataCenterID, lanID)
+		r1 = rf(ctx, datacenterID, lanID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -347,13 +292,13 @@ type MockClient_DeleteLAN_Call struct {
 
 // DeleteLAN is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
+//   - datacenterID string
 //   - lanID string
-func (_e *MockClient_Expecter) DeleteLAN(ctx interface{}, dataCenterID interface{}, lanID interface{}) *MockClient_DeleteLAN_Call {
-	return &MockClient_DeleteLAN_Call{Call: _e.mock.On("DeleteLAN", ctx, dataCenterID, lanID)}
+func (_e *MockClient_Expecter) DeleteLAN(ctx interface{}, datacenterID interface{}, lanID interface{}) *MockClient_DeleteLAN_Call {
+	return &MockClient_DeleteLAN_Call{Call: _e.mock.On("DeleteLAN", ctx, datacenterID, lanID)}
 }
 
-func (_c *MockClient_DeleteLAN_Call) Run(run func(ctx context.Context, dataCenterID string, lanID string)) *MockClient_DeleteLAN_Call {
+func (_c *MockClient_DeleteLAN_Call) Run(run func(ctx context.Context, datacenterID string, lanID string)) *MockClient_DeleteLAN_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
@@ -370,13 +315,13 @@ func (_c *MockClient_DeleteLAN_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
-// DestroyServer provides a mock function with given fields: ctx, dataCenterID, serverID
-func (_m *MockClient) DestroyServer(ctx context.Context, dataCenterID string, serverID string) error {
-	ret := _m.Called(ctx, dataCenterID, serverID)
+// DestroyServer provides a mock function with given fields: ctx, datacenterID, serverID
+func (_m *MockClient) DestroyServer(ctx context.Context, datacenterID string, serverID string) error {
+	ret := _m.Called(ctx, datacenterID, serverID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = rf(ctx, dataCenterID, serverID)
+		r0 = rf(ctx, datacenterID, serverID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -391,13 +336,13 @@ type MockClient_DestroyServer_Call struct {
 
 // DestroyServer is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
+//   - datacenterID string
 //   - serverID string
-func (_e *MockClient_Expecter) DestroyServer(ctx interface{}, dataCenterID interface{}, serverID interface{}) *MockClient_DestroyServer_Call {
-	return &MockClient_DestroyServer_Call{Call: _e.mock.On("DestroyServer", ctx, dataCenterID, serverID)}
+func (_e *MockClient_Expecter) DestroyServer(ctx interface{}, datacenterID interface{}, serverID interface{}) *MockClient_DestroyServer_Call {
+	return &MockClient_DestroyServer_Call{Call: _e.mock.On("DestroyServer", ctx, datacenterID, serverID)}
 }
 
-func (_c *MockClient_DestroyServer_Call) Run(run func(ctx context.Context, dataCenterID string, serverID string)) *MockClient_DestroyServer_Call {
+func (_c *MockClient_DestroyServer_Call) Run(run func(ctx context.Context, datacenterID string, serverID string)) *MockClient_DestroyServer_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
@@ -414,13 +359,13 @@ func (_c *MockClient_DestroyServer_Call) RunAndReturn(run func(context.Context, 
 	return _c
 }
 
-// DestroyVolume provides a mock function with given fields: ctx, dataCenterID, volumeID
-func (_m *MockClient) DestroyVolume(ctx context.Context, dataCenterID string, volumeID string) error {
-	ret := _m.Called(ctx, dataCenterID, volumeID)
+// DestroyVolume provides a mock function with given fields: ctx, datacenterID, volumeID
+func (_m *MockClient) DestroyVolume(ctx context.Context, datacenterID string, volumeID string) error {
+	ret := _m.Called(ctx, datacenterID, volumeID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = rf(ctx, dataCenterID, volumeID)
+		r0 = rf(ctx, datacenterID, volumeID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -435,13 +380,13 @@ type MockClient_DestroyVolume_Call struct {
 
 // DestroyVolume is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
+//   - datacenterID string
 //   - volumeID string
-func (_e *MockClient_Expecter) DestroyVolume(ctx interface{}, dataCenterID interface{}, volumeID interface{}) *MockClient_DestroyVolume_Call {
-	return &MockClient_DestroyVolume_Call{Call: _e.mock.On("DestroyVolume", ctx, dataCenterID, volumeID)}
+func (_e *MockClient_Expecter) DestroyVolume(ctx interface{}, datacenterID interface{}, volumeID interface{}) *MockClient_DestroyVolume_Call {
+	return &MockClient_DestroyVolume_Call{Call: _e.mock.On("DestroyVolume", ctx, datacenterID, volumeID)}
 }
 
-func (_c *MockClient_DestroyVolume_Call) Run(run func(ctx context.Context, dataCenterID string, volumeID string)) *MockClient_DestroyVolume_Call {
+func (_c *MockClient_DestroyVolume_Call) Run(run func(ctx context.Context, datacenterID string, volumeID string)) *MockClient_DestroyVolume_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
@@ -458,72 +403,17 @@ func (_c *MockClient_DestroyVolume_Call) RunAndReturn(run func(context.Context, 
 	return _c
 }
 
-// GetDataCenter provides a mock function with given fields: ctx, dataCenterID
-func (_m *MockClient) GetDataCenter(ctx context.Context, dataCenterID string) (*ionoscloud.Datacenter, error) {
-	ret := _m.Called(ctx, dataCenterID)
-
-	var r0 *ionoscloud.Datacenter
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*ionoscloud.Datacenter, error)); ok {
-		return rf(ctx, dataCenterID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *ionoscloud.Datacenter); ok {
-		r0 = rf(ctx, dataCenterID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ionoscloud.Datacenter)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, dataCenterID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockClient_GetDataCenter_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDataCenter'
-type MockClient_GetDataCenter_Call struct {
-	*mock.Call
-}
-
-// GetDataCenter is a helper method to define mock.On call
-//   - ctx context.Context
-//   - dataCenterID string
-func (_e *MockClient_Expecter) GetDataCenter(ctx interface{}, dataCenterID interface{}) *MockClient_GetDataCenter_Call {
-	return &MockClient_GetDataCenter_Call{Call: _e.mock.On("GetDataCenter", ctx, dataCenterID)}
-}
-
-func (_c *MockClient_GetDataCenter_Call) Run(run func(ctx context.Context, dataCenterID string)) *MockClient_GetDataCenter_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
-	})
-	return _c
-}
-
-func (_c *MockClient_GetDataCenter_Call) Return(_a0 *ionoscloud.Datacenter, _a1 error) *MockClient_GetDataCenter_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockClient_GetDataCenter_Call) RunAndReturn(run func(context.Context, string) (*ionoscloud.Datacenter, error)) *MockClient_GetDataCenter_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetLAN provides a mock function with given fields: ctx, dataCenterID, lanID
-func (_m *MockClient) GetLAN(ctx context.Context, dataCenterID string, lanID string) (*ionoscloud.Lan, error) {
-	ret := _m.Called(ctx, dataCenterID, lanID)
+// GetLAN provides a mock function with given fields: ctx, datacenterID, lanID
+func (_m *MockClient) GetLAN(ctx context.Context, datacenterID string, lanID string) (*ionoscloud.Lan, error) {
+	ret := _m.Called(ctx, datacenterID, lanID)
 
 	var r0 *ionoscloud.Lan
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*ionoscloud.Lan, error)); ok {
-		return rf(ctx, dataCenterID, lanID)
+		return rf(ctx, datacenterID, lanID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) *ionoscloud.Lan); ok {
-		r0 = rf(ctx, dataCenterID, lanID)
+		r0 = rf(ctx, datacenterID, lanID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ionoscloud.Lan)
@@ -531,7 +421,7 @@ func (_m *MockClient) GetLAN(ctx context.Context, dataCenterID string, lanID str
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, dataCenterID, lanID)
+		r1 = rf(ctx, datacenterID, lanID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -546,13 +436,13 @@ type MockClient_GetLAN_Call struct {
 
 // GetLAN is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
+//   - datacenterID string
 //   - lanID string
-func (_e *MockClient_Expecter) GetLAN(ctx interface{}, dataCenterID interface{}, lanID interface{}) *MockClient_GetLAN_Call {
-	return &MockClient_GetLAN_Call{Call: _e.mock.On("GetLAN", ctx, dataCenterID, lanID)}
+func (_e *MockClient_Expecter) GetLAN(ctx interface{}, datacenterID interface{}, lanID interface{}) *MockClient_GetLAN_Call {
+	return &MockClient_GetLAN_Call{Call: _e.mock.On("GetLAN", ctx, datacenterID, lanID)}
 }
 
-func (_c *MockClient_GetLAN_Call) Run(run func(ctx context.Context, dataCenterID string, lanID string)) *MockClient_GetLAN_Call {
+func (_c *MockClient_GetLAN_Call) Run(run func(ctx context.Context, datacenterID string, lanID string)) *MockClient_GetLAN_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
@@ -625,17 +515,17 @@ func (_c *MockClient_GetRequests_Call) RunAndReturn(run func(context.Context, st
 	return _c
 }
 
-// GetServer provides a mock function with given fields: ctx, dataCenterID, serverID
-func (_m *MockClient) GetServer(ctx context.Context, dataCenterID string, serverID string) (*ionoscloud.Server, error) {
-	ret := _m.Called(ctx, dataCenterID, serverID)
+// GetServer provides a mock function with given fields: ctx, datacenterID, serverID
+func (_m *MockClient) GetServer(ctx context.Context, datacenterID string, serverID string) (*ionoscloud.Server, error) {
+	ret := _m.Called(ctx, datacenterID, serverID)
 
 	var r0 *ionoscloud.Server
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*ionoscloud.Server, error)); ok {
-		return rf(ctx, dataCenterID, serverID)
+		return rf(ctx, datacenterID, serverID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) *ionoscloud.Server); ok {
-		r0 = rf(ctx, dataCenterID, serverID)
+		r0 = rf(ctx, datacenterID, serverID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ionoscloud.Server)
@@ -643,7 +533,7 @@ func (_m *MockClient) GetServer(ctx context.Context, dataCenterID string, server
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, dataCenterID, serverID)
+		r1 = rf(ctx, datacenterID, serverID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -658,13 +548,13 @@ type MockClient_GetServer_Call struct {
 
 // GetServer is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
+//   - datacenterID string
 //   - serverID string
-func (_e *MockClient_Expecter) GetServer(ctx interface{}, dataCenterID interface{}, serverID interface{}) *MockClient_GetServer_Call {
-	return &MockClient_GetServer_Call{Call: _e.mock.On("GetServer", ctx, dataCenterID, serverID)}
+func (_e *MockClient_Expecter) GetServer(ctx interface{}, datacenterID interface{}, serverID interface{}) *MockClient_GetServer_Call {
+	return &MockClient_GetServer_Call{Call: _e.mock.On("GetServer", ctx, datacenterID, serverID)}
 }
 
-func (_c *MockClient_GetServer_Call) Run(run func(ctx context.Context, dataCenterID string, serverID string)) *MockClient_GetServer_Call {
+func (_c *MockClient_GetServer_Call) Run(run func(ctx context.Context, datacenterID string, serverID string)) *MockClient_GetServer_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
@@ -681,17 +571,17 @@ func (_c *MockClient_GetServer_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
-// GetVolume provides a mock function with given fields: ctx, dataCenterID, volumeID
-func (_m *MockClient) GetVolume(ctx context.Context, dataCenterID string, volumeID string) (*ionoscloud.Volume, error) {
-	ret := _m.Called(ctx, dataCenterID, volumeID)
+// GetVolume provides a mock function with given fields: ctx, datacenterID, volumeID
+func (_m *MockClient) GetVolume(ctx context.Context, datacenterID string, volumeID string) (*ionoscloud.Volume, error) {
+	ret := _m.Called(ctx, datacenterID, volumeID)
 
 	var r0 *ionoscloud.Volume
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*ionoscloud.Volume, error)); ok {
-		return rf(ctx, dataCenterID, volumeID)
+		return rf(ctx, datacenterID, volumeID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) *ionoscloud.Volume); ok {
-		r0 = rf(ctx, dataCenterID, volumeID)
+		r0 = rf(ctx, datacenterID, volumeID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ionoscloud.Volume)
@@ -699,7 +589,7 @@ func (_m *MockClient) GetVolume(ctx context.Context, dataCenterID string, volume
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, dataCenterID, volumeID)
+		r1 = rf(ctx, datacenterID, volumeID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -714,13 +604,13 @@ type MockClient_GetVolume_Call struct {
 
 // GetVolume is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
+//   - datacenterID string
 //   - volumeID string
-func (_e *MockClient_Expecter) GetVolume(ctx interface{}, dataCenterID interface{}, volumeID interface{}) *MockClient_GetVolume_Call {
-	return &MockClient_GetVolume_Call{Call: _e.mock.On("GetVolume", ctx, dataCenterID, volumeID)}
+func (_e *MockClient_Expecter) GetVolume(ctx interface{}, datacenterID interface{}, volumeID interface{}) *MockClient_GetVolume_Call {
+	return &MockClient_GetVolume_Call{Call: _e.mock.On("GetVolume", ctx, datacenterID, volumeID)}
 }
 
-func (_c *MockClient_GetVolume_Call) Run(run func(ctx context.Context, dataCenterID string, volumeID string)) *MockClient_GetVolume_Call {
+func (_c *MockClient_GetVolume_Call) Run(run func(ctx context.Context, datacenterID string, volumeID string)) *MockClient_GetVolume_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
@@ -737,17 +627,17 @@ func (_c *MockClient_GetVolume_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
-// ListLANs provides a mock function with given fields: ctx, dataCenterID
-func (_m *MockClient) ListLANs(ctx context.Context, dataCenterID string) (*ionoscloud.Lans, error) {
-	ret := _m.Called(ctx, dataCenterID)
+// ListLANs provides a mock function with given fields: ctx, datacenterID
+func (_m *MockClient) ListLANs(ctx context.Context, datacenterID string) (*ionoscloud.Lans, error) {
+	ret := _m.Called(ctx, datacenterID)
 
 	var r0 *ionoscloud.Lans
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) (*ionoscloud.Lans, error)); ok {
-		return rf(ctx, dataCenterID)
+		return rf(ctx, datacenterID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) *ionoscloud.Lans); ok {
-		r0 = rf(ctx, dataCenterID)
+		r0 = rf(ctx, datacenterID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ionoscloud.Lans)
@@ -755,7 +645,7 @@ func (_m *MockClient) ListLANs(ctx context.Context, dataCenterID string) (*ionos
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, dataCenterID)
+		r1 = rf(ctx, datacenterID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -770,12 +660,12 @@ type MockClient_ListLANs_Call struct {
 
 // ListLANs is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
-func (_e *MockClient_Expecter) ListLANs(ctx interface{}, dataCenterID interface{}) *MockClient_ListLANs_Call {
-	return &MockClient_ListLANs_Call{Call: _e.mock.On("ListLANs", ctx, dataCenterID)}
+//   - datacenterID string
+func (_e *MockClient_Expecter) ListLANs(ctx interface{}, datacenterID interface{}) *MockClient_ListLANs_Call {
+	return &MockClient_ListLANs_Call{Call: _e.mock.On("ListLANs", ctx, datacenterID)}
 }
 
-func (_c *MockClient_ListLANs_Call) Run(run func(ctx context.Context, dataCenterID string)) *MockClient_ListLANs_Call {
+func (_c *MockClient_ListLANs_Call) Run(run func(ctx context.Context, datacenterID string)) *MockClient_ListLANs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string))
 	})
@@ -792,17 +682,17 @@ func (_c *MockClient_ListLANs_Call) RunAndReturn(run func(context.Context, strin
 	return _c
 }
 
-// ListServers provides a mock function with given fields: ctx, dataCenterID
-func (_m *MockClient) ListServers(ctx context.Context, dataCenterID string) (*ionoscloud.Servers, error) {
-	ret := _m.Called(ctx, dataCenterID)
+// ListServers provides a mock function with given fields: ctx, datacenterID
+func (_m *MockClient) ListServers(ctx context.Context, datacenterID string) (*ionoscloud.Servers, error) {
+	ret := _m.Called(ctx, datacenterID)
 
 	var r0 *ionoscloud.Servers
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) (*ionoscloud.Servers, error)); ok {
-		return rf(ctx, dataCenterID)
+		return rf(ctx, datacenterID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) *ionoscloud.Servers); ok {
-		r0 = rf(ctx, dataCenterID)
+		r0 = rf(ctx, datacenterID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ionoscloud.Servers)
@@ -810,7 +700,7 @@ func (_m *MockClient) ListServers(ctx context.Context, dataCenterID string) (*io
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, dataCenterID)
+		r1 = rf(ctx, datacenterID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -825,12 +715,12 @@ type MockClient_ListServers_Call struct {
 
 // ListServers is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
-func (_e *MockClient_Expecter) ListServers(ctx interface{}, dataCenterID interface{}) *MockClient_ListServers_Call {
-	return &MockClient_ListServers_Call{Call: _e.mock.On("ListServers", ctx, dataCenterID)}
+//   - datacenterID string
+func (_e *MockClient_Expecter) ListServers(ctx interface{}, datacenterID interface{}) *MockClient_ListServers_Call {
+	return &MockClient_ListServers_Call{Call: _e.mock.On("ListServers", ctx, datacenterID)}
 }
 
-func (_c *MockClient_ListServers_Call) Run(run func(ctx context.Context, dataCenterID string)) *MockClient_ListServers_Call {
+func (_c *MockClient_ListServers_Call) Run(run func(ctx context.Context, datacenterID string)) *MockClient_ListServers_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string))
 	})
@@ -847,17 +737,17 @@ func (_c *MockClient_ListServers_Call) RunAndReturn(run func(context.Context, st
 	return _c
 }
 
-// ListVolumes provides a mock function with given fields: ctx, dataCenterID
-func (_m *MockClient) ListVolumes(ctx context.Context, dataCenterID string) (*ionoscloud.Volumes, error) {
-	ret := _m.Called(ctx, dataCenterID)
+// ListVolumes provides a mock function with given fields: ctx, datacenterID
+func (_m *MockClient) ListVolumes(ctx context.Context, datacenterID string) (*ionoscloud.Volumes, error) {
+	ret := _m.Called(ctx, datacenterID)
 
 	var r0 *ionoscloud.Volumes
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) (*ionoscloud.Volumes, error)); ok {
-		return rf(ctx, dataCenterID)
+		return rf(ctx, datacenterID)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) *ionoscloud.Volumes); ok {
-		r0 = rf(ctx, dataCenterID)
+		r0 = rf(ctx, datacenterID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*ionoscloud.Volumes)
@@ -865,7 +755,7 @@ func (_m *MockClient) ListVolumes(ctx context.Context, dataCenterID string) (*io
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, dataCenterID)
+		r1 = rf(ctx, datacenterID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -880,12 +770,12 @@ type MockClient_ListVolumes_Call struct {
 
 // ListVolumes is a helper method to define mock.On call
 //   - ctx context.Context
-//   - dataCenterID string
-func (_e *MockClient_Expecter) ListVolumes(ctx interface{}, dataCenterID interface{}) *MockClient_ListVolumes_Call {
-	return &MockClient_ListVolumes_Call{Call: _e.mock.On("ListVolumes", ctx, dataCenterID)}
+//   - datacenterID string
+func (_e *MockClient_Expecter) ListVolumes(ctx interface{}, datacenterID interface{}) *MockClient_ListVolumes_Call {
+	return &MockClient_ListVolumes_Call{Call: _e.mock.On("ListVolumes", ctx, datacenterID)}
 }
 
-func (_c *MockClient_ListVolumes_Call) Run(run func(ctx context.Context, dataCenterID string)) *MockClient_ListVolumes_Call {
+func (_c *MockClient_ListVolumes_Call) Run(run func(ctx context.Context, datacenterID string)) *MockClient_ListVolumes_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string))
 	})

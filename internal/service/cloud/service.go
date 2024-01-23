@@ -47,7 +47,7 @@ func (s *Service) api() ionoscloud.Client {
 	return s.scope.ClusterScope.IonosClient
 }
 
-// dataCenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
-func (s *Service) dataCenterID() string {
-	return s.scope.IonosMachine.Spec.DataCenterID
+// datacenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
+func (s *Service) datacenterID() string {
+	return s.scope.IonosMachine.Spec.DatacenterID
 }

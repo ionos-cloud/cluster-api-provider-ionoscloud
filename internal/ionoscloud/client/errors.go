@@ -19,7 +19,7 @@ package client
 import "errors"
 
 var (
-	errDataCenterIDIsEmpty = errors.New("error parsing data center ID: value cannot be empty")
+	errDatacenterIDIsEmpty = errors.New("error parsing data center ID: value cannot be empty")
 	errServerIDIsEmpty     = errors.New("error parsing server ID: value cannot be empty")
 	errLANIDIsEmpty        = errors.New("error parsing LAN ID: value cannot be empty")
 	errVolumeIDIsEmpty     = errors.New("error parsing volume ID: value cannot be empty")

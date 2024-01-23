@@ -79,10 +79,10 @@ type IonosCloudMachineSpec struct {
 	// +optional
 	ProviderID string `json:"providerID,omitempty"`
 
-	// DataCenterID is the ID of the data center where the machine should be created in.
+	// DatacenterID is the ID of the data center where the machine should be created in.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
 	// +kubebuilder:validation:Format=uuid
-	DataCenterID string `json:"datacenterID"`
+	DatacenterID string `json:"datacenterID"`
 
 	// NumCores defines the number of cores for the VM.
 	// +kubebuilder:validation:Minimum=1

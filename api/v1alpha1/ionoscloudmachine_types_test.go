@@ -40,7 +40,7 @@ func defaultMachine() *IonosCloudMachine {
 		},
 		Spec: IonosCloudMachineSpec{
 			ProviderID:       "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
-			DataCenterID:     "ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
+			DatacenterID:     "ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
 			NumCores:         1,
 			AvailabilityZone: AvailabilityZoneTwo,
 			MemoryMB:         2048,
@@ -92,21 +92,21 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		Context("Data center ID", func() {
 			It("should fail if not set", func() {
 				m := defaultMachine()
-				m.Spec.DataCenterID = ""
+				m.Spec.DatacenterID = ""
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 
 			It("should fail if not a UUID", func() {
 				m := defaultMachine()
 				want := "not-a-UUID"
-				m.Spec.DataCenterID = want
+				m.Spec.DatacenterID = want
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 			It("should be immutable", func() {
 				m := defaultMachine()
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(m.Spec.DataCenterID).To(Equal(defaultMachine().Spec.DataCenterID))
-				m.Spec.DataCenterID = "6ded8c5f-8df2-46ef-b4ce-61833daf0961"
+				Expect(m.Spec.DatacenterID).To(Equal(defaultMachine().Spec.DatacenterID))
+				m.Spec.DatacenterID = "6ded8c5f-8df2-46ef-b4ce-61833daf0961"
 				Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 			})
 		})

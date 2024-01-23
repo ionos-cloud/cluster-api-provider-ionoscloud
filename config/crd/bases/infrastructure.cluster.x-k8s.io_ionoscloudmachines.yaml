@@ -68,7 +68,7 @@ spec:
                 minLength: 1
                 type: string
               datacenterID:
-                description: DataCenterID is the ID of the data center where the machine
+                description: DatacenterID is the ID of the data center where the machine
                   should be created in.
                 format: uuid
                 type: string

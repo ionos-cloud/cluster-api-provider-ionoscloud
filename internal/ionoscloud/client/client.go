@@ -68,40 +68,17 @@ func validate(username, password, token string) error {
 	return nil
 }
 
-// CreateDataCenter creates a new data center with its specification based on provided properties.
-func (c *IonosCloudClient) CreateDataCenter(ctx context.Context, properties sdk.DatacenterProperties,
-) (*sdk.Datacenter, error) {
-	dc := sdk.Datacenter{Properties: &properties}
-	dc, _, err := c.API.DataCentersApi.DatacentersPost(ctx).Datacenter(dc).Execute()
-	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
-	}
-	return &dc, nil
-}
-
-// GetDataCenter returns the data center that matches the provided data center ID.
-func (c *IonosCloudClient) GetDataCenter(ctx context.Context, id string) (*sdk.Datacenter, error) {
-	if id == "" {
-		return nil, errDataCenterIDIsEmpty
-	}
-	dc, _, err := c.API.DataCentersApi.DatacentersFindById(ctx, id).Execute()
-	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
-	}
-	return &dc, nil
-}
-
 // CreateServer creates a new server with provided properties in the specified data center.
 func (c *IonosCloudClient) CreateServer(
-	ctx context.Context, dataCenterID string, properties sdk.ServerProperties,
+	ctx context.Context, datacenterID string, properties sdk.ServerProperties,
 ) (*sdk.Server, error) {
-	if dataCenterID == "" {
-		return nil, errDataCenterIDIsEmpty
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
 	}
 	server := sdk.Server{
 		Properties: &properties,
 	}
-	s, _, err := c.API.ServersApi.DatacentersServersPost(ctx, dataCenterID).Server(server).Execute()
+	s, _, err := c.API.ServersApi.DatacentersServersPost(ctx, datacenterID).Server(server).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -109,11 +86,11 @@ func (c *IonosCloudClient) CreateServer(
 }
 
 // ListServers returns a list with servers in the specified data center.
-func (c *IonosCloudClient) ListServers(ctx context.Context, dataCenterID string) (*sdk.Servers, error) {
-	if dataCenterID == "" {
-		return nil, errDataCenterIDIsEmpty
+func (c *IonosCloudClient) ListServers(ctx context.Context, datacenterID string) (*sdk.Servers, error) {
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
 	}
-	servers, _, err := c.API.ServersApi.DatacentersServersGet(ctx, dataCenterID).Execute()
+	servers, _, err := c.API.ServersApi.DatacentersServersGet(ctx, datacenterID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -121,14 +98,14 @@ func (c *IonosCloudClient) ListServers(ctx context.Context, dataCenterID string)
 }
 
 // GetServer returns the server that matches the provided serverID in the specified data center.
-func (c *IonosCloudClient) GetServer(ctx context.Context, dataCenterID, serverID string) (*sdk.Server, error) {
-	if dataCenterID == "" {
-		return nil, errDataCenterIDIsEmpty
+func (c *IonosCloudClient) GetServer(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error) {
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
 	}
 	if serverID == "" {
 		return nil, errServerIDIsEmpty
 	}
-	server, _, err := c.API.ServersApi.DatacentersServersFindById(ctx, dataCenterID, serverID).Execute()
+	server, _, err := c.API.ServersApi.DatacentersServersFindById(ctx, datacenterID, serverID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -136,14 +113,14 @@ func (c *IonosCloudClient) GetServer(ctx context.Context, dataCenterID, serverID
 }
 
 // DestroyServer deletes the server that matches the provided serverID in the specified data center.
-func (c *IonosCloudClient) DestroyServer(ctx context.Context, dataCenterID, serverID string) error {
-	if dataCenterID == "" {
-		return errDataCenterIDIsEmpty
+func (c *IonosCloudClient) DestroyServer(ctx context.Context, datacenterID, serverID string) error {
+	if datacenterID == "" {
+		return errDatacenterIDIsEmpty
 	}
 	if serverID == "" {
 		return errServerIDIsEmpty
 	}
-	_, err := c.API.ServersApi.DatacentersServersDelete(ctx, dataCenterID, serverID).Execute()
+	_, err := c.API.ServersApi.DatacentersServersDelete(ctx, datacenterID, serverID).Execute()
 	if err != nil {
 		return fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -151,15 +128,15 @@ func (c *IonosCloudClient) DestroyServer(ctx context.Context, dataCenterID, serv
 }
 
 // CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
-func (c *IonosCloudClient) CreateLAN(ctx context.Context, dataCenterID string, properties sdk.LanPropertiesPost,
+func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost,
 ) (string, error) {
-	if dataCenterID == "" {
-		return "", errDataCenterIDIsEmpty
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
 	}
 	lanPost := sdk.LanPost{
 		Properties: &properties,
 	}
-	_, req, err := c.API.LANsApi.DatacentersLansPost(ctx, dataCenterID).Lan(lanPost).Execute()
+	_, req, err := c.API.LANsApi.DatacentersLansPost(ctx, datacenterID).Lan(lanPost).Execute()
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -170,15 +147,15 @@ func (c *IonosCloudClient) CreateLAN(ctx context.Context, dataCenterID string, p
 }
 
 // AttachToLAN attaches a provided NIC to a provided LAN in the specified data center.
-func (c *IonosCloudClient) AttachToLAN(ctx context.Context, dataCenterID, lanID string, nic sdk.Nic,
+func (c *IonosCloudClient) AttachToLAN(ctx context.Context, datacenterID, lanID string, nic sdk.Nic,
 ) (*sdk.Nic, error) {
-	if dataCenterID == "" {
-		return nil, errDataCenterIDIsEmpty
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
 	}
 	if lanID == "" {
 		return nil, errLANIDIsEmpty
 	}
-	n, _, err := c.API.LANsApi.DatacentersLansNicsPost(ctx, dataCenterID, lanID).Nic(nic).Execute()
+	n, _, err := c.API.LANsApi.DatacentersLansNicsPost(ctx, datacenterID, lanID).Nic(nic).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -186,11 +163,11 @@ func (c *IonosCloudClient) AttachToLAN(ctx context.Context, dataCenterID, lanID 
 }
 
 // ListLANs returns a list of LANs in the specified data center.
-func (c *IonosCloudClient) ListLANs(ctx context.Context, dataCenterID string) (*sdk.Lans, error) {
-	if dataCenterID == "" {
-		return nil, errDataCenterIDIsEmpty
+func (c *IonosCloudClient) ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error) {
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
 	}
-	lans, _, err := c.API.LANsApi.DatacentersLansGet(ctx, dataCenterID).Depth(depthLANEntities).Execute()
+	lans, _, err := c.API.LANsApi.DatacentersLansGet(ctx, datacenterID).Depth(depthLANEntities).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -198,14 +175,14 @@ func (c *IonosCloudClient) ListLANs(ctx context.Context, dataCenterID string) (*
 }
 
 // GetLAN returns the LAN that matches lanID in the specified data center.
-func (c *IonosCloudClient) GetLAN(ctx context.Context, dataCenterID, lanID string) (*sdk.Lan, error) {
-	if dataCenterID == "" {
-		return nil, errDataCenterIDIsEmpty
+func (c *IonosCloudClient) GetLAN(ctx context.Context, datacenterID, lanID string) (*sdk.Lan, error) {
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
 	}
 	if lanID == "" {
 		return nil, errLANIDIsEmpty
 	}
-	lan, _, err := c.API.LANsApi.DatacentersLansFindById(ctx, dataCenterID, lanID).Execute()
+	lan, _, err := c.API.LANsApi.DatacentersLansFindById(ctx, datacenterID, lanID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -213,14 +190,14 @@ func (c *IonosCloudClient) GetLAN(ctx context.Context, dataCenterID, lanID strin
 }
 
 // DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
-func (c *IonosCloudClient) DeleteLAN(ctx context.Context, dataCenterID, lanID string) (string, error) {
-	if dataCenterID == "" {
-		return "", errDataCenterIDIsEmpty
+func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
 	}
 	if lanID == "" {
 		return "", errLANIDIsEmpty
 	}
-	req, err := c.API.LANsApi.DatacentersLansDelete(ctx, dataCenterID, lanID).Execute()
+	req, err := c.API.LANsApi.DatacentersLansDelete(ctx, datacenterID, lanID).Execute()
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -231,12 +208,12 @@ func (c *IonosCloudClient) DeleteLAN(ctx context.Context, dataCenterID, lanID st
 }
 
 // ListVolumes returns a list of volumes in the specified data center.
-func (c *IonosCloudClient) ListVolumes(ctx context.Context, dataCenterID string,
+func (c *IonosCloudClient) ListVolumes(ctx context.Context, datacenterID string,
 ) (*sdk.Volumes, error) {
-	if dataCenterID == "" {
-		return nil, errDataCenterIDIsEmpty
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
 	}
-	volumes, _, err := c.API.VolumesApi.DatacentersVolumesGet(ctx, dataCenterID).Execute()
+	volumes, _, err := c.API.VolumesApi.DatacentersVolumesGet(ctx, datacenterID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -244,15 +221,15 @@ func (c *IonosCloudClient) ListVolumes(ctx context.Context, dataCenterID string,
 }
 
 // GetVolume returns the volume that matches volumeID in the specified data center.
-func (c *IonosCloudClient) GetVolume(ctx context.Context, dataCenterID, volumeID string,
+func (c *IonosCloudClient) GetVolume(ctx context.Context, datacenterID, volumeID string,
 ) (*sdk.Volume, error) {
-	if dataCenterID == "" {
-		return nil, errDataCenterIDIsEmpty
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
 	}
 	if volumeID == "" {
 		return nil, errVolumeIDIsEmpty
 	}
-	volume, _, err := c.API.VolumesApi.DatacentersVolumesFindById(ctx, dataCenterID, volumeID).Execute()
+	volume, _, err := c.API.VolumesApi.DatacentersVolumesFindById(ctx, datacenterID, volumeID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -260,14 +237,14 @@ func (c *IonosCloudClient) GetVolume(ctx context.Context, dataCenterID, volumeID
 }
 
 // DestroyVolume deletes the volume that matches volumeID in the specified data center.
-func (c *IonosCloudClient) DestroyVolume(ctx context.Context, dataCenterID, volumeID string) error {
-	if dataCenterID == "" {
-		return errDataCenterIDIsEmpty
+func (c *IonosCloudClient) DestroyVolume(ctx context.Context, datacenterID, volumeID string) error {
+	if datacenterID == "" {
+		return errDatacenterIDIsEmpty
 	}
 	if volumeID == "" {
 		return errVolumeIDIsEmpty
 	}
-	_, err := c.API.VolumesApi.DatacentersVolumesDelete(ctx, dataCenterID, volumeID).Execute()
+	_, err := c.API.VolumesApi.DatacentersVolumesDelete(ctx, datacenterID, volumeID).Execute()
 	if err != nil {
 		return fmt.Errorf(apiCallErrWrapper, err)
 	}
