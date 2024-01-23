@@ -92,6 +92,11 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	}, nil
 }
 
+// DatacenterID returns the data center ID used by the IonosCloudMachine.
+func (m *MachineScope) DatacenterID() string {
+	return m.IonosMachine.Spec.DatacenterID
+}
+
 // HasFailed checks if the IonosCloudMachine is in a failed state.
 func (m *MachineScope) HasFailed() bool {
 	status := m.IonosMachine.Status
