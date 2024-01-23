@@ -41,6 +41,14 @@ func (s *lanSuite) TestNetworkLANName() {
 	s.Equal("k8s-default-test-cluster", s.service.lanName())
 }
 
+func (s *lanSuite) TestLANURL() {
+	s.Equal("datacenters/"+s.service.dataCenterID()+"/lans/1", s.service.lanURL("1"))
+}
+
+func (s *lanSuite) TestLANURLs() {
+	s.Equal("datacenters/"+s.service.dataCenterID()+"/lans", s.service.lansURL())
+}
+
 func (s *lanSuite) Test_Network_CreateLAN_Successful() {
 	s.mockCreateLANCall().Return(reqPath, nil).Once()
 	s.NoError(s.service.createLAN())

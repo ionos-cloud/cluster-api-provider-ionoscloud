@@ -35,7 +35,6 @@ func (s *Service) lanName() string {
 		s.scope.ClusterScope.Cluster.Name)
 }
 
-// todo: test them
 func (s *Service) lanURL(id string) string {
 	return path.Join("datacenters", s.dataCenterID(), "lans", id)
 }
