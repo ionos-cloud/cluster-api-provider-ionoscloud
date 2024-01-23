@@ -193,6 +193,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.Machin
 	// 		* Failed => We need to discuss this, log error and continue (retry last request in the corresponding reconcile function)
 
 	// Ensure that a LAN is created in the data center
+	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
 	if requeue, err := cloudService.ReconcileLAN(); err != nil || requeue {
 		if requeue {
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
@@ -204,6 +205,10 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.Machin
 }
 
 func (r *IonosCloudMachineReconciler) reconcileDelete(cloudService *cloud.Service) (ctrl.Result, error) {
+	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
+	//  Moreover, should only be attempted if it's the last machine using that LAN. We should check that our machines
+	//  at least, but need to accept that users added their own infrastructure into our LAN (in that case a LAN deletion
+	//  attempt will be denied with HTTP 422).
 	requeue, err := cloudService.ReconcileLANDeletion()
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("could not reconcile LAN deletion: %w", err)
