@@ -248,10 +248,7 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 			retErr = fmt.Errorf("could not get request status: %w", err)
 		}
 
-		requeue, err = r.withStatus(
-			status,
-			message,
-			machineScope.Logger,
+		requeue, err = r.withStatus(status, message, machineScope.Logger,
 			func() error {
 				// remove the request from the status and patch the cluster
 				ionosCluster.DeleteCurrentRequest(machineScope.DatacenterID())
@@ -269,10 +266,7 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 			retErr = errors.Join(retErr, fmt.Errorf("could not get request status: %w", err))
 		}
 
-		requeue, _ = r.withStatus(
-			status,
-			message,
-			machineScope.Logger,
+		requeue, _ = r.withStatus(status, message, machineScope.Logger,
 			func() error {
 				// no need to patch the machine here as it will be patched
 				// after the machine reconciliation is done.
