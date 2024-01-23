@@ -1,5 +1,5 @@
 /*
-Copyright 2023 IONOS Cloud.
+Copyright 2024 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"flag"
 	"os"
 
-	ionoscloud "github.com/ionos-cloud/sdk-go/v6"
+	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -88,8 +88,8 @@ func main() {
 		os.Exit(1)
 	}
 	ionosCloudClient, err := icc.NewClient(
-		os.Getenv(ionoscloud.IonosUsernameEnvVar), os.Getenv(ionoscloud.IonosPasswordEnvVar),
-		os.Getenv(ionoscloud.IonosTokenEnvVar), os.Getenv(ionoscloud.IonosApiUrlEnvVar))
+		os.Getenv(sdk.IonosUsernameEnvVar), os.Getenv(sdk.IonosPasswordEnvVar),
+		os.Getenv(sdk.IonosTokenEnvVar), os.Getenv(sdk.IonosApiUrlEnvVar))
 	if err != nil {
 		setupLog.Error(err, "could not create IONOS client")
 		os.Exit(1)
@@ -124,7 +124,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting manager")
+	setupLog.Info("Starting manager")
 	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)

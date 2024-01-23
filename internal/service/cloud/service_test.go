@@ -13,3 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+package cloud
+
+func (s *ServiceTestSuite) TestDatacenterID() {
+	s.Equal(s.service.scope.IonosMachine.Spec.DatacenterID, s.service.datacenterID())
+}
+
+func (s *ServiceTestSuite) TestAPI() {
+	s.Equal(s.service.scope.ClusterScope.IonosClient, s.service.api())
+}

@@ -1,5 +1,5 @@
 /*
-Copyright 2023 IONOS Cloud.
+Copyright 2024 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,12 +22,144 @@ import (
 	"sigs.k8s.io/cluster-api/errors"
 )
 
+const (
+	// IonosCloudMachineType is the named type for the API object.
+	IonosCloudMachineType = "IonosCloudMachine"
+
+	// MachineFinalizer is the finalizer for the IonosCloudMachine resources.
+	// It will prevent the deletion of the resource until it was removed by the controller
+	// to ensure that related cloud resources will be deleted before the IonosCloudMachine resource
+	// will be removed from the API server.
+	MachineFinalizer = "ionoscloudmachine.infrastructure.cluster.x-k8s.io"
+
+	// MachineProvisionedCondition documents the status of the provisioning of a IonosCloudMachine and
+	// the underlying VM.
+	MachineProvisionedCondition clusterv1.ConditionType = "MachineProvisioned"
+
+	// WaitingForClusterInfrastructureReason (Severity=Info) indicates that the IonosCloudMachine is currently
+	// waiting for the cluster infrastructure to become ready.
+	WaitingForClusterInfrastructureReason = "WaitingForClusterInfrastructure"
+
+	// WaitingForBootstrapDataReason (Severity=Info) indicates that the bootstrap provider has not yet finished
+	// creating the bootstrap data secret and store it in the Cluster API Machine.
+	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
+)
+
+// VolumeDiskType specifies the type of  hard disk.
+type VolumeDiskType string
+
+const (
+	// VolumeDiskTypeHDD defines the disk type HDD.
+	VolumeDiskTypeHDD VolumeDiskType = "HDD"
+	// VolumeDiskTypeSSDStandard defines the standard SSD disk type.
+	// This is the same as VolumeDiskTypeSSD.
+	VolumeDiskTypeSSDStandard VolumeDiskType = "SSD Standard"
+	// VolumeDiskTypeSSDPremium defines the premium SSD disk type.
+	VolumeDiskTypeSSDPremium VolumeDiskType = "SSD Premium"
+)
+
+// AvailabilityZone is the availability zone where different cloud resources are created in.
+type AvailabilityZone string
+
+const (
+	// AvailabilityZoneAuto automatically selects an availability zone.
+	AvailabilityZoneAuto AvailabilityZone = "AUTO"
+	// AvailabilityZoneOne zone 1.
+	AvailabilityZoneOne AvailabilityZone = "ZONE_1"
+	// AvailabilityZoneTwo zone 2.
+	AvailabilityZoneTwo AvailabilityZone = "ZONE_2"
+	// AvailabilityZoneThree zone 3.
+	AvailabilityZoneThree AvailabilityZone = "ZONE_3"
+)
+
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
 type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
 	// +optional
-	ProviderID string `json:"providerId,omitempty"`
+	ProviderID string `json:"providerID,omitempty"`
+
+	// DatacenterID is the ID of the data center where the machine should be created in.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
+	// +kubebuilder:validation:Format=uuid
+	DatacenterID string `json:"datacenterID"`
+
+	// NumCores defines the number of cores for the VM.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=1
+	// +optional
+	NumCores int32 `json:"numCores,omitempty"`
+
+	// AvailabilityZone is the availability zone in which the VM should be provisioned.
+	// +kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2
+	// +kubebuilder:default=AUTO
+	// +optional
+	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
+
+	// MemoryMB is the memory size for the VM in MB.
+	// Size must be specified in multiples of 256 MB with a minimum of 1024 MB
+	// which is required as we are using hot-pluggable RAM by default.
+	// +kubebuilder:validation:MultipleOf=1024
+	// +kubebuilder:validation:Minimum=2048
+	// +kubebuilder:default=3072
+	// +optional
+	MemoryMB int32 `json:"memoryMB,omitempty"`
+
+	// CPUFamily defines the CPU architecture, which will be used for this VM.
+	// Not all CPU architectures are available in all data centers.
+	// +kubebuilder:example=AMD_OPTERON
+	// +kubebuilder:validation:MinLength=1
+	CPUFamily string `json:"cpuFamily"`
+
+	// Disk defines the boot volume of the VM.
+	Disk *Volume `json:"disk"`
+
+	// AdditionalNetworks defines the additional network configurations for the VM.
+	// NOTE(lubedacht): We currently only support networks with DHCP enabled.
+	// +optional
+	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
+}
+
+// Networks contains a list of network configs.
+type Networks []Network
+
+// Network contains a network config.
+type Network struct {
+	// NetworkID represents an ID an existing LAN in the data center.
+	// This LAN will be excluded from the deletion process.
+	// +kubebuilder:validation:Minimum=1
+	NetworkID int32 `json:"networkID"`
+}
+
+// Volume is the physical storage on the machine.
+type Volume struct {
+	// Name is the name of the volume
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// DiskType defines the type of the hard drive.
+	// +kubebuilder:validation:Enum=HDD;SSD Standard;SSD Premium
+	// +kubebuilder:default=HDD
+	// +optional
+	DiskType VolumeDiskType `json:"diskType,omitempty"`
+
+	// SizeGB defines the size of the volume in GB
+	// +kubebuilder:validation:Minimum=10
+	// +kubebuilder:default=20
+	// +optional
+	SizeGB int `json:"sizeGB,omitempty"`
+
+	// AvailabilityZone is the availability zone where the volume will be created.
+	// +kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2;ZONE_3
+	// +kubebuilder:default=AUTO
+	// +optional
+	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
+
+	// SSHKeys contains a set of public SSH keys which will be added to the
+	// list of authorized keys.
+	// +listType=set
+	// +optional
+	SSHKeys []string `json:"sshKeys,omitempty"`
 }
 
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
@@ -77,6 +209,11 @@ type IonosCloudMachineStatus struct {
 	// Conditions defines current service state of the IonosCloudMachine.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	// CurrentRequest shows the current provisioning request for any
+	// cloud resource that is being provisioned.
+	// +optional
+	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -98,6 +235,16 @@ type IonosCloudMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []IonosCloudMachine `json:"items"`
+}
+
+// GetConditions returns the observations of the operational state of the IonosCloudMachine resource.
+func (m *IonosCloudMachine) GetConditions() clusterv1.Conditions {
+	return m.Status.Conditions
+}
+
+// SetConditions sets the underlying service state of the IonosCloudMachine to the predescribed clusterv1.Conditions.
+func (m *IonosCloudMachine) SetConditions(conditions clusterv1.Conditions) {
+	m.Status.Conditions = conditions
 }
 
 func init() {

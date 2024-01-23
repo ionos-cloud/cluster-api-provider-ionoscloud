@@ -13,3 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+// Package ptr offers generic pointer utility functions.
+package ptr
+
+// To returns a pointer to the given value.
+func To[T any](v T) *T {
+	return &v
+}
+
+// Deref attempts to dereference a pointer and return the value.
+// If the pointer is nil, the provided default value will be returned instead.
+func Deref[T any](ptr *T, def T) T {
+	if ptr != nil {
+		return *ptr
+	}
+	return def
+}

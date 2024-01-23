@@ -1,5 +1,5 @@
 /*
-Copyright 2023 IONOS Cloud.
+Copyright 2024 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,9 +23,8 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/client-go/util/retry"
-
 	"github.com/go-logr/logr"
+	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -98,9 +97,9 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	return clusterScope, nil
 }
 
-// patchObject will apply all changes from the IonosCloudCluster.
+// PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
-func (c *ClusterScope) patchObject() error {
+func (c *ClusterScope) PatchObject() error {
 	// always set the ready condition
 	conditions.SetSummary(c.IonosCluster,
 		conditions.WithConditions(infrav1.IonosCloudClusterReady))
@@ -111,7 +110,11 @@ func (c *ClusterScope) patchObject() error {
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster)
+	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster, patch.WithOwnedConditions{
+		Conditions: []clusterv1.ConditionType{
+			clusterv1.ReadyCondition,
+		},
+	})
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudCluster.
@@ -125,5 +128,5 @@ func (c *ClusterScope) Finalize() error {
 	return retry.OnError(
 		retry.DefaultBackoff,
 		shouldRetry,
-		c.patchObject)
+		c.PatchObject)
 }

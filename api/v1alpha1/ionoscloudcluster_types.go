@@ -1,5 +1,5 @@
 /*
-Copyright 2023 IONOS Cloud.
+Copyright 2024 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 
 const (
 	// ClusterFinalizer allows cleanup of resources, which are
-	// associated with the IonosCloudCluster before removing it from the apiserver.
+	// associated with the IonosCloudCluster before removing it from the API server.
 	ClusterFinalizer = "ionoscloudcluster.infrastructure.cluster.x-k8s.io"
 
 	// IonosCloudClusterReady is the condition for the IonosCloudCluster, which indicates that the cluster is ready.
@@ -54,6 +54,10 @@ type IonosCloudClusterStatus struct {
 	// Conditions defines current service state of the IonosCloudCluster.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	// CurrentRequestByDatacenter maps data center IDs to a pending provisioning request made during reconciliation.
+	// +optional
+	CurrentRequestByDatacenter map[string]ProvisioningRequest `json:"currentRequest,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -92,4 +96,13 @@ func (i *IonosCloudCluster) GetConditions() clusterv1.Conditions {
 // SetConditions sets the conditions in the status.
 func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
 	i.Status.Conditions = conditions
+}
+
+// SetCurrentRequest sets the current provisioning request for the given data center.
+// This function makes sure that the map is initialized before setting the request.
+func (i *IonosCloudCluster) SetCurrentRequest(datacenterID string, request ProvisioningRequest) {
+	if i.Status.CurrentRequestByDatacenter == nil {
+		i.Status.CurrentRequestByDatacenter = map[string]ProvisioningRequest{}
+	}
+	i.Status.CurrentRequestByDatacenter[datacenterID] = request
 }

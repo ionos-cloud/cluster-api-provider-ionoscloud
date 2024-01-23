@@ -34,10 +34,107 @@ spec:
           spec:
             description: IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
             properties:
-              providerId:
+              additionalNetworks:
+                description: 'AdditionalNetworks defines the additional network configurations
+                  for the VM. NOTE(lubedacht): We currently only support networks
+                  with DHCP enabled.'
+                items:
+                  description: Network contains a network config.
+                  properties:
+                    networkID:
+                      description: NetworkID represents an ID an existing LAN in the
+                        data center. This LAN will be excluded from the deletion process.
+                      format: int32
+                      minimum: 1
+                      type: integer
+                  required:
+                  - networkID
+                  type: object
+                type: array
+              availabilityZone:
+                default: AUTO
+                description: AvailabilityZone is the availability zone in which the
+                  VM should be provisioned.
+                enum:
+                - AUTO
+                - ZONE_1
+                - ZONE_2
+                type: string
+              cpuFamily:
+                description: CPUFamily defines the CPU architecture, which will be
+                  used for this VM. Not all CPU architectures are available in all
+                  data centers.
+                example: AMD_OPTERON
+                minLength: 1
+                type: string
+              datacenterID:
+                description: DatacenterID is the ID of the data center where the machine
+                  should be created in.
+                format: uuid
+                type: string
+                x-kubernetes-validations:
+                - message: datacenterID is immutable
+                  rule: self == oldSelf
+              disk:
+                description: Disk defines the boot volume of the VM.
+                properties:
+                  availabilityZone:
+                    default: AUTO
+                    description: AvailabilityZone is the availability zone where the
+                      volume will be created.
+                    enum:
+                    - AUTO
+                    - ZONE_1
+                    - ZONE_2
+                    - ZONE_3
+                    type: string
+                  diskType:
+                    default: HDD
+                    description: DiskType defines the type of the hard drive.
+                    enum:
+                    - HDD
+                    - SSD Standard
+                    - SSD Premium
+                    type: string
+                  name:
+                    description: Name is the name of the volume
+                    type: string
+                  sizeGB:
+                    default: 20
+                    description: SizeGB defines the size of the volume in GB
+                    minimum: 10
+                    type: integer
+                  sshKeys:
+                    description: SSHKeys contains a set of public SSH keys which will
+                      be added to the list of authorized keys.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                type: object
+              memoryMB:
+                default: 3072
+                description: MemoryMB is the memory size for the VM in MB. Size must
+                  be specified in multiples of 256 MB with a minimum of 1024 MB which
+                  is required as we are using hot-pluggable RAM by default.
+                format: int32
+                minimum: 2048
+                multipleOf: 1024
+                type: integer
+              numCores:
+                default: 1
+                description: NumCores defines the number of cores for the VM.
+                format: int32
+                minimum: 1
+                type: integer
+              providerID:
                 description: ProviderID is the IONOS Cloud provider ID will be in
                   the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                 type: string
+            required:
+            - cpuFamily
+            - datacenterID
+            - disk
             type: object
           status:
             description: IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
@@ -87,6 +184,33 @@ spec:
                   - type
                   type: object
                 type: array
+              currentRequest:
+                description: CurrentRequest shows the current provisioning request
+                  for any cloud resource that is being provisioned.
+                properties:
+                  message:
+                    description: Message is the request message, which can also contain
+                      error information.
+                    type: string
+                  method:
+                    description: Method is the request method
+                    type: string
+                  requestPath:
+                    description: RequestPath is the sub path for the request URL
+                    type: string
+                  state:
+                    description: RequestStatus is the status of the request in the
+                      queue.
+                    enum:
+                    - QUEUED
+                    - RUNNING
+                    - DONE
+                    - FAILED
+                    type: string
+                required:
+                - method
+                - requestPath
+                type: object
               failureMessage:
                 description: "FailureMessage will be set in the event that there is
                   a terminal problem reconciling the Machine and will contain a more
