@@ -286,7 +286,7 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 }
 
 // withStatus is a helper function to handle the different request states
-// and provides a callback function to execute when the request is done.
+// and provides a callback function to execute when the request is done or failed.
 func (r *IonosCloudMachineReconciler) withStatus(
 	status string,
 	message string,
