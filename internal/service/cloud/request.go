@@ -17,12 +17,33 @@ limitations under the License.
 package cloud
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 )
+
+// GetRequestStatus returns the status of a request for a given request URL.
+func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (string, string, error) {
+	status, err := s.api().CheckRequestStatus(ctx, requestURL)
+	if err != nil {
+		return "", "", fmt.Errorf("unable to retrieve the reqest status: %w", err)
+	}
+
+	if !status.HasMetadata() && !status.Metadata.HasStatus() {
+		return "", "", errors.New("request status metadata is missing")
+	}
+
+	message := ""
+	if status.Metadata.HasMessage() {
+		message = *status.Metadata.Message
+	}
+
+	return *status.Metadata.Status, message, nil
+}
 
 // resourceTypeMap maps a resource type to its corresponding IONOS Cloud type identifier.
 // Each type mapping for usage in getMatchingRequest() needs to be present here.
