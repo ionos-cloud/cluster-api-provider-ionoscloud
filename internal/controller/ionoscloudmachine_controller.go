@@ -246,17 +246,15 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
 		if err != nil {
 			retErr = fmt.Errorf("could not get request status: %w", err)
+		} else {
+			requeue, retErr = r.withStatus(status, message, machineScope.Logger,
+				func() error {
+					// remove the request from the status and patch the cluster
+					ionosCluster.DeleteCurrentRequest(machineScope.DatacenterID())
+					return machineScope.ClusterScope.PatchObject()
+				},
+			)
 		}
-
-		requeue, err = r.withStatus(status, message, machineScope.Logger,
-			func() error {
-				// remove the request from the status and patch the cluster
-				ionosCluster.DeleteCurrentRequest(machineScope.DatacenterID())
-				return machineScope.ClusterScope.PatchObject()
-			},
-		)
-
-		retErr = errors.Join(retErr, err)
 	}
 
 	// check machine related request
@@ -264,16 +262,16 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
 		if err != nil {
 			retErr = errors.Join(retErr, fmt.Errorf("could not get request status: %w", err))
+		} else {
+			requeue, _ = r.withStatus(status, message, machineScope.Logger,
+				func() error {
+					// no need to patch the machine here as it will be patched
+					// after the machine reconciliation is done.
+					machineScope.IonosMachine.Status.CurrentRequest = nil
+					return nil
+				},
+			)
 		}
-
-		requeue, _ = r.withStatus(status, message, machineScope.Logger,
-			func() error {
-				// no need to patch the machine here as it will be patched
-				// after the machine reconciliation is done.
-				machineScope.IonosMachine.Status.CurrentRequest = nil
-				return nil
-			},
-		)
 	}
 
 	return requeue, retErr
