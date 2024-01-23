@@ -100,7 +100,6 @@ requestLoop:
 
 		status := *req.Metadata.RequestStatus.Metadata.Status
 		if status == sdk.RequestStatusFailed {
-			// We just log the error but do not return it, so we can retry the request.
 			message := req.Metadata.RequestStatus.Metadata.Message
 			s.scope.Logger.Error(nil,
 				"Last request has failed, logging it for debugging purposes",
@@ -108,7 +107,6 @@ requestLoop:
 				"requestID", req.Id, "requestStatus", status,
 				"message", *message,
 			)
-			continue
 		}
 
 		return &requestInfo{

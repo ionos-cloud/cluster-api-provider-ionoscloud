@@ -75,17 +75,14 @@ func (s *getMatchingRequestSuite) TestMatching() {
 	renamed := strings.Replace(*req3.Properties.Body, s.service.lanName(), "wrongName", 1)
 	req3.Properties.Body = ptr.To(renamed)
 
-	// req4 is FAILED
+	// req4 is the one we want to find
 	req4 := s.examplePostRequest("req4", sdk.RequestStatusFailed)
 
-	// req5 is the one we want to find
-	req5 := s.examplePostRequest("req5", sdk.RequestStatusQueued)
-
-	// req6 would also match, but req5 is found first
-	req6 := s.examplePostRequest("req6", sdk.RequestStatusDone)
+	// req5 would also match, but req4 is found first
+	req5 := s.examplePostRequest("req6", sdk.RequestStatusDone)
 
 	s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, "path").
-		Return([]sdk.Request{req1, req2, req3, req4, req5, req6}, nil)
+		Return([]sdk.Request{req1, req2, req3, req4, req5}, nil)
 
 	request, err := getMatchingRequest(
 		s.service,
@@ -97,8 +94,8 @@ func (s *getMatchingRequestSuite) TestMatching() {
 	)
 	s.NoError(err)
 	s.NotNil(request)
-	s.Equal(sdk.RequestStatusQueued, request.status)
-	s.Equal("req5", request.location)
+	s.Equal("req4", request.location)
+	s.Equal(sdk.RequestStatusFailed, request.status)
 }
 
 func TestHasRequestTargetType(t *testing.T) {
