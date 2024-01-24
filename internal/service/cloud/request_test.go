@@ -18,6 +18,7 @@ package cloud
 
 import (
 	"fmt"
+	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"net/http"
 	"strings"
 	"testing"
@@ -28,6 +29,72 @@ import (
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
+
+type getRequestStatusSuite struct {
+	ServiceTestSuite
+}
+
+func TestGetRequestStatusTestSuite(t *testing.T) {
+	suite.Run(t, new(getRequestStatusSuite))
+}
+
+func (s *getRequestStatusSuite) TestGetRequestStatusMissingMetadata() {
+	const testURL = "https://url.tld/path"
+	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
+		Href:     ptr.To("https://url.tld/path"),
+		Id:       ptr.To("12345"),
+		Metadata: nil,
+	}, nil).Once()
+
+	status, message, err := s.service.GetRequestStatus(s.ctx, testURL)
+	s.Error(err, "should return an error but didn't")
+	s.Empty(status, "status should be empty")
+	s.Empty(message, "message should be empty")
+
+	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
+		Metadata: &sdk.RequestStatusMetadata{},
+	}, nil).Once()
+
+	status, message, err = s.service.GetRequestStatus(s.ctx, testURL)
+	s.Error(err, "should return an error but didn't")
+	s.Empty(status, "status should be empty")
+	s.Empty(message, "message should be empty")
+}
+
+func (s *getRequestStatusSuite) TestGetRequestStatus() {
+	const testURL = "https://url.tld/path"
+	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
+		Href: ptr.To("https://url.tld/path"),
+		Id:   ptr.To("12345"),
+		Metadata: &sdk.RequestStatusMetadata{
+			Status:  ptr.To(sdk.RequestStatusFailed),
+			Message: ptr.To("Failed to do foo and bar"),
+		},
+	}, nil).Once()
+
+	status, message, err := s.service.GetRequestStatus(s.ctx, testURL)
+	s.NoError(err, "should not return an error but did")
+	s.Equal(sdk.RequestStatusFailed, status, "status should be FAILED")
+	s.Equal("Failed to do foo and bar", message, "message should be 'Failed to do foo and bar'")
+
+	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
+		Href: ptr.To("https://url.tld/path"),
+		Id:   ptr.To("12345"),
+		Metadata: &sdk.RequestStatusMetadata{
+			Status:  ptr.To(sdk.RequestStatusQueued),
+			Message: nil,
+		},
+	}, nil).Once()
+
+	status, message, err = s.service.GetRequestStatus(s.ctx, testURL)
+	s.NoError(err, "should not return an error but did")
+	s.Equal(sdk.RequestStatusQueued, status, "status should be FAILED")
+	s.Empty(message, "message should be empty")
+}
+
+func (s *getRequestStatusSuite) mockCheckRequestStatusCall(requestURL string) *clienttest.MockClient_CheckRequestStatus_Call {
+	return s.ionosClient.EXPECT().CheckRequestStatus(s.ctx, requestURL)
+}
 
 type getMatchingRequestSuite struct {
 	ServiceTestSuite

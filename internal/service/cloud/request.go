@@ -33,7 +33,7 @@ func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (stri
 		return "", "", fmt.Errorf("unable to retrieve the request status: %w", err)
 	}
 
-	if !status.HasMetadata() && !status.Metadata.HasStatus() {
+	if !status.HasMetadata() || !status.Metadata.HasStatus() {
 		return "", "", errors.New("request status metadata is missing")
 	}
 
