@@ -108,6 +108,14 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(fetched.Status.CurrentRequestByDatacenter["123"]).To(Equal(wantProvisionRequest))
 			Expect(fetched.Status.Conditions).To(HaveLen(1))
 			Expect(conditions.IsTrue(fetched, clusterv1.ReadyCondition)).To(BeTrue())
+
+			By("Removing the entry from the status again")
+			fetched.DeleteCurrentRequest("123")
+			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
+
+			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
+			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
 		})
+
 	})
 })
