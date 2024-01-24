@@ -212,13 +212,13 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
 	reconcileSequence := []serviceReconcileStep{
 		{name: "ReconcileLAN", reconcileFunc: cloudService.ReconcileLAN},
-		// { name:  "ReconcileServer", stepFunc: cloudService.ReconcileServer }, TODO(lubedacht): implement
+		{name: "ReconcileServer", reconcileFunc: cloudService.ReconcileServer},
 	}
 
 	for _, step := range reconcileSequence {
 		if requeue, err := step.reconcileFunc(); err != nil || requeue {
 			if err != nil {
-				err = fmt.Errorf("error in %s: %w", step.name, err)
+				err = fmt.Errorf("error in step %s: %w", step.name, err)
 			}
 
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err

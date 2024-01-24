@@ -224,7 +224,7 @@ func (s *Service) getLatestLANDeletionRequest(lanID string) (*requestInfo, error
 }
 
 func (s *Service) removeLANPendingRequestFromCluster() error {
-	delete(s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter, s.datacenterID())
+	s.scope.ClusterScope.IonosCluster.DeleteCurrentRequest(s.datacenterID())
 	if err := s.scope.ClusterScope.PatchObject(); err != nil {
 		return fmt.Errorf("could not remove stale LAN pending request from cluster: %w", err)
 	}
