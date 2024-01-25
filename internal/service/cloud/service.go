@@ -20,6 +20,9 @@ package cloud
 import (
 	"context"
 	"errors"
+	"net/http"
+
+	sdk "github.com/ionos-cloud/sdk-go/v6"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
@@ -50,4 +53,18 @@ func (s *Service) api() ionoscloud.Client {
 // datacenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
 func (s *Service) datacenterID() string {
 	return s.scope.IonosMachine.Spec.DatacenterID
+}
+
+// isNotFound is a shortcut for checking if an error is a not found error.
+func isNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var target sdk.GenericOpenAPIError
+	if errors.As(err, &target) {
+		return target.StatusCode() == http.StatusNotFound
+	}
+
+	return false
 }

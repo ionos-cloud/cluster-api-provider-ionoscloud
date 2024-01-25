@@ -102,7 +102,7 @@ func (s *ServiceTestSuite) SetupTest() {
 			Name:      "test-machine",
 		},
 		Spec: infrav1.IonosCloudMachineSpec{
-			ProviderID:       "ionos://8c19a898-fda9-4783-a939-d778aeee217f",
+			ProviderID:       ptr.To("ionos://8c19a898-fda9-4783-a939-d778aeee217f"),
 			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,

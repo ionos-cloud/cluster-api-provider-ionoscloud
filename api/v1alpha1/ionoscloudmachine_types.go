@@ -77,9 +77,9 @@ type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
 	// +optional
-	ProviderID string `json:"providerID,omitempty"`
+	ProviderID *string `json:"providerID,omitempty"`
 
-	// DatacenterID is the ID of the data center where the machine should be created in.
+	// DatacenterID is the ID of the data center where the VM should be created in.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
 	// +kubebuilder:validation:Format=uuid
 	DatacenterID string `json:"datacenterID"`
@@ -131,7 +131,7 @@ type Network struct {
 	NetworkID int32 `json:"networkID"`
 }
 
-// Volume is the physical storage on the machine.
+// Volume is the physical storage on the VM.
 type Volume struct {
 	// Name is the name of the volume
 	// +optional
@@ -160,11 +160,14 @@ type Volume struct {
 	// +listType=set
 	// +optional
 	SSHKeys []string `json:"sshKeys,omitempty"`
+
+	// Image is the image to use for the VM.
+	Image string `json:"image,omitempty"`
 }
 
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
 type IonosCloudMachineStatus struct {
-	// Ready indicates the machine has been provisioned and is ready.
+	// Ready indicates the VM has been provisioned and is ready.
 	// +optional
 	Ready bool `json:"ready"`
 
@@ -245,6 +248,22 @@ func (m *IonosCloudMachine) GetConditions() clusterv1.Conditions {
 // SetConditions sets the underlying service state of the IonosCloudMachine to the predescribed clusterv1.Conditions.
 func (m *IonosCloudMachine) SetConditions(conditions clusterv1.Conditions) {
 	m.Status.Conditions = conditions
+}
+
+// ExtractServerID extracts the server ID from the provider ID.
+// if the provider ID is empty, an empty string will be returned instead.
+func (m *IonosCloudMachine) ExtractServerID() string {
+	if m.Spec.ProviderID == nil || *m.Spec.ProviderID == "" {
+		return ""
+	}
+
+	groupIndex := serverIDRegex.SubexpIndex("serverID")
+	matches := serverIDRegex.FindStringSubmatch(*m.Spec.ProviderID)
+	if len(matches) < groupIndex {
+		return ""
+	}
+
+	return matches[groupIndex]
 }
 
 func init() {
