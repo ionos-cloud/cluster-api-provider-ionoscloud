@@ -30,6 +30,23 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
+func TestMatcher_MatchByName(t *testing.T) {
+	matchByNameFunc := matchByName[*sdk.Server, *sdk.ServerProperties]("test")
+	require.False(t, matchByNameFunc(&sdk.Server{}, sdk.Request{}))
+	testServer := sdk.Server{
+		Properties: &sdk.ServerProperties{
+			Name: ptr.To("test"),
+		},
+	}
+	require.True(t, matchByNameFunc(&testServer, sdk.Request{}))
+	testServer.Properties.Name = ptr.To("wrong")
+	require.False(t, matchByNameFunc(&testServer, sdk.Request{}))
+
+	// l := (&sdk.Info{}).GetName()
+	// the following line generates a compiler error, so validity is checked at compile time
+	// matchByNameInvalidFunc := matchByName[*sdk.Server, *sdk.Info]("test")
+}
+
 type getRequestStatusSuite struct {
 	ServiceTestSuite
 }

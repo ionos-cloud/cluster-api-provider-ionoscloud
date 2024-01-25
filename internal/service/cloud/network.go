@@ -209,9 +209,7 @@ func (s *Service) getLatestLANCreationRequest() (*requestInfo, error) {
 		s,
 		http.MethodPost,
 		path.Join("datacenters", s.datacenterID(), "lans"),
-		func(resource sdk.Lan, _ sdk.Request) bool {
-			return *resource.Properties.Name == s.lanName()
-		},
+		matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName()),
 	)
 }
 
