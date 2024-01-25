@@ -68,7 +68,7 @@ spec:
                 minLength: 1
                 type: string
               datacenterID:
-                description: DatacenterID is the ID of the data center where the machine
+                description: DatacenterID is the ID of the data center where the VM
                   should be created in.
                 format: uuid
                 type: string
@@ -95,6 +95,9 @@ spec:
                     - HDD
                     - SSD Standard
                     - SSD Premium
+                    type: string
+                  image:
+                    description: Image is the image to use for the VM.
                     type: string
                   name:
                     description: Name is the name of the volume
@@ -244,8 +247,7 @@ spec:
                   output."
                 type: string
               ready:
-                description: Ready indicates the machine has been provisioned and
-                  is ready.
+                description: Ready indicates the VM has been provisioned and is ready.
                 type: boolean
             type: object
         type: object

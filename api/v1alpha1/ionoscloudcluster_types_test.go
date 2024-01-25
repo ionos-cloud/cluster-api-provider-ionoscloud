@@ -116,6 +116,5 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
 		})
-
 	})
 })
