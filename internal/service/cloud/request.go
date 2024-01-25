@@ -21,9 +21,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"sigs.k8s.io/cluster-api/util"
 )
 
 // GetRequestStatus returns the status of a request for a given request URL.
@@ -47,8 +49,38 @@ func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (stri
 
 // resourceTypeMap maps a resource type to its corresponding IONOS Cloud type identifier.
 // Each type mapping for usage in getMatchingRequest() needs to be present here.
-var resourceTypeMap = map[any]sdk.Type{
-	sdk.Lan{}: sdk.LAN,
+var resourceTypeMap = map[reflect.Type]sdk.Type{
+	reflect.TypeOf(sdk.Lan{}):  sdk.LAN,
+	reflect.TypeOf(&sdk.Lan{}): sdk.LAN,
+}
+
+type matcherFunc[T any] func(resource T, request sdk.Request) bool
+
+type propertyHolder[T nameHolder] interface {
+	GetProperties() T
+}
+
+type nameHolder interface {
+	GetName() *string
+}
+
+// matchByName is a generic matcher function intended for finding a single resource based on its name.
+// The sdk resources provide a Properties field which in turn contains a Name field.
+// A compile time check will validate, if the generic types fulfill the interface constraints.
+func matchByName[T propertyHolder[U], U nameHolder](name string) matcherFunc[T] {
+	return func(resource T, request sdk.Request) bool {
+		properties := resource.GetProperties()
+		if util.IsNil(properties) {
+			return false
+		}
+
+		resourceName := properties.GetName()
+		if resourceName != nil && *resourceName == name {
+			return true
+		}
+
+		return false
+	}
 }
 
 // getMatchingRequest is a helper function intended for finding a single request based on certain filtering constraints,
@@ -63,10 +95,10 @@ func getMatchingRequest[T any](
 	s *Service,
 	method string,
 	url string,
-	matchers ...func(resource T, request sdk.Request) bool,
+	matchers ...matcherFunc[T],
 ) (*requestInfo, error) {
 	var zeroResource T
-	resourceType := resourceTypeMap[zeroResource]
+	resourceType := resourceTypeMap[reflect.TypeOf(zeroResource)]
 	if resourceType == "" {
 		return nil, fmt.Errorf("unsupported resource type %T", zeroResource)
 	}
