@@ -47,10 +47,7 @@ func (s *Service) lansURL() string {
 func (s *Service) ReconcileLAN() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLAN")
 
-	lan, request, err := findResource(
-		func() (*sdk.Lan, error) { return s.getLAN() },
-		func() (*requestInfo, error) { return s.getLatestLANCreationRequest() },
-	)
+	lan, request, err := findResource(s.getLAN, s.getLatestLANCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -84,10 +81,7 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLANDeletion")
 
 	// Try to retrieve the cluster LAN or even check if it's currently still being created.
-	lan, request, err := findResource(
-		func() (*sdk.Lan, error) { return s.getLAN() },
-		func() (*requestInfo, error) { return s.getLatestLANCreationRequest() },
-	)
+	lan, request, err := findResource(s.getLAN, s.getLatestLANCreationRequest)
 	if err != nil {
 		return false, err
 	}
