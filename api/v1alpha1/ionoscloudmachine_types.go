@@ -58,6 +58,11 @@ const (
 	VolumeDiskTypeSSDPremium VolumeDiskType = "SSD Premium"
 )
 
+// String returns the string representation of the VolumeDiskType.
+func (v VolumeDiskType) String() string {
+	return string(v)
+}
+
 // AvailabilityZone is the availability zone where different cloud resources are created in.
 type AvailabilityZone string
 
