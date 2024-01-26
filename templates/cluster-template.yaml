@@ -40,7 +40,7 @@ spec:
   kubeadmConfigSpec:
     users:
       - name: root
-        sshAuthorizedKeys: [${VM_SSH_KEYS}]
+        sshAuthorizedKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
     files:
       - content: |
           apiVersion: v1
@@ -119,7 +119,7 @@ spec:
       memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
       disk:
         image: ${IONOSCLOUD_MACHINE_IMAGE_ID}
-        sshKeys: $IONOSCLOUD_MACHINE_SSH_KEYS}
+        sshKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -159,7 +159,7 @@ spec:
       memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
       disk:
         image: ${IONOSCLOUD_MACHINE_IMAGE_ID}
-        sshKeys: $IONOSCLOUD_MACHINE_SSH_KEYS}
+        sshKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
@@ -170,7 +170,7 @@ spec:
     spec:
       users:
         - name: root
-          sshAuthorizedKeys: [${VM_SSH_KEYS}]
+          sshAuthorizedKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
