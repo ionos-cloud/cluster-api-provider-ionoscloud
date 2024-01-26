@@ -204,7 +204,7 @@ func (s *Service) getLatestLANCreationRequest() (*requestInfo, error) {
 	return getMatchingRequest(
 		s,
 		http.MethodPost,
-		path.Join("datacenters", s.datacenterID(), "lans"),
+		s.lansURL(),
 		matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName()),
 	)
 }
@@ -213,7 +213,7 @@ func (s *Service) getLatestLANDeletionRequest(lanID string) (*requestInfo, error
 	return getMatchingRequest[sdk.Lan](
 		s,
 		http.MethodDelete,
-		path.Join("datacenters", s.datacenterID(), "lans", lanID),
+		path.Join(s.lansURL(), lanID),
 	)
 }
 

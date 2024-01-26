@@ -2,4 +2,5 @@
 resources:
 - infrastructure_v1alpha1_ionoscloudcluster.yaml
 - infrastructure_v1alpha1_ionoscloudmachine.yaml
+- infrastructure_v1alpha1_ionoscloudmachinetemplate.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples
