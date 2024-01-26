@@ -17,14 +17,18 @@ limitations under the License.
 package cloud
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"path"
 
 	"github.com/google/uuid"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/cluster-api/util"
 
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
@@ -36,10 +40,13 @@ func (s *Service) ReconcileServer() (requeue bool, err error) {
 
 	secret, err := s.scope.GetBootstrapDataSecret(s.ctx)
 	if err != nil {
-		// secret not available yet
-		// just log the error and resume reconciliation.
-		log.Info("Bootstrap secret not available yet", "error", err)
-		return true, nil
+		if apierrors.IsNotFound(err) {
+			// secret not available yet
+			// just log the error and resume reconciliation.
+			log.Info("Bootstrap secret not available yet", "error", err)
+			return requeue, nil
+		}
+		return true, fmt.Errorf("unexpected error when trying to get bootstrap secret: %w", err)
 	}
 
 	server, request, err := findResource(
@@ -49,9 +56,26 @@ func (s *Service) ReconcileServer() (requeue bool, err error) {
 	if err != nil {
 		return false, err
 	}
+	if request != nil && request.isPending() {
+		log.Info("Request is pending", "location", request.location)
+		return true, nil
+	}
 
-	// TODO(lubedacht) remove. Only meant to prevent compiler error.
-	log.WithValues("secret", secret, "server", server, "request", request).Info("found server")
+	// server is still provisioning
+	if server != nil {
+		if state := getState(server); !isAvailable(state) {
+			log.Info("LAN is not available yet", "state", state)
+			return true, nil
+		}
+		// server exists and is available.
+		return false, nil
+	}
+
+	// server does not exist yet, create it
+	log.V(4).Info("No server was found. Creating new server")
+	if err := s.createServer(secret); err != nil {
+		return false, err
+	}
 
 	log.V(4).Info("successfully finished reconciling server")
 	return false, nil
@@ -106,6 +130,51 @@ func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
 		path.Join("datacenters", s.datacenterID(), "servers"),
 		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName()),
 	)
+}
+
+func (s *Service) createServer(secret *corev1.Secret) error {
+	log := s.scope.WithName("createServer")
+
+	serverProps := s.buildServerProperties()
+	entities := s.buildServerEntities(secret)
+
+	server, requestLocation, err := s.api().CreateServer(s.ctx, s.datacenterID(), serverProps, entities)
+	if err != nil {
+		return fmt.Errorf("failed to create server in data center %s: %w", s.datacenterID(), err)
+	}
+
+	log.Info("Successfully requested for server creation", "location", requestLocation)
+	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPost, requestLocation))
+
+	serverID := ptr.Deref(server.GetId(), "")
+	if serverID == "" {
+		return errors.New("server ID is empty")
+	}
+
+	// make sure to set the provider ID
+	s.scope.SetProviderID(serverID)
+
+	log.V(4).Info("Done creating server")
+	return nil
+}
+
+// buildServerProperties returns the server properties for the expected cloud server resource.
+func (s *Service) buildServerProperties() sdk.ServerProperties {
+	copySpec := s.scope.IonosMachine.Spec.DeepCopy()
+	props := sdk.ServerProperties{
+		AvailabilityZone: ptr.To(copySpec.AvailabilityZone.String()),
+		BootVolume:       nil,
+		Cores:            &copySpec.NumCores,
+		CpuFamily:        &copySpec.CPUFamily,
+		Name:             ptr.To(s.serverName()),
+		Ram:              &copySpec.MemoryMB,
+	}
+
+	return props
+}
+
+func (s *Service) buildServerEntities(_ *corev1.Secret) sdk.ServerEntities {
+	return sdk.ServerEntities{}
 }
 
 // serverName returns a formatted name for the expected cloud server resource.

@@ -26,8 +26,8 @@ import (
 // Client is an interface for abstracting Cloud API SDK, making it possible to create mocks for testing purposes.
 type Client interface {
 	// CreateServer creates a new server with provided properties in the specified data center.
-	CreateServer(ctx context.Context, datacenterID string, properties sdk.ServerProperties) (
-		*sdk.Server, error)
+	CreateServer(ctx context.Context, datacenterID string, properties sdk.ServerProperties, entities sdk.ServerEntities) (
+		*sdk.Server, string, error)
 	// ListServers returns a list with the servers in the specified data center.
 	ListServers(ctx context.Context, datacenterID string) (*sdk.Servers, error)
 	// GetServer returns the server that matches the provided serverID in the specified data center.
