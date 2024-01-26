@@ -18,6 +18,12 @@ Dockerfile.cross
 
 !vendor/**/zz_generated.*
 
+# env files should be ignored
+.env
+env
+envfile
+.envfile
+
 # editor and IDE paraphernalia
 .idea
 .vscode

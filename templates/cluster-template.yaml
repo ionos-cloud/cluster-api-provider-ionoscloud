@@ -100,35 +100,26 @@ spec:
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
-          provider-id: "proxmox://'{{ ds.meta_data.instance_id }}'"
+          provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"
     joinConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
-          provider-id: "proxmox://'{{ ds.meta_data.instance_id }}'"
+          provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"
   version: "${KUBERNETES_VERSION}"
 ---
-kind: ProxmoxMachineTemplate
+kind: IonosCloudMachineTemplate
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 metadata:
   name: "${CLUSTER_NAME}-control-plane"
 spec:
   template:
     spec:
-      sourceNode: "${PROXMOX_SOURCENODE}"
-      templateID: ${TEMPLATE_VMID}
-      format: "qcow2"
-      full: true
-      numSockets: ${NUM_SOCKETS:=2}
-      numCores: ${NUM_CORES:=4}
-      memoryMiB: ${MEMORY_MIB:=16384}
-      disks:
-        bootVolume:
-          disk: ${BOOT_VOLUME_DEVICE}
-          sizeGb: ${BOOT_VOLUME_SIZE:=100}
-      network:
-        default:
-          bridge: ${BRIDGE}
-          model: virtio
+      datacenterID: ${IONOSCLOUD_DATACENTER_ID}
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+      disk:
+        image: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+        sshKeys: $IONOSCLOUD_MACHINE_SSH_KEYS}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -154,30 +145,21 @@ spec:
       infrastructureRef:
         name: "${CLUSTER_NAME}-worker"
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
-        kind: ProxmoxMachineTemplate
+        kind: IonosCloudMachineTemplate
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
-kind: ProxmoxMachineTemplate
+kind: IonosCloudMachineTemplate
 metadata:
   name: "${CLUSTER_NAME}-worker"
 spec:
   template:
     spec:
-      sourceNode: "${PROXMOX_SOURCENODE}"
-      templateID: ${TEMPLATE_VMID}
-      format: "qcow2"
-      full: true
-      numSockets: ${NUM_SOCKETS:=2}
-      numCores: ${NUM_CORES:=4}
-      memoryMiB: ${MEMORY_MIB:=16384}
-      disks:
-        bootVolume:
-          disk: ${BOOT_VOLUME_DEVICE}
-          sizeGb: ${BOOT_VOLUME_SIZE:=100}
-      network:
-        default:
-          bridge: ${BRIDGE}
-          model: virtio
+      datacenterID: ${IONOSCLOUD_DATACENTER_ID}
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+      disk:
+        image: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+        sshKeys: $IONOSCLOUD_MACHINE_SSH_KEYS}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
