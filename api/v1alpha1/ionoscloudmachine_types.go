@@ -175,6 +175,13 @@ type Volume struct {
 	Image string `json:"image,omitempty"`
 }
 
+// TODO(lubedacht) Create type for image lookup
+//type ImageSpec struct {
+//	ImageID      string   `json:"imageID,omitempty"`
+//	ImageAliases []string `json:"imageAliases,omitempty"`
+//	ImageName    string   `json:"imageName,omitempty"`
+//}
+
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
 type IonosCloudMachineStatus struct {
 	// Ready indicates the VM has been provisioned and is ready.
