@@ -1,0 +1,12 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: IonosCloudMachineTemplate
+metadata:
+  labels:
+    app.kubernetes.io/name: ionoscloudmachinetemplate
+    app.kubernetes.io/instance: ionoscloudmachinetemplate-sample
+    app.kubernetes.io/part-of: cluster-api-provider-ionoscloud
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: cluster-api-provider-ionoscloud
+  name: ionoscloudmachinetemplate-sample
+spec:
+  # TODO(user): Add fields here
