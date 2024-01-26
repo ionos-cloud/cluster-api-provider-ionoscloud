@@ -113,7 +113,7 @@ func (m *MachineScope) GetBootstrapDataSecret(ctx context.Context) (*corev1.Secr
 
 	var lookupSecret corev1.Secret
 	if err := m.client.Get(ctx, key, &lookupSecret); err != nil {
-		return nil, fmt.Errorf("failed to get bootstrap data secret: %w", err)
+		return nil, err
 	}
 
 	return &lookupSecret, nil

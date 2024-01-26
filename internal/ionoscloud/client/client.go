@@ -32,6 +32,8 @@ import (
 const (
 	depthRequestsMetadataStatusMetadata = 2 // for LISTing requests and their metadata status metadata
 	depthLANEntities                    = 2 // for LISTing LANs and their NICs (w/o NIC details)
+
+	locationHeaderKey = "Location"
 )
 
 // IonosCloudClient is a concrete implementation of the Client interface defined in the internal client package that
@@ -70,19 +72,29 @@ func validate(username, password, token string) error {
 
 // CreateServer creates a new server with provided properties in the specified data center.
 func (c *IonosCloudClient) CreateServer(
-	ctx context.Context, datacenterID string, properties sdk.ServerProperties,
-) (*sdk.Server, error) {
+	ctx context.Context,
+	datacenterID string,
+	properties sdk.ServerProperties,
+	entities sdk.ServerEntities,
+) (*sdk.Server, string, error) {
 	if datacenterID == "" {
-		return nil, errDatacenterIDIsEmpty
+		return nil, "", errDatacenterIDIsEmpty
 	}
 	server := sdk.Server{
+		Entities:   &entities,
 		Properties: &properties,
 	}
-	s, _, err := c.API.ServersApi.DatacentersServersPost(ctx, datacenterID).Server(server).Execute()
+	s, req, err := c.API.ServersApi.DatacentersServersPost(ctx, datacenterID).Server(server).Execute()
 	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
+		return nil, "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	return &s, nil
+
+	location := req.Header.Get(locationHeaderKey)
+	if location == "" {
+		err = errors.New(apiNoLocationErrMessage)
+	}
+
+	return &s, location, err
 }
 
 // ListServers returns a list with servers in the specified data center.
@@ -140,7 +152,7 @@ func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, p
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	if location := req.Header.Get("Location"); location != "" {
+	if location := req.Header.Get(locationHeaderKey); location != "" {
 		return location, nil
 	}
 	return "", errors.New(apiNoLocationErrMessage)
@@ -201,7 +213,7 @@ func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID st
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	if location := req.Header.Get("Location"); location != "" {
+	if location := req.Header.Get(locationHeaderKey); location != "" {
 		return location, nil
 	}
 	return "", errors.New(apiNoLocationErrMessage)

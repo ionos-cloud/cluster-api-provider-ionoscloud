@@ -277,7 +277,7 @@ func TestRequestInfo(t *testing.T) {
 
 func TestMetadataHolder(t *testing.T) {
 	lan1 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: ptr.To("BUSY")}}
-	lan2 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(stateAvailable)}}
+	lan2 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(sdk.Available)}}
 
 	require.False(t, isAvailable(getState(lan1)))
 	require.True(t, isAvailable(getState(lan2)))

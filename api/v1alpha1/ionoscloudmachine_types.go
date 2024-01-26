@@ -72,6 +72,11 @@ const (
 	AvailabilityZoneThree AvailabilityZone = "ZONE_3"
 )
 
+// String returns the string representation of the AvailabilityZone.
+func (a AvailabilityZone) String() string {
+	return string(a)
+}
+
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
 type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID

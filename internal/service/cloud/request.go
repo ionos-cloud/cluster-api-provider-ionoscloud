@@ -26,6 +26,8 @@ import (
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"sigs.k8s.io/cluster-api/util"
+
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 // GetRequestStatus returns the status of a request for a given request URL.
@@ -126,7 +128,7 @@ requestLoop:
 		// The reason for comparing here at all is that the received requests can contain some that only contain the
 		// desired URL as substring, e.g. a request for /resource/123/action will also be returned when looking
 		// for /resource/123. We want to ignore those.
-		trimmedRequestURL := strings.Split(*req.Properties.Url, "?")[0]
+		trimmedRequestURL := strings.Split(*req.GetProperties().GetUrl(), "?")[0]
 		trimmedRequestURL = strings.TrimSuffix(trimmedRequestURL, "/")
 		trimmedURL := strings.TrimSuffix(urlWithoutQueryParams, "/")
 		if !strings.HasSuffix(trimmedRequestURL, trimmedURL) {
@@ -136,9 +138,12 @@ requestLoop:
 		if len(matchers) > 0 {
 			// As at least 1 additional matcher function is given, reconstruct the resource from the request body.
 			var unmarshalled T
-			if err = json.Unmarshal([]byte(*req.Properties.Body), &unmarshalled); err != nil {
-				s.scope.Logger.WithValues("requestID", *req.Id, "body", *req.Properties.Body).
-					Info("could not unmarshal request")
+			if err = json.Unmarshal([]byte(ptr.Deref(req.GetProperties().GetBody(), "")), &unmarshalled); err != nil {
+				s.scope.Logger.WithValues(
+					"requestID", ptr.Deref(req.GetId(), ""),
+					"body", ptr.Deref(req.GetProperties().GetBody(), ""),
+				).Info("could not unmarshal request")
+
 				return nil, fmt.Errorf("could not unmarshal request into %T: %w", unmarshalled, err)
 			}
 
@@ -150,14 +155,14 @@ requestLoop:
 			}
 		}
 
-		status := *req.Metadata.RequestStatus.Metadata.Status
+		status := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetStatus(), "")
 		if status == sdk.RequestStatusFailed {
-			message := req.Metadata.RequestStatus.Metadata.Message
+			message := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetMessage(), "")
 			s.scope.Logger.Error(nil,
 				"Last request has failed, logging it for debugging purposes",
 				"resourceType", resourceType,
 				"requestID", req.Id, "requestStatus", status,
-				"message", *message,
+				"message", message,
 			)
 		}
 
@@ -170,10 +175,12 @@ requestLoop:
 }
 
 func hasRequestTargetType(req sdk.Request, typeName sdk.Type) bool {
-	if req.Metadata.RequestStatus.Metadata.Targets == nil || len(*req.Metadata.RequestStatus.Metadata.Targets) == 0 {
+	targets := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetTargets(), nil)
+	if len(targets) == 0 {
 		return false
 	}
-	return *(*req.Metadata.RequestStatus.Metadata.Targets)[0].Target.Type == typeName
+
+	return ptr.Deref(targets[0].GetTarget().GetType(), "") == typeName
 }
 
 // findResource is a helper function intended for finding a single resource based on certain filtering constraints,
@@ -254,12 +261,10 @@ type metadataHolder interface {
 }
 
 func getState(resource metadataHolder) string {
-	return *resource.GetMetadata().State
+	return ptr.Deref(resource.GetMetadata().GetState(), "")
 }
-
-const stateAvailable = "AVAILABLE"
 
 // isAvailable returns true if the resource is available. Note that not all resource types have this state.
 func isAvailable(state string) bool {
-	return state == stateAvailable
+	return state == sdk.Available
 }

@@ -160,14 +160,10 @@ func (s *Service) createLAN() error {
 		return fmt.Errorf("unable to create LAN in data center %s: %w", s.datacenterID(), err)
 	}
 
-	if len(s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter) == 0 {
-		s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter = make(map[string]infrav1.ProvisioningRequest)
-	}
-	s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter[s.datacenterID()] = infrav1.ProvisioningRequest{
-		Method:      http.MethodPost,
-		RequestPath: requestPath,
-		State:       infrav1.RequestStatusQueued,
-	}
+	s.scope.ClusterScope.IonosCluster.SetCurrentRequest(
+		s.datacenterID(),
+		infrav1.NewQueuedRequest(http.MethodPost, requestPath),
+	)
 
 	err = s.scope.ClusterScope.PatchObject()
 	if err != nil {

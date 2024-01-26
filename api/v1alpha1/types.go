@@ -59,3 +59,12 @@ type ProvisioningRequest struct {
 	// +optional
 	Message *string `json:"message,omitempty"`
 }
+
+// NewQueuedRequest creates a new provisioning request with the status set to queued.
+func NewQueuedRequest(method, path string) ProvisioningRequest {
+	return ProvisioningRequest{
+		Method:      method,
+		RequestPath: path,
+		State:       RequestStatusQueued,
+	}
+}
