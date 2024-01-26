@@ -7,10 +7,14 @@ export IONOS_TOKEN="token"
 export IONOS_API_URL="https://api.ionos.com/cloudapi/v6"
 
 
+# Cluster API related environment variables
+export CLUSTER_NAME="cluster-name"
+export KUBERNETES_VERSION="1.28.5"
+
 # Cluster related environment variables
 export IONOSCLOUD_CONTRACT_NUMBER=12345
 export IONOSCLOUD_DATACENTER_ID=12345
 export IONOSCLOUD_MACHINE_NUM_CORES=2
 export IONOSCLOUD_MACHINE_MEMORY_MB=4096
 export IONOSCLOUD_MACHINE_IMAGE_ID=123456
-export IONOSCLOUD_MACHINE_SSH_KEYS="[ssh-ed25519 ..., ssh-ed25519 ...]"
+export IONOSCLOUD_MACHINE_SSH_KEYS="ssh-ed25519 ..., ssh-ed25519 ..."
