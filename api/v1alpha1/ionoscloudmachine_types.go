@@ -248,5 +248,5 @@ func (m *IonosCloudMachine) SetConditions(conditions clusterv1.Conditions) {
 }
 
 func init() {
-	SchemeBuilder.Register(&IonosCloudMachine{}, &IonosCloudMachineList{})
+	objectTypes = append(objectTypes, &IonosCloudMachine{}, &IonosCloudMachineList{})
 }

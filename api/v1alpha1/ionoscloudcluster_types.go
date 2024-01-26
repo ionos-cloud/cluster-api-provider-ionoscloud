@@ -85,7 +85,7 @@ type IonosCloudClusterList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&IonosCloudCluster{}, &IonosCloudClusterList{})
+	objectTypes = append(objectTypes, &IonosCloudCluster{}, &IonosCloudClusterList{})
 }
 
 // GetConditions returns the conditions from the status.
