@@ -135,10 +135,20 @@ func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
 func (s *Service) createServer(secret *corev1.Secret) error {
 	log := s.scope.WithName("createServer")
 
-	serverProps := s.buildServerProperties()
-	entities := s.buildServerEntities(secret)
+	// TODO(lubedacht) remove
+	// 	This will always return for now. I want to make sure to not accidentally create
+	// 	a server without having it debugged before.
+	if secret != nil {
+		return nil
+	}
 
-	server, requestLocation, err := s.api().CreateServer(s.ctx, s.datacenterID(), serverProps, entities)
+	copySpec := s.scope.IonosMachine.Spec.DeepCopy()
+	server, requestLocation, err := s.api().CreateServer(
+		s.ctx,
+		s.datacenterID(),
+		s.buildServerProperties(copySpec),
+		s.buildServerEntities(secret, copySpec),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create server in data center %s: %w", s.datacenterID(), err)
 	}
@@ -159,22 +169,41 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 }
 
 // buildServerProperties returns the server properties for the expected cloud server resource.
-func (s *Service) buildServerProperties() sdk.ServerProperties {
-	copySpec := s.scope.IonosMachine.Spec.DeepCopy()
+func (s *Service) buildServerProperties(machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerProperties {
 	props := sdk.ServerProperties{
-		AvailabilityZone: ptr.To(copySpec.AvailabilityZone.String()),
+		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
 		BootVolume:       nil,
-		Cores:            &copySpec.NumCores,
-		CpuFamily:        &copySpec.CPUFamily,
+		Cores:            &machineSpec.NumCores,
+		CpuFamily:        &machineSpec.CPUFamily,
 		Name:             ptr.To(s.serverName()),
-		Ram:              &copySpec.MemoryMB,
+		Ram:              &machineSpec.MemoryMB,
 	}
 
 	return props
 }
 
-func (s *Service) buildServerEntities(_ *corev1.Secret) sdk.ServerEntities {
-	return sdk.ServerEntities{}
+// buildServerEntities returns the server entities for the expected cloud server resource.
+func (s *Service) buildServerEntities(_ *corev1.Secret, machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerEntities {
+	bootVolume := sdk.Volume{
+		Properties: &sdk.VolumeProperties{
+			AvailabilityZone: ptr.To(machineSpec.Disk.AvailabilityZone.String()),
+			Image:            nil, // TODO(lubedacht): Get image ID
+			ImageAlias:       nil, // TODO(lubedacht): Check if there are image aliases
+			Name:             ptr.To(s.serverName()),
+			Size:             ptr.To(float32(machineSpec.Disk.SizeGB)),
+			SshKeys:          ptr.To(machineSpec.Disk.SSHKeys),
+			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
+			UserData:         nil, // TODO(lubedacht): build userdata from secret.
+		},
+	}
+	serverVolumes := sdk.AttachedVolumes{
+		Items: ptr.To([]sdk.Volume{bootVolume}),
+	}
+
+	return sdk.ServerEntities{
+		Nics:    &sdk.Nics{},
+		Volumes: &serverVolumes,
+	}
 }
 
 // serverName returns a formatted name for the expected cloud server resource.

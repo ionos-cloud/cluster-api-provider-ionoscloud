@@ -52,8 +52,10 @@ func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (stri
 // resourceTypeMap maps a resource type to its corresponding IONOS Cloud type identifier.
 // Each type mapping for usage in getMatchingRequest() needs to be present here.
 var resourceTypeMap = map[reflect.Type]sdk.Type{
-	reflect.TypeOf(sdk.Lan{}):  sdk.LAN,
-	reflect.TypeOf(&sdk.Lan{}): sdk.LAN,
+	reflect.TypeOf(sdk.Lan{}):     sdk.LAN,
+	reflect.TypeOf(&sdk.Lan{}):    sdk.LAN,
+	reflect.TypeOf(sdk.Server{}):  sdk.SERVER,
+	reflect.TypeOf(&sdk.Server{}): sdk.SERVER,
 }
 
 type matcherFunc[T any] func(resource T, request sdk.Request) bool
