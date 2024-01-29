@@ -172,7 +172,7 @@ func (s *getMatchingRequestSuite) TestMatching() {
 		s.service,
 		http.MethodPost,
 		"path?foo=bar&baz=qux",
-		func(resource sdk.Lan, _ sdk.Request) bool {
+		func(resource *sdk.Lan, _ sdk.Request) bool {
 			return *resource.Properties.Name == s.service.lanName()
 		},
 	)

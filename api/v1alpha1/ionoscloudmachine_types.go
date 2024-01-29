@@ -172,15 +172,15 @@ type Volume struct {
 	SSHKeys []string `json:"sshKeys,omitempty"`
 
 	// Image is the image to use for the VM.
-	Image string `json:"image,omitempty"`
+	Image ImageSpec `json:"image,omitempty"`
 }
 
-// TODO(lubedacht) Create type for image lookup
-// type ImageSpec struct {
-//	ImageID      string   `json:"imageID,omitempty"`
-//	ImageAliases []string `json:"imageAliases,omitempty"`
-//	ImageName    string   `json:"imageName,omitempty"`
-//}
+// ImageSpec defines the image to use for the VM.
+type ImageSpec struct {
+	ID *string `json:"id,omitempty"`
+	// Aliases is a list of image aliases to use for the VM.
+	Aliases []string `json:"aliases,omitempty"`
+}
 
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
 type IonosCloudMachineStatus struct {

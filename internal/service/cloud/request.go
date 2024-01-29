@@ -99,7 +99,7 @@ func getMatchingRequest[T any](
 	s *Service,
 	method string,
 	url string,
-	matchers ...matcherFunc[T],
+	matchers ...matcherFunc[*T],
 ) (*requestInfo, error) {
 	var zeroResource T
 	resourceType := resourceTypeMap[reflect.TypeOf(zeroResource)]
@@ -150,7 +150,7 @@ requestLoop:
 			}
 
 			for _, matcher := range matchers {
-				if !matcher(unmarshalled, req) {
+				if !matcher(&unmarshalled, req) {
 					// All matcher functions need to match the current resource.
 					continue requestLoop
 				}

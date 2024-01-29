@@ -129,7 +129,18 @@ spec:
                             type: string
                           image:
                             description: Image is the image to use for the VM.
-                            type: string
+                            properties:
+                              aliases:
+                                description: Aliases is a list of image aliases to
+                                  use for the VM.
+                                items:
+                                  type: string
+                                type: array
+                              id:
+                                description: ImageID is the ID of the image to use
+                                  for the VM.
+                                type: string
+                            type: object
                           name:
                             description: Name is the name of the volume
                             type: string

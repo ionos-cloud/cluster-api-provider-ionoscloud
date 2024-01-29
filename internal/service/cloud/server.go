@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/google/uuid"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -44,7 +45,7 @@ func (s *Service) ReconcileServer() (requeue bool, err error) {
 			// secret not available yet
 			// just log the error and resume reconciliation.
 			log.Info("Bootstrap secret not available yet", "error", err)
-			return requeue, nil
+			return false, nil
 		}
 		return true, fmt.Errorf("unexpected error when trying to get bootstrap secret: %w", err)
 	}
@@ -78,7 +79,9 @@ func (s *Service) ReconcileServer() (requeue bool, err error) {
 	}
 
 	log.V(4).Info("successfully finished reconciling server")
-	return false, nil
+	// If we reach this point, we want to requeue as the request is not processed yet
+	// an we will check for the status again later.
+	return true, nil
 }
 
 // getServer looks for the server in the data center.
@@ -135,19 +138,19 @@ func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
 func (s *Service) createServer(secret *corev1.Secret) error {
 	log := s.scope.WithName("createServer")
 
-	// TODO(lubedacht) remove
-	// 	This will always return for now. I want to make sure to not accidentally create
-	// 	a server without having it debugged before.
-	if secret != nil {
-		return nil
+	bootstrapData, exists := secret.Data["value"]
+	if !exists {
+		return errors.New("unable to obtain bootstrap data from secret")
 	}
+
+	renderedData := s.renderUserData(string(bootstrapData))
 
 	copySpec := s.scope.IonosMachine.Spec.DeepCopy()
 	server, requestLocation, err := s.api().CreateServer(
 		s.ctx,
 		s.datacenterID(),
 		s.buildServerProperties(copySpec),
-		s.buildServerEntities(secret, copySpec),
+		s.buildServerEntities(renderedData, copySpec),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create server in data center %s: %w", s.datacenterID(), err)
@@ -172,7 +175,6 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 func (s *Service) buildServerProperties(machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerProperties {
 	props := sdk.ServerProperties{
 		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
-		BootVolume:       nil,
 		Cores:            &machineSpec.NumCores,
 		CpuFamily:        &machineSpec.CPUFamily,
 		Name:             ptr.To(s.serverName()),
@@ -183,19 +185,24 @@ func (s *Service) buildServerProperties(machineSpec *infrav1.IonosCloudMachineSp
 }
 
 // buildServerEntities returns the server entities for the expected cloud server resource.
-func (s *Service) buildServerEntities(_ *corev1.Secret, machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerEntities {
+func (s *Service) buildServerEntities(boostrapData string, machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerEntities {
 	bootVolume := sdk.Volume{
 		Properties: &sdk.VolumeProperties{
 			AvailabilityZone: ptr.To(machineSpec.Disk.AvailabilityZone.String()),
-			Image:            nil, // TODO(lubedacht): Get image ID
-			ImageAlias:       nil, // TODO(lubedacht): Check if there are image aliases
 			Name:             ptr.To(s.serverName()),
 			Size:             ptr.To(float32(machineSpec.Disk.SizeGB)),
 			SshKeys:          ptr.To(machineSpec.Disk.SSHKeys),
 			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
-			UserData:         nil, // TODO(lubedacht): build userdata from secret.
+			UserData:         ptr.To(boostrapData),
 		},
 	}
+
+	bootVolume.Properties.ImageAlias = ptr.To(strings.Join(machineSpec.Disk.Image.Aliases, ","))
+	if machineSpec.Disk.Image.ID != nil {
+		bootVolume.Properties.Image = machineSpec.Disk.Image.ID
+		bootVolume.Properties.ImageAlias = nil // we don't want to use the aliases if we have an ID provided
+	}
+
 	serverVolumes := sdk.AttachedVolumes{
 		Items: ptr.To([]sdk.Volume{bootVolume}),
 	}
@@ -204,6 +211,29 @@ func (s *Service) buildServerEntities(_ *corev1.Secret, machineSpec *infrav1.Ion
 		Nics:    &sdk.Nics{},
 		Volumes: &serverVolumes,
 	}
+}
+
+func (s *Service) renderUserData(input string) string {
+	// TODO(lubedacht) update user data to include needed information
+	// 	VNC and hostname
+
+	// remove jinja comment if present
+	if strings.HasPrefix(input, "## template: jinja") {
+		_, input, _ = strings.Cut(input, "\n")
+	}
+
+	const bootCmdFormat = `bootcmd:
+  - echo %[1]s > /etc/hostname
+  - hostname %[1]s
+`
+	bootCmdString := fmt.Sprintf(bootCmdFormat, s.serverName())
+	input = fmt.Sprintf("%s\n%s", input, bootCmdString)
+
+	return input
+}
+
+func (s *Service) serversURL() string {
+	return path.Join("datacenters", s.datacenterID(), "servers")
 }
 
 // serverName returns a formatted name for the expected cloud server resource.
