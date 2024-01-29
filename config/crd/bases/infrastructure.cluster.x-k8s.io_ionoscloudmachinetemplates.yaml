@@ -137,8 +137,6 @@ spec:
                                   type: string
                                 type: array
                               id:
-                                description: ImageID is the ID of the image to use
-                                  for the VM.
                                 type: string
                             type: object
                           name:
