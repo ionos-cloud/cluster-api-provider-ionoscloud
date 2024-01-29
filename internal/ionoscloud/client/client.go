@@ -125,18 +125,22 @@ func (c *IonosCloudClient) GetServer(ctx context.Context, datacenterID, serverID
 }
 
 // DestroyServer deletes the server that matches the provided serverID in the specified data center.
-func (c *IonosCloudClient) DestroyServer(ctx context.Context, datacenterID, serverID string) error {
+func (c *IonosCloudClient) DestroyServer(ctx context.Context, datacenterID, serverID string) (string, error) {
 	if datacenterID == "" {
-		return errDatacenterIDIsEmpty
+		return "", errDatacenterIDIsEmpty
 	}
 	if serverID == "" {
-		return errServerIDIsEmpty
+		return "", errServerIDIsEmpty
 	}
-	_, err := c.API.ServersApi.DatacentersServersDelete(ctx, datacenterID, serverID).Execute()
+	req, err := c.API.ServersApi.DatacentersServersDelete(ctx, datacenterID, serverID).Execute()
 	if err != nil {
-		return fmt.Errorf(apiCallErrWrapper, err)
+		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	return err
+	if location := req.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errors.New(apiNoLocationErrMessage)
 }
 
 // CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.

@@ -304,6 +304,10 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(_ context.Context, machine
 	//  Moreover, should only be attempted if it's the last machine using that LAN. We should check that our machines
 	//  at least, but need to accept that users added their own infrastructure into our LAN (in that case a LAN deletion
 	//  attempt will be denied with HTTP 422).
+	if requeue, err := cloudService.ReconcileServerDeletion(); requeue || err != nil {
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, fmt.Errorf("could not reconcile server deletion: %w", err)
+	}
+
 	if requeue, err := cloudService.ReconcileLANDeletion(); requeue || err != nil {
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, fmt.Errorf("could not reconcile LAN deletion: %w", err)
 	}

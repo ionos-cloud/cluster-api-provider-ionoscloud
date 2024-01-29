@@ -324,17 +324,27 @@ func (_c *MockClient_DeleteLAN_Call) RunAndReturn(run func(context.Context, stri
 }
 
 // DestroyServer provides a mock function with given fields: ctx, datacenterID, serverID
-func (_m *MockClient) DestroyServer(ctx context.Context, datacenterID string, serverID string) error {
+func (_m *MockClient) DestroyServer(ctx context.Context, datacenterID string, serverID string) (string, error) {
 	ret := _m.Called(ctx, datacenterID, serverID)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+		return rf(ctx, datacenterID, serverID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
 		r0 = rf(ctx, datacenterID, serverID)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(string)
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, datacenterID, serverID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockClient_DestroyServer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DestroyServer'
@@ -357,12 +367,12 @@ func (_c *MockClient_DestroyServer_Call) Run(run func(ctx context.Context, datac
 	return _c
 }
 
-func (_c *MockClient_DestroyServer_Call) Return(_a0 error) *MockClient_DestroyServer_Call {
-	_c.Call.Return(_a0)
+func (_c *MockClient_DestroyServer_Call) Return(_a0 string, _a1 error) *MockClient_DestroyServer_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockClient_DestroyServer_Call) RunAndReturn(run func(context.Context, string, string) error) *MockClient_DestroyServer_Call {
+func (_c *MockClient_DestroyServer_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DestroyServer_Call {
 	_c.Call.Return(run)
 	return _c
 }

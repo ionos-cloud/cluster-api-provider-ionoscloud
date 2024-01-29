@@ -33,7 +33,7 @@ type Client interface {
 	// GetServer returns the server that matches the provided serverID in the specified data center.
 	GetServer(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error)
 	// DestroyServer deletes the server that matches the provided serverID in the specified data center.
-	DestroyServer(ctx context.Context, datacenterID, serverID string) error
+	DestroyServer(ctx context.Context, datacenterID, serverID string) (string, error)
 	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
 	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost) (string, error)
 	// AttachToLAN attaches a provided NIC to a provided LAN in a specified data center.

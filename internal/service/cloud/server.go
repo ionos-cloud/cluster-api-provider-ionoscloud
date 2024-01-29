@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -79,9 +80,46 @@ func (s *Service) ReconcileServer() (requeue bool, err error) {
 	}
 
 	log.V(4).Info("successfully finished reconciling server")
-	// If we reach this point, we want to requeue as the request is not processed yet
-	// an we will check for the status again later.
+	// If we reach this point, we want to requeue as the request is not processed yet,
+	// and we will check for the status again later.
 	return true, nil
+}
+
+// ReconcileServerDeletion ensures the server is deleted.
+func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
+	log := s.scope.Logger.WithName("ReconcileLANDeletion")
+
+	server, request, err := findResource(
+		s.getServer,
+		s.getLatestServerCreationRequest,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	if request != nil && request.isPending() {
+		log.Info("Creation request is pending", "location", request.location)
+		return true, nil
+	}
+
+	if server == nil {
+		s.scope.IonosMachine.Status.CurrentRequest = nil
+		return false, nil
+	}
+
+	request, err = s.getLatestServerDeletionRequest(*server.Id)
+	if err != nil {
+		return false, err
+	}
+
+	if request != nil && request.isPending() {
+		// We want to requeue and check again after some time
+		log.Info("Deletion request is pending", "location", request.location)
+		return true, nil
+	}
+
+	err = s.deleteServer(*server.Id)
+	return err == nil, err
 }
 
 // getServer looks for the server in the data center.
@@ -126,11 +164,36 @@ func (s *Service) getServer() (*sdk.Server, error) {
 	return nil, nil
 }
 
+func (s *Service) deleteServer(serverID string) error {
+	log := s.scope.WithName("deleteServer")
+
+	log.V(4).Info("Deleting server", "serverID", serverID)
+	requestLocation, err := s.api().DestroyServer(s.ctx, s.datacenterID(), serverID)
+	if err != nil {
+		return fmt.Errorf("failed to request server deletion: %w", err)
+	}
+
+	log.Info("Successfully requested for server deletion", "location", requestLocation)
+	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodDelete, requestLocation))
+
+	log.V(4).Info("Done deleting server")
+	return nil
+}
+
 func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
 	return getMatchingRequest(
 		s,
 		http.MethodPost,
 		path.Join("datacenters", s.datacenterID(), "servers"),
+		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName()),
+	)
+}
+
+func (s *Service) getLatestServerDeletionRequest(serverID string) (*requestInfo, error) {
+	return getMatchingRequest(
+		s,
+		http.MethodDelete,
+		path.Join("datacenters", s.datacenterID(), "servers", serverID),
 		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName()),
 	)
 }
@@ -143,14 +206,29 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	renderedData := s.renderUserData(string(bootstrapData))
+	lan, err := s.getLAN()
+	if err != nil {
+		return err
+	}
 
+	lanID, err := strconv.ParseInt(ptr.Deref(lan.GetId(), "invalid"), 10, 32)
+	if err != nil {
+		return fmt.Errorf("unable to parse LAN ID: %w", err)
+	}
+
+	renderedData := s.renderUserData(string(bootstrapData))
 	copySpec := s.scope.IonosMachine.Spec.DeepCopy()
+	entityParams := serverEntityParams{
+		boostrapData: renderedData,
+		machineSpec:  *copySpec,
+		lanID:        int32(lanID),
+	}
+
 	server, requestLocation, err := s.api().CreateServer(
 		s.ctx,
 		s.datacenterID(),
 		s.buildServerProperties(copySpec),
-		s.buildServerEntities(renderedData, copySpec),
+		s.buildServerEntities(entityParams),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create server in data center %s: %w", s.datacenterID(), err)
@@ -184,8 +262,17 @@ func (s *Service) buildServerProperties(machineSpec *infrav1.IonosCloudMachineSp
 	return props
 }
 
+type serverEntityParams struct {
+	boostrapData string
+	machineSpec  infrav1.IonosCloudMachineSpec
+	lanID        int32
+}
+
 // buildServerEntities returns the server entities for the expected cloud server resource.
-func (s *Service) buildServerEntities(boostrapData string, machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerEntities {
+func (s *Service) buildServerEntities(
+	params serverEntityParams,
+) sdk.ServerEntities {
+	machineSpec := params.machineSpec
 	bootVolume := sdk.Volume{
 		Properties: &sdk.VolumeProperties{
 			AvailabilityZone: ptr.To(machineSpec.Disk.AvailabilityZone.String()),
@@ -193,7 +280,7 @@ func (s *Service) buildServerEntities(boostrapData string, machineSpec *infrav1.
 			Size:             ptr.To(float32(machineSpec.Disk.SizeGB)),
 			SshKeys:          ptr.To(machineSpec.Disk.SSHKeys),
 			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
-			UserData:         ptr.To(boostrapData),
+			UserData:         ptr.To(params.boostrapData),
 		},
 	}
 
@@ -207,8 +294,24 @@ func (s *Service) buildServerEntities(boostrapData string, machineSpec *infrav1.
 		Items: ptr.To([]sdk.Volume{bootVolume}),
 	}
 
+	nics := sdk.Nics{
+		Items: &[]sdk.Nic{
+			{
+				Properties: &sdk.NicProperties{
+					Dhcp: ptr.To(true),
+					// Dhcpv6:         nil,
+					// FirewallActive: nil,
+					// FirewallType:   nil,
+					Ips:  &[]string{""},
+					Lan:  &params.lanID,
+					Name: ptr.To(s.serverName()),
+				},
+			},
+		},
+	}
+
 	return sdk.ServerEntities{
-		Nics:    &sdk.Nics{},
+		Nics:    &nics,
 		Volumes: &serverVolumes,
 	}
 }
