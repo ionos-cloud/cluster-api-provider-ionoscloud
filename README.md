@@ -20,6 +20,7 @@ To get started with developing, please see [our development docs](./docs/Develop
 | @piepmatz             |
 | @gfariasalves-ionos   |
 | @lubedacht            |
+| @wikkyk               |
 
 
 ## License
