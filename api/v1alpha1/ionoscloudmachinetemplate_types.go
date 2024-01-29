@@ -24,7 +24,7 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// IonosCloudMachineTemplateSpec defines the desired state of IonosCloudMachineTemplate
+// IonosCloudMachineTemplateSpec defines the desired state of IonosCloudMachineTemplate.
 type IonosCloudMachineTemplateSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
@@ -33,7 +33,7 @@ type IonosCloudMachineTemplateSpec struct {
 	Template IonosCloudMachineTemplateResource `json:"template"`
 }
 
-// IonosCloudMachineTemplateStatus defines the observed state of IonosCloudMachineTemplate
+// IonosCloudMachineTemplateStatus defines the observed state of IonosCloudMachineTemplate.
 type IonosCloudMachineTemplateStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
@@ -42,7 +42,7 @@ type IonosCloudMachineTemplateStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// IonosCloudMachineTemplate is the Schema for the ionoscloudmachinetemplates API
+// IonosCloudMachineTemplate is the Schema for the ionoscloudmachinetemplates API.
 type IonosCloudMachineTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -53,7 +53,7 @@ type IonosCloudMachineTemplate struct {
 
 //+kubebuilder:object:root=true
 
-// IonosCloudMachineTemplateList contains a list of IonosCloudMachineTemplate
+// IonosCloudMachineTemplateList contains a list of IonosCloudMachineTemplate.
 type IonosCloudMachineTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

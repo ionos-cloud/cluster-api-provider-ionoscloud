@@ -176,7 +176,7 @@ type Volume struct {
 }
 
 // TODO(lubedacht) Create type for image lookup
-//type ImageSpec struct {
+// type ImageSpec struct {
 //	ImageID      string   `json:"imageID,omitempty"`
 //	ImageAliases []string `json:"imageAliases,omitempty"`
 //	ImageName    string   `json:"imageName,omitempty"`
