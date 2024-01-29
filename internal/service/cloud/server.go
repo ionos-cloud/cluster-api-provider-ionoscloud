@@ -28,7 +28,9 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/conditions"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -70,6 +72,8 @@ func (s *Service) ReconcileServer() (requeue bool, err error) {
 			return true, nil
 		}
 		// server exists and is available.
+		conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
+		conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)
 		return false, nil
 	}
 
@@ -302,12 +306,20 @@ func (s *Service) buildServerEntities(
 					// Dhcpv6:         nil,
 					// FirewallActive: nil,
 					// FirewallType:   nil,
-					Ips:  &[]string{""},
+					Ips:  &[]string{""}, // TODO(lubedacht) add reserved IP
 					Lan:  &params.lanID,
 					Name: ptr.To(s.serverName()),
 				},
 			},
 		},
+	}
+
+	// Attach server to additional LANs
+	items := *nics.Items
+	for _, nic := range s.scope.IonosMachine.Spec.AdditionalNetworks {
+		items = append(items, sdk.Nic{Properties: &sdk.NicProperties{
+			Lan: ptr.To(nic.NetworkID),
+		}})
 	}
 
 	return sdk.ServerEntities{
