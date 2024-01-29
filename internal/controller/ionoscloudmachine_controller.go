@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -132,7 +131,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, fmt.Errorf("could not create machine service")
 	}
 	if !ionosCloudMachine.ObjectMeta.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, cloudService)
+		return r.reconcileDelete(ctx, machineScope, cloudService)
 	}
 
 	return r.reconcileNormal(ctx, machineScope, cloudService)
@@ -300,23 +299,21 @@ func (r *IonosCloudMachineReconciler) withStatus(
 	return false, fmt.Errorf("unknown request status %s", status)
 }
 
-func (r *IonosCloudMachineReconciler) reconcileDelete(_ context.Context, cloudService *cloud.Service) (ctrl.Result, error) {
+func (r *IonosCloudMachineReconciler) reconcileDelete(_ context.Context, machineScope *scope.MachineScope, cloudService *cloud.Service) (ctrl.Result, error) {
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
 	//  Moreover, should only be attempted if it's the last machine using that LAN. We should check that our machines
 	//  at least, but need to accept that users added their own infrastructure into our LAN (in that case a LAN deletion
 	//  attempt will be denied with HTTP 422).
-	requeue, err := cloudService.ReconcileLANDeletion()
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("could not reconcile LAN deletion: %w", err)
+	if requeue, err := cloudService.ReconcileLANDeletion(); requeue || err != nil {
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, fmt.Errorf("could not reconcile LAN deletion: %w", err)
 	}
 
-	var after time.Duration
-	if requeue {
-		after = defaultReconcileDuration
-	}
-	return ctrl.Result{
-		RequeueAfter: after,
-	}, nil
+	// if requeue, err := cloudService.ReconcileServerDeletion(); requeue || err != nil {
+	//	return ctrl.Result{RequeueAfter: defaultReconcileDuration}, fmt.Errorf("could not reconcile LAN deletion: %w", err)
+	//}
+
+	controllerutil.RemoveFinalizer(machineScope.IonosMachine, infrav1.MachineFinalizer)
+	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
