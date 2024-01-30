@@ -132,7 +132,10 @@ func (c *IonosCloudClient) DestroyServer(ctx context.Context, datacenterID, serv
 	if serverID == "" {
 		return "", errServerIDIsEmpty
 	}
-	req, err := c.API.ServersApi.DatacentersServersDelete(ctx, datacenterID, serverID).Execute()
+	req, err := c.API.ServersApi.
+		DatacentersServersDelete(ctx, datacenterID, serverID).
+		DeleteVolumes(true).
+		Execute()
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}

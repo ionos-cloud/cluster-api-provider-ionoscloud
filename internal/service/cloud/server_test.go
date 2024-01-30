@@ -178,7 +178,7 @@ func (s *serverSuite) TestReconcileServer_NoRequest() {
 	s.mockCreateServer().Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/sever", nil)
 
 	requeue, err := s.service.ReconcileServer()
-	s.Equal("ionoscloud://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
+	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
 	s.NoError(err)
 	s.True(requeue)
 }

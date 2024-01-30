@@ -17,6 +17,7 @@ limitations under the License.
 package cloud
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -29,7 +30,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -122,6 +122,8 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		return true, nil
 	}
 
+	// TODO(lubedacht) Delete Volume before server deletion
+	// err = s.deleteVolume(*server.Id)
 	err = s.deleteServer(*server.Id)
 	return err == nil, err
 }
@@ -303,10 +305,6 @@ func (s *Service) buildServerEntities(
 			{
 				Properties: &sdk.NicProperties{
 					Dhcp: ptr.To(true),
-					// Dhcpv6:         nil,
-					// FirewallActive: nil,
-					// FirewallType:   nil,
-					Ips:  &[]string{""}, // TODO(lubedacht) add reserved IP
 					Lan:  &params.lanID,
 					Name: ptr.To(s.serverName()),
 				},
@@ -344,7 +342,7 @@ func (s *Service) renderUserData(input string) string {
 	bootCmdString := fmt.Sprintf(bootCmdFormat, s.serverName())
 	input = fmt.Sprintf("%s\n%s", input, bootCmdString)
 
-	return input
+	return base64.StdEncoding.EncodeToString([]byte(input))
 }
 
 func (s *Service) serversURL() string {
@@ -353,14 +351,9 @@ func (s *Service) serversURL() string {
 
 // serverName returns a formatted name for the expected cloud server resource.
 func (s *Service) serverName() string {
-	role := "worker"
-	if util.IsControlPlaneMachine(s.scope.Machine) {
-		role = "control-plane"
-	}
 
 	return fmt.Sprintf(
-		"k8s-%s-%s-%s",
-		role,
+		"k8s-%s-%s",
 		s.scope.IonosMachine.Namespace,
 		s.scope.IonosMachine.Name)
 }

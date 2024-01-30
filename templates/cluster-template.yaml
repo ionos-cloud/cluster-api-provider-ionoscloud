@@ -21,6 +21,9 @@ kind: IonosCloudCluster
 metadata:
   name: "${CLUSTER_NAME}"
 spec:
+  controlPlaneEndpoint:
+    host: ${CONTROL_PLANE_ENDPOINT_IP}
+    port: 6443
   contractNumber: "${IONOSCLOUD_CONTRACT_NUMBER}"
 ---
 kind: KubeadmControlPlane
@@ -116,7 +119,8 @@ spec:
       memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
       cpuFamily: ${IONOSCLOUD_MACHINE_CPU_FAMILY}
       disk:
-        image: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+        image:
+          id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
         sshKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -157,7 +161,8 @@ spec:
       memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
       cpuFamily: ${IONOSCLOUD_MACHINE_CPU_FAMILY}
       disk:
-        image: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+        image:
+          id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
         sshKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1

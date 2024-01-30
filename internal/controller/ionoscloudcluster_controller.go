@@ -79,7 +79,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	if cluster == nil {
 		logger.Info("Waiting for cluster controller to set OwnerRef on IonosCloudCluster")
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
 	logger = logger.WithValues("cluster", klog.KObj(cluster))

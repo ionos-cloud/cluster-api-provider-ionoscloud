@@ -125,7 +125,7 @@ func (m *MachineScope) DatacenterID() string {
 }
 
 func (m *MachineScope) SetProviderID(id string) {
-	m.IonosMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ionoscloud://%s", id))
+	m.IonosMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ionos://%s", id))
 }
 
 // HasFailed checks if the IonosCloudMachine is in a failed state.
