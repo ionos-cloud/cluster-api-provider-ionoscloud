@@ -351,7 +351,6 @@ func (s *Service) serversURL() string {
 
 // serverName returns a formatted name for the expected cloud server resource.
 func (s *Service) serverName() string {
-
 	return fmt.Sprintf(
 		"k8s-%s-%s",
 		s.scope.IonosMachine.Namespace,
