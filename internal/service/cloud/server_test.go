@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -42,16 +41,7 @@ func TestServerSuite(t *testing.T) {
 
 func (s *serverSuite) TestServerName() {
 	serverName := s.service.serverName()
-	s.Equal("k8s-worker-default-test-machine", serverName)
-	s.machineScope.Machine.Labels = make(map[string]string)
-	s.machineScope.Machine.Labels[clusterv1.MachineControlPlaneLabel] = ""
-
-	defer func() {
-		s.machineScope.Machine.Labels = nil
-	}()
-
-	serverName = s.service.serverName()
-	s.Equal("k8s-control-plane-default-test-machine", serverName)
+	s.Equal("k8s-default-test-machine", serverName)
 }
 
 func (s *serverSuite) TestReconcileServer_NoBootstrapSecret() {
@@ -176,6 +166,13 @@ func (s *serverSuite) TestReconcileServer_NoRequest() {
 	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
 	s.mockGetServerCreationRequest().Return([]sdk.Request{}, nil)
 	s.mockCreateServer().Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/sever", nil)
+	s.mockListLANs().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+		Id: ptr.To("1"),
+		Properties: &sdk.LanProperties{
+			Name:   ptr.To(s.service.lanName()),
+			Public: ptr.To(true),
+		},
+	}}}, nil)
 
 	requeue, err := s.service.ReconcileServer()
 	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
@@ -263,6 +260,10 @@ func (s *serverSuite) mockCreateServer() *clienttest.MockClient_CreateServer_Cal
 		mock.Anything,
 		mock.Anything,
 	)
+}
+
+func (s *serverSuite) mockListLANs() *clienttest.MockClient_ListLANs_Call {
+	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.service.datacenterID())
 }
 
 func (s *serverSuite) examplePostRequest(status string) []sdk.Request {

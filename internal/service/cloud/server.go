@@ -71,6 +71,7 @@ func (s *Service) ReconcileServer() (requeue bool, err error) {
 			log.Info("LAN is not available yet", "state", state)
 			return true, nil
 		}
+
 		// server exists and is available.
 		conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
 		conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)
