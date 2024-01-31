@@ -277,8 +277,9 @@ func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, location st
 	}
 	ipBlock := sdk.IpBlock{
 		Properties: &sdk.IpBlockProperties{
-			Name: &name,
-			Size: &size,
+			Name:     &name,
+			Size:     &size,
+			Location: &location,
 		},
 	}
 	_, req, err := c.API.IPBlocksApi.IpblocksPost(ctx).Ipblock(ipBlock).Execute()
