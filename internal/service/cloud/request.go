@@ -52,15 +52,17 @@ func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (stri
 // resourceTypeMap maps a resource type to its corresponding IONOS Cloud type identifier.
 // Each type mapping for usage in getMatchingRequest() needs to be present here.
 var resourceTypeMap = map[reflect.Type]sdk.Type{
-	reflect.TypeOf(sdk.Lan{}):     sdk.LAN,
-	reflect.TypeOf(&sdk.Lan{}):    sdk.LAN,
-	reflect.TypeOf(sdk.Server{}):  sdk.SERVER,
-	reflect.TypeOf(&sdk.Server{}): sdk.SERVER,
+	reflect.TypeOf(sdk.Lan{}):      sdk.LAN,
+	reflect.TypeOf(&sdk.Lan{}):     sdk.LAN,
+	reflect.TypeOf(sdk.Server{}):   sdk.SERVER,
+	reflect.TypeOf(&sdk.Server{}):  sdk.SERVER,
+	reflect.TypeOf(sdk.IpBlock{}):  sdk.IPBLOCK,
+	reflect.TypeOf(&sdk.IpBlock{}): sdk.IPBLOCK,
 }
 
 type matcherFunc[T any] func(resource T, request sdk.Request) bool
 
-type propertyHolder[T nameHolder] interface {
+type propertiesHolder[T nameHolder] interface {
 	GetProperties() T
 }
 
@@ -71,8 +73,8 @@ type nameHolder interface {
 // matchByName is a generic matcher function intended for finding a single resource based on its name.
 // The sdk resources provide a Properties field which in turn contains a Name field.
 // A compile time check will validate, if the generic types fulfill the interface constraints.
-func matchByName[T propertyHolder[U], U nameHolder](name string) matcherFunc[T] {
-	return func(resource T, request sdk.Request) bool {
+func matchByName[T propertiesHolder[U], U nameHolder](name string) matcherFunc[T] {
+	return func(resource T, _ sdk.Request) bool {
 		properties := resource.GetProperties()
 		if util.IsNil(properties) {
 			return false

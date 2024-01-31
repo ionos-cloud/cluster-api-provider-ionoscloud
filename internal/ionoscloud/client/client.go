@@ -263,6 +263,69 @@ func (c *IonosCloudClient) DestroyVolume(ctx context.Context, datacenterID, volu
 	return nil
 }
 
+// ReserveIPBlock reserves an IP block with the provided properties in the specified location, returning the request
+// location.
+func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, location string, size int32) (string, error) {
+	if location == "" {
+		return "", errors.New("location must be set")
+	}
+	if size > 0 {
+		return "", errors.New("size must be greater than 0")
+	}
+	if name == "" {
+		return "", errors.New("name must be set")
+	}
+	ipBlock := sdk.IpBlock{
+		Properties: &sdk.IpBlockProperties{
+			Name: &name,
+			Size: &size,
+		},
+	}
+	_, req, err := c.API.IPBlocksApi.IpblocksPost(ctx).Ipblock(ipBlock).Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+	if requestPath := req.Header.Get(locationHeaderKey); requestPath != "" {
+		return requestPath, nil
+	}
+	return "", errors.New(apiNoLocationErrMessage)
+}
+
+func (c *IonosCloudClient) GetIPBlock(ctx context.Context, ipBlockID string) (*sdk.IpBlock, error) {
+	if ipBlockID == "" {
+		return nil, errors.New("ipBlockID must be set")
+	}
+	ipBlock, _, err := c.API.IPBlocksApi.IpblocksFindById(ctx, ipBlockID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
+	}
+	return &ipBlock, nil
+}
+
+// DeleteIPBlock deletes the IP block that matches the provided ipBlockID.
+func (c *IonosCloudClient) DeleteIPBlock(ctx context.Context, ipBlockID string) (string, error) {
+	if ipBlockID == "" {
+		return "", errors.New("ipBlockID must be set")
+	}
+	req, err := c.API.IPBlocksApi.IpblocksDelete(ctx, ipBlockID).Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+	if requestPath := req.Header.Get(locationHeaderKey); requestPath != "" {
+		return requestPath, nil
+	}
+	return "", errors.New(apiNoLocationErrMessage)
+}
+
+// ListIPBlocks returns a list of IP blocks.
+func (c *IonosCloudClient) ListIPBlocks(ctx context.Context) ([]sdk.IpBlock, error) {
+	blocks, _, err := c.API.IPBlocksApi.IpblocksGet(ctx).Execute()
+	if err != nil {
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
+	}
+	return *blocks.Items, nil
+}
+
 // CheckRequestStatus returns the status of a request and an error if checking for it fails.
 func (c *IonosCloudClient) CheckRequestStatus(ctx context.Context, requestURL string) (*sdk.RequestStatus, error) {
 	if requestURL == "" {
