@@ -50,6 +50,7 @@ func defaultCluster() *IonosCloudCluster {
 				Port: 5678,
 			},
 			ContractNumber: "12345678",
+			Region:         RegionBerlin,
 		},
 	}
 }
@@ -115,6 +116,36 @@ var _ = Describe("IonosCloudCluster", func() {
 
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
+		})
+	})
+
+	Context("Spec", func() {
+		Context("Region", func() {
+			It("should be set", func() {
+				m := defaultCluster()
+				m.Spec.Region = ""
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+			})
+			It("should fail if not part of the enum", func() {
+				m := defaultCluster()
+				m.Spec.Region = "jo/vineta"
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+			})
+			DescribeTable("should succeed if part of the enum", func(region Region) {
+				m := defaultCluster()
+				m.Spec.Region = region
+				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+				Expect(m.Spec.Region).To(Equal(region))
+			},
+				Entry("Frankfurt", RegionFrankfurt),
+				Entry("Berlin", RegionBerlin),
+				Entry("Paris", RegionParis),
+				Entry("London", RegionLondon),
+				Entry("Logrono", RegionLogrono),
+				Entry("Lenexa", RegionLenexa),
+				Entry("LasVegas", RegionLasVegas),
+				Entry("Newark", RegionNewark),
+			)
 		})
 	})
 })

@@ -69,8 +69,25 @@ spec:
                 - host
                 - port
                 type: object
+              region:
+                description: Region is the location/region where the data centers
+                  should be located.
+                enum:
+                - de/fra
+                - us/las
+                - us/ewr
+                - de/txl
+                - gb/lhr
+                - es/vit
+                - fr/par
+                - us/mci
+                type: string
+                x-kubernetes-validations:
+                - message: location is immutable
+                  rule: self == oldSelf
             required:
             - contractNumber
+            - region
             type: object
           status:
             description: IonosCloudClusterStatus defines the observed state of IonosCloudCluster.

@@ -42,6 +42,11 @@ type IonosCloudClusterSpec struct {
 	// Contract number is the contract number of the IONOS Cloud account.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
 	ContractNumber string `json:"contractNumber"`
+
+	// Region is the location/region where the data centers should be located.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
+	// +kubebuilder:validation:Enum=de/fra;us/las;us/ewr;de/txl;gb/lhr;es/vit;fr/par;us/mci
+	Region Region `json:"region"`
 }
 
 // IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
@@ -60,11 +65,11 @@ type IonosCloudClusterStatus struct {
 	CurrentRequestByDatacenter map[string]ProvisioningRequest `json:"currentRequest,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
-//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Cluster infrastructure is ready"
-//+kubebuilder:printcolumn:name="Endpoint",type="string",JSONPath=".spec.controlPlaneEndpoint",description="API Endpoint"
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Cluster infrastructure is ready"
+// +kubebuilder:printcolumn:name="Endpoint",type="string",JSONPath=".spec.controlPlaneEndpoint",description="API Endpoint"
 
 // IonosCloudCluster is the Schema for the ionoscloudclusters API.
 type IonosCloudCluster struct {
@@ -75,7 +80,7 @@ type IonosCloudCluster struct {
 	Status IonosCloudClusterStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // IonosCloudClusterList contains a list of IonosCloudCluster.
 type IonosCloudClusterList struct {

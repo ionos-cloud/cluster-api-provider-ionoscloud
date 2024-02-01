@@ -56,6 +56,34 @@ type ProvisioningRequest struct {
 	Message *string `json:"message,omitempty"`
 }
 
+type Region string
+
+const (
+	// RegionFrankfurt is the region for the data center in Frankfurt, Germany.
+	RegionFrankfurt Region = "de/fra"
+
+	// RegionBerlin is the region for the data center in Berlin, Germany.
+	RegionBerlin Region = "de/txl"
+
+	// RegionParis is the region for the data center in Paris, France.
+	RegionParis Region = "fr/par"
+
+	// RegionLondon is the region for the data center in London, UK.
+	RegionLondon Region = "gb/lhr"
+
+	// RegionLogrono is the region for the data center in Logroño, Spain.
+	RegionLogrono Region = "es/vit"
+
+	// RegionLenexa is the region for the data center in Lenexa, USA.
+	RegionLenexa Region = "us/mci"
+
+	// RegionLasVegas is the region for the data center in Las Vegas, USA.
+	RegionLasVegas Region = "us/las"
+
+	// RegionNewark is the region for the data center in Newark, USA.
+	RegionNewark Region = "us/ewr"
+)
+
 // NewQueuedRequest creates a new provisioning request with the status set to queued.
 func NewQueuedRequest(method, path string) ProvisioningRequest {
 	return ProvisioningRequest{
