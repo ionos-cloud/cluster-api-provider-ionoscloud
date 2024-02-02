@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -49,18 +48,22 @@ func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (stri
 	return *status.Metadata.Status, message, nil
 }
 
-// resourceTypeMap maps a resource type to its corresponding IONOS Cloud type identifier.
+// mapResourceType maps a cloud resource to its corresponding IONOS Cloud type identifier.
 // Each type mapping for usage in getMatchingRequest() needs to be present here.
-var resourceTypeMap = map[reflect.Type]sdk.Type{
-	reflect.TypeOf(sdk.Lan{}):     sdk.LAN,
-	reflect.TypeOf(&sdk.Lan{}):    sdk.LAN,
-	reflect.TypeOf(sdk.Server{}):  sdk.SERVER,
-	reflect.TypeOf(&sdk.Server{}): sdk.SERVER,
+func mapResourceType(cloudResource any) sdk.Type {
+	switch cloudResource.(type) {
+	case sdk.Lan, *sdk.Lan:
+		return sdk.LAN
+	case sdk.Server, *sdk.Server:
+		return sdk.SERVER
+	default:
+		return ""
+	}
 }
 
 type matcherFunc[T any] func(resource T, request sdk.Request) bool
 
-type propertyHolder[T nameHolder] interface {
+type propertiesHolder[T nameHolder] interface {
 	GetProperties() T
 }
 
@@ -71,7 +74,7 @@ type nameHolder interface {
 // matchByName is a generic matcher function intended for finding a single resource based on its name.
 // The sdk resources provide a Properties field which in turn contains a Name field.
 // A compile time check will validate, if the generic types fulfill the interface constraints.
-func matchByName[T propertyHolder[U], U nameHolder](name string) matcherFunc[T] {
+func matchByName[T propertiesHolder[U], U nameHolder](name string) matcherFunc[T] {
 	return func(resource T, request sdk.Request) bool {
 		properties := resource.GetProperties()
 		if util.IsNil(properties) {
@@ -102,7 +105,7 @@ func getMatchingRequest[T any](
 	matchers ...matcherFunc[*T],
 ) (*requestInfo, error) {
 	var zeroResource T
-	resourceType := resourceTypeMap[reflect.TypeOf(zeroResource)]
+	resourceType := mapResourceType(zeroResource)
 	if resourceType == "" {
 		return nil, fmt.Errorf("unsupported resource type %T", zeroResource)
 	}
@@ -269,7 +272,7 @@ func getState(resource metadataHolder) string {
 	return ptr.Deref(resource.GetMetadata().GetState(), "")
 }
 
-func getVMState(resource propertyHolder[*sdk.ServerProperties]) string {
+func getVMState(resource propertiesHolder[*sdk.ServerProperties]) string {
 	return ptr.Deref(resource.GetProperties().GetVmState(), "")
 }
 
