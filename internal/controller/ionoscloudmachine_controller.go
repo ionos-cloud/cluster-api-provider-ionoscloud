@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -47,7 +46,6 @@ type IonosCloudMachineReconciler struct {
 	client.Client
 	Scheme           *runtime.Scheme
 	IonosCloudClient ionoscloud.Client
-	Inflight         map[string]*sync.Mutex
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines,verbs=get;list;watch;create;update;patch;delete
@@ -73,13 +71,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 		return ctrl.Result{}, err
 	}
-
-	r.Inflight[ionosCloudMachine.Name] = &sync.Mutex{}
-	r.Inflight[ionosCloudMachine.Name].Lock()
-	defer func() {
-		r.Inflight[ionosCloudMachine.Name].Unlock()
-		delete(r.Inflight, ionosCloudMachine.Name)
-	}()
 
 	// Fetch the Machine.
 	machine, err := util.GetOwnerMachine(ctx, r.Client, ionosCloudMachine.ObjectMeta)

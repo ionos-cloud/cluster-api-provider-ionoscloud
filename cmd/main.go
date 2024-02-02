@@ -21,7 +21,6 @@ package main
 import (
 	"flag"
 	"os"
-	"sync"
 
 	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
@@ -112,7 +111,6 @@ func main() {
 		Client:           mgr.GetClient(),
 		Scheme:           mgr.GetScheme(),
 		IonosCloudClient: ionosCloudClient,
-		Inflight:         make(map[string]*sync.Mutex),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
 		os.Exit(1)
