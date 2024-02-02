@@ -11,6 +11,7 @@ export IONOS_API_URL="https://api.ionos.com/cloudapi/v6"
 export CONTROL_PLANE_ENDPOINT_IP="192.168.0.1"
 export CLUSTER_NAME="cluster-name"
 export KUBERNETES_VERSION="1.28.5"
+export KUBERNETES_VERSION_SHORT="1.28"
 
 # Cluster related environment variables
 export IONOSCLOUD_CONTRACT_NUMBER="12345"

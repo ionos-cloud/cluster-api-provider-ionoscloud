@@ -21,6 +21,10 @@ package main
 import (
 	"flag"
 	"os"
+	"sync"
+
+	"github.com/spf13/pflag"
+	"k8s.io/klog/v2"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,7 +33,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -51,21 +54,19 @@ func init() {
 }
 
 func main() {
+	ctrl.SetLogger(klog.Background())
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	klog.InitFlags(nil)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	opts := zap.Options{
-		Development: true,
-	}
-	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -111,6 +112,7 @@ func main() {
 		Client:           mgr.GetClient(),
 		Scheme:           mgr.GetScheme(),
 		IonosCloudClient: ionosCloudClient,
+		Inflight:         make(map[string]*sync.Mutex),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
 		os.Exit(1)

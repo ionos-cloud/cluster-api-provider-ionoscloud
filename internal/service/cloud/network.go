@@ -22,6 +22,7 @@ import (
 	"path"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"sigs.k8s.io/cluster-api/util"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -222,5 +223,64 @@ func (s *Service) removeLANPendingRequestFromCluster() error {
 	if err := s.scope.ClusterScope.PatchObject(); err != nil {
 		return fmt.Errorf("could not remove stale LAN pending request from cluster: %w", err)
 	}
+	return nil
+}
+
+// checkPrimaryNIC ensures the primary NIC of the server contains the endpoint IP address.
+// This is needed for KubeVIP in order to set up control plane load balancing.
+//
+// If we want to support private clusters in the future, this will require some adjustments.
+func (s *Service) checkPrimaryNIC(server *sdk.Server) (bool, error) {
+	log := s.scope.Logger.WithName("checkPrimaryNIC")
+
+	if !util.IsControlPlaneMachine(s.scope.Machine) {
+		log.V(4).Info("Machine is a worker node and doesn't need a second IP address")
+		return false, nil
+	}
+
+	serverNICs := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
+	for _, nic := range serverNICs {
+		// if the name doesn't match, we can continue
+		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name != s.serverName() {
+			continue
+		}
+
+		log.V(4).Info("Found primary NIC", "name", s.serverName())
+		ips := ptr.Deref(nic.GetProperties().GetIps(), []string{})
+		for _, ip := range ips {
+			if ip == s.scope.ClusterScope.GetEndpoint().Host {
+				log.V(4).Info("Primary NIC contains endpoint IP address")
+				return false, nil
+			}
+		}
+
+		// Patch the NIC and include the complete set of IP addresses
+		// The primary IP must be in the first position.
+		patchSet := append(ips, s.scope.ClusterScope.GetEndpoint().Host)
+
+		serverID := ptr.Deref(server.GetId(), "")
+		nicProperties := sdk.NicProperties{Ips: &patchSet}
+
+		err := s.patchNIC(serverID, nic, nicProperties)
+		return true, err
+	}
+
+	return true, fmt.Errorf("could not find primary NIC with name %s", s.serverName())
+}
+
+func (s *Service) patchNIC(serverID string, nic sdk.Nic, props sdk.NicProperties) error {
+	log := s.scope.Logger.WithName("patchNIC")
+
+	nicID := ptr.Deref(nic.GetId(), "")
+	log.V(4).Info("Patching NIC", "id", nicID)
+
+	location, err := s.api().PatchNIC(s.ctx, s.datacenterID(), serverID, nicID, props)
+	if err != nil {
+		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
+	}
+
+	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPatch, location))
+
+	log.V(4).Info("Successfully patched NIC", "location", location)
 	return nil
 }

@@ -37,7 +37,7 @@ import (
 )
 
 // ReconcileServer ensures the cluster server exist, creating one if it doesn't.
-func (s *Service) ReconcileServer() (requeue bool, err error) {
+func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 	log := s.scope.Logger.WithName("ReconcileServer")
 
 	log.V(4).Info("Reconciling server")
@@ -60,22 +60,26 @@ func (s *Service) ReconcileServer() (requeue bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	if request != nil && request.isPending() {
+	if err != nil || (request != nil && request.isPending()) {
 		log.Info("Request is pending", "location", request.location)
-		return true, nil
+		return true, nil //nolint:nilerr
 	}
 
-	// server is still provisioning
 	if server != nil {
-		if state := getState(server); !isAvailable(state) {
-			log.Info("LAN is not available yet", "state", state)
+		// we have to make sure that after the NIC was created, the endpoint IP must be added
+		// as a secondary IP address
+		if shouldRequeue, err := s.checkPrimaryNIC(server); shouldRequeue || err != nil {
+			return shouldRequeue, err
+		}
+
+		if !s.isServerAvailable(server) {
+			// server is still provisioning, checking again later
 			return true, nil
 		}
 
+		log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
 		// server exists and is available.
-		conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
-		conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)
-		return false, nil
+		return s.finalizeServerProvisioning()
 	}
 
 	// server does not exist yet, create it
@@ -112,6 +116,11 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		return false, nil
 	}
 
+	// TODO(lubedacht) add handling for volume deletion
+	// if requeue, err := s.ensureVolumeDeleted(server); requeue || err != nil {
+	//	return requeue, err
+	//}
+
 	request, err = s.getLatestServerDeletionRequest(*server.Id)
 	if err != nil {
 		return false, err
@@ -124,9 +133,58 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 	}
 
 	// TODO(lubedacht) Delete Volume before server deletion
-	// err = s.deleteVolume(*server.Id)
+	// 	if the bool flag in the API doesn't work
+	// err = s.ensureVolumeDeleted(*server.Id)
 	err = s.deleteServer(*server.Id)
 	return err == nil, err
+}
+
+// TODO(lubedacht)check if we need to manually delete volumes
+// func (s *Service) ensureVolumeDeleted(server *sdk.Server) (bool, error) {
+//	log := s.scope.Logger.WithName("ReconcileLANDeletion")
+//	log.Info("Ensuring that server volumes will be deleted", "serverID", ptr.Deref(server.GetId(), ""))
+//
+//	volumes := ptr.Deref(server.GetEntities().GetVolumes().GetItems(), []sdk.Volume{})
+//	if len(volumes) == 0 {
+//		return false, nil
+//	}
+//
+//	for _, vol := range volumes {
+//		location, err := s.api().DestroyVolume(s.ctx, s.datacenterID(), ptr.Deref(vol.GetId(), ""))
+//		if err != nil {
+//			log.Error(err, "Unexpected error occurred during Volume deletion", "volumeID", ptr.Deref(vol.GetId(), ""))
+//			return false, fmt.Errorf("failed to request volume deletion: %w", err)
+//		}
+//
+//		if location == "" {
+//			continue
+//		}
+//	}
+//
+//	return false, nil
+//}
+
+func (s *Service) finalizeServerProvisioning() (bool, error) {
+	conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
+	conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)
+	return false, nil
+}
+
+func (s *Service) isServerAvailable(server *sdk.Server) bool {
+	log := s.scope.Logger.WithName("isServerAvailable")
+	if state := getState(server); !isAvailable(state) {
+		log.Info("Server is not available yet", "state", state)
+		return false
+	}
+
+	// TODO ensure server is started
+	if vmState := getVMState(server); !isRunning(vmState) {
+		log.Info("Server is not running yet", "state", vmState)
+		// TODO start server
+		return false
+	}
+
+	return true
 }
 
 // getServer looks for the server in the data center.
@@ -301,7 +359,9 @@ func (s *Service) buildServerEntities(
 		Items: ptr.To([]sdk.Volume{bootVolume}),
 	}
 
-	nics := sdk.Nics{
+	// As we want to retrieve a public IP from the DHCP, we need to
+	// create a NIC with empty IP addresses and patch the NIC afterward.
+	serverNICs := sdk.Nics{
 		Items: &[]sdk.Nic{
 			{
 				Properties: &sdk.NicProperties{
@@ -314,7 +374,7 @@ func (s *Service) buildServerEntities(
 	}
 
 	// Attach server to additional LANs
-	items := *nics.Items
+	items := *serverNICs.Items
 	for _, nic := range s.scope.IonosMachine.Spec.AdditionalNetworks {
 		items = append(items, sdk.Nic{Properties: &sdk.NicProperties{
 			Lan: ptr.To(nic.NetworkID),
@@ -322,7 +382,7 @@ func (s *Service) buildServerEntities(
 	}
 
 	return sdk.ServerEntities{
-		Nics:    &nics,
+		Nics:    &serverNICs,
 		Volumes: &serverVolumes,
 	}
 }

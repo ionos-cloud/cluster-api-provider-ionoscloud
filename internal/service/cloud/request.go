@@ -178,11 +178,14 @@ requestLoop:
 
 func hasRequestTargetType(req sdk.Request, typeName sdk.Type) bool {
 	targets := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetTargets(), nil)
-	if len(targets) == 0 {
-		return false
+
+	for _, target := range targets {
+		if ptr.Deref(target.GetTarget().GetType(), "") == typeName {
+			return true
+		}
 	}
 
-	return ptr.Deref(targets[0].GetTarget().GetType(), "") == typeName
+	return false
 }
 
 // findResource is a helper function intended for finding a single resource based on certain filtering constraints,
@@ -264,6 +267,14 @@ type metadataHolder interface {
 
 func getState(resource metadataHolder) string {
 	return ptr.Deref(resource.GetMetadata().GetState(), "")
+}
+
+func getVMState(resource propertyHolder[*sdk.ServerProperties]) string {
+	return ptr.Deref(resource.GetProperties().GetVmState(), "")
+}
+
+func isRunning(state string) bool {
+	return state == "RUNNING"
 }
 
 // isAvailable returns true if the resource is available. Note that not all resource types have this state.

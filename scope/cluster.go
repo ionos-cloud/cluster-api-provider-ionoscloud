@@ -97,6 +97,11 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	return clusterScope, nil
 }
 
+// GetEndpoint returns the endpoint for the IonosCloudCluster.
+func (c *ClusterScope) GetEndpoint() clusterv1.APIEndpoint {
+	return c.IonosCluster.Spec.ControlPlaneEndpoint
+}
+
 // PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
 func (c *ClusterScope) PatchObject() error {

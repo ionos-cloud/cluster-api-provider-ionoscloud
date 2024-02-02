@@ -323,6 +323,61 @@ func (_c *MockClient_DeleteLAN_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
+// DeleteNIC provides a mock function with given fields: ctx, datacenterID, serverID, nicID
+func (_m *MockClient) DeleteNIC(ctx context.Context, datacenterID string, serverID string, nicID string) (string, error) {
+	ret := _m.Called(ctx, datacenterID, serverID, nicID)
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) (string, error)); ok {
+		return rf(ctx, datacenterID, serverID, nicID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) string); ok {
+		r0 = rf(ctx, datacenterID, serverID, nicID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = rf(ctx, datacenterID, serverID, nicID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_DeleteNIC_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteNIC'
+type MockClient_DeleteNIC_Call struct {
+	*mock.Call
+}
+
+// DeleteNIC is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - serverID string
+//   - nicID string
+func (_e *MockClient_Expecter) DeleteNIC(ctx interface{}, datacenterID interface{}, serverID interface{}, nicID interface{}) *MockClient_DeleteNIC_Call {
+	return &MockClient_DeleteNIC_Call{Call: _e.mock.On("DeleteNIC", ctx, datacenterID, serverID, nicID)}
+}
+
+func (_c *MockClient_DeleteNIC_Call) Run(run func(ctx context.Context, datacenterID string, serverID string, nicID string)) *MockClient_DeleteNIC_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_DeleteNIC_Call) Return(_a0 string, _a1 error) *MockClient_DeleteNIC_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_DeleteNIC_Call) RunAndReturn(run func(context.Context, string, string, string) (string, error)) *MockClient_DeleteNIC_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DestroyServer provides a mock function with given fields: ctx, datacenterID, serverID
 func (_m *MockClient) DestroyServer(ctx context.Context, datacenterID string, serverID string) (string, error) {
 	ret := _m.Called(ctx, datacenterID, serverID)
@@ -378,17 +433,27 @@ func (_c *MockClient_DestroyServer_Call) RunAndReturn(run func(context.Context, 
 }
 
 // DestroyVolume provides a mock function with given fields: ctx, datacenterID, volumeID
-func (_m *MockClient) DestroyVolume(ctx context.Context, datacenterID string, volumeID string) error {
+func (_m *MockClient) DestroyVolume(ctx context.Context, datacenterID string, volumeID string) (string, error) {
 	ret := _m.Called(ctx, datacenterID, volumeID)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+		return rf(ctx, datacenterID, volumeID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
 		r0 = rf(ctx, datacenterID, volumeID)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(string)
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, datacenterID, volumeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockClient_DestroyVolume_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DestroyVolume'
@@ -411,12 +476,12 @@ func (_c *MockClient_DestroyVolume_Call) Run(run func(ctx context.Context, datac
 	return _c
 }
 
-func (_c *MockClient_DestroyVolume_Call) Return(_a0 error) *MockClient_DestroyVolume_Call {
-	_c.Call.Return(_a0)
+func (_c *MockClient_DestroyVolume_Call) Return(_a0 string, _a1 error) *MockClient_DestroyVolume_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockClient_DestroyVolume_Call) RunAndReturn(run func(context.Context, string, string) error) *MockClient_DestroyVolume_Call {
+func (_c *MockClient_DestroyVolume_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DestroyVolume_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -806,6 +871,62 @@ func (_c *MockClient_ListVolumes_Call) Return(_a0 *ionoscloud.Volumes, _a1 error
 }
 
 func (_c *MockClient_ListVolumes_Call) RunAndReturn(run func(context.Context, string) (*ionoscloud.Volumes, error)) *MockClient_ListVolumes_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// PatchNIC provides a mock function with given fields: ctx, datacenterID, serverID, nicID, properties
+func (_m *MockClient) PatchNIC(ctx context.Context, datacenterID string, serverID string, nicID string, properties ionoscloud.NicProperties) (string, error) {
+	ret := _m.Called(ctx, datacenterID, serverID, nicID, properties)
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, ionoscloud.NicProperties) (string, error)); ok {
+		return rf(ctx, datacenterID, serverID, nicID, properties)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, ionoscloud.NicProperties) string); ok {
+		r0 = rf(ctx, datacenterID, serverID, nicID, properties)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, ionoscloud.NicProperties) error); ok {
+		r1 = rf(ctx, datacenterID, serverID, nicID, properties)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_PatchNIC_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PatchNIC'
+type MockClient_PatchNIC_Call struct {
+	*mock.Call
+}
+
+// PatchNIC is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - serverID string
+//   - nicID string
+//   - properties ionoscloud.NicProperties
+func (_e *MockClient_Expecter) PatchNIC(ctx interface{}, datacenterID interface{}, serverID interface{}, nicID interface{}, properties interface{}) *MockClient_PatchNIC_Call {
+	return &MockClient_PatchNIC_Call{Call: _e.mock.On("PatchNIC", ctx, datacenterID, serverID, nicID, properties)}
+}
+
+func (_c *MockClient_PatchNIC_Call) Run(run func(ctx context.Context, datacenterID string, serverID string, nicID string, properties ionoscloud.NicProperties)) *MockClient_PatchNIC_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string), args[4].(ionoscloud.NicProperties))
+	})
+	return _c
+}
+
+func (_c *MockClient_PatchNIC_Call) Return(_a0 string, _a1 error) *MockClient_PatchNIC_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_PatchNIC_Call) RunAndReturn(run func(context.Context, string, string, string, ionoscloud.NicProperties) (string, error)) *MockClient_PatchNIC_Call {
 	_c.Call.Return(run)
 	return _c
 }
