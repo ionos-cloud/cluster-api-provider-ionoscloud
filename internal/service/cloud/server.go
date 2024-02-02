@@ -150,7 +150,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 //	}
 //
 //	for _, vol := range volumes {
-//		location, err := s.api().DestroyVolume(s.ctx, s.datacenterID(), ptr.Deref(vol.GetId(), ""))
+//		location, err := s.api().DeleteVolume(s.ctx, s.datacenterID(), ptr.Deref(vol.GetId(), ""))
 //		if err != nil {
 //			log.Error(err, "Unexpected error occurred during Volume deletion", "volumeID", ptr.Deref(vol.GetId(), ""))
 //			return false, fmt.Errorf("failed to request volume deletion: %w", err)
@@ -233,7 +233,7 @@ func (s *Service) deleteServer(serverID string) error {
 	log := s.scope.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
-	requestLocation, err := s.api().DestroyServer(s.ctx, s.datacenterID(), serverID)
+	requestLocation, err := s.api().DeleteServer(s.ctx, s.datacenterID(), serverID)
 	if err != nil {
 		return fmt.Errorf("failed to request server deletion: %w", err)
 	}

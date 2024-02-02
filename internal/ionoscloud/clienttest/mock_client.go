@@ -378,8 +378,8 @@ func (_c *MockClient_DeleteNIC_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
-// DestroyServer provides a mock function with given fields: ctx, datacenterID, serverID
-func (_m *MockClient) DestroyServer(ctx context.Context, datacenterID string, serverID string) (string, error) {
+// DeleteServer provides a mock function with given fields: ctx, datacenterID, serverID
+func (_m *MockClient) DeleteServer(ctx context.Context, datacenterID string, serverID string) (string, error) {
 	ret := _m.Called(ctx, datacenterID, serverID)
 
 	var r0 string
@@ -402,38 +402,38 @@ func (_m *MockClient) DestroyServer(ctx context.Context, datacenterID string, se
 	return r0, r1
 }
 
-// MockClient_DestroyServer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DestroyServer'
-type MockClient_DestroyServer_Call struct {
+// MockClient_DeleteServer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteServer'
+type MockClient_DeleteServer_Call struct {
 	*mock.Call
 }
 
-// DestroyServer is a helper method to define mock.On call
+// DeleteServer is a helper method to define mock.On call
 //   - ctx context.Context
 //   - datacenterID string
 //   - serverID string
-func (_e *MockClient_Expecter) DestroyServer(ctx interface{}, datacenterID interface{}, serverID interface{}) *MockClient_DestroyServer_Call {
-	return &MockClient_DestroyServer_Call{Call: _e.mock.On("DestroyServer", ctx, datacenterID, serverID)}
+func (_e *MockClient_Expecter) DeleteServer(ctx interface{}, datacenterID interface{}, serverID interface{}) *MockClient_DeleteServer_Call {
+	return &MockClient_DeleteServer_Call{Call: _e.mock.On("DeleteServer", ctx, datacenterID, serverID)}
 }
 
-func (_c *MockClient_DestroyServer_Call) Run(run func(ctx context.Context, datacenterID string, serverID string)) *MockClient_DestroyServer_Call {
+func (_c *MockClient_DeleteServer_Call) Run(run func(ctx context.Context, datacenterID string, serverID string)) *MockClient_DeleteServer_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
 	return _c
 }
 
-func (_c *MockClient_DestroyServer_Call) Return(_a0 string, _a1 error) *MockClient_DestroyServer_Call {
+func (_c *MockClient_DeleteServer_Call) Return(_a0 string, _a1 error) *MockClient_DeleteServer_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockClient_DestroyServer_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DestroyServer_Call {
+func (_c *MockClient_DeleteServer_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DeleteServer_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// DestroyVolume provides a mock function with given fields: ctx, datacenterID, volumeID
-func (_m *MockClient) DestroyVolume(ctx context.Context, datacenterID string, volumeID string) (string, error) {
+// DeleteVolume provides a mock function with given fields: ctx, datacenterID, volumeID
+func (_m *MockClient) DeleteVolume(ctx context.Context, datacenterID string, volumeID string) (string, error) {
 	ret := _m.Called(ctx, datacenterID, volumeID)
 
 	var r0 string
@@ -456,32 +456,32 @@ func (_m *MockClient) DestroyVolume(ctx context.Context, datacenterID string, vo
 	return r0, r1
 }
 
-// MockClient_DestroyVolume_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DestroyVolume'
-type MockClient_DestroyVolume_Call struct {
+// MockClient_DeleteVolume_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteVolume'
+type MockClient_DeleteVolume_Call struct {
 	*mock.Call
 }
 
-// DestroyVolume is a helper method to define mock.On call
+// DeleteVolume is a helper method to define mock.On call
 //   - ctx context.Context
 //   - datacenterID string
 //   - volumeID string
-func (_e *MockClient_Expecter) DestroyVolume(ctx interface{}, datacenterID interface{}, volumeID interface{}) *MockClient_DestroyVolume_Call {
-	return &MockClient_DestroyVolume_Call{Call: _e.mock.On("DestroyVolume", ctx, datacenterID, volumeID)}
+func (_e *MockClient_Expecter) DeleteVolume(ctx interface{}, datacenterID interface{}, volumeID interface{}) *MockClient_DeleteVolume_Call {
+	return &MockClient_DeleteVolume_Call{Call: _e.mock.On("DeleteVolume", ctx, datacenterID, volumeID)}
 }
 
-func (_c *MockClient_DestroyVolume_Call) Run(run func(ctx context.Context, datacenterID string, volumeID string)) *MockClient_DestroyVolume_Call {
+func (_c *MockClient_DeleteVolume_Call) Run(run func(ctx context.Context, datacenterID string, volumeID string)) *MockClient_DeleteVolume_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string))
 	})
 	return _c
 }
 
-func (_c *MockClient_DestroyVolume_Call) Return(_a0 string, _a1 error) *MockClient_DestroyVolume_Call {
+func (_c *MockClient_DeleteVolume_Call) Return(_a0 string, _a1 error) *MockClient_DeleteVolume_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockClient_DestroyVolume_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DestroyVolume_Call {
+func (_c *MockClient_DeleteVolume_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DeleteVolume_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -127,8 +127,8 @@ func (c *IonosCloudClient) GetServer(ctx context.Context, datacenterID, serverID
 	return &server, nil
 }
 
-// DestroyServer deletes the server that matches the provided serverID in the specified data center.
-func (c *IonosCloudClient) DestroyServer(ctx context.Context, datacenterID, serverID string) (string, error) {
+// DeleteServer deletes the server that matches the provided serverID in the specified data center.
+func (c *IonosCloudClient) DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
 	}
@@ -149,8 +149,8 @@ func (c *IonosCloudClient) DestroyServer(ctx context.Context, datacenterID, serv
 	return "", errLocationHeaderEmpty
 }
 
-// DestroyVolume deletes the volume that matches volumeID in the specified data center.
-func (c *IonosCloudClient) DestroyVolume(ctx context.Context, datacenterID, volumeID string) (string, error) {
+// DeleteVolume deletes the volume that matches volumeID in the specified data center.
+func (c *IonosCloudClient) DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
 	}
