@@ -60,9 +60,9 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 	if err != nil {
 		return false, err
 	}
-	if err != nil || (request != nil && request.isPending()) {
+	if request != nil && request.isPending() {
 		log.Info("Request is pending", "location", request.location)
-		return true, nil //nolint:nilerr
+		return true, nil
 	}
 
 	if server != nil {
