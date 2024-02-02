@@ -138,7 +138,8 @@ func (s *serverSuite) TestReconcileServer_RequestDone_StateAvailable() {
 				State: ptr.To(sdk.Available),
 			},
 			Properties: &sdk.ServerProperties{
-				Name: ptr.To(s.service.serverName()),
+				Name:    ptr.To(s.service.serverName()),
+				VmState: ptr.To("RUNNING"),
 			},
 		},
 	}}, nil).Once()
