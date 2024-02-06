@@ -21,34 +21,20 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // IonosCloudMachineTemplateSpec defines the desired state of IonosCloudMachineTemplate.
 type IonosCloudMachineTemplateSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of IonosCloudMachineTemplate. Edit ionoscloudmachinetemplate_types.go to remove/update
+	// Template is the IonosCloudMachineTemplateResource for the IonosCloudMachineTemplate.
 	Template IonosCloudMachineTemplateResource `json:"template"`
 }
 
-// IonosCloudMachineTemplateStatus defines the observed state of IonosCloudMachineTemplate.
-type IonosCloudMachineTemplateStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
-
 //+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
 
 // IonosCloudMachineTemplate is the Schema for the ionoscloudmachinetemplates API.
 type IonosCloudMachineTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   IonosCloudMachineTemplateSpec   `json:"spec,omitempty"`
-	Status IonosCloudMachineTemplateStatus `json:"status,omitempty"`
+	Spec IonosCloudMachineTemplateSpec `json:"spec,omitempty"`
 }
 
 //+kubebuilder:object:root=true
