@@ -16,10 +16,6 @@ limitations under the License.
 
 package v1alpha1
 
-import "regexp"
-
-var serverIDRegex = regexp.MustCompile("^ionos://(?P<serverID>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
-
 const (
 	ManagedLANAnnotation = "cloud.ionos.com/managed-lan"
 )

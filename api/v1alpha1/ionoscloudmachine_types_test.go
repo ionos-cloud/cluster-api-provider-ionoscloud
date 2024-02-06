@@ -87,11 +87,16 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(*m.Spec.ProviderID).To(Equal(want))
 			})
-			It("should extract the serverID from a valid provider ID", func() {
+			DescribeTable("tests for extraction of provider IDs", func(providerID, want string) {
 				m := defaultMachine()
-				want := "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+				m.Spec.ProviderID = ptr.To(providerID)
 				Expect(m.ExtractServerID()).To(Equal(want))
-			})
+			},
+				Entry("valid ID", "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
+				Entry("invalid provider name", "ionoscloud://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
+				Entry("typo in provider name", "ions://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
+				Entry("no provider name", "://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
+			)
 		})
 
 		Context("Data center ID", func() {

@@ -193,7 +193,7 @@ func (s *Service) getServer() (*sdk.Server, error) {
 	if !ptr.IsNullOrDefault(s.scope.IonosMachine.Spec.ProviderID) {
 		serverID := s.scope.IonosMachine.ExtractServerID()
 		// we expect the server ID to be a valid UUID
-		if _, err := uuid.Parse(serverID); err != nil {
+		if err := uuid.Validate(serverID); err != nil {
 			return nil, fmt.Errorf("invalid server ID %s: %w", serverID, err)
 		}
 

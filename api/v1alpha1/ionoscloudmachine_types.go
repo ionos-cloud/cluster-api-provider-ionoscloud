@@ -17,9 +17,13 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/errors"
+
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 const (
@@ -274,13 +278,13 @@ func (m *IonosCloudMachine) ExtractServerID() string {
 		return ""
 	}
 
-	groupIndex := serverIDRegex.SubexpIndex("serverID")
-	matches := serverIDRegex.FindStringSubmatch(*m.Spec.ProviderID)
-	if len(matches) < groupIndex {
+	before, after, _ := strings.Cut(ptr.Deref(m.Spec.ProviderID, ""), "://")
+	// if the provider ID does not start with "ionos", we can assume that it is not a valid provider ID.
+	if before != "ionos" {
 		return ""
 	}
 
-	return matches[groupIndex]
+	return after
 }
 
 func init() {
