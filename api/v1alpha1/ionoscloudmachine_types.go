@@ -176,10 +176,13 @@ type Volume struct {
 	SSHKeys []string `json:"sshKeys,omitempty"`
 
 	// Image is the image to use for the VM.
-	Image ImageSpec `json:"image,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="has(self.id) && self.id != '' || self.aliases.size() > 0",message="either id or aliases must be set"
+	// +required
+	Image *ImageSpec `json:"image"`
 }
 
 // ImageSpec defines the image to use for the VM.
+// +optional.
 type ImageSpec struct {
 	ID *string `json:"id,omitempty"`
 	// Aliases is a list of image aliases to use for the VM.

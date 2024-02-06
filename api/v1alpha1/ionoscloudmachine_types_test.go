@@ -51,6 +51,9 @@ func defaultMachine() *IonosCloudMachine {
 				SizeGB:           23,
 				AvailabilityZone: AvailabilityZoneOne,
 				SSHKeys:          []string{"public-key"},
+				Image: &ImageSpec{
+					ID: ptr.To("1eef-48ec-a246-a51a33aa4f3a"),
+				},
 			},
 			AdditionalNetworks: Networks{
 				{
@@ -314,6 +317,18 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 					Entry("SSD Standard", VolumeDiskTypeSSDStandard),
 					Entry("SSD Premium", VolumeDiskTypeSSDPremium),
 				)
+			})
+			Context("Image", func() {
+				It("should fail if not set", func() {
+					m := defaultMachine()
+					m.Spec.Disk.Image = nil
+					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+				})
+				It("should fail none is set", func() {
+					m := defaultMachine()
+					m.Spec.Disk.Image.ID = nil
+					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+				})
 			})
 		})
 		Context("Additional Networks", func() {

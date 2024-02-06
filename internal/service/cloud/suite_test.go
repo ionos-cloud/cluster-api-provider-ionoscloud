@@ -115,6 +115,9 @@ func (s *ServiceTestSuite) SetupTest() {
 				SizeGB:           20,
 				AvailabilityZone: infrav1.AvailabilityZoneAuto,
 				SSHKeys:          []string{"ssh-rsa AAAAB3Nz"},
+				Image: &infrav1.ImageSpec{
+					ID: ptr.To("3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
+				},
 			},
 		},
 		Status: infrav1.IonosCloudMachineStatus{},

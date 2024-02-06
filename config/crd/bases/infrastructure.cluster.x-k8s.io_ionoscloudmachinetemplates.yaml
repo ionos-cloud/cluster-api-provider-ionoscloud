@@ -139,6 +139,10 @@ spec:
                               id:
                                 type: string
                             type: object
+                            x-kubernetes-validations:
+                            - message: either id or aliases must be set
+                              rule: has(self.id) && self.id != '' || self.aliases.size()
+                                > 0
                           name:
                             description: Name is the name of the volume
                             type: string
@@ -155,6 +159,8 @@ spec:
                               type: string
                             type: array
                             x-kubernetes-list-type: set
+                        required:
+                        - image
                         type: object
                       memoryMB:
                         default: 3072
