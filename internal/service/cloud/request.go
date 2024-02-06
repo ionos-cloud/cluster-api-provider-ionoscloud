@@ -273,7 +273,7 @@ func getState(resource metadataHolder) string {
 }
 
 func getVMState(resource propertiesHolder[*sdk.ServerProperties]) string {
-	return ptr.Deref(resource.GetProperties().GetVmState(), "")
+	return ptr.Deref(resource.GetProperties().GetVmState(), "Unknown")
 }
 
 func isRunning(state string) bool {
