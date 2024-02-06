@@ -210,6 +210,8 @@ func (s *Service) getServer() (*sdk.Server, error) {
 		}
 	}
 
+	// without provider ID, we need to list all servers and see if
+	// there is one with the expected name.
 	serverList, err := s.api().ListServers(s.ctx, s.datacenterID())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(), err)
