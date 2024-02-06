@@ -24,7 +24,6 @@ import (
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -102,7 +101,7 @@ func (m *MachineScope) GetBootstrapDataSecret(ctx context.Context) (*corev1.Secr
 	if name == "" {
 		return nil, errors.New("machine has no bootstrap data yet")
 	}
-	key := types.NamespacedName{
+	key := client.ObjectKey{
 		Name:      name,
 		Namespace: m.IonosMachine.Namespace,
 	}
