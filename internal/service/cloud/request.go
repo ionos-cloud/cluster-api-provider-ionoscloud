@@ -30,7 +30,8 @@ import (
 )
 
 // GetRequestStatus returns the status of a request for a given request URL.
-func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (string, string, error) {
+// If the request contains a message, it is also returned.
+func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (requestStatus string, statusMessage string, err error) {
 	status, err := s.api().CheckRequestStatus(ctx, requestURL)
 	if err != nil {
 		return "", "", fmt.Errorf("unable to retrieve the request status: %w", err)
