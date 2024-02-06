@@ -131,8 +131,8 @@ spec:
                             description: Image is the image to use for the VM.
                             properties:
                               aliases:
-                                description: Aliases is a list of image aliases to
-                                  use for the VM.
+                                description: 'Aliases is a list of image aliases to
+                                  use for the VM. TODO(lubedacht): Needs implementation.'
                                 items:
                                   type: string
                                 type: array
