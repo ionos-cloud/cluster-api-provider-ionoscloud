@@ -269,6 +269,59 @@ func (_c *MockClient_CreateServer_Call) RunAndReturn(run func(context.Context, s
 	return _c
 }
 
+// DeleteIPBlock provides a mock function with given fields: ctx, ipBlockID
+func (_m *MockClient) DeleteIPBlock(ctx context.Context, ipBlockID string) (string, error) {
+	ret := _m.Called(ctx, ipBlockID)
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return rf(ctx, ipBlockID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, ipBlockID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, ipBlockID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_DeleteIPBlock_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteIPBlock'
+type MockClient_DeleteIPBlock_Call struct {
+	*mock.Call
+}
+
+// DeleteIPBlock is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ipBlockID string
+func (_e *MockClient_Expecter) DeleteIPBlock(ctx interface{}, ipBlockID interface{}) *MockClient_DeleteIPBlock_Call {
+	return &MockClient_DeleteIPBlock_Call{Call: _e.mock.On("DeleteIPBlock", ctx, ipBlockID)}
+}
+
+func (_c *MockClient_DeleteIPBlock_Call) Run(run func(ctx context.Context, ipBlockID string)) *MockClient_DeleteIPBlock_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_DeleteIPBlock_Call) Return(_a0 string, _a1 error) *MockClient_DeleteIPBlock_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_DeleteIPBlock_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockClient_DeleteIPBlock_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteLAN provides a mock function with given fields: ctx, datacenterID, lanID
 func (_m *MockClient) DeleteLAN(ctx context.Context, datacenterID string, lanID string) (string, error) {
 	ret := _m.Called(ctx, datacenterID, lanID)
@@ -710,6 +763,60 @@ func (_c *MockClient_GetVolume_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
+// ListIPBlocks provides a mock function with given fields: ctx
+func (_m *MockClient) ListIPBlocks(ctx context.Context) ([]ionoscloud.IpBlock, error) {
+	ret := _m.Called(ctx)
+
+	var r0 []ionoscloud.IpBlock
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) ([]ionoscloud.IpBlock, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) []ionoscloud.IpBlock); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]ionoscloud.IpBlock)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_ListIPBlocks_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListIPBlocks'
+type MockClient_ListIPBlocks_Call struct {
+	*mock.Call
+}
+
+// ListIPBlocks is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockClient_Expecter) ListIPBlocks(ctx interface{}) *MockClient_ListIPBlocks_Call {
+	return &MockClient_ListIPBlocks_Call{Call: _e.mock.On("ListIPBlocks", ctx)}
+}
+
+func (_c *MockClient_ListIPBlocks_Call) Run(run func(ctx context.Context)) *MockClient_ListIPBlocks_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockClient_ListIPBlocks_Call) Return(_a0 []ionoscloud.IpBlock, _a1 error) *MockClient_ListIPBlocks_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_ListIPBlocks_Call) RunAndReturn(run func(context.Context) ([]ionoscloud.IpBlock, error)) *MockClient_ListIPBlocks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListLANs provides a mock function with given fields: ctx, datacenterID
 func (_m *MockClient) ListLANs(ctx context.Context, datacenterID string) (*ionoscloud.Lans, error) {
 	ret := _m.Called(ctx, datacenterID)
@@ -871,6 +978,61 @@ func (_c *MockClient_ListVolumes_Call) Return(_a0 *ionoscloud.Volumes, _a1 error
 }
 
 func (_c *MockClient_ListVolumes_Call) RunAndReturn(run func(context.Context, string) (*ionoscloud.Volumes, error)) *MockClient_ListVolumes_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ReserveIPBlock provides a mock function with given fields: ctx, name, location, size
+func (_m *MockClient) ReserveIPBlock(ctx context.Context, name string, location string, size int) (string, error) {
+	ret := _m.Called(ctx, name, location, size)
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, int) (string, error)); ok {
+		return rf(ctx, name, location, size)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, int) string); ok {
+		r0 = rf(ctx, name, location, size)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, int) error); ok {
+		r1 = rf(ctx, name, location, size)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_ReserveIPBlock_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReserveIPBlock'
+type MockClient_ReserveIPBlock_Call struct {
+	*mock.Call
+}
+
+// ReserveIPBlock is a helper method to define mock.On call
+//   - ctx context.Context
+//   - name string
+//   - location string
+//   - size int
+func (_e *MockClient_Expecter) ReserveIPBlock(ctx interface{}, name interface{}, location interface{}, size interface{}) *MockClient_ReserveIPBlock_Call {
+	return &MockClient_ReserveIPBlock_Call{Call: _e.mock.On("ReserveIPBlock", ctx, name, location, size)}
+}
+
+func (_c *MockClient_ReserveIPBlock_Call) Run(run func(ctx context.Context, name string, location string, size int)) *MockClient_ReserveIPBlock_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(int))
+	})
+	return _c
+}
+
+func (_c *MockClient_ReserveIPBlock_Call) Return(_a0 string, _a1 error) *MockClient_ReserveIPBlock_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_ReserveIPBlock_Call) RunAndReturn(run func(context.Context, string, string, int) (string, error)) *MockClient_ReserveIPBlock_Call {
 	_c.Call.Return(run)
 	return _c
 }

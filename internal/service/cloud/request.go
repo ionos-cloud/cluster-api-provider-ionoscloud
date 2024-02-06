@@ -100,6 +100,7 @@ func matchByName[T propertiesHolder[U], U nameHolder](name string) matcherFunc[T
 // found in. If multiple matchers are given, all need to match.
 // If no matching request is found, nil is returned.
 func getMatchingRequest[T any](
+	ctx context.Context,
 	s *Service,
 	method string,
 	url string,
@@ -192,6 +193,11 @@ func hasRequestTargetType(req sdk.Request, typeName sdk.Type) bool {
 	return false
 }
 
+type (
+	listAndFilterFunc[T any] func(context.Context) (*T, error)
+	checkQueueFunc           func(context.Context) (*requestInfo, error)
+)
+
 // findResource is a helper function intended for finding a single resource based on certain filtering constraints,
 // such as a unique name. It lists and filters the existing resources and checks the request queue for matching
 // creations.
@@ -207,14 +213,15 @@ func hasRequestTargetType(req sdk.Request, typeName sdk.Type) bool {
 // to see if the resource was created in the meantime.
 // As this process is similar independent of the resource type, this generic function helps to reduce boilerplate.
 func findResource[T any](
-	listAndFilter func() (*T, error),
-	checkQueue func() (*requestInfo, error),
+	ctx context.Context,
+	listAndFilter listAndFilterFunc[T],
+	checkQueue checkQueueFunc,
 ) (
 	resource *T,
 	request *requestInfo,
 	err error,
 ) {
-	resource, err = listAndFilter()
+	resource, err = listAndFilter(ctx)
 	if err != nil {
 		return nil, nil, err // Found multiple resources or another error occurred.
 	}
@@ -222,7 +229,7 @@ func findResource[T any](
 		return resource, nil, nil // Something was found, great. No need to look any further.
 	}
 
-	request, err = checkQueue()
+	request, err = checkQueue(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -236,7 +243,7 @@ func findResource[T any](
 		// initially.
 		// Note that it can happen that even now we don't find a resource. This can happen if we found an old creation
 		// request, but the resource was already deleted later on.
-		resource, err = listAndFilter()
+		resource, err = listAndFilter(ctx)
 		if err != nil {
 			return nil, nil, err // Found multiple resources or another error occurred.
 		}

@@ -18,6 +18,7 @@ package cloud
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -83,6 +84,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		},
 		Spec: infrav1.IonosCloudClusterSpec{
 			ContractNumber: "12345678",
+			Region:         infrav1.RegionBerlin,
 		},
 		Status: infrav1.IonosCloudClusterStatus{},
 	}
@@ -155,6 +157,8 @@ func (s *ServiceTestSuite) SetupTest() {
 	s.NoError(err, "failed to create machine scope")
 
 	s.service, err = NewService(s.ctx, s.machineScope)
+	s.service.cloud = s.ionosClient
+	s.service.logger = &s.log
 	s.NoError(err, "failed to create service")
 }
 
@@ -201,3 +205,10 @@ func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request 
 
 	return req
 }
+
+var errMock = errors.New("mock error")
+
+const (
+	exampleID          = "42"
+	exampleRequestPath = "/test"
+)
