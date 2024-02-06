@@ -56,6 +56,7 @@ func (s *Service) datacenterID() string {
 }
 
 // isNotFound is a shortcut for checking if an error is a not found error.
+// TODO(lubedacht) Implement unit tests
 func isNotFound(err error) bool {
 	if err == nil {
 		return false
