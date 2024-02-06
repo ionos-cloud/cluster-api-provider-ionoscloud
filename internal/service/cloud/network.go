@@ -230,7 +230,7 @@ func (s *Service) removeLANPendingRequestFromCluster() error {
 // This is needed for KubeVIP in order to set up control plane load balancing.
 //
 // If we want to support private clusters in the future, this will require some adjustments.
-func (s *Service) checkPrimaryNIC(server *sdk.Server) (bool, error) {
+func (s *Service) checkPrimaryNIC(server *sdk.Server) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("checkPrimaryNIC")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
@@ -261,7 +261,7 @@ func (s *Service) checkPrimaryNIC(server *sdk.Server) (bool, error) {
 		serverID := ptr.Deref(server.GetId(), "")
 		nicProperties := sdk.NicProperties{Ips: &patchSet}
 
-		err := s.patchNIC(serverID, nic, nicProperties)
+		err = s.patchNIC(serverID, nic, nicProperties)
 		return true, err
 	}
 

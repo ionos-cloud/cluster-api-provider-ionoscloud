@@ -32,7 +32,7 @@ type Client interface {
 	ListServers(ctx context.Context, datacenterID string) (*sdk.Servers, error)
 	// GetServer returns the server that matches the provided serverID in the specified data center.
 	GetServer(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error)
-	// DestroyServer deletes the server that matches the provided serverID in the specified data center.
+	// DeleteServer deletes the server that matches the provided serverID in the specified data center.
 	DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error)
 	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
 	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost) (string, error)
@@ -49,7 +49,7 @@ type Client interface {
 	ListVolumes(ctx context.Context, datacenterID string) (*sdk.Volumes, error)
 	// GetVolume returns the volume that matches volumeID in the specified data center.
 	GetVolume(ctx context.Context, datacenterID, volumeID string) (*sdk.Volume, error)
-	// DestroyVolume deletes the volume that matches volumeID in the specified data center.
+	// DeleteVolume deletes the volume that matches volumeID in the specified data center.
 	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
 	// CheckRequestStatus checks the status of a provided request identified by requestID
 	CheckRequestStatus(ctx context.Context, requestID string) (*sdk.RequestStatus, error)
