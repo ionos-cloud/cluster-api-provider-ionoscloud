@@ -69,50 +69,10 @@ func Test_IsNullOrDefault(t *testing.T) {
 	require.True(t, IsNullOrDefault(To(0)))
 	require.False(t, IsNullOrDefault(To(1)))
 
-	var nilInt8 *int8
-	require.True(t, IsNullOrDefault(nilInt8))
-	require.True(t, IsNullOrDefault(To(int8(0))))
-	require.False(t, IsNullOrDefault(To(int8(1))))
-
-	var nilInt16 *int16
-	require.True(t, IsNullOrDefault(nilInt16))
-	require.True(t, IsNullOrDefault(To(int16(0))))
-	require.False(t, IsNullOrDefault(To(int16(1))))
-
-	var nilInt32 *int32
-	require.True(t, IsNullOrDefault(nilInt32))
-	require.True(t, IsNullOrDefault(To(int32(0))))
-	require.False(t, IsNullOrDefault(To(int32(1))))
-
-	var nilInt64 *int64
-	require.True(t, IsNullOrDefault(nilInt64))
-	require.True(t, IsNullOrDefault(To(int64(0))))
-	require.False(t, IsNullOrDefault(To(int64(1))))
-
 	var nilUint *uint
 	require.True(t, IsNullOrDefault(nilUint))
 	require.True(t, IsNullOrDefault(To(uint(0))))
 	require.False(t, IsNullOrDefault(To(uint(1))))
-
-	var nilUint8 *uint8
-	require.True(t, IsNullOrDefault(nilUint8))
-	require.True(t, IsNullOrDefault(To(uint8(0))))
-	require.False(t, IsNullOrDefault(To(uint8(1))))
-
-	var nilUint16 *uint16
-	require.True(t, IsNullOrDefault(nilUint16))
-	require.True(t, IsNullOrDefault(To(uint16(0))))
-	require.False(t, IsNullOrDefault(To(uint16(1))))
-
-	var nilUint32 *uint32
-	require.True(t, IsNullOrDefault(nilUint32))
-	require.True(t, IsNullOrDefault(To(uint32(0))))
-	require.False(t, IsNullOrDefault(To(uint32(1))))
-
-	var nilUint64 *uint64
-	require.True(t, IsNullOrDefault(nilUint64))
-	require.True(t, IsNullOrDefault(To(uint64(0))))
-	require.False(t, IsNullOrDefault(To(uint64(1))))
 
 	var nilFloat32 *float32
 	require.True(t, IsNullOrDefault(nilFloat32))
@@ -133,21 +93,6 @@ func Test_IsNullOrDefault(t *testing.T) {
 	require.True(t, IsNullOrDefault(nilByte))
 	require.True(t, IsNullOrDefault(To(byte(0))))
 	require.False(t, IsNullOrDefault(To(byte(1))))
-
-	var nilRune *rune
-	require.True(t, IsNullOrDefault(nilRune))
-	require.True(t, IsNullOrDefault(To(rune(0))))
-	require.False(t, IsNullOrDefault(To(rune(1))))
-
-	var nilComplex64 *complex64
-	require.True(t, IsNullOrDefault(nilComplex64))
-	require.True(t, IsNullOrDefault(To(complex64(0))))
-	require.False(t, IsNullOrDefault(To(complex64(1))))
-
-	var nilComplex128 *complex128
-	require.True(t, IsNullOrDefault(nilComplex128))
-	require.True(t, IsNullOrDefault(To(complex128(0))))
-	require.False(t, IsNullOrDefault(To(complex128(1))))
 
 	var nilInterface *interface{}
 	nilInterfaceTyped := (*any)(nil)

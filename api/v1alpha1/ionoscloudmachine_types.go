@@ -188,6 +188,7 @@ type ImageSpec struct {
 	// +optional
 	ID *string `json:"id,omitempty"`
 	// Aliases is a list of image aliases to use for the VM.
+	// TODO(lubedacht): Needs implementation.
 	// +optional
 	Aliases []string `json:"aliases,omitempty"`
 }
