@@ -97,8 +97,8 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	return clusterScope, nil
 }
 
-// GetEndpoint returns the endpoint for the IonosCloudCluster.
-func (c *ClusterScope) GetEndpoint() clusterv1.APIEndpoint {
+// GetControlPlaneEndpoint returns the endpoint for the IonosCloudCluster.
+func (c *ClusterScope) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
 	return c.IonosCluster.Spec.ControlPlaneEndpoint
 }
 

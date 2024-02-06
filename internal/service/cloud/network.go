@@ -248,7 +248,7 @@ func (s *Service) checkPrimaryNIC(server *sdk.Server) (bool, error) {
 		log.V(4).Info("Found primary NIC", "name", s.serverName())
 		ips := ptr.Deref(nic.GetProperties().GetIps(), []string{})
 		for _, ip := range ips {
-			if ip == s.scope.ClusterScope.GetEndpoint().Host {
+			if ip == s.scope.ClusterScope.GetControlPlaneEndpoint().Host {
 				log.V(4).Info("Primary NIC contains endpoint IP address")
 				return false, nil
 			}
@@ -256,7 +256,7 @@ func (s *Service) checkPrimaryNIC(server *sdk.Server) (bool, error) {
 
 		// Patch the NIC and include the complete set of IP addresses
 		// The primary IP must be in the first position.
-		patchSet := append(ips, s.scope.ClusterScope.GetEndpoint().Host)
+		patchSet := append(ips, s.scope.ClusterScope.GetControlPlaneEndpoint().Host)
 
 		serverID := ptr.Deref(server.GetId(), "")
 		nicProperties := sdk.NicProperties{Ips: &patchSet}
