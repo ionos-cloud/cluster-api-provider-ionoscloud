@@ -393,11 +393,6 @@ func (s *Service) renderUserData(input string) string {
 	// TODO(lubedacht) update user data to include needed information
 	// 	VNC and hostname
 
-	// remove jinja comment if present
-	if strings.HasPrefix(input, "## template: jinja") {
-		_, input, _ = strings.Cut(input, "\n")
-	}
-
 	const bootCmdFormat = `bootcmd:
   - echo %[1]s > /etc/hostname
   - hostname %[1]s
