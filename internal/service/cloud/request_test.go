@@ -30,6 +30,10 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
+const (
+	testURL = "https://url.tld/path"
+)
+
 func TestMatcher_MatchByName(t *testing.T) {
 	matchByNameFunc := matchByName[*sdk.Server, *sdk.ServerProperties]("test")
 	require.False(t, matchByNameFunc(&sdk.Server{}, sdk.Request{}))
@@ -56,9 +60,8 @@ func TestGetRequestStatusTestSuite(t *testing.T) {
 }
 
 func (s *getRequestStatusSuite) TestGetRequestStatusMissingMetadata() {
-	const testURL = "https://url.tld/path"
 	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
-		Href:     ptr.To("https://url.tld/path"),
+		Href:     ptr.To(testURL),
 		Id:       ptr.To("12345"),
 		Metadata: nil,
 	}, nil).Once()
@@ -79,9 +82,8 @@ func (s *getRequestStatusSuite) TestGetRequestStatusMissingMetadata() {
 }
 
 func (s *getRequestStatusSuite) TestGetRequestStatus() {
-	const testURL = "https://url.tld/path"
 	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
-		Href: ptr.To("https://url.tld/path"),
+		Href: ptr.To(testURL),
 		Id:   ptr.To("12345"),
 		Metadata: &sdk.RequestStatusMetadata{
 			Status:  ptr.To(sdk.RequestStatusFailed),
@@ -95,7 +97,7 @@ func (s *getRequestStatusSuite) TestGetRequestStatus() {
 	s.Equal("Failed to do foo and bar", message, "message should be 'Failed to do foo and bar'")
 
 	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
-		Href: ptr.To("https://url.tld/path"),
+		Href: ptr.To(testURL),
 		Id:   ptr.To("12345"),
 		Metadata: &sdk.RequestStatusMetadata{
 			Status:  ptr.To(sdk.RequestStatusQueued),
@@ -126,7 +128,7 @@ func (s *getMatchingRequestSuite) examplePostRequest(href, status string) sdk.Re
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPost,
-		url:        "https://url.tld/path/?depth=10",
+		url:        fmt.Sprintf("%s/?depth=10", testURL),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName()),
 		href:       href,
 		targetID:   "1",
@@ -152,7 +154,7 @@ func (s *getMatchingRequestSuite) TestMatching() {
 
 	// req2 has a mismatch in its URL
 	req2 := s.examplePostRequest("req2", sdk.RequestStatusQueued)
-	*req2.Properties.Url = "https://url.tld/path/action?depth=10"
+	*req2.Properties.Url = fmt.Sprintf("%s/action?depth=10", testURL)
 
 	// req3 doesn't fulfill the matcher function
 	req3 := s.examplePostRequest("req3", sdk.RequestStatusQueued)
