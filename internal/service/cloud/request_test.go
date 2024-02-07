@@ -31,7 +31,8 @@ import (
 )
 
 const (
-	testURL = "https://url.tld/path"
+	baseTestURL      = "https://url.tld/path"
+	messageEmptyText = "message should be empty"
 )
 
 func TestMatcher_MatchByName(t *testing.T) {
@@ -60,30 +61,30 @@ func TestGetRequestStatusTestSuite(t *testing.T) {
 }
 
 func (s *getRequestStatusSuite) TestGetRequestStatusMissingMetadata() {
-	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
-		Href:     ptr.To(testURL),
+	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
+		Href:     ptr.To(baseTestURL),
 		Id:       ptr.To("12345"),
 		Metadata: nil,
 	}, nil).Once()
 
-	status, message, err := s.service.GetRequestStatus(s.ctx, testURL)
+	status, message, err := s.service.GetRequestStatus(s.ctx, baseTestURL)
 	s.Error(err, "should return an error but didn't")
 	s.Empty(status, "status should be empty")
-	s.Empty(message, "message should be empty")
+	s.Empty(message, messageEmptyText)
 
-	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
+	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
 		Metadata: &sdk.RequestStatusMetadata{},
 	}, nil).Once()
 
-	status, message, err = s.service.GetRequestStatus(s.ctx, testURL)
+	status, message, err = s.service.GetRequestStatus(s.ctx, baseTestURL)
 	s.Error(err, "should return an error but didn't")
 	s.Empty(status, "status should be empty")
-	s.Empty(message, "message should be empty")
+	s.Empty(message, messageEmptyText)
 }
 
 func (s *getRequestStatusSuite) TestGetRequestStatus() {
-	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
-		Href: ptr.To(testURL),
+	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
+		Href: ptr.To(baseTestURL),
 		Id:   ptr.To("12345"),
 		Metadata: &sdk.RequestStatusMetadata{
 			Status:  ptr.To(sdk.RequestStatusFailed),
@@ -91,13 +92,13 @@ func (s *getRequestStatusSuite) TestGetRequestStatus() {
 		},
 	}, nil).Once()
 
-	status, message, err := s.service.GetRequestStatus(s.ctx, testURL)
+	status, message, err := s.service.GetRequestStatus(s.ctx, baseTestURL)
 	s.NoError(err, "should not return an error but did")
 	s.Equal(sdk.RequestStatusFailed, status, "status should be FAILED")
 	s.Equal("Failed to do foo and bar", message, "message should be 'Failed to do foo and bar'")
 
-	s.mockCheckRequestStatusCall(testURL).Return(&sdk.RequestStatus{
-		Href: ptr.To(testURL),
+	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
+		Href: ptr.To(baseTestURL),
 		Id:   ptr.To("12345"),
 		Metadata: &sdk.RequestStatusMetadata{
 			Status:  ptr.To(sdk.RequestStatusQueued),
@@ -105,10 +106,10 @@ func (s *getRequestStatusSuite) TestGetRequestStatus() {
 		},
 	}, nil).Once()
 
-	status, message, err = s.service.GetRequestStatus(s.ctx, testURL)
+	status, message, err = s.service.GetRequestStatus(s.ctx, baseTestURL)
 	s.NoError(err, "should not return an error but did")
 	s.Equal(sdk.RequestStatusQueued, status, "status should be FAILED")
-	s.Empty(message, "message should be empty")
+	s.Empty(message, messageEmptyText)
 }
 
 func (s *getRequestStatusSuite) mockCheckRequestStatusCall(requestURL string) *clienttest.MockClient_CheckRequestStatus_Call {
@@ -128,7 +129,7 @@ func (s *getMatchingRequestSuite) examplePostRequest(href, status string) sdk.Re
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPost,
-		url:        fmt.Sprintf("%s/?depth=10", testURL),
+		url:        fmt.Sprintf("%s/?depth=10", baseTestURL),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName()),
 		href:       href,
 		targetID:   "1",
@@ -154,7 +155,7 @@ func (s *getMatchingRequestSuite) TestMatching() {
 
 	// req2 has a mismatch in its URL
 	req2 := s.examplePostRequest("req2", sdk.RequestStatusQueued)
-	*req2.Properties.Url = fmt.Sprintf("%s/action?depth=10", testURL)
+	*req2.Properties.Url = fmt.Sprintf("%s/action?depth=10", baseTestURL)
 
 	// req3 doesn't fulfill the matcher function
 	req3 := s.examplePostRequest("req3", sdk.RequestStatusQueued)
