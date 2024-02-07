@@ -187,8 +187,10 @@ func (s *Service) isServerAvailable(server *sdk.Server) bool {
 	return true
 }
 
-// getServer looks for the server in the data center.
-func (s *Service) getServer() (*sdk.Server, error) {
+// getServerByProviderID checks if the IonosCloudMachine has a provider ID set.
+// If it does, it will attempt to extract the server ID from the provider ID and
+// query for the server in the cloud.
+func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 	// first we check if the provider ID is set
 	if !ptr.IsNullOrDefault(s.scope.IonosMachine.Spec.ProviderID) {
 		serverID := s.scope.IonosMachine.ExtractServerID()
@@ -210,6 +212,17 @@ func (s *Service) getServer() (*sdk.Server, error) {
 		}
 	}
 
+	// couldn't find a server
+	return nil, nil
+}
+
+// getServer looks for the server in the data center.
+func (s *Service) getServer() (*sdk.Server, error) {
+	server, err := s.getServerByProviderID()
+	if server != nil || err != nil {
+		return server, err
+	}
+
 	// without provider ID, we need to list all servers and see if
 	// there is one with the expected name.
 	serverList, err := s.api().ListServers(s.ctx, s.datacenterID())
@@ -217,14 +230,13 @@ func (s *Service) getServer() (*sdk.Server, error) {
 		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(), err)
 	}
 
-	if items := ptr.Deref(serverList.Items, []sdk.Server{}); len(items) > 0 {
-		// find servers with the expected name
-		for _, server := range items {
-			if server.HasProperties() && *server.Properties.Name == s.serverName() {
-				// if the server was found, we set the provider ID and return it
-				s.scope.SetProviderID(ptr.Deref(server.Id, ""))
-				return &server, nil
-			}
+	items := ptr.Deref(serverList.Items, []sdk.Server{})
+	// find servers with the expected name
+	for _, server := range items {
+		if server.HasProperties() && *server.Properties.Name == s.serverName() {
+			// if the server was found, we set the provider ID and return it
+			s.scope.SetProviderID(ptr.Deref(server.Id, ""))
+			return &server, nil
 		}
 	}
 
