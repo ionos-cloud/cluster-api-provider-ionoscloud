@@ -17,9 +17,13 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/errors"
+
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 const (
@@ -58,6 +62,11 @@ const (
 	VolumeDiskTypeSSDPremium VolumeDiskType = "SSD Premium"
 )
 
+// String returns the string representation of the VolumeDiskType.
+func (v VolumeDiskType) String() string {
+	return string(v)
+}
+
 // AvailabilityZone is the availability zone where different cloud resources are created in.
 type AvailabilityZone string
 
@@ -72,14 +81,19 @@ const (
 	AvailabilityZoneThree AvailabilityZone = "ZONE_3"
 )
 
+// String returns the string representation of the AvailabilityZone.
+func (a AvailabilityZone) String() string {
+	return string(a)
+}
+
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
 type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
 	// +optional
-	ProviderID string `json:"providerID,omitempty"`
+	ProviderID *string `json:"providerID,omitempty"`
 
-	// DatacenterID is the ID of the data center where the machine should be created in.
+	// DatacenterID is the ID of the data center where the VM should be created in.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
 	// +kubebuilder:validation:Format=uuid
 	DatacenterID string `json:"datacenterID"`
@@ -131,7 +145,7 @@ type Network struct {
 	NetworkID int32 `json:"networkID"`
 }
 
-// Volume is the physical storage on the machine.
+// Volume is the physical storage on the VM.
 type Volume struct {
 	// Name is the name of the volume
 	// +optional
@@ -160,11 +174,28 @@ type Volume struct {
 	// +listType=set
 	// +optional
 	SSHKeys []string `json:"sshKeys,omitempty"`
+
+	// Image is the image to use for the VM.
+	// +kubebuilder:validation:XValidation:rule="has(self.id) && self.id != '' || self.aliases.size() > 0",message="either id or aliases must be set"
+	// +required
+	Image *ImageSpec `json:"image"`
+}
+
+// ImageSpec defines the image to use for the VM.
+// +optional.
+type ImageSpec struct {
+	// ID is the ID of the image to use for the VM.
+	// +optional
+	ID *string `json:"id,omitempty"`
+	// Aliases is a list of image aliases to use for the VM.
+	// TODO(lubedacht): Needs implementation.
+	// +optional
+	Aliases []string `json:"aliases,omitempty"`
 }
 
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
 type IonosCloudMachineStatus struct {
-	// Ready indicates the machine has been provisioned and is ready.
+	// Ready indicates the VM has been provisioned and is ready.
 	// +optional
 	Ready bool `json:"ready"`
 
@@ -245,6 +276,22 @@ func (m *IonosCloudMachine) GetConditions() clusterv1.Conditions {
 // SetConditions sets the underlying service state of the IonosCloudMachine to the predescribed clusterv1.Conditions.
 func (m *IonosCloudMachine) SetConditions(conditions clusterv1.Conditions) {
 	m.Status.Conditions = conditions
+}
+
+// ExtractServerID extracts the server ID from the provider ID.
+// if the provider ID is empty, an empty string will be returned instead.
+func (m *IonosCloudMachine) ExtractServerID() string {
+	if m.Spec.ProviderID == nil || *m.Spec.ProviderID == "" {
+		return ""
+	}
+
+	before, after, _ := strings.Cut(ptr.Deref(m.Spec.ProviderID, ""), "://")
+	// if the provider ID does not start with "ionos", we can assume that it is not a valid provider ID.
+	if before != "ionos" {
+		return ""
+	}
+
+	return after
 }
 
 func init() {

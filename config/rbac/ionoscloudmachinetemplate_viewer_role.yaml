@@ -1,0 +1,27 @@
+# permissions for end users to view ionoscloudmachinetemplates.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: ionoscloudmachinetemplate-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: cluster-api-provider-ionoscloud
+    app.kubernetes.io/part-of: cluster-api-provider-ionoscloud
+    app.kubernetes.io/managed-by: kustomize
+  name: ionoscloudmachinetemplate-viewer-role
+rules:
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - ionoscloudmachinetemplates
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - ionoscloudmachinetemplates/status
+  verbs:
+  - get

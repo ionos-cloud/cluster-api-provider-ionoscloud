@@ -26,8 +26,95 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
+
+const (
+	baseTestURL      = "https://url.tld/path"
+	messageEmptyText = "message should be empty"
+)
+
+func TestMatcher_MatchByName(t *testing.T) {
+	matchByNameFunc := matchByName[*sdk.Server, *sdk.ServerProperties]("test")
+	require.False(t, matchByNameFunc(&sdk.Server{}, sdk.Request{}))
+	testServer := sdk.Server{
+		Properties: &sdk.ServerProperties{
+			Name: ptr.To("test"),
+		},
+	}
+	require.True(t, matchByNameFunc(&testServer, sdk.Request{}))
+	testServer.Properties.Name = ptr.To("wrong")
+	require.False(t, matchByNameFunc(&testServer, sdk.Request{}))
+
+	// l := (&sdk.Info{}).GetName()
+	// the following line generates a compiler error, so validity is checked at compile time
+	// matchByNameInvalidFunc := matchByName[*sdk.Server, *sdk.Info]("test")
+}
+
+type getRequestStatusSuite struct {
+	ServiceTestSuite
+}
+
+func TestGetRequestStatusTestSuite(t *testing.T) {
+	suite.Run(t, new(getRequestStatusSuite))
+}
+
+func (s *getRequestStatusSuite) TestGetRequestStatusMissingMetadata() {
+	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
+		Href:     ptr.To(baseTestURL),
+		Id:       ptr.To("12345"),
+		Metadata: nil,
+	}, nil).Once()
+
+	status, message, err := s.service.GetRequestStatus(s.ctx, baseTestURL)
+	s.Error(err, "should return an error but didn't")
+	s.Empty(status, "status should be empty")
+	s.Empty(message, messageEmptyText)
+
+	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
+		Metadata: &sdk.RequestStatusMetadata{},
+	}, nil).Once()
+
+	status, message, err = s.service.GetRequestStatus(s.ctx, baseTestURL)
+	s.Error(err, "should return an error but didn't")
+	s.Empty(status, "status should be empty")
+	s.Empty(message, messageEmptyText)
+}
+
+func (s *getRequestStatusSuite) TestGetRequestStatus() {
+	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
+		Href: ptr.To(baseTestURL),
+		Id:   ptr.To("12345"),
+		Metadata: &sdk.RequestStatusMetadata{
+			Status:  ptr.To(sdk.RequestStatusFailed),
+			Message: ptr.To("Failed to do foo and bar"),
+		},
+	}, nil).Once()
+
+	status, message, err := s.service.GetRequestStatus(s.ctx, baseTestURL)
+	s.NoError(err, "should not return an error but did")
+	s.Equal(sdk.RequestStatusFailed, status, "status should be FAILED")
+	s.Equal("Failed to do foo and bar", message, "message should be 'Failed to do foo and bar'")
+
+	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
+		Href: ptr.To(baseTestURL),
+		Id:   ptr.To("12345"),
+		Metadata: &sdk.RequestStatusMetadata{
+			Status:  ptr.To(sdk.RequestStatusQueued),
+			Message: nil,
+		},
+	}, nil).Once()
+
+	status, message, err = s.service.GetRequestStatus(s.ctx, baseTestURL)
+	s.NoError(err, "should not return an error but did")
+	s.Equal(sdk.RequestStatusQueued, status, "status should be FAILED")
+	s.Empty(message, messageEmptyText)
+}
+
+func (s *getRequestStatusSuite) mockCheckRequestStatusCall(requestURL string) *clienttest.MockClient_CheckRequestStatus_Call {
+	return s.ionosClient.EXPECT().CheckRequestStatus(s.ctx, requestURL)
+}
 
 type getMatchingRequestSuite struct {
 	ServiceTestSuite
@@ -42,7 +129,7 @@ func (s *getMatchingRequestSuite) examplePostRequest(href, status string) sdk.Re
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPost,
-		url:        "https://url.tld/path/?depth=10",
+		url:        fmt.Sprintf("%s/?depth=10", baseTestURL),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName()),
 		href:       href,
 		targetID:   "1",
@@ -68,7 +155,7 @@ func (s *getMatchingRequestSuite) TestMatching() {
 
 	// req2 has a mismatch in its URL
 	req2 := s.examplePostRequest("req2", sdk.RequestStatusQueued)
-	*req2.Properties.Url = "https://url.tld/path/action?depth=10"
+	*req2.Properties.Url = fmt.Sprintf("%s/action?depth=10", baseTestURL)
 
 	// req3 doesn't fulfill the matcher function
 	req3 := s.examplePostRequest("req3", sdk.RequestStatusQueued)
@@ -88,7 +175,7 @@ func (s *getMatchingRequestSuite) TestMatching() {
 		s.service,
 		http.MethodPost,
 		"path?foo=bar&baz=qux",
-		func(resource sdk.Lan, _ sdk.Request) bool {
+		func(resource *sdk.Lan, _ sdk.Request) bool {
 			return *resource.Properties.Name == s.service.lanName()
 		},
 	)
@@ -193,7 +280,7 @@ func TestRequestInfo(t *testing.T) {
 
 func TestMetadataHolder(t *testing.T) {
 	lan1 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: ptr.To("BUSY")}}
-	lan2 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(stateAvailable)}}
+	lan2 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(sdk.Available)}}
 
 	require.False(t, isAvailable(getState(lan1)))
 	require.True(t, isAvailable(getState(lan2)))

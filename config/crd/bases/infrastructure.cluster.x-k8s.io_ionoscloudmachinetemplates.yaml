@@ -1,0 +1,201 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.13.0
+  name: ionoscloudmachinetemplates.infrastructure.cluster.x-k8s.io
+spec:
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    kind: IonosCloudMachineTemplate
+    listKind: IonosCloudMachineTemplateList
+    plural: ionoscloudmachinetemplates
+    singular: ionoscloudmachinetemplate
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: IonosCloudMachineTemplate is the Schema for the ionoscloudmachinetemplates
+          API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: IonosCloudMachineTemplateSpec defines the desired state of
+              IonosCloudMachineTemplate.
+            properties:
+              template:
+                description: Template is the IonosCloudMachineTemplateResource for
+                  the IonosCloudMachineTemplate.
+                properties:
+                  metadata:
+                    description: 'Standard object''s metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata'
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: 'Annotations is an unstructured key value map
+                          stored with a resource that may be set by external tools
+                          to store and retrieve arbitrary metadata. They are not queryable
+                          and should be preserved when modifying objects. More info:
+                          http://kubernetes.io/docs/user-guide/annotations'
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: 'Map of string keys and values that can be used
+                          to organize and categorize (scope and select) objects. May
+                          match selectors of replication controllers and services.
+                          More info: http://kubernetes.io/docs/user-guide/labels'
+                        type: object
+                    type: object
+                  spec:
+                    description: Spec is the IonosCloudMachineSpec for the IonosCloudMachineTemplate.
+                    properties:
+                      additionalNetworks:
+                        description: 'AdditionalNetworks defines the additional network
+                          configurations for the VM. NOTE(lubedacht): We currently
+                          only support networks with DHCP enabled.'
+                        items:
+                          description: Network contains a network config.
+                          properties:
+                            networkID:
+                              description: NetworkID represents an ID an existing
+                                LAN in the data center. This LAN will be excluded
+                                from the deletion process.
+                              format: int32
+                              minimum: 1
+                              type: integer
+                          required:
+                          - networkID
+                          type: object
+                        type: array
+                      availabilityZone:
+                        default: AUTO
+                        description: AvailabilityZone is the availability zone in
+                          which the VM should be provisioned.
+                        enum:
+                        - AUTO
+                        - ZONE_1
+                        - ZONE_2
+                        type: string
+                      cpuFamily:
+                        description: CPUFamily defines the CPU architecture, which
+                          will be used for this VM. Not all CPU architectures are
+                          available in all data centers.
+                        example: AMD_OPTERON
+                        minLength: 1
+                        type: string
+                      datacenterID:
+                        description: DatacenterID is the ID of the data center where
+                          the VM should be created in.
+                        format: uuid
+                        type: string
+                        x-kubernetes-validations:
+                        - message: datacenterID is immutable
+                          rule: self == oldSelf
+                      disk:
+                        description: Disk defines the boot volume of the VM.
+                        properties:
+                          availabilityZone:
+                            default: AUTO
+                            description: AvailabilityZone is the availability zone
+                              where the volume will be created.
+                            enum:
+                            - AUTO
+                            - ZONE_1
+                            - ZONE_2
+                            - ZONE_3
+                            type: string
+                          diskType:
+                            default: HDD
+                            description: DiskType defines the type of the hard drive.
+                            enum:
+                            - HDD
+                            - SSD Standard
+                            - SSD Premium
+                            type: string
+                          image:
+                            description: Image is the image to use for the VM.
+                            properties:
+                              aliases:
+                                description: 'Aliases is a list of image aliases to
+                                  use for the VM. TODO(lubedacht): Needs implementation.'
+                                items:
+                                  type: string
+                                type: array
+                              id:
+                                description: ID is the ID of the image to use for
+                                  the VM.
+                                type: string
+                            type: object
+                            x-kubernetes-validations:
+                            - message: either id or aliases must be set
+                              rule: has(self.id) && self.id != '' || self.aliases.size()
+                                > 0
+                          name:
+                            description: Name is the name of the volume
+                            type: string
+                          sizeGB:
+                            default: 20
+                            description: SizeGB defines the size of the volume in
+                              GB
+                            minimum: 10
+                            type: integer
+                          sshKeys:
+                            description: SSHKeys contains a set of public SSH keys
+                              which will be added to the list of authorized keys.
+                            items:
+                              type: string
+                            type: array
+                            x-kubernetes-list-type: set
+                        required:
+                        - image
+                        type: object
+                      memoryMB:
+                        default: 3072
+                        description: MemoryMB is the memory size for the VM in MB.
+                          Size must be specified in multiples of 256 MB with a minimum
+                          of 1024 MB which is required as we are using hot-pluggable
+                          RAM by default.
+                        format: int32
+                        minimum: 2048
+                        multipleOf: 1024
+                        type: integer
+                      numCores:
+                        default: 1
+                        description: NumCores defines the number of cores for the
+                          VM.
+                        format: int32
+                        minimum: 1
+                        type: integer
+                      providerID:
+                        description: ProviderID is the IONOS Cloud provider ID will
+                          be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
+                        type: string
+                    required:
+                    - cpuFamily
+                    - datacenterID
+                    - disk
+                    type: object
+                required:
+                - spec
+                type: object
+            required:
+            - template
+            type: object
+        type: object
+    served: true
+    storage: true

@@ -30,3 +30,10 @@ func Deref[T any](ptr *T, def T) T {
 	}
 	return def
 }
+
+// IsNullOrDefault returns true if the given pointer is nil or
+// if the value it points to is the default value for its type.
+func IsNullOrDefault[T comparable](v *T) bool {
+	var empty T
+	return v == nil || *v == empty
+}

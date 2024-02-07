@@ -31,7 +31,9 @@ import (
 
 const (
 	depthRequestsMetadataStatusMetadata = 2 // for LISTing requests and their metadata status metadata
-	depthLANEntities                    = 2 // for LISTing LANs and their NICs (w/o NIC details)
+	defaultListDepth                    = 2 // for LISTing resources containing their sub entities
+
+	locationHeaderKey = "Location"
 )
 
 // IonosCloudClient is a concrete implementation of the Client interface defined in the internal client package that
@@ -70,19 +72,29 @@ func validate(username, password, token string) error {
 
 // CreateServer creates a new server with provided properties in the specified data center.
 func (c *IonosCloudClient) CreateServer(
-	ctx context.Context, datacenterID string, properties sdk.ServerProperties,
-) (*sdk.Server, error) {
+	ctx context.Context,
+	datacenterID string,
+	properties sdk.ServerProperties,
+	entities sdk.ServerEntities,
+) (*sdk.Server, string, error) {
 	if datacenterID == "" {
-		return nil, errDatacenterIDIsEmpty
+		return nil, "", errDatacenterIDIsEmpty
 	}
 	server := sdk.Server{
+		Entities:   &entities,
 		Properties: &properties,
 	}
-	s, _, err := c.API.ServersApi.DatacentersServersPost(ctx, datacenterID).Server(server).Execute()
+	s, req, err := c.API.ServersApi.DatacentersServersPost(ctx, datacenterID).Server(server).Execute()
 	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
+		return nil, "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	return &s, nil
+
+	location := req.Header.Get(locationHeaderKey)
+	if location == "" {
+		err = errLocationHeaderEmpty
+	}
+
+	return &s, location, err
 }
 
 // ListServers returns a list with servers in the specified data center.
@@ -105,26 +117,58 @@ func (c *IonosCloudClient) GetServer(ctx context.Context, datacenterID, serverID
 	if serverID == "" {
 		return nil, errServerIDIsEmpty
 	}
-	server, _, err := c.API.ServersApi.DatacentersServersFindById(ctx, datacenterID, serverID).Execute()
+	server, _, err := c.API.ServersApi.
+		DatacentersServersFindById(ctx, datacenterID, serverID).
+		Depth(defaultListDepth).
+		Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &server, nil
 }
 
-// DestroyServer deletes the server that matches the provided serverID in the specified data center.
-func (c *IonosCloudClient) DestroyServer(ctx context.Context, datacenterID, serverID string) error {
+// DeleteServer deletes the server that matches the provided serverID in the specified data center.
+func (c *IonosCloudClient) DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error) {
 	if datacenterID == "" {
-		return errDatacenterIDIsEmpty
+		return "", errDatacenterIDIsEmpty
 	}
 	if serverID == "" {
-		return errServerIDIsEmpty
+		return "", errServerIDIsEmpty
 	}
-	_, err := c.API.ServersApi.DatacentersServersDelete(ctx, datacenterID, serverID).Execute()
+	req, err := c.API.ServersApi.
+		DatacentersServersDelete(ctx, datacenterID, serverID).
+		DeleteVolumes(true).
+		Execute()
 	if err != nil {
-		return fmt.Errorf(apiCallErrWrapper, err)
+		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	return err
+	if location := req.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
+}
+
+// DeleteVolume deletes the volume that matches volumeID in the specified data center.
+func (c *IonosCloudClient) DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+
+	if volumeID == "" {
+		return "", errVolumeIDIsEmpty
+	}
+
+	res, err := c.API.VolumesApi.DatacentersVolumesDelete(ctx, datacenterID, volumeID).Execute()
+	if err != nil {
+		return "", err
+	}
+
+	if location := res.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
 }
 
 // CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
@@ -140,10 +184,10 @@ func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, p
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	if location := req.Header.Get("Location"); location != "" {
+	if location := req.Header.Get(locationHeaderKey); location != "" {
 		return location, nil
 	}
-	return "", errors.New(apiNoLocationErrMessage)
+	return "", errLocationHeaderEmpty
 }
 
 // AttachToLAN attaches a provided NIC to a provided LAN in the specified data center.
@@ -159,6 +203,7 @@ func (c *IonosCloudClient) AttachToLAN(ctx context.Context, datacenterID, lanID 
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
+
 	return &n, nil
 }
 
@@ -167,7 +212,7 @@ func (c *IonosCloudClient) ListLANs(ctx context.Context, datacenterID string) (*
 	if datacenterID == "" {
 		return nil, errDatacenterIDIsEmpty
 	}
-	lans, _, err := c.API.LANsApi.DatacentersLansGet(ctx, datacenterID).Depth(depthLANEntities).Execute()
+	lans, _, err := c.API.LANsApi.DatacentersLansGet(ctx, datacenterID).Depth(defaultListDepth).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -201,10 +246,10 @@ func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID st
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
-	if location := req.Header.Get("Location"); location != "" {
+	if location := req.Header.Get(locationHeaderKey); location != "" {
 		return location, nil
 	}
-	return "", errors.New(apiNoLocationErrMessage)
+	return "", errLocationHeaderEmpty
 }
 
 // ListVolumes returns a list of volumes in the specified data center.
@@ -234,21 +279,6 @@ func (c *IonosCloudClient) GetVolume(ctx context.Context, datacenterID, volumeID
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
 	return &volume, nil
-}
-
-// DestroyVolume deletes the volume that matches volumeID in the specified data center.
-func (c *IonosCloudClient) DestroyVolume(ctx context.Context, datacenterID, volumeID string) error {
-	if datacenterID == "" {
-		return errDatacenterIDIsEmpty
-	}
-	if volumeID == "" {
-		return errVolumeIDIsEmpty
-	}
-	_, err := c.API.VolumesApi.DatacentersVolumesDelete(ctx, datacenterID, volumeID).Execute()
-	if err != nil {
-		return fmt.Errorf(apiCallErrWrapper, err)
-	}
-	return nil
 }
 
 // CheckRequestStatus returns the status of a request and an error if checking for it fails.
@@ -306,5 +336,63 @@ func (c *IonosCloudClient) WaitForRequest(ctx context.Context, requestURL string
 	if err != nil {
 		return fmt.Errorf(apiCallErrWrapper, err)
 	}
+	return nil
+}
+
+// PatchNIC updates the NIC identified by nicID with the provided properties.
+func (c *IonosCloudClient) PatchNIC(ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties) (string, error) {
+	if err := validateNICParameters(datacenterID, serverID, nicID); err != nil {
+		return "", err
+	}
+
+	_, res, err := c.API.NetworkInterfacesApi.
+		DatacentersServersNicsPatch(ctx, datacenterID, serverID, nicID).
+		Nic(properties).
+		Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	if location := res.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
+}
+
+// DeleteNIC deletes the NIC identified by nicID, returning the request location.
+func (c *IonosCloudClient) DeleteNIC(ctx context.Context, datacenterID, serverID, nicID string) (string, error) {
+	if err := validateNICParameters(datacenterID, serverID, nicID); err != nil {
+		return "", err
+	}
+
+	res, err := c.API.NetworkInterfacesApi.
+		DatacentersServersNicsDelete(ctx, datacenterID, serverID, nicID).
+		Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	if location := res.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
+}
+
+// validateNICParameters validates the parameters for the PatchNIC and DeleteNIC methods.
+func validateNICParameters(datacenterID, serverID, nicID string) (err error) {
+	if datacenterID == "" {
+		return errDatacenterIDIsEmpty
+	}
+
+	if serverID == "" {
+		return errServerIDIsEmpty
+	}
+
+	if nicID == "" {
+		return errNICIDIsEmpty
+	}
+
 	return nil
 }

@@ -1,0 +1,312 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: "${CLUSTER_NAME}"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: ["192.168.0.0/16"]
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: IonosCloudCluster
+    name: "${CLUSTER_NAME}"
+  controlPlaneRef:
+    kind: KubeadmControlPlane
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    name: "${CLUSTER_NAME}-control-plane"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: IonosCloudCluster
+metadata:
+  name: "${CLUSTER_NAME}"
+spec:
+  controlPlaneEndpoint:
+    host: ${CONTROL_PLANE_ENDPOINT_IP}
+    port: 6443
+  contractNumber: "${IONOSCLOUD_CONTRACT_NUMBER}"
+---
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  machineTemplate:
+    infrastructureRef:
+      kind: IonosCloudMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+      name: "${CLUSTER_NAME}-control-plane"
+  kubeadmConfigSpec:
+    users:
+      - name: root
+        sshAuthorizedKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
+
+    ntp:
+        enabled: true
+        servers:
+          - 0.de.pool.ntp.org
+          - 1.de.pool.ntp.org
+          - 2.de.pool.ntp.org
+          - 3.de.pool.ntp.org
+    files:
+      - path: /etc/apt/sources.list.d/docker.list
+        content: |
+          deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable
+        owner: root:root
+        permissions: '0644'
+
+      - path: /etc/apt/sources.list.d/kubernetes.list
+        content: |
+          deb [signed-by=/etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${KUBERNETES_VERSION_SHORT}/deb/ /
+        owner: root:root
+        permissions: '0644'
+
+      - path: /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
+        owner: root:root
+        permissions: '0644'
+        content: |
+          # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
+          # hardening guide.
+          KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+          Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+          MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+          HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
+
+      - path: /etc/containerd/config.toml
+        content: |
+          version = 2
+          [debug]
+            level = "warn"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+            runtime_type = "io.containerd.runc.v2"
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+              SystemdCgroup = true
+      # Crictl config
+      - path: /etc/crictl.yaml
+        content: |
+          runtime-endpoint: unix:///run/containerd/containerd.sock
+          image-endpoint: unix:///run/containerd/containerd.sock
+          timeout: 10
+        owner: root:root
+        permissions: '0644'
+
+      - path: /etc/sysctl.d/k8s.conf
+        content: |
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward                 = 1
+          fs.inotify.max_user_instances =  8192
+          fs.inotify.max_user_watches = 65536
+          net.netfilter.nf_conntrack_max = 1000000
+
+      - path: /etc/modules-load.d/k8s.conf
+        content: |
+          br_netfilter
+          overlay
+          ip_vs
+          ip_vs_rr
+          ip_vs_wrr
+          ip_vs_sh
+          nf_conntrack
+          ip_vs_sed
+    preKubeadmCommands:
+      # TODO(lubedacht) remove this when using KubeVIP
+      - ip addr add dev ens6 ${CONTROL_PLANE_ENDPOINT_IP}/32
+      # download gpg keys
+      - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/docker.gpg
+      - curl -fsSL https://pkgs.k8s.io/core:/stable:/v${KUBERNETES_VERSION_SHORT}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg
+      # update and install required packages
+      - apt update
+      - apt install -y apt-transport-https ca-certificates curl gnupg lsb-release containerd.io kubelet kubeadm kubectl
+      # - apt-get install -y ipvsadm ipset net-tools tcpdump nmap jq wireguard
+      - rm /var/lib/dbus/machine-id /etc/machine-id # fix the machine id
+      - dbus-uuidgen --ensure=/etc/machine-id
+      - ln -s /etc/machine-id /var/lib/dbus/machine-id
+      - systemctl restart systemd-networkd.server systemd-modules-load.service systemd-journald containerd
+      # disable swap
+      - swapoff -a
+      - sed -i '/ swap / s/^/#/' /etc/fstab
+      - apt-mark hold kubelet kubeadm kubectl # pin versions
+      - systemctl restart containerd
+      - sysctl --system
+    postKubeadmCommands:
+      - >
+        systemctl disable --now accounts-daemon atd unattended-upgrades udisks2 multipathd apt-daily apt-daily.timer
+        apt-daily-upgrade apt-daily-upgrade.timer motd-news.timer fwupd-refresh.timer packagekit ModemManager snapd snapd.socket
+        snapd.apparmor snapd.autoimport snapd.core-fixup snapd.recovery-chooser-trigger snapd.seeded snapd.system-shutdown ua-timer.timer
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"
+    joinConfiguration:
+      nodeRegistration:
+        criSocket: unix:///run/containerd/containerd.sock
+        kubeletExtraArgs:
+          provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"
+  version: "${KUBERNETES_VERSION}"
+---
+kind: IonosCloudMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  template:
+    spec:
+      datacenterID: ${IONOSCLOUD_DATACENTER_ID}
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+      cpuFamily: ${IONOSCLOUD_MACHINE_CPU_FAMILY}
+      disk:
+        image:
+          id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+        sshKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-workers"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels:
+  template:
+    metadata:
+      labels:
+        node-role.kubernetes.io/node: ""
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-worker"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-worker"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: IonosCloudMachineTemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: IonosCloudMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-worker"
+spec:
+  template:
+    spec:
+      datacenterID: ${IONOSCLOUD_DATACENTER_ID}
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+      cpuFamily: ${IONOSCLOUD_MACHINE_CPU_FAMILY}
+      disk:
+        image:
+          id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+        sshKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-worker"
+spec:
+  template:
+    spec:
+      users:
+        - name: root
+          sshAuthorizedKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
+      ntp:
+        enabled: true
+        servers:
+          - 0.de.pool.ntp.org
+          - 1.de.pool.ntp.org
+          - 2.de.pool.ntp.org
+          - 3.de.pool.ntp.org
+      files:
+        - path: /etc/apt/sources.list.d/docker.list
+          content: |
+            deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable
+          owner: root:root
+          permissions: '0644'
+
+        - path: /etc/apt/sources.list.d/kubernetes.list
+          content: |
+            deb [signed-by=/etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${KUBERNETES_VERSION_SHORT}/deb/ /
+          owner: root:root
+          permissions: '0644'
+
+        - path: /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
+          owner: root:root
+          permissions: '0644'
+          content: |
+            # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
+            # hardening guide.
+            KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+            Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+            MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+            HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
+
+        - path: /etc/containerd/config.toml
+          content: |
+            version = 2
+            [debug]
+              level = "warn"
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+              runtime_type = "io.containerd.runc.v2"
+              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+                SystemdCgroup = true
+        # Crictl config
+        - path: /etc/crictl.yaml
+          content: |
+            runtime-endpoint: unix:///run/containerd/containerd.sock
+            image-endpoint: unix:///run/containerd/containerd.sock
+            timeout: 10
+          owner: root:root
+          permissions: '0644'
+
+        - path: /etc/sysctl.d/k8s.conf
+          content: |
+            net.bridge.bridge-nf-call-ip6tables = 1
+            net.bridge.bridge-nf-call-iptables = 1
+            net.ipv4.ip_forward                 = 1
+            fs.inotify.max_user_instances =  8192
+            fs.inotify.max_user_watches = 65536
+            net.netfilter.nf_conntrack_max = 1000000
+
+        - path: /etc/modules-load.d/k8s.conf
+          content: |
+            br_netfilter
+            overlay
+            ip_vs
+            ip_vs_rr
+            ip_vs_wrr
+            ip_vs_sh
+            nf_conntrack
+            ip_vs_sed
+      preKubeadmCommands:
+        # download gpg keys
+        - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/docker.gpg
+        - curl -fsSL https://pkgs.k8s.io/core:/stable:/v${KUBERNETES_VERSION_SHORT}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg
+        # update and install required packages
+        - apt update
+        - apt install -y apt-transport-https ca-certificates curl gnupg lsb-release containerd.io kubelet kubeadm kubectl
+        # - apt-get install -y ipvsadm ipset net-tools tcpdump nmap jq wireguard
+        - rm /var/lib/dbus/machine-id /etc/machine-id # fix the machine id
+        - dbus-uuidgen --ensure=/etc/machine-id
+        - ln -s /etc/machine-id /var/lib/dbus/machine-id
+        - systemctl restart systemd-networkd.server systemd-modules-load.service systemd-journald containerd
+        # disable swap
+        - swapoff -a
+        - sed -i '/ swap / s/^/#/' /etc/fstab
+        - apt-mark hold kubelet kubeadm kubectl # pin versions
+        - systemctl restart containerd
+        - sysctl --system
+      postKubeadmCommands:
+        - >
+          systemctl disable --now accounts-daemon atd unattended-upgrades udisks2 multipathd apt-daily apt-daily.timer
+          apt-daily-upgrade apt-daily-upgrade.timer motd-news.timer fwupd-refresh.timer packagekit ModemManager snapd snapd.socket
+          snapd.apparmor snapd.autoimport snapd.core-fixup snapd.recovery-chooser-trigger snapd.seeded snapd.system-shutdown ua-timer.timer
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: unix:///run/containerd/containerd.sock
+          kubeletExtraArgs:
+            provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"

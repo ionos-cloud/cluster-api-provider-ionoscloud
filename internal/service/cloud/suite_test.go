@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -102,7 +103,7 @@ func (s *ServiceTestSuite) SetupTest() {
 			Name:      "test-machine",
 		},
 		Spec: infrav1.IonosCloudMachineSpec{
-			ProviderID:       "ionos://8c19a898-fda9-4783-a939-d778aeee217f",
+			ProviderID:       ptr.To("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),
 			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
@@ -114,6 +115,9 @@ func (s *ServiceTestSuite) SetupTest() {
 				SizeGB:           20,
 				AvailabilityZone: infrav1.AvailabilityZoneAuto,
 				SSHKeys:          []string{"ssh-rsa AAAAB3Nz"},
+				Image: &infrav1.ImageSpec{
+					ID: ptr.To("3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
+				},
 			},
 		},
 		Status: infrav1.IonosCloudMachineStatus{},
@@ -122,6 +126,7 @@ func (s *ServiceTestSuite) SetupTest() {
 	scheme := runtime.NewScheme()
 	s.NoError(clusterv1.AddToScheme(scheme), "failed to extend scheme with Cluster API types")
 	s.NoError(infrav1.AddToScheme(scheme), "failed to extend scheme with IonosCloud types")
+	s.NoError(clientgoscheme.AddToScheme(scheme))
 
 	initObjects := []client.Object{s.infraMachine, s.infraCluster, s.capiCluster, s.capiMachine}
 	s.k8sClient = fake.NewClientBuilder().

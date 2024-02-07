@@ -17,17 +17,78 @@ limitations under the License.
 package cloud
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"sigs.k8s.io/cluster-api/util"
+
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
-// resourceTypeMap maps a resource type to its corresponding IONOS Cloud type identifier.
+// GetRequestStatus returns the status of a request for a given request URL.
+// If the request contains a message, it is also returned.
+func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (requestStatus string, statusMessage string, err error) {
+	status, err := s.api().CheckRequestStatus(ctx, requestURL)
+	if err != nil {
+		return "", "", fmt.Errorf("unable to retrieve the request status: %w", err)
+	}
+
+	if !status.HasMetadata() || !status.Metadata.HasStatus() {
+		return "", "", errors.New("request status metadata is missing")
+	}
+
+	message := ""
+	if status.Metadata.HasMessage() {
+		message = *status.Metadata.Message
+	}
+
+	return *status.Metadata.Status, message, nil
+}
+
+// mapResourceType maps a cloud resource to its corresponding IONOS Cloud type identifier.
 // Each type mapping for usage in getMatchingRequest() needs to be present here.
-var resourceTypeMap = map[any]sdk.Type{
-	sdk.Lan{}: sdk.LAN,
+func mapResourceType(cloudResource any) sdk.Type {
+	switch cloudResource.(type) {
+	case sdk.Lan, *sdk.Lan:
+		return sdk.LAN
+	case sdk.Server, *sdk.Server:
+		return sdk.SERVER
+	default:
+		return ""
+	}
+}
+
+type matcherFunc[T any] func(resource T, request sdk.Request) bool
+
+type propertiesHolder[T nameHolder] interface {
+	GetProperties() T
+}
+
+type nameHolder interface {
+	GetName() *string
+}
+
+// matchByName is a generic matcher function intended for finding a single resource based on its name.
+// The sdk resources provide a Properties field which in turn contains a Name field.
+// A compile time check will validate, if the generic types fulfill the interface constraints.
+func matchByName[T propertiesHolder[U], U nameHolder](name string) matcherFunc[T] {
+	return func(resource T, request sdk.Request) bool {
+		properties := resource.GetProperties()
+		if util.IsNil(properties) {
+			return false
+		}
+
+		resourceName := properties.GetName()
+		if resourceName != nil && *resourceName == name {
+			return true
+		}
+
+		return false
+	}
 }
 
 // getMatchingRequest is a helper function intended for finding a single request based on certain filtering constraints,
@@ -42,10 +103,10 @@ func getMatchingRequest[T any](
 	s *Service,
 	method string,
 	url string,
-	matchers ...func(resource T, request sdk.Request) bool,
+	matchers ...matcherFunc[*T],
 ) (*requestInfo, error) {
 	var zeroResource T
-	resourceType := resourceTypeMap[zeroResource]
+	resourceType := mapResourceType(zeroResource)
 	if resourceType == "" {
 		return nil, fmt.Errorf("unsupported resource type %T", zeroResource)
 	}
@@ -73,7 +134,7 @@ requestLoop:
 		// The reason for comparing here at all is that the received requests can contain some that only contain the
 		// desired URL as substring, e.g. a request for /resource/123/action will also be returned when looking
 		// for /resource/123. We want to ignore those.
-		trimmedRequestURL := strings.Split(*req.Properties.Url, "?")[0]
+		trimmedRequestURL := strings.Split(*req.GetProperties().GetUrl(), "?")[0]
 		trimmedRequestURL = strings.TrimSuffix(trimmedRequestURL, "/")
 		trimmedURL := strings.TrimSuffix(urlWithoutQueryParams, "/")
 		if !strings.HasSuffix(trimmedRequestURL, trimmedURL) {
@@ -83,28 +144,31 @@ requestLoop:
 		if len(matchers) > 0 {
 			// As at least 1 additional matcher function is given, reconstruct the resource from the request body.
 			var unmarshalled T
-			if err = json.Unmarshal([]byte(*req.Properties.Body), &unmarshalled); err != nil {
-				s.scope.Logger.WithValues("requestID", *req.Id, "body", *req.Properties.Body).
-					Info("could not unmarshal request")
+			if err = json.Unmarshal([]byte(ptr.Deref(req.GetProperties().GetBody(), "")), &unmarshalled); err != nil {
+				s.scope.Logger.WithValues(
+					"requestID", ptr.Deref(req.GetId(), ""),
+					"body", ptr.Deref(req.GetProperties().GetBody(), ""),
+				).Info("could not unmarshal request")
+
 				return nil, fmt.Errorf("could not unmarshal request into %T: %w", unmarshalled, err)
 			}
 
 			for _, matcher := range matchers {
-				if !matcher(unmarshalled, req) {
+				if !matcher(&unmarshalled, req) {
 					// All matcher functions need to match the current resource.
 					continue requestLoop
 				}
 			}
 		}
 
-		status := *req.Metadata.RequestStatus.Metadata.Status
+		status := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetStatus(), "")
 		if status == sdk.RequestStatusFailed {
-			message := req.Metadata.RequestStatus.Metadata.Message
+			message := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetMessage(), "")
 			s.scope.Logger.Error(nil,
 				"Last request has failed, logging it for debugging purposes",
 				"resourceType", resourceType,
 				"requestID", req.Id, "requestStatus", status,
-				"message", *message,
+				"message", message,
 			)
 		}
 
@@ -117,10 +181,15 @@ requestLoop:
 }
 
 func hasRequestTargetType(req sdk.Request, typeName sdk.Type) bool {
-	if req.Metadata.RequestStatus.Metadata.Targets == nil || len(*req.Metadata.RequestStatus.Metadata.Targets) == 0 {
-		return false
+	targets := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetTargets(), nil)
+
+	for _, target := range targets {
+		if ptr.Deref(target.GetTarget().GetType(), "") == typeName {
+			return true
+		}
 	}
-	return *(*req.Metadata.RequestStatus.Metadata.Targets)[0].Target.Type == typeName
+
+	return false
 }
 
 // findResource is a helper function intended for finding a single resource based on certain filtering constraints,
@@ -201,12 +270,18 @@ type metadataHolder interface {
 }
 
 func getState(resource metadataHolder) string {
-	return *resource.GetMetadata().State
+	return ptr.Deref(resource.GetMetadata().GetState(), "")
 }
 
-const stateAvailable = "AVAILABLE"
+func getVMState(resource propertiesHolder[*sdk.ServerProperties]) string {
+	return ptr.Deref(resource.GetProperties().GetVmState(), "Unknown")
+}
+
+func isRunning(state string) bool {
+	return state == "RUNNING"
+}
 
 // isAvailable returns true if the resource is available. Note that not all resource types have this state.
 func isAvailable(state string) bool {
-	return state == stateAvailable
+	return state == sdk.Available
 }

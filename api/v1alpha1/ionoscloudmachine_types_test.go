@@ -39,7 +39,7 @@ func defaultMachine() *IonosCloudMachine {
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: IonosCloudMachineSpec{
-			ProviderID:       "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
+			ProviderID:       ptr.To("ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
 			DatacenterID:     "ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
 			NumCores:         1,
 			AvailabilityZone: AvailabilityZoneTwo,
@@ -51,6 +51,9 @@ func defaultMachine() *IonosCloudMachine {
 				SizeGB:           23,
 				AvailabilityZone: AvailabilityZoneOne,
 				SSHKeys:          []string{"public-key"},
+				Image: &ImageSpec{
+					ID: ptr.To("1eef-48ec-a246-a51a33aa4f3a"),
+				},
 			},
 			AdditionalNetworks: Networks{
 				{
@@ -83,10 +86,20 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			It("should work if not set", func() {
 				m := defaultMachine()
 				want := ""
-				m.Spec.ProviderID = want
+				m.Spec.ProviderID = &want
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(m.Spec.ProviderID).To(Equal(want))
+				Expect(*m.Spec.ProviderID).To(Equal(want))
 			})
+			DescribeTable("tests for extraction of provider IDs", func(providerID, want string) {
+				m := defaultMachine()
+				m.Spec.ProviderID = ptr.To(providerID)
+				Expect(m.ExtractServerID()).To(Equal(want))
+			},
+				Entry("valid ID", "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
+				Entry("invalid provider name", "ionoscloud://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
+				Entry("typo in provider name", "ions://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
+				Entry("no provider name", "://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
+			)
 		})
 
 		Context("Data center ID", func() {
@@ -304,6 +317,29 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 					Entry("SSD Standard", VolumeDiskTypeSSDStandard),
 					Entry("SSD Premium", VolumeDiskTypeSSDPremium),
 				)
+			})
+			Context("Image", func() {
+				It("should fail if not set", func() {
+					m := defaultMachine()
+					m.Spec.Disk.Image = nil
+					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+				})
+				It("should fail none is set", func() {
+					m := defaultMachine()
+					m.Spec.Disk.Image.ID = nil
+					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+				})
+				It("should not fail if ID is set", func() {
+					m := defaultMachine()
+					m.Spec.Disk.Image.ID = ptr.To("1eef-48ec-a246-a51a33aa4f3a")
+					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+				})
+				It("should not fail if ID is not set but aliases contains a value", func() {
+					m := defaultMachine()
+					m.Spec.Disk.Image.ID = nil
+					m.Spec.Disk.Image.Aliases = []string{"ubuntu-20.04"}
+					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+				})
 			})
 		})
 		Context("Additional Networks", func() {

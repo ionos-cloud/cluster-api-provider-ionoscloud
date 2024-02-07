@@ -199,7 +199,7 @@ func (s *lanSuite) exampleLAN() sdk.Lan {
 			Name: ptr.To(s.service.lanName()),
 		},
 		Metadata: &sdk.DatacenterElementMetadata{
-			State: ptr.To(stateAvailable),
+			State: ptr.To(sdk.Available),
 		},
 		Entities: &sdk.LanEntities{
 			Nics: &sdk.LanNics{

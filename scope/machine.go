@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -31,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 // MachineScope defines a basic context for primary use in IonosCloudMachineReconciler.
@@ -90,6 +92,39 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		ClusterScope: params.ClusterScope,
 		IonosMachine: params.IonosMachine,
 	}, nil
+}
+
+// GetBootstrapDataSecret returns the bootstrap data secret, which has been created by the
+// Kubeadm provider.
+func (m *MachineScope) GetBootstrapDataSecret(ctx context.Context) (*corev1.Secret, error) {
+	name := ptr.Deref(m.Machine.Spec.Bootstrap.DataSecretName, "")
+	if name == "" {
+		return nil, errors.New("machine has no bootstrap data yet")
+	}
+	key := client.ObjectKey{
+		Name:      name,
+		Namespace: m.IonosMachine.Namespace,
+	}
+
+	m.WithName("GetBoostrapDataSecret").
+		V(4).
+		Info("searching for bootstrap data", "secret", key.String())
+
+	var lookupSecret corev1.Secret
+	if err := m.client.Get(ctx, key, &lookupSecret); err != nil {
+		return nil, err
+	}
+
+	return &lookupSecret, nil
+}
+
+// DatacenterID returns the data center ID used by the IonosCloudMachine.
+func (m *MachineScope) DatacenterID() string {
+	return m.IonosMachine.Spec.DatacenterID
+}
+
+func (m *MachineScope) SetProviderID(id string) {
+	m.IonosMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ionos://%s", id))
 }
 
 // HasFailed checks if the IonosCloudMachine is in a failed state.

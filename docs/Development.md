@@ -147,3 +147,58 @@ make manifests
 **NOTE:** Run `make --help` for more information on all potential `make` targets
 
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+
+### Running Tilt
+- Create a directory and cd into it
+- Clone [cluster-api](https://github.com/kubernetes-sigs/cluster-api)
+- Clone [cluster-api-provider-ionoscloud](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud)
+
+- You should now have a directory containing the following git repositories:
+```
+./cluster-api
+./cluster-api-provider-ionoscloud
+```
+
+- Change directory to cluster-api: `cd cluster-api`. This directory is the working directory for Tilt.
+- Create a file called `tilt-settings.json` with the following contents:
+
+```json
+{
+  "default_registry": "ghcr.io/ionos-cloud",
+  "provider_repos": ["../cluster-api-provider-ionoscloud/", "../cluster-api-ipam-provider-in-cluster/"],
+  "enable_providers": ["ionoscloud", "kubeadm-bootstrap", "kubeadm-control-plane"],
+  "allowed_contexts": ["minikube"],
+  "kustomize_substitutions": {},
+  "extra_args": {
+    "ionoscloud": ["--v=4"]
+  }
+}
+```
+
+This file instructs Tilt to use the cluster-api-provider-ionoscloud. `allowed_contexts` is used to add
+allowed clusters other than kind (which is always implicitly enabled).
+
+- If you don't have a cluster, create a new kind cluster:
+```
+kind create cluster --name capi-test
+```
+- cluster-api-provider-ionoscloud uses environment variables to connect to the IONOS Cloud API. These need to be set in the shell which spawns Tilt.
+  Tilt will pass these to the respective Kubernetes pods created. All variables are documented in `../cluster-api-provider-ionoscloud/envfile.example`.
+  Copy `../cluster-api-provider-ionoscloud/envfile.example` to `../cluster-api-provider-ionoscloud/envfile` and make changes pertaining to your configuration.
+  For documentation on environment variables, see [usage](Usage.md#environment-variables)
+
+- If you already had a kind cluster, add this line to `../cluster-api-provider-ionoscloud/envfile`:
+```
+CAPI_KIND_CLUSTER_NAME=<yourclustername>
+```
+
+- Start tilt with the following command (with CWD still being ./cluster-api):
+```
+. ../cluster-api-provider-ionoscloud/envfile && tilt up
+```
+
+Press the **space** key to open the Tilt web interface in your browser. Check that all resources turn green and there are no warnings.
+You can click on (Tiltfile) to see all the resources.
+
+> **Congratulations** you now have CAPIC running via Tilt. If you make any code changes you should see that CAPIC is automatically rebuilt.
+For help deploying your first cluster with CAPIC, see [usage](Usage.md).

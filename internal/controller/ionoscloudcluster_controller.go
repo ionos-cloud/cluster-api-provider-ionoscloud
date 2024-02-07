@@ -54,6 +54,8 @@ type IonosCloudClusterReconciler struct {
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudclusters/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudclusters/finalizers,verbs=update
 
+//+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
+
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 //
@@ -79,7 +81,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	if cluster == nil {
 		logger.Info("Waiting for cluster controller to set OwnerRef on IonosCloudCluster")
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
 	logger = logger.WithValues("cluster", klog.KObj(cluster))
@@ -95,7 +97,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		Logger:       &logger,
 		Cluster:      cluster,
 		IonosCluster: ionosCloudCluster,
-		IonosClient:  nil,
+		IonosClient:  r.IonosCloudClient,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to create scope %w", err)
@@ -126,7 +128,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(_ context.Context, cluster
 
 //nolint:unparam
 func (r *IonosCloudClusterReconciler) reconcileDelete(_ context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
-	if !clusterScope.Cluster.DeletionTimestamp.IsZero() {
+	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
 		clusterScope.Error(errors.New("deletion was requested but owning cluster wasn't deleted"), "unable to delete IonosCloudCluster")
 		// No need to reconcile again until the owning cluster was deleted.
 		return ctrl.Result{}, nil
@@ -137,6 +139,7 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(_ context.Context, cluster
 
 	// TODO(lubedacht): delete remaining cloud resources.
 
+	controllerutil.RemoveFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
 	return ctrl.Result{}, nil
 }
 

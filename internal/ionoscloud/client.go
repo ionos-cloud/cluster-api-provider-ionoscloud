@@ -26,14 +26,14 @@ import (
 // Client is an interface for abstracting Cloud API SDK, making it possible to create mocks for testing purposes.
 type Client interface {
 	// CreateServer creates a new server with provided properties in the specified data center.
-	CreateServer(ctx context.Context, datacenterID string, properties sdk.ServerProperties) (
-		*sdk.Server, error)
+	CreateServer(ctx context.Context, datacenterID string, properties sdk.ServerProperties, entities sdk.ServerEntities) (
+		*sdk.Server, string, error)
 	// ListServers returns a list with the servers in the specified data center.
 	ListServers(ctx context.Context, datacenterID string) (*sdk.Servers, error)
 	// GetServer returns the server that matches the provided serverID in the specified data center.
 	GetServer(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error)
-	// DestroyServer deletes the server that matches the provided serverID in the specified data center.
-	DestroyServer(ctx context.Context, datacenterID, serverID string) error
+	// DeleteServer deletes the server that matches the provided serverID in the specified data center.
+	DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error)
 	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
 	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost) (string, error)
 	// AttachToLAN attaches a provided NIC to a provided LAN in a specified data center.
@@ -49,12 +49,16 @@ type Client interface {
 	ListVolumes(ctx context.Context, datacenterID string) (*sdk.Volumes, error)
 	// GetVolume returns the volume that matches volumeID in the specified data center.
 	GetVolume(ctx context.Context, datacenterID, volumeID string) (*sdk.Volume, error)
-	// DestroyVolume deletes the volume that matches volumeID in the specified data center.
-	DestroyVolume(ctx context.Context, datacenterID, volumeID string) error
+	// DeleteVolume deletes the volume that matches volumeID in the specified data center.
+	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
 	// CheckRequestStatus checks the status of a provided request identified by requestID
 	CheckRequestStatus(ctx context.Context, requestID string) (*sdk.RequestStatus, error)
 	// WaitForRequest waits for the completion of the provided request.
 	WaitForRequest(ctx context.Context, requestURL string) error
 	// GetRequests returns the requests made in the last 24 hours that match the provided method and path.
 	GetRequests(ctx context.Context, method, path string) ([]sdk.Request, error)
+	// PatchNIC updates the NIC identified by nicID with the provided properties, returning the request location.
+	PatchNIC(ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties) (string, error)
+	// DeleteNIC deletes the NIC identified by nicID, returning the request location.
+	DeleteNIC(ctx context.Context, datacenterID, serverID, nicID string) (string, error)
 }

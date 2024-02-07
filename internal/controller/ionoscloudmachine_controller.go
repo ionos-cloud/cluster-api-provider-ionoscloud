@@ -20,9 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
+	sdk "github.com/ionos-cloud/sdk-go/v6"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
@@ -51,6 +51,10 @@ type IonosCloudMachineReconciler struct {
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines/finalizers,verbs=update
+
+// +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -131,10 +135,10 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, fmt.Errorf("could not create machine service")
 	}
 	if !ionosCloudMachine.ObjectMeta.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(cloudService)
+		return r.reconcileDelete(ctx, machineScope, cloudService)
 	}
 
-	return r.reconcileNormal(machineScope, clusterScope, cloudService)
+	return r.reconcileNormal(ctx, machineScope, cloudService)
 }
 
 func (r *IonosCloudMachineReconciler) isInfrastructureReady(machineScope *scope.MachineScope) bool {
@@ -166,7 +170,16 @@ func (r *IonosCloudMachineReconciler) isInfrastructureReady(machineScope *scope.
 	return true
 }
 
-func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.MachineScope, _ *scope.ClusterScope, cloudService *cloud.Service) (ctrl.Result, error) {
+type serviceReconcileStep struct {
+	name          string
+	reconcileFunc func() (bool, error)
+}
+
+func (r *IonosCloudMachineReconciler) reconcileNormal(
+	ctx context.Context,
+	machineScope *scope.MachineScope,
+	cloudService *cloud.Service,
+) (ctrl.Result, error) {
 	machineScope.V(4).Info("Reconciling IonosCloudMachine")
 
 	if machineScope.HasFailed() {
@@ -185,42 +198,149 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(machineScope *scope.Machin
 		}
 	}
 
-	// TODO(lubedacht) Check before starting reconciliation if there is any pending request in the Ionos cluster or machine spec
-	// 	If there is, query for the request and check the status
-	// 	Status:
-	//		* Done = Clear request from the status and continue reconciliation
-	//		* Queued, Running => Requeue the current request
-	// 		* Failed => We need to discuss this, log error and continue (retry last request in the corresponding reconcile function)
+	requeue, err := r.checkRequestStates(ctx, machineScope, cloudService)
+	if err != nil {
+		// In case the request state cannot be determined, we want to continue with the
+		// reconciliation loop. This is to avoid getting stuck in a state where we cannot
+		// proceed with the reconciliation and are stuck in a loop.
+		//
+		// In any case we log the error.
+		machineScope.Error(err, "Error when trying to determine inflight request states")
+	}
 
-	// Ensure that a LAN is created in the data center
+	if requeue {
+		machineScope.Info("Request is still in progress")
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
+	}
+
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
-	if requeue, err := cloudService.ReconcileLAN(); err != nil || requeue {
-		if requeue {
+	reconcileSequence := []serviceReconcileStep{
+		{name: "ReconcileLAN", reconcileFunc: cloudService.ReconcileLAN},
+		{name: "ReconcileServer", reconcileFunc: cloudService.ReconcileServer},
+	}
+
+	for _, step := range reconcileSequence {
+		if requeue, err := step.reconcileFunc(); err != nil || requeue {
+			if err != nil {
+				err = fmt.Errorf("error in step %s: %w", step.name, err)
+			}
+
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 		}
-		return ctrl.Result{}, fmt.Errorf("could not reconcile LAN %w", err)
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudMachineReconciler) reconcileDelete(cloudService *cloud.Service) (ctrl.Result, error) {
+// Before starting with the reconciliation loop,
+// we want to check if there is any pending request in the IONOS cluster or machine spec.
+// If there is any pending request, we need to check the status of the request and act accordingly.
+// Status:
+//   - Queued, Running => Requeue the current request
+//   - Failed => Log the error and continue also apply the same logic as in Done.
+//   - Done => Clear request from the status and continue reconciliation.
+func (r *IonosCloudMachineReconciler) checkRequestStates(
+	ctx context.Context,
+	machineScope *scope.MachineScope,
+	cloudService *cloud.Service,
+) (requeue bool, retErr error) {
+	// check cluster wide request
+	ionosCluster := machineScope.ClusterScope.IonosCluster
+	if req, exists := ionosCluster.Status.CurrentRequestByDatacenter[machineScope.DatacenterID()]; exists {
+		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
+		if err != nil {
+			retErr = fmt.Errorf("could not get request status: %w", err)
+		} else {
+			requeue, retErr = r.withStatus(status, message, machineScope.Logger,
+				func() error {
+					// remove the request from the status and patch the cluster
+					ionosCluster.DeleteCurrentRequest(machineScope.DatacenterID())
+					return machineScope.ClusterScope.PatchObject()
+				},
+			)
+		}
+	}
+
+	// check machine related request
+	if req := machineScope.IonosMachine.Status.CurrentRequest; req != nil {
+		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
+		if err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("could not get request status: %w", err))
+		} else {
+			requeue, _ = r.withStatus(status, message, machineScope.Logger,
+				func() error {
+					// no need to patch the machine here as it will be patched
+					// after the machine reconciliation is done.
+					machineScope.V(4).Info("Request is done, clearing it from the status")
+					machineScope.IonosMachine.Status.CurrentRequest = nil
+					return nil
+				},
+			)
+		}
+	}
+
+	return requeue, retErr
+}
+
+// withStatus is a helper function to handle the different request states
+// and provides a callback function to execute when the request is done or failed.
+func (r *IonosCloudMachineReconciler) withStatus(
+	status string,
+	message string,
+	log *logr.Logger,
+	doneCallback func() error,
+) (bool, error) {
+	switch status {
+	case sdk.RequestStatusQueued, sdk.RequestStatusRunning:
+		return true, nil
+	case sdk.RequestStatusFailed:
+		// log the error message
+		log.Error(nil, "Request status indicates a failure", "message", message)
+		fallthrough // we run the same logic as for status done
+	case sdk.RequestStatusDone:
+		// we don't requeue
+		return false, doneCallback()
+	}
+
+	return false, fmt.Errorf("unknown request status %s", status)
+}
+
+func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, cloudService *cloud.Service) (ctrl.Result, error) {
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
 	//  Moreover, should only be attempted if it's the last machine using that LAN. We should check that our machines
 	//  at least, but need to accept that users added their own infrastructure into our LAN (in that case a LAN deletion
 	//  attempt will be denied with HTTP 422).
-	requeue, err := cloudService.ReconcileLANDeletion()
+	requeue, err := r.checkRequestStates(ctx, machineScope, cloudService)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("could not reconcile LAN deletion: %w", err)
+		// In case the request state cannot be determined, we want to continue with the
+		// reconciliation loop. This is to avoid getting stuck in a state where we cannot
+		// proceed with the reconciliation and are stuck in a loop.
+		//
+		// In any case we log the error.
+		machineScope.Error(err, "Error when trying to determine inflight request states")
 	}
 
-	var after time.Duration
 	if requeue {
-		after = defaultReconcileDuration
+		machineScope.Info("Deletion request is still in progress")
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
-	return ctrl.Result{
-		RequeueAfter: after,
-	}, nil
+
+	if requeue, err := cloudService.ReconcileServerDeletion(); requeue || err != nil {
+		if err != nil {
+			err = fmt.Errorf("could not reconcile server deletion: %w", err)
+		}
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
+	}
+
+	if requeue, err := cloudService.ReconcileLANDeletion(); requeue || err != nil {
+		if err != nil {
+			err = fmt.Errorf("could not reconcile LAN deletion: %w", err)
+		}
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
+	}
+
+	controllerutil.RemoveFinalizer(machineScope.IonosMachine, infrav1.MachineFinalizer)
+	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
