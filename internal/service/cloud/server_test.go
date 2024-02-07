@@ -31,6 +31,8 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
+const testServerID = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
+
 type serverSuite struct {
 	ServiceTestSuite
 }
@@ -182,7 +184,7 @@ func (s *serverSuite) TestReconcileServer_NoRequest() {
 }
 
 func (s *serverSuite) TestGetServer_WithProviderID() {
-	serverID := "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
+	serverID := testServerID
 	s.mockGetServer(serverID).Return(&sdk.Server{}, nil)
 	server, err := s.service.getServer()
 	s.NoError(err)
@@ -190,7 +192,7 @@ func (s *serverSuite) TestGetServer_WithProviderID() {
 }
 
 func (s *serverSuite) TestGetServer_WithProviderID_NotFound() {
-	serverID := "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
+	serverID := testServerID
 	s.mockGetServer(serverID).Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404))
 	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
@@ -274,7 +276,7 @@ func (s *serverSuite) examplePostRequest(status string) []sdk.Request {
 		url:        s.service.serversURL(),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName()),
 		href:       reqPath,
-		targetID:   "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf",
+		targetID:   testServerID,
 		targetType: sdk.SERVER,
 	}
 	return []sdk.Request{s.exampleRequest(opts)}
