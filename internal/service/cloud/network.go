@@ -17,11 +17,13 @@ limitations under the License.
 package cloud
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"path"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/cluster-api/util"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -156,6 +158,10 @@ func (s *Service) createLAN() error {
 	requestPath, err := s.api().CreateLAN(s.ctx, s.datacenterID(), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.lanName()),
 		Public: ptr.To(true),
+		IpFailover: &[]sdk.IPFailover{{
+			Ip:      nil,
+			NicUuid: nil,
+		}},
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create LAN in data center %s: %w", s.datacenterID(), err)
@@ -226,49 +232,79 @@ func (s *Service) removeLANPendingRequestFromCluster() error {
 	return nil
 }
 
-// checkPrimaryNIC ensures the primary NIC of the server contains the endpoint IP address.
+// ReconcileIPFailover ensures, that the control plane nodes, will attach the endpoint IP to their primary
+// NIC and add the NIC to the failover group of the public LAN.
 // This is needed for KubeVIP in order to set up control plane load balancing.
 //
 // If we want to support private clusters in the future, this will require some adjustments.
-func (s *Service) checkPrimaryNIC(server *sdk.Server) (requeue bool, err error) {
-	log := s.scope.Logger.WithName("checkPrimaryNIC")
+func (s *Service) ReconcileIPFailover() (requeue bool, err error) {
+	log := s.scope.Logger.WithName("ReconcileIPFailover")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
 		log.V(4).Info("Machine is a worker node and doesn't need a second IP address")
 		return false, nil
 	}
 
-	serverNICs := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
-	for _, nic := range serverNICs {
-		// if the name doesn't match, we can continue
-		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name != s.serverName() {
-			continue
-		}
-
-		log.V(4).Info("Found primary NIC", "name", s.serverName())
-		ips := ptr.Deref(nic.GetProperties().GetIps(), []string{})
-		for _, ip := range ips {
-			if ip == s.scope.ClusterScope.GetControlPlaneEndpoint().Host {
-				log.V(4).Info("Primary NIC contains endpoint IP address")
-				return false, nil
-			}
-		}
-
-		// Patch the NIC and include the complete set of IP addresses
-		// The primary IP must be in the first position.
-		patchSet := append(ips, s.scope.ClusterScope.GetControlPlaneEndpoint().Host)
-
-		serverID := ptr.Deref(server.GetId(), "")
-		nicProperties := sdk.NicProperties{Ips: &patchSet}
-
-		err = s.patchNIC(serverID, nic, nicProperties)
-		return true, err
+	endpointIP := s.scope.ClusterScope.GetControlPlaneEndpoint().Host
+	nic, err := s.reconcileNICConfig(endpointIP)
+	if err != nil {
+		return false, err
 	}
 
-	return true, fmt.Errorf("could not find primary NIC with name %s", s.serverName())
+	nicID := ptr.Deref(nic.GetId(), "")
+	return s.reconcileIPFailoverGroup(nicID, endpointIP)
 }
 
-func (s *Service) patchNIC(serverID string, nic sdk.Nic, props sdk.NicProperties) error {
+// reconcileNICConfig ensures, that the primary NIC contains the required config.
+func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
+	log := s.scope.Logger.WithName("reconcileNICConfig")
+
+	log.V(4).Info("Reconciling NIC config")
+	// Get current state of the server
+	server, err := s.getServer()
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the primary NIC and ensure, that the endpoint IP address is added to the NIC.
+	nic, err := s.findPrimaryNIC(server)
+	if err != nil {
+		return nil, err
+	}
+
+	// if the NIC already contains the endpoint IP address, we can return
+	if nicHasIP(nic, endpointIP) {
+		log.V(4).Info("Primary NIC contains endpoint IP address. Reconcile successful.")
+		return nic, nil
+	}
+
+	log.V(4).Info("Unable to find endpoint IP address in primary NIC. Patching NIC.")
+	nicIPs := ptr.Deref(nic.GetProperties().GetIps(), []string{})
+	nicIPs = append(nicIPs, endpointIP)
+
+	if err := s.patchNIC(ptr.Deref(server.GetId(), ""), nic, sdk.NicProperties{Ips: &nicIPs}); err != nil {
+		return nil, err
+	}
+
+	log.V(4).Info("Successfully Patched NIC. Finished reconciling NIC config.")
+	// As we are waiting for the request to finish this time, we can assume, that the request was successful
+	// Therefore we can remove the current request
+	s.scope.IonosMachine.Status.CurrentRequest = nil
+
+	return nic, nil
+}
+
+func (s *Service) findPrimaryNIC(server *sdk.Server) (*sdk.Nic, error) {
+	serverNICs := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
+	for _, nic := range serverNICs {
+		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name == s.serverName() {
+			return &nic, nil
+		}
+	}
+	return nil, fmt.Errorf("could not find primary NIC with name %s", s.serverName())
+}
+
+func (s *Service) patchNIC(serverID string, nic *sdk.Nic, props sdk.NicProperties) error {
 	log := s.scope.Logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")
@@ -279,8 +315,84 @@ func (s *Service) patchNIC(serverID string, nic sdk.Nic, props sdk.NicProperties
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}
 
+	// set the current request in case the WaitForRequest function fails.
 	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPatch, location))
 
 	log.V(4).Info("Successfully patched NIC", "location", location)
+	// In this case, we want to wait for the request to be finished as we need to configure the
+	// failover group
+	return s.api().WaitForRequest(s.ctx, location)
+}
+
+// reconcileIPFailoverGroup ensures that the public LAN has a failover group with the NIC for this machine and
+// the endpoint IP address. It further ensures, that NICs from additional control plane machines are also added.
+func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bool, err error) {
+	log := s.scope.Logger.WithName("reconcileIPFailoverGroup")
+	if nicID == "" {
+		return false, errors.New("nicID is empty")
+	}
+
+	// Add the NIC to the failover group of the LAN
+	lan, err := s.getLAN()
+	if err != nil {
+		return false, err
+	}
+
+	lanID := ptr.Deref(lan.GetId(), "")
+	log.V(4).Info("Checking failover group of LAN", "id", lanID)
+	ipFailoverConfig := ptr.Deref(lan.GetProperties().GetIpFailover(), []sdk.IPFailover{})
+
+	for index, entry := range ipFailoverConfig {
+		nicUUID := ptr.Deref(entry.GetNicUuid(), "undefined")
+		if nicUUID != nicID {
+			continue
+		}
+
+		log.V(4).Info("Found NIC in failover group", "nicUUID", nicUUID)
+		ip := ptr.Deref(entry.GetIp(), "undefined")
+		if ip == endpointIP {
+			log.V(4).Info("NIC is already in the failover group with the correct IP address")
+			return false, nil
+		}
+
+		log.Info("NIC is already in the failover group but with a different IP address", "currentIP", ip, "expectedIP", endpointIP)
+		// The IP address of the NIC is different. We need to update the failover group.
+		entry.Ip = ptr.To(endpointIP)
+		ipFailoverConfig[index] = entry
+
+		err := s.patchLAN(lanID, sdk.LanProperties{IpFailover: &ipFailoverConfig})
+		return true, err
+	}
+
+	ipFailoverConfig = append(ipFailoverConfig, sdk.IPFailover{
+		Ip:      ptr.To(endpointIP),
+		NicUuid: ptr.To(nicID),
+	})
+	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
+
+	log.V(4).Info("Patching LAN failover group to add NIC", "nicID", nicID, "endpointIP", endpointIP)
+
+	err = s.patchLAN(*lan.GetId(), props)
+	return true, err
+}
+
+func (s *Service) patchLAN(lanID string, properties sdk.LanProperties) error {
+	log := s.scope.Logger.WithName("patchLAN")
+	log.Info("Patching LAN", "id", lanID)
+
+	location, err := s.api().PatchLAN(s.ctx, s.datacenterID(), lanID, properties)
+	if err != nil {
+		return fmt.Errorf("failed to patch LAN %s: %w", lanID, err)
+	}
+
+	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPatch, location))
+
 	return nil
+}
+
+// nicHasIP returns true if the NIC contains the given IP address.
+func nicHasIP(nic *sdk.Nic, expectedIP string) bool {
+	ips := ptr.Deref(nic.GetProperties().GetIps(), []string{})
+	ipSet := sets.New(ips...)
+	return ipSet.Has(expectedIP)
 }

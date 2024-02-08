@@ -66,11 +66,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 	}
 
 	if server != nil {
-		// we have to make sure that after the NIC was created, the endpoint IP must be added
-		// as a secondary IP address
-		if shouldRequeue, err := s.checkPrimaryNIC(server); shouldRequeue || err != nil {
-			return shouldRequeue, err
-		}
+		// Server is available
 
 		if !s.isServerAvailable(server) {
 			// server is still provisioning, checking again later
@@ -79,7 +75,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 
 		log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
 		// server exists and is available.
-		return s.finalizeServerProvisioning()
+		return false, nil
 	}
 
 	// server does not exist yet, create it
@@ -164,7 +160,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 //	return false, nil
 //}
 
-func (s *Service) finalizeServerProvisioning() (bool, error) {
+func (s *Service) FinalizeMachineProvisioning() (bool, error) {
 	conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
 	conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil

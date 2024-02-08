@@ -875,6 +875,61 @@ func (_c *MockClient_ListVolumes_Call) RunAndReturn(run func(context.Context, st
 	return _c
 }
 
+// PatchLAN provides a mock function with given fields: ctx, datacenterID, lanID, properties
+func (_m *MockClient) PatchLAN(ctx context.Context, datacenterID string, lanID string, properties ionoscloud.LanProperties) (string, error) {
+	ret := _m.Called(ctx, datacenterID, lanID, properties)
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.LanProperties) (string, error)); ok {
+		return rf(ctx, datacenterID, lanID, properties)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.LanProperties) string); ok {
+		r0 = rf(ctx, datacenterID, lanID, properties)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, ionoscloud.LanProperties) error); ok {
+		r1 = rf(ctx, datacenterID, lanID, properties)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_PatchLAN_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PatchLAN'
+type MockClient_PatchLAN_Call struct {
+	*mock.Call
+}
+
+// PatchLAN is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - lanID string
+//   - properties ionoscloud.LanProperties
+func (_e *MockClient_Expecter) PatchLAN(ctx interface{}, datacenterID interface{}, lanID interface{}, properties interface{}) *MockClient_PatchLAN_Call {
+	return &MockClient_PatchLAN_Call{Call: _e.mock.On("PatchLAN", ctx, datacenterID, lanID, properties)}
+}
+
+func (_c *MockClient_PatchLAN_Call) Run(run func(ctx context.Context, datacenterID string, lanID string, properties ionoscloud.LanProperties)) *MockClient_PatchLAN_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(ionoscloud.LanProperties))
+	})
+	return _c
+}
+
+func (_c *MockClient_PatchLAN_Call) Return(_a0 string, _a1 error) *MockClient_PatchLAN_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_PatchLAN_Call) RunAndReturn(run func(context.Context, string, string, ionoscloud.LanProperties) (string, error)) *MockClient_PatchLAN_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // PatchNIC provides a mock function with given fields: ctx, datacenterID, serverID, nicID, properties
 func (_m *MockClient) PatchNIC(ctx context.Context, datacenterID string, serverID string, nicID string, properties ionoscloud.NicProperties) (string, error) {
 	ret := _m.Called(ctx, datacenterID, serverID, nicID, properties)

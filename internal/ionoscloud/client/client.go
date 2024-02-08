@@ -207,6 +207,28 @@ func (c *IonosCloudClient) AttachToLAN(ctx context.Context, datacenterID, lanID 
 	return &n, nil
 }
 
+// PatchLAN patches the LAN that matches lanID in the specified data center with the provided properties, returning the request location.
+func (c *IonosCloudClient) PatchLAN(ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+
+	if lanID == "" {
+		return "", errLANIDIsEmpty
+	}
+
+	_, res, err := c.API.LANsApi.DatacentersLansPatch(ctx, datacenterID, lanID).Lan(properties).Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	if location := res.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
+}
+
 // ListLANs returns a list of LANs in the specified data center.
 func (c *IonosCloudClient) ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error) {
 	if datacenterID == "" {

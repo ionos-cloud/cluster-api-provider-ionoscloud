@@ -217,6 +217,12 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 	reconcileSequence := []serviceReconcileStep{
 		{name: "ReconcileLAN", reconcileFunc: cloudService.ReconcileLAN},
 		{name: "ReconcileServer", reconcileFunc: cloudService.ReconcileServer},
+		// TODO(lubedacht) ensure nic is removed from IP failover configuration before deleting machine.
+		// NOTE(avorima): NICs, which are configured in an IP failover configuration, cannot be deleted
+		// by a request to delete the server. Therefore, during deletion, we need to remove the NIC from
+		// the IP failover configuration.
+		{name: "ReconcileIPFailover", reconcileFunc: cloudService.ReconcileIPFailover},
+		{name: "FinalizeMachineProvisioning", reconcileFunc: cloudService.FinalizeMachineProvisioning},
 	}
 
 	for _, step := range reconcileSequence {
