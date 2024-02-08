@@ -158,10 +158,6 @@ func (s *Service) createLAN() error {
 	requestPath, err := s.api().CreateLAN(s.ctx, s.datacenterID(), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.lanName()),
 		Public: ptr.To(true),
-		IpFailover: &[]sdk.IPFailover{{
-			Ip:      nil,
-			NicUuid: nil,
-		}},
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create LAN in data center %s: %w", s.datacenterID(), err)
