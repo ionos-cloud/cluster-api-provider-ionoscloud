@@ -220,6 +220,14 @@ func (s *Service) getLatestLANDeletionRequest(lanID string) (*requestInfo, error
 	)
 }
 
+func (s *Service) getLatestLANPatchRequest(lanID string) (*requestInfo, error) {
+	return getMatchingRequest[sdk.Lan](
+		s,
+		http.MethodPatch,
+		path.Join(s.lansURL(), lanID),
+	)
+}
+
 func (s *Service) removeLANPendingRequestFromCluster() error {
 	s.scope.ClusterScope.IonosCluster.DeleteCurrentRequest(s.datacenterID())
 	if err := s.scope.ClusterScope.PatchObject(); err != nil {
@@ -237,7 +245,7 @@ func (s *Service) ReconcileIPFailover() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileIPFailover")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
-		log.V(4).Info("Machine is a worker node and doesn't need a second IP address")
+		log.V(4).Info("Failover is only applied to control-plane machines.")
 		return false, nil
 	}
 
@@ -251,7 +259,34 @@ func (s *Service) ReconcileIPFailover() (requeue bool, err error) {
 	return s.reconcileIPFailoverGroup(nicID, endpointIP)
 }
 
-// reconcileNICConfig ensures, that the primary NIC contains the required config.
+func (s *Service) ReconcileIPFailoverDeletion() (requeue bool, err error) {
+	log := s.scope.Logger.WithName("ReconcileIPFailoverDeletion")
+
+	if !util.IsControlPlaneMachine(s.scope.Machine) {
+		log.V(4).Info("Failover is only applied to control-plane machines.")
+		return false, nil
+	}
+
+	server, err := s.getServer()
+	if err != nil {
+		if isNotFound(err) {
+			log.Info("Server not found. Cannot determine NIC to remove from failover group.")
+			return false, nil
+		}
+		return false, err
+	}
+
+	nic, err := s.findPrimaryNIC(server)
+	if err != nil {
+		log.Info("Unable to find primary NIC on server", "error", err)
+		return false, nil
+	}
+
+	nicID := ptr.Deref(nic.GetId(), "")
+	return s.removeNICFromFailoverGroup(nicID)
+}
+
+// reconcileNICConfig ensures, that the primary NIC contains the endpoint IP address.
 func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 	log := s.scope.Logger.WithName("reconcileNICConfig")
 
@@ -334,7 +369,12 @@ func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bo
 		return false, err
 	}
 
+	// Check if the LAN is currently being updated
 	lanID := ptr.Deref(lan.GetId(), "")
+	if pending, err := s.isLANPatchPending(lanID); pending || err != nil {
+		return pending, err
+	}
+
 	log.V(4).Info("Checking failover group of LAN", "id", lanID)
 	ipFailoverConfig := ptr.Deref(lan.GetProperties().GetIpFailover(), []sdk.IPFailover{})
 
@@ -344,6 +384,7 @@ func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bo
 			continue
 		}
 
+		// Make sure the NIC is in the failover group with the correct IP address.
 		log.V(4).Info("Found NIC in failover group", "nicUUID", nicUUID)
 		ip := ptr.Deref(entry.GetIp(), "undefined")
 		if ip == endpointIP {
@@ -360,16 +401,61 @@ func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bo
 		return true, err
 	}
 
+	// NIC was not found in failover group. We need to add it.
 	ipFailoverConfig = append(ipFailoverConfig, sdk.IPFailover{
 		Ip:      ptr.To(endpointIP),
 		NicUuid: ptr.To(nicID),
 	})
-	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
 
+	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
 	log.V(4).Info("Patching LAN failover group to add NIC", "nicID", nicID, "endpointIP", endpointIP)
 
 	err = s.patchLAN(*lan.GetId(), props)
 	return true, err
+}
+
+func (s *Service) removeNICFromFailoverGroup(nicID string) (requeue bool, err error) {
+	log := s.scope.Logger.WithName("removeNICFromFailoverGroup")
+
+	lan, err := s.getLAN()
+	if err != nil {
+		return false, err
+	}
+
+	// check if there is a pending patch request for the LAN
+	lanID := ptr.Deref(lan.GetId(), "")
+	if pending, err := s.isLANPatchPending(lanID); pending || err != nil {
+		return pending, err
+	}
+
+	log.V(4).Info("Checking failover group of LAN", "id", lanID)
+	ipFailoverConfig := ptr.Deref(lan.GetProperties().GetIpFailover(), []sdk.IPFailover{})
+
+	for index, entry := range ipFailoverConfig {
+		if ptr.Deref(entry.GetNicUuid(), "undefined") != nicID {
+			continue
+		}
+
+		log.V(4).Info("Found NIC in failover group", "nicUUID", nicID)
+		ipFailoverConfig = append(ipFailoverConfig[:index], ipFailoverConfig[index+1:]...)
+		props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
+
+		log.V(4).Info("Patching LAN failover group to remove NIC", "nicID", nicID)
+		err := s.patchLAN(lanID, props)
+		return true, err
+	}
+
+	log.V(4).Info("NIC not found in failover group. No action required.")
+	return false, nil
+}
+
+func (s *Service) isLANPatchPending(lanID string) (pending bool, err error) {
+	ri, err := s.getLatestLANPatchRequest(lanID)
+	if err != nil {
+		return false, fmt.Errorf("unable to check for pending LAN patch request: %w", err)
+	}
+
+	return ri != nil && ri.isPending(), nil
 }
 
 func (s *Service) patchLAN(lanID string, properties sdk.LanProperties) error {
