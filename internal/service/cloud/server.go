@@ -161,6 +161,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 //}
 
 func (s *Service) FinalizeMachineProvisioning() (bool, error) {
+	s.scope.IonosMachine.Status.Ready = true
 	conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
 	conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil

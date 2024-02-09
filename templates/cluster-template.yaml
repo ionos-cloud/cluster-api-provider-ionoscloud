@@ -110,9 +110,63 @@ spec:
           ip_vs_sh
           nf_conntrack
           ip_vs_sed
+
+      - path: /etc/kubernetes/manifests/kube-vip.yaml
+        owner: root:root
+        content: |
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            creationTimestamp: null
+            name: kube-vip
+            namespace: kube-system
+          spec:
+            containers:
+            - args:
+              - manager
+              env:
+              - name: cp_enable
+                value: "true"
+              - name: vip_interface
+                value: ${VIP_NETWORK_INTERFACE="ens6"}
+              - name: address
+                value: ${CONTROL_PLANE_ENDPOINT_IP}
+              - name: port
+                value: "6443"
+              - name: vip_arp
+                value: "true"
+              - name: vip_leaderelection
+                value: "true"
+              - name: vip_leaseduration
+                value: "15"
+              - name: vip_renewdeadline
+                value: "10"
+              - name: vip_retryperiod
+                value: "2"
+              image: ghcr.io/kube-vip/kube-vip:v0.5.11
+              imagePullPolicy: IfNotPresent
+              name: kube-vip
+              resources: {}
+              securityContext:
+                capabilities:
+                  add:
+                  - NET_ADMIN
+                  - NET_RAW
+              volumeMounts:
+              - mountPath: /etc/kubernetes/admin.conf
+                name: kubeconfig
+            hostAliases:
+            - hostnames:
+              - kubernetes
+              ip: 127.0.0.1
+            hostNetwork: true
+            volumes:
+            - hostPath:
+                path: /etc/kubernetes/admin.conf
+                type: FileOrCreate
+              name: kubeconfig
+          status: {}
     preKubeadmCommands:
-      # TODO(lubedacht) remove this when using KubeVIP
-      - ip addr add dev ens6 ${CONTROL_PLANE_ENDPOINT_IP}/32
       # download gpg keys
       - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/docker.gpg
       - curl -fsSL https://pkgs.k8s.io/core:/stable:/v${KUBERNETES_VERSION_SHORT}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/kubernetes-apt-keyring.gpg
@@ -135,15 +189,19 @@ spec:
         systemctl disable --now accounts-daemon atd unattended-upgrades udisks2 multipathd apt-daily apt-daily.timer
         apt-daily-upgrade apt-daily-upgrade.timer motd-news.timer fwupd-refresh.timer packagekit ModemManager snapd snapd.socket
         snapd.apparmor snapd.autoimport snapd.core-fixup snapd.recovery-chooser-trigger snapd.seeded snapd.system-shutdown ua-timer.timer
+      - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/admin.conf get node $(hostname) -ojsonpath='{..systemUUID }')
+      - >
+        kubectl --kubeconfig /etc/kubernetes/admin.conf 
+        patch node $(hostname) 
+        --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
-          provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"
+          cloud-provider: external
     joinConfiguration:
       nodeRegistration:
         criSocket: unix:///run/containerd/containerd.sock
-        kubeletExtraArgs:
-          provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"
+
   version: "${KUBERNETES_VERSION}"
 ---
 kind: IonosCloudMachineTemplate
@@ -305,8 +363,14 @@ spec:
           systemctl disable --now accounts-daemon atd unattended-upgrades udisks2 multipathd apt-daily apt-daily.timer
           apt-daily-upgrade apt-daily-upgrade.timer motd-news.timer fwupd-refresh.timer packagekit ModemManager snapd snapd.socket
           snapd.apparmor snapd.autoimport snapd.core-fixup snapd.recovery-chooser-trigger snapd.seeded snapd.system-shutdown ua-timer.timer
+        - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/admin.conf get node $(hostname) -ojsonpath='{..systemUUID }')
+        - >
+          kubectl --kubeconfig /etc/kubernetes/admin.conf 
+          patch node $(hostname) 
+          --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
       joinConfiguration:
         nodeRegistration:
-          criSocket: unix:///run/containerd/containerd.sock
           kubeletExtraArgs:
-            provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"
+            cloud-provider: external
+          criSocket: unix:///run/containerd/containerd.sock
+

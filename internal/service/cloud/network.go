@@ -380,13 +380,19 @@ func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bo
 
 	for index, entry := range ipFailoverConfig {
 		nicUUID := ptr.Deref(entry.GetNicUuid(), "undefined")
+		// we need one nic to be in the failover? I think???
+		ip := ptr.Deref(entry.GetIp(), "undefined")
+		if ip == endpointIP && nicUUID != nicID {
+			log.V(4).Info("Another NIC is already defined in this failover group. Skipping further actions")
+			return false, nil
+		}
+
 		if nicUUID != nicID {
 			continue
 		}
 
 		// Make sure the NIC is in the failover group with the correct IP address.
 		log.V(4).Info("Found NIC in failover group", "nicUUID", nicUUID)
-		ip := ptr.Deref(entry.GetIp(), "undefined")
 		if ip == endpointIP {
 			log.V(4).Info("NIC is already in the failover group with the correct IP address")
 			return false, nil
