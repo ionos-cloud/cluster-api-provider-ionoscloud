@@ -31,7 +31,7 @@ const (
 	ipBlocksPath                   = "ipblocks"
 )
 
-// ReconcileControlPlaneEndpoint ensures the control plane endpoint IP block exists, creating one if it doesn't.
+// ReconcileControlPlaneEndpoint ensures the control plane endpoint IP block exists.
 func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.ClusterScope) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileControlPlaneEndpoint")
 

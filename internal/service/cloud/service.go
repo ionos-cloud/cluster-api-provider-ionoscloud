@@ -22,9 +22,8 @@ import (
 	"errors"
 	"net/http"
 
-	sdk "github.com/ionos-cloud/sdk-go/v6"
-
 	"github.com/go-logr/logr"
+	sdk "github.com/ionos-cloud/sdk-go/v6"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"

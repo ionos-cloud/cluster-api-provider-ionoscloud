@@ -186,7 +186,7 @@ func (s *serverSuite) TestReconcileServer_NoRequest() {
 func (s *serverSuite) TestGetServer_WithProviderID() {
 	serverID := testServerID
 	s.mockGetServer(serverID).Return(&sdk.Server{}, nil)
-	server, err := s.service.getServer()
+	server, err := s.service.getServer(s.ctx)
 	s.NoError(err)
 	s.NotNil(server)
 }
@@ -200,7 +200,7 @@ func (s *serverSuite) TestGetServer_WithProviderID_NotFound() {
 		},
 	}}, nil)
 
-	server, err := s.service.getServer()
+	server, err := s.service.getServer(s.ctx)
 	s.NoError(err)
 	s.Nil(server)
 }
@@ -216,7 +216,7 @@ func (s *serverSuite) TestGetServer_WithoutProviderID_FoundInList() {
 		},
 	}}, nil)
 
-	server, err := s.service.getServer()
+	server, err := s.service.getServer(s.ctx)
 	s.NoError(err)
 	s.NotNil(server)
 }

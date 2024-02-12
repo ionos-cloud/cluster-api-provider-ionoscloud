@@ -17,6 +17,7 @@ limitations under the License.
 package cloud
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"path"
@@ -48,7 +49,7 @@ func (s *Service) lansURL() string {
 func (s *Service) ReconcileLAN() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLAN")
 
-	lan, request, err := findResource(s.getLAN, s.getLatestLANCreationRequest)
+	lan, request, err := findResource(s.ctx, s.getLAN, s.getLatestLANCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -82,7 +83,7 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLANDeletion")
 
 	// Try to retrieve the cluster LAN or even check if it's currently still being created.
-	lan, request, err := findResource(s.getLAN, s.getLatestLANCreationRequest)
+	lan, request, err := findResource(s.ctx, s.getLAN, s.getLatestLANCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -120,7 +121,7 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 }
 
 // getLAN tries to retrieve the cluster-related LAN in the data center.
-func (s *Service) getLAN() (*sdk.Lan, error) {
+func (s *Service) getLAN(_ context.Context) (*sdk.Lan, error) {
 	// check if the LAN exists
 	lans, err := s.api().ListLANs(s.ctx, s.datacenterID())
 	if err != nil {
@@ -201,8 +202,9 @@ func (s *Service) deleteLAN(lanID string) error {
 	return nil
 }
 
-func (s *Service) getLatestLANCreationRequest() (*requestInfo, error) {
+func (s *Service) getLatestLANCreationRequest(_ context.Context) (*requestInfo, error) {
 	return getMatchingRequest(
+		s.ctx,
 		s,
 		http.MethodPost,
 		s.lansURL(),
@@ -212,6 +214,7 @@ func (s *Service) getLatestLANCreationRequest() (*requestInfo, error) {
 
 func (s *Service) getLatestLANDeletionRequest(lanID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Lan](
+		s.ctx,
 		s,
 		http.MethodDelete,
 		path.Join(s.lansURL(), lanID),

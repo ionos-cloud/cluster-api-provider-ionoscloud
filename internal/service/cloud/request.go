@@ -57,6 +57,8 @@ func mapResourceType(cloudResource any) sdk.Type {
 		return sdk.LAN
 	case sdk.Server, *sdk.Server:
 		return sdk.SERVER
+	case sdk.IpBlock, *sdk.IpBlock:
+		return sdk.IPBLOCK
 	default:
 		return ""
 	}
@@ -115,7 +117,7 @@ func getMatchingRequest[T any](
 	// As we later on ignore query parameters in found requests, we need to do the same here for consistency.
 	urlWithoutQueryParams := strings.Split(url, "?")[0]
 
-	requests, err := s.api().GetRequests(s.ctx, method, urlWithoutQueryParams)
+	requests, err := s.api().GetRequests(ctx, method, urlWithoutQueryParams)
 	if err != nil {
 		return nil, fmt.Errorf("could not get requests: %w", err)
 	}

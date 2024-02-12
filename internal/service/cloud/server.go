@@ -17,6 +17,7 @@ limitations under the License.
 package cloud
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -54,6 +55,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 	}
 
 	server, request, err := findResource(
+		s.ctx,
 		s.getServer,
 		s.getLatestServerCreationRequest,
 	)
@@ -99,6 +101,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLANDeletion")
 
 	server, request, err := findResource(
+		s.ctx,
 		s.getServer,
 		s.getLatestServerCreationRequest,
 	)
@@ -119,9 +122,9 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 	// TODO(lubedacht) add handling for volume deletion
 	// if requeue, err := s.ensureVolumeDeleted(server); requeue || err != nil {
 	//	return requeue, err
-	//}
+	// }
 
-	request, err = s.getLatestServerDeletionRequest(*server.Id)
+	request, err = s.getLatestServerDeletionRequest(s.ctx, *server.Id)
 	if err != nil {
 		return false, err
 	}
@@ -162,7 +165,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 //	}
 //
 //	return false, nil
-//}
+// }
 
 func (s *Service) finalizeServerProvisioning() (bool, error) {
 	conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
@@ -217,7 +220,7 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 }
 
 // getServer looks for the server in the data center.
-func (s *Service) getServer() (*sdk.Server, error) {
+func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
 	server, err := s.getServerByProviderID()
 	if server != nil || err != nil {
 		return server, err
@@ -259,8 +262,9 @@ func (s *Service) deleteServer(serverID string) error {
 	return nil
 }
 
-func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
+func (s *Service) getLatestServerCreationRequest(_ context.Context) (*requestInfo, error) {
 	return getMatchingRequest(
+		s.ctx,
 		s,
 		http.MethodPost,
 		path.Join("datacenters", s.datacenterID(), "servers"),
@@ -268,8 +272,9 @@ func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
 	)
 }
 
-func (s *Service) getLatestServerDeletionRequest(serverID string) (*requestInfo, error) {
+func (s *Service) getLatestServerDeletionRequest(_ context.Context, serverID string) (*requestInfo, error) {
 	return getMatchingRequest(
+		s.ctx,
 		s,
 		http.MethodDelete,
 		path.Join("datacenters", s.datacenterID(), "servers", serverID),
@@ -285,7 +290,7 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	lan, err := s.getLAN()
+	lan, err := s.getLAN(s.ctx)
 	if err != nil {
 		return err
 	}
