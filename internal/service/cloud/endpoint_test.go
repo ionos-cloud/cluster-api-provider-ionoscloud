@@ -39,10 +39,6 @@ func TestEndpointTestSuite(t *testing.T) {
 	suite.Run(t, new(EndpointTestSuite))
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by getIPBlock,
-// if there are multiple IP blocks that match both the name and location,
-// an error is returned.
 func (s *EndpointTestSuite) TestGetIPBlock_MultipleMatches() {
 	s.mockListIPBlockCall().Return([]sdk.IpBlock{
 		{
@@ -63,10 +59,6 @@ func (s *EndpointTestSuite) TestGetIPBlock_MultipleMatches() {
 	s.Nil(blocks)
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by getIPBlock,
-// if there is a single IP block that matches both the name and location,
-// the IP block is returned.
 func (s *EndpointTestSuite) TestGetIPBlock_SingleMatch() {
 	name := ptr.To("k8s-default-test-cluster")
 	location := ptr.To(string(infrav1.RegionBerlin))
@@ -85,10 +77,6 @@ func (s *EndpointTestSuite) TestGetIPBlock_SingleMatch() {
 	s.Equal(location, block.Properties.Location, "IP block location does not match")
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by getIPBlock,
-// if there is no IP block that matches both the name and location,
-// nil is returned.
 func (s *EndpointTestSuite) TestGetIPBlock_NoMatch() {
 	s.mockListIPBlockCall().Return([]sdk.IpBlock{
 		{
@@ -103,20 +91,12 @@ func (s *EndpointTestSuite) TestGetIPBlock_NoMatch() {
 	s.Nil(block)
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by reserveIPBlock,
-// if the IP block reservation request fails,
-// an error is returned.
 func (s *EndpointTestSuite) TestReserveIPBlock_RequestFailure() {
 	s.mockReserveIPBlockCall().Return("", errMock).Once()
 	err := s.service.reserveIPBlock(s.ctx, s.clusterScope)
 	s.Error(err)
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by reserveIPBlock,
-// if the IP block reservation request succeeds,
-// the request is stored in the IonosCluster status.
 func (s *EndpointTestSuite) TestReserveIPBlock_RequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockReserveIPBlockCall().Return(requestPath, nil).Once()
@@ -127,20 +107,12 @@ func (s *EndpointTestSuite) TestReserveIPBlock_RequestSuccess() {
 	s.Equal(req, s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter[scope.ControlPlaneEndpointRequestKey])
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by deleteIPBlock,
-// if the IP block deletion request fails,
-// an error is returned.
 func (s *EndpointTestSuite) TestDeleteIPBlock_RequestFailure() {
 	s.mockDeleteIPBlockCall().Return("", errMock).Once()
 	err := s.service.deleteIPBlock(s.ctx, s.clusterScope, exampleID)
 	s.Error(err)
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by deleteIPBlock,
-// if the IP block deletion request succeeds,
-// the request is stored in the IonosCluster status.
 func (s *EndpointTestSuite) TestDeleteIPBlock_RequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockDeleteIPBlockCall().Return(requestPath, nil).Once()
@@ -151,10 +123,6 @@ func (s *EndpointTestSuite) TestDeleteIPBlock_RequestSuccess() {
 	s.Equal(req, s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter[scope.ControlPlaneEndpointRequestKey])
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by getLatestIPBlockCreationRequest,
-// if there is no IP block creation request,
-// a nil requestInfo and nil error are returned.
 func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_NoRequest() {
 	s.mockGetRequestsCallPost().Return(make([]sdk.Request, 0), nil)
 	req, err := s.service.getLatestIPBlockCreationRequest(s.clusterScope)(s.ctx)
@@ -162,10 +130,6 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_NoRequest() {
 	s.Nil(req)
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by getLatestIPBlockCreationRequest,
-// if there is an IP block creation request,
-// the request is returned.
 func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_Request() {
 	req := s.buildRequest(infrav1.RequestStatusQueued, http.MethodPost, "")
 	reqs := []sdk.Request{req}
@@ -175,10 +139,6 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_Request() {
 	s.NotNil(info)
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by getLatestIPBlockCreationRequest,
-// there is an error when getting the request queue,
-// the error is returned.
 func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_RequestError() {
 	s.mockGetRequestsCallPost().Return(nil, errMock)
 	info, err := s.service.getLatestIPBlockCreationRequest(s.clusterScope)(s.ctx)
@@ -186,22 +146,13 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_RequestError() {
 	s.Nil(info)
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by getLatestIPBlockDeletionRequest,
-// if there is no IP block deletion request,
-// a nil requestInfo and nil error are returned.
 func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_NoRequest() {
-	// req := s.buildRequest(infrav1.RequestStatusQueued, http.MethodDelete, exampleID)
 	s.mockGetRequestsCallDelete(exampleID).Return(make([]sdk.Request, 0), nil)
 	info, err := s.service.getLatestIPBlockDeletionRequest(s.ctx, exampleID)
 	s.NoError(err)
 	s.Nil(info)
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by getLatestIPBlockDeletionRequest,
-// if there is an IP block deletion request,
-// the request is returned.
 func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_Request() {
 	req := s.buildRequest(infrav1.RequestStatusQueued, http.MethodDelete, exampleID)
 	reqs := []sdk.Request{req}
@@ -211,10 +162,6 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_Request() {
 	s.NotNil(info)
 }
 
-// Context: Endpoint Reconciliation
-// When running the function returned by getLatestIPBlockDeletionRequest,
-// there is an error when getting the request queue,
-// the error is returned.
 func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_RequestError() {
 	s.mockGetRequestsCallDelete(exampleID).Return(nil, errMock)
 	info, err := s.service.getLatestIPBlockDeletionRequest(s.ctx, exampleID)
