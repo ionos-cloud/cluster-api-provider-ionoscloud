@@ -35,6 +35,10 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 )
 
+const (
+	ControlPlaneEndpointRequestKey = "region-wide"
+)
+
 // ClusterScope defines the basic context for an actuator to operate upon.
 type ClusterScope struct {
 	*logr.Logger // Deprecated

@@ -30,8 +30,7 @@ import (
 )
 
 const (
-	controlPlaneEndpointRequestKey = "region-wide"
-	ipBlocksPath                   = "ipblocks"
+	ipBlocksPath = "ipblocks"
 )
 
 // ReconcileControlPlaneEndpoint ensures the control plane endpoint IP block exists.
@@ -148,7 +147,7 @@ func (s *Service) reserveIPBlock(ctx context.Context, cs *scope.ClusterScope) er
 		return fmt.Errorf("failed to request the cloud for IP block reservation: %w", err)
 	}
 
-	cs.IonosCluster.SetCurrentRequest(controlPlaneEndpointRequestKey, infrav1.NewQueuedRequest(http.MethodPost, requestPath))
+	cs.IonosCluster.SetCurrentRequest(scope.ControlPlaneEndpointRequestKey, infrav1.NewQueuedRequest(http.MethodPost, requestPath))
 	err = cs.PatchObject()
 	if err != nil {
 		return fmt.Errorf("unable to patch cluster: %w", err)
@@ -166,7 +165,7 @@ func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.ClusterScope, id 
 	if err != nil {
 		return fmt.Errorf("failed to requestPath IP block deletion: %w", err)
 	}
-	cs.IonosCluster.SetCurrentRequest(controlPlaneEndpointRequestKey, infrav1.NewQueuedRequest(http.MethodDelete, requestPath))
+	cs.IonosCluster.SetCurrentRequest(scope.ControlPlaneEndpointRequestKey, infrav1.NewQueuedRequest(http.MethodDelete, requestPath))
 	err = cs.PatchObject()
 	if err != nil {
 		return fmt.Errorf("unable to patch cluster: %w", err)
@@ -203,7 +202,7 @@ func (s *Service) removeIPBlockLeftovers(cs *scope.ClusterScope) error {
 	if cs.IonosCluster.Status.CurrentRequestByDatacenter == nil {
 		return nil
 	}
-	delete(cs.IonosCluster.Status.CurrentRequestByDatacenter, controlPlaneEndpointRequestKey)
+	delete(cs.IonosCluster.Status.CurrentRequestByDatacenter, scope.ControlPlaneEndpointRequestKey)
 	cs.IonosCluster.Spec.ControlPlaneEndpoint.Host = ""
 	if err := cs.PatchObject(); err != nil {
 		return fmt.Errorf("could not remove leftovers from ionos cluster spec or status: %w", err)
