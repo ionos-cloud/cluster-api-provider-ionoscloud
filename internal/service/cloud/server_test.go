@@ -19,6 +19,7 @@ package cloud
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"testing"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -78,7 +79,7 @@ func (s *serverSuite) TestReconcileServer_RequestPending() {
 		},
 	}}, nil)
 
-	s.mockGetServerCreationRequest().Return(s.examplePostRequest(sdk.RequestStatusQueued), nil)
+	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusQueued)}, nil)
 	requeue, err := s.service.ReconcileServer()
 	s.NoError(err)
 	s.True(requeue)
@@ -100,7 +101,7 @@ func (s *serverSuite) TestReconcileServer_RequestDone_StateBusy() {
 	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
 	s.machineScope.IonosMachine.Spec.ProviderID = nil
 	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
-	s.mockGetServerCreationRequest().Return(s.examplePostRequest(sdk.RequestStatusDone), nil)
+	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
 	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
 			Metadata: &sdk.DatacenterElementMetadata{
@@ -133,7 +134,7 @@ func (s *serverSuite) TestReconcileServer_RequestDone_StateAvailable() {
 	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
 	s.machineScope.IonosMachine.Spec.ProviderID = nil
 	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
-	s.mockGetServerCreationRequest().Return(s.examplePostRequest(sdk.RequestStatusDone), nil)
+	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
 	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
 			Metadata: &sdk.DatacenterElementMetadata{
@@ -181,6 +182,94 @@ func (s *serverSuite) TestReconcileServer_NoRequest() {
 	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
 	s.NoError(err)
 	s.True(requeue)
+}
+
+func (s *serverSuite) TestReconcileServerDeletion() {
+	s.mockGetServer(testServerID).Return(&sdk.Server{
+		Id: ptr.To(testServerID),
+	}, nil)
+
+	reqLocation := "delete/location"
+
+	s.mockGetServerDeletionRequest(testServerID).Return(nil, nil)
+	s.mockDeleteServer(testServerID).Return(reqLocation, nil)
+
+	res, err := s.service.ReconcileServerDeletion()
+	s.NoError(err)
+	s.True(res)
+	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, reqLocation)
+}
+
+func (s *serverSuite) TestReconcileServerDeletion_CreateRequestPending() {
+	s.mockGetServer(testServerID).Return(nil, nil)
+	s.mockListSevers().Return(&sdk.Servers{}, nil)
+	exampleRequest := s.examplePostRequest(sdk.RequestStatusQueued)
+	s.mockGetServerCreationRequest().Return([]sdk.Request{exampleRequest}, nil)
+
+	res, err := s.service.ReconcileServerDeletion()
+	s.NoError(err)
+	s.True(res)
+
+	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodPost)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, *exampleRequest.Metadata.RequestStatus.Href)
+}
+
+func (s *serverSuite) TestReconcileServerDeletion_RequestPending() {
+	s.mockGetServer(testServerID).Return(&sdk.Server{
+		Id: ptr.To(testServerID),
+	}, nil)
+
+	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusQueued, testServerID)
+
+	s.mockGetServerDeletionRequest(testServerID).Return([]sdk.Request{exampleRequest}, nil)
+
+	res, err := s.service.ReconcileServerDeletion()
+	s.NoError(err)
+	s.True(res)
+
+	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, *exampleRequest.Metadata.RequestStatus.Href)
+}
+
+func (s *serverSuite) TestReconcileServerDeletion_RequestDone() {
+	s.mockGetServer(testServerID).Return(&sdk.Server{
+		Id: ptr.To(testServerID),
+	}, nil)
+
+	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusQueued, testServerID)
+
+	s.mockGetServerDeletionRequest(testServerID).Return([]sdk.Request{exampleRequest}, nil)
+
+	res, err := s.service.ReconcileServerDeletion()
+	s.NoError(err)
+	s.True(res)
+
+	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, *exampleRequest.Metadata.RequestStatus.Href)
+}
+
+func (s *serverSuite) TestReconcileServerDeletion_RequestFailed() {
+	s.mockGetServer(testServerID).Return(&sdk.Server{
+		Id: ptr.To(testServerID),
+	}, nil)
+
+	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusFailed, testServerID)
+
+	s.mockGetServerDeletionRequest(testServerID).Return([]sdk.Request{exampleRequest}, nil)
+	s.mockDeleteServer(testServerID).Return("delete/triggered", nil)
+
+	res, err := s.service.ReconcileServerDeletion()
+	s.NoError(err)
+	s.True(res)
+
+	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, "delete/triggered")
 }
 
 func (s *serverSuite) TestGetServer_WithProviderID() {
@@ -252,8 +341,16 @@ func (s *serverSuite) mockGetServer(serverID string) *clienttest.MockClient_GetS
 	return s.ionosClient.EXPECT().GetServer(s.ctx, s.service.datacenterID(), serverID)
 }
 
+func (s *serverSuite) mockDeleteServer(serverID string) *clienttest.MockClient_DeleteServer_Call {
+	return s.ionosClient.EXPECT().DeleteServer(s.ctx, s.service.datacenterID(), serverID)
+}
+
 func (s *serverSuite) mockGetServerCreationRequest() *clienttest.MockClient_GetRequests_Call {
 	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.serversURL())
+}
+
+func (s *serverSuite) mockGetServerDeletionRequest(serverID string) *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, path.Join(s.service.serversURL(), serverID))
 }
 
 func (s *serverSuite) mockCreateServer() *clienttest.MockClient_CreateServer_Call {
@@ -269,7 +366,19 @@ func (s *serverSuite) mockListLANs() *clienttest.MockClient_ListLANs_Call {
 	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.service.datacenterID())
 }
 
-func (s *serverSuite) examplePostRequest(status string) []sdk.Request {
+func (s *serverSuite) exampleDeleteRequest(status, serverID string) sdk.Request {
+	opts := requestBuildOptions{
+		status:     status,
+		method:     http.MethodDelete,
+		url:        path.Join(s.service.serversURL(), serverID),
+		href:       path.Join(reqPath, testServerID),
+		targetID:   testServerID,
+		targetType: sdk.SERVER,
+	}
+	return s.exampleRequest(opts)
+}
+
+func (s *serverSuite) examplePostRequest(status string) sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPost,
@@ -279,5 +388,5 @@ func (s *serverSuite) examplePostRequest(status string) []sdk.Request {
 		targetID:   testServerID,
 		targetType: sdk.SERVER,
 	}
-	return []sdk.Request{s.exampleRequest(opts)}
+	return s.exampleRequest(opts)
 }

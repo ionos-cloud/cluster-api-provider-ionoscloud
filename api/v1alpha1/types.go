@@ -64,3 +64,12 @@ func NewQueuedRequest(method, path string) ProvisioningRequest {
 		State:       RequestStatusQueued,
 	}
 }
+
+// NewRequestWithState creates a new provisioning request with the given status.
+func NewRequestWithState(method, path string, state RequestStatus) ProvisioningRequest {
+	return ProvisioningRequest{
+		Method:      method,
+		RequestPath: path,
+		State:       state,
+	}
+}

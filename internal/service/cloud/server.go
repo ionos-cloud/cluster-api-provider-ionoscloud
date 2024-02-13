@@ -103,6 +103,10 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 	}
 
 	if request != nil && request.isPending() {
+		s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewRequestWithState(
+			http.MethodPost, request.location,
+			infrav1.RequestStatus(request.status)),
+		)
 		log.Info("Creation request is pending", "location", request.location)
 		return true, nil
 	}
@@ -112,53 +116,36 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		return false, nil
 	}
 
-	// TODO(lubedacht) add handling for volume deletion
-	// if requeue, err := s.ensureVolumeDeleted(server); requeue || err != nil {
-	//	return requeue, err
-	//}
-
 	request, err = s.getLatestServerDeletionRequest(*server.Id)
 	if err != nil {
 		return false, err
 	}
 
-	if request != nil && request.isPending() {
-		// We want to requeue and check again after some time
-		log.Info("Deletion request is pending", "location", request.location)
-		return true, nil
+	if request != nil {
+		if request.isPending() {
+			s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewRequestWithState(
+				http.MethodDelete, request.location,
+				infrav1.RequestStatus(request.status)),
+			)
+
+			// We want to requeue and check again after some time
+			log.Info("Deletion request is pending", "location", request.location)
+			return true, nil
+		}
+
+		if request.isDone() {
+			s.scope.IonosMachine.Status.CurrentRequest = nil
+			return false, nil
+		}
 	}
 
-	// TODO(lubedacht) Delete Volume before server deletion
-	// 	if the bool flag in the API doesn't work
-	// err = s.ensureVolumeDeleted(*server.Id)
+	if server == nil {
+		return false, nil
+	}
+
 	err = s.deleteServer(*server.Id)
 	return err == nil, err
 }
-
-// TODO(lubedacht)check if we need to manually delete volumes
-// func (s *Service) ensureVolumeDeleted(server *sdk.Server) (bool, error) {
-//	log := s.scope.Logger.WithName("ReconcileLANDeletion")
-//	log.Info("Ensuring that server volumes will be deleted", "serverID", ptr.Deref(server.GetId(), ""))
-//
-//	volumes := ptr.Deref(server.GetEntities().GetVolumes().GetItems(), []sdk.Volume{})
-//	if len(volumes) == 0 {
-//		return false, nil
-//	}
-//
-//	for _, vol := range volumes {
-//		location, err := s.api().DeleteVolume(s.ctx, s.datacenterID(), ptr.Deref(vol.GetId(), ""))
-//		if err != nil {
-//			log.Error(err, "Unexpected error occurred during Volume deletion", "volumeID", ptr.Deref(vol.GetId(), ""))
-//			return false, fmt.Errorf("failed to request volume deletion: %w", err)
-//		}
-//
-//		if location == "" {
-//			continue
-//		}
-//	}
-//
-//	return false, nil
-//}
 
 func (s *Service) FinalizeMachineProvisioning() (bool, error) {
 	s.scope.IonosMachine.Status.Ready = true
@@ -266,11 +253,10 @@ func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
 }
 
 func (s *Service) getLatestServerDeletionRequest(serverID string) (*requestInfo, error) {
-	return getMatchingRequest(
+	return getMatchingRequest[sdk.Server](
 		s,
 		http.MethodDelete,
 		path.Join("datacenters", s.datacenterID(), "servers", serverID),
-		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName()),
 	)
 }
 
