@@ -28,6 +28,7 @@ import (
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 type EndpointTestSuite struct {
@@ -122,8 +123,8 @@ func (s *EndpointTestSuite) TestReserveIPBlock_RequestSuccess() {
 	err := s.service.reserveIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
 	req := infrav1.NewQueuedRequest(http.MethodPost, requestPath)
-	s.Contains(s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter, controlPlaneEndpointRequestKey)
-	s.Equal(req, s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter[controlPlaneEndpointRequestKey])
+	s.Contains(s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter, scope.ControlPlaneEndpointRequestKey)
+	s.Equal(req, s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter[scope.ControlPlaneEndpointRequestKey])
 }
 
 // Context: Endpoint Reconciliation
@@ -146,8 +147,8 @@ func (s *EndpointTestSuite) TestDeleteIPBlock_RequestSuccess() {
 	err := s.service.deleteIPBlock(s.ctx, s.clusterScope, exampleID)
 	s.NoError(err)
 	req := infrav1.NewQueuedRequest(http.MethodDelete, requestPath)
-	s.Contains(s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter, controlPlaneEndpointRequestKey)
-	s.Equal(req, s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter[controlPlaneEndpointRequestKey])
+	s.Contains(s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter, scope.ControlPlaneEndpointRequestKey)
+	s.Equal(req, s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter[scope.ControlPlaneEndpointRequestKey])
 }
 
 // Context: Endpoint Reconciliation
