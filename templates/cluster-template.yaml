@@ -76,15 +76,16 @@ spec:
         systemctl disable --now accounts-daemon atd unattended-upgrades udisks2 multipathd apt-daily apt-daily.timer
         apt-daily-upgrade apt-daily-upgrade.timer motd-news.timer fwupd-refresh.timer packagekit ModemManager snapd snapd.socket
         snapd.apparmor snapd.autoimport snapd.core-fixup snapd.recovery-chooser-trigger snapd.seeded snapd.system-shutdown ua-timer.timer
+      - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
+      - >
+        kubectl --kubeconfig /etc/kubernetes/kubelet.conf
+        patch node $(hostname)
+        --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
     initConfiguration:
       nodeRegistration:
-        kubeletExtraArgs:
-          provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"
     joinConfiguration:
       nodeRegistration:
         criSocket: unix:///run/containerd/containerd.sock
-        kubeletExtraArgs:
-          provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"
   version: "${KUBERNETES_VERSION}"
 ---
 kind: IonosCloudMachineTemplate
@@ -187,8 +188,11 @@ spec:
           systemctl disable --now accounts-daemon atd unattended-upgrades udisks2 multipathd apt-daily apt-daily.timer
           apt-daily-upgrade apt-daily-upgrade.timer motd-news.timer fwupd-refresh.timer packagekit ModemManager snapd snapd.socket
           snapd.apparmor snapd.autoimport snapd.core-fixup snapd.recovery-chooser-trigger snapd.seeded snapd.system-shutdown ua-timer.timer
+        - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
+        - >
+          kubectl --kubeconfig /etc/kubernetes/kubelet.conf
+          patch node $(hostname)
+          --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
       joinConfiguration:
         nodeRegistration:
           criSocket: unix:///run/containerd/containerd.sock
-          kubeletExtraArgs:
-            provider-id: "ionos://'{{ ds.meta_data.instance_id }}'"
