@@ -353,8 +353,8 @@ func (s *Service) removeNICFromFailoverGroup(nicID string) (requeue bool, err er
 	ipFailoverConfig := *failoverConfig
 	lanID := *lan.GetId()
 
-	index := slices.IndexFunc(ipFailoverConfig, func(fo sdk.IPFailover) bool {
-		return ptr.Deref(fo.GetNicUuid(), "undefined") == nicID
+	index := slices.IndexFunc(ipFailoverConfig, func(failover sdk.IPFailover) bool {
+		return ptr.Deref(failover.GetNicUuid(), "undefined") == nicID
 	})
 
 	if index < 0 {
