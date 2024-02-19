@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -50,7 +51,7 @@ func defaultCluster() *IonosCloudCluster {
 				Port: 5678,
 			},
 			ContractNumber: "12345678",
-			Region:         RegionBerlin,
+			Location:       "de/txl",
 		},
 	}
 }
@@ -95,9 +96,9 @@ var _ = Describe("IonosCloudCluster", func() {
 			wantProvisionRequest := ProvisioningRequest{
 				Method:      "POST",
 				RequestPath: "/path/to/resource",
-				State:       RequestStatusQueued,
+				State:       sdk.RequestStatusQueued,
 			}
-			fetched.SetCurrentRequest("123", wantProvisionRequest)
+			fetched.SetCurrentRequestByDatacenter("123", wantProvisionRequest)
 			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
 
 			By("updating the cluster status")
@@ -111,41 +112,11 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(conditions.IsTrue(fetched, clusterv1.ReadyCondition)).To(BeTrue())
 
 			By("Removing the entry from the status again")
-			fetched.DeleteCurrentRequest("123")
+			fetched.DeleteCurrentRequestByDatacenter("123")
 			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
 
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
-		})
-	})
-
-	Context("Spec", func() {
-		Context("Region", func() {
-			It("should be set", func() {
-				m := defaultCluster()
-				m.Spec.Region = ""
-				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
-			})
-			It("should fail if not part of the enum", func() {
-				m := defaultCluster()
-				m.Spec.Region = "jo/vineta"
-				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
-			})
-			DescribeTable("should succeed if part of the enum", func(region Region) {
-				m := defaultCluster()
-				m.Spec.Region = region
-				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(m.Spec.Region).To(Equal(region))
-			},
-				Entry("Frankfurt", RegionFrankfurt),
-				Entry("Berlin", RegionBerlin),
-				Entry("Paris", RegionParis),
-				Entry("London", RegionLondon),
-				Entry("Logrono", RegionLogrono),
-				Entry("Lenexa", RegionLenexa),
-				Entry("LasVegas", RegionLasVegas),
-				Entry("Newark", RegionNewark),
-			)
 		})
 	})
 })

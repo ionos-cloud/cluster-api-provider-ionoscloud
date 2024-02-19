@@ -16,26 +16,14 @@ limitations under the License.
 
 package v1alpha1
 
+import sdk "github.com/ionos-cloud/sdk-go/v6"
+
 const (
 	ManagedLANAnnotation = "cloud.ionos.com/managed-lan"
 )
 
 // RequestStatus shows the status of the current request.
 type RequestStatus string
-
-const (
-	// RequestStatusQueued indicates that the request is queued and not yet being processed.
-	RequestStatusQueued RequestStatus = "QUEUED"
-
-	// RequestStatusRunning indicates that the request is currently being processed.
-	RequestStatusRunning RequestStatus = "RUNNING"
-
-	// RequestStatusDone indicates that the request has been successfully processed.
-	RequestStatusDone RequestStatus = "DONE"
-
-	// RequestStatusFailed indicates that the request has failed.
-	RequestStatusFailed RequestStatus = "FAILED"
-)
 
 // ProvisioningRequest is a definition of a provisioning request
 // in the IONOS Cloud.
@@ -49,46 +37,18 @@ type ProvisioningRequest struct {
 	// RequestStatus is the status of the request in the queue.
 	// +kubebuilder:validation:Enum=QUEUED;RUNNING;DONE;FAILED
 	// +optional
-	State RequestStatus `json:"state,omitempty"`
+	State string `json:"state,omitempty"`
 
 	// Message is the request message, which can also contain error information.
 	// +optional
 	Message *string `json:"message,omitempty"`
 }
 
-type Region string
-
-const (
-	// RegionFrankfurt is the region for the data center in Frankfurt, Germany.
-	RegionFrankfurt Region = "de/fra"
-
-	// RegionBerlin is the region for the data center in Berlin, Germany.
-	RegionBerlin Region = "de/txl"
-
-	// RegionParis is the region for the data center in Paris, France.
-	RegionParis Region = "fr/par"
-
-	// RegionLondon is the region for the data center in London, UK.
-	RegionLondon Region = "gb/lhr"
-
-	// RegionLogrono is the region for the data center in Logroño, Spain.
-	RegionLogrono Region = "es/vit"
-
-	// RegionLenexa is the region for the data center in Lenexa, USA.
-	RegionLenexa Region = "us/mci"
-
-	// RegionLasVegas is the region for the data center in Las Vegas, USA.
-	RegionLasVegas Region = "us/las"
-
-	// RegionNewark is the region for the data center in Newark, USA.
-	RegionNewark Region = "us/ewr"
-)
-
 // NewQueuedRequest creates a new provisioning request with the status set to queued.
 func NewQueuedRequest(method, path string) ProvisioningRequest {
 	return ProvisioningRequest{
 		Method:      method,
 		RequestPath: path,
-		State:       RequestStatusQueued,
+		State:       sdk.RequestStatusQueued,
 	}
 }

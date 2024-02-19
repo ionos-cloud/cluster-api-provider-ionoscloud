@@ -248,7 +248,7 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 			requeue, retErr = withStatus(status, message, machineScope.Logger,
 				func() error {
 					// remove the request from the status and patch the cluster
-					ionosCluster.DeleteCurrentRequest(machineScope.DatacenterID())
+					ionosCluster.DeleteCurrentRequestByDatacenter(machineScope.DatacenterID())
 					return machineScope.ClusterScope.PatchObject()
 				},
 			)

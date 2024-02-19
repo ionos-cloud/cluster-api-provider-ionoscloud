@@ -53,8 +53,10 @@ type Client interface {
 	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
 	// ReserveIPBlock reserves an IP block with the provided properties in the specified region.
 	ReserveIPBlock(ctx context.Context, name, region string, size int) (requestPath string, err error)
+	// GetIPBlock returns the IP block that matches the provided ipBlockID.
+	GetIPBlock(ctx context.Context, ipBlockID string) (*sdk.IpBlock, error)
 	// ListIPBlocks returns a list of IP blocks.
-	ListIPBlocks(ctx context.Context) ([]sdk.IpBlock, error)
+	ListIPBlocks(ctx context.Context) (*sdk.IpBlocks, error)
 	// DeleteIPBlock deletes the IP block that matches the provided ipBlockID.
 	DeleteIPBlock(ctx context.Context, ipBlockID string) (requestPath string, err error)
 	// CheckRequestStatus checks the status of a provided request identified by requestID

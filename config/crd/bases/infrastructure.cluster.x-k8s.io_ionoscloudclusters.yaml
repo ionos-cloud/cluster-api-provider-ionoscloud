@@ -69,25 +69,22 @@ spec:
                 - host
                 - port
                 type: object
-              region:
+              controlPlaneEndpointProviderID:
+                description: ControlPlaneEndpointProviderID is the IONOS Cloud provider
+                  ID for the control plane endpoint ip block. will be in the format
+                  ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
+                type: string
+              location:
                 description: Region is the location/region where the data centers
                   should be located.
-                enum:
-                - de/fra
-                - us/las
-                - us/ewr
-                - de/txl
-                - gb/lhr
-                - es/vit
-                - fr/par
-                - us/mci
+                example: de/txl
                 type: string
                 x-kubernetes-validations:
                 - message: location is immutable
                   rule: self == oldSelf
             required:
             - contractNumber
-            - region
+            - location
             type: object
           status:
             description: IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
@@ -137,6 +134,33 @@ spec:
                   - type
                   type: object
                 type: array
+              currentClusterRequest:
+                description: CurrentClusterRequest is the current pending request
+                  made during reconciliation for the whole cluster.
+                properties:
+                  message:
+                    description: Message is the request message, which can also contain
+                      error information.
+                    type: string
+                  method:
+                    description: Method is the request method
+                    type: string
+                  requestPath:
+                    description: RequestPath is the sub path for the request URL
+                    type: string
+                  state:
+                    description: RequestStatus is the status of the request in the
+                      queue.
+                    enum:
+                    - QUEUED
+                    - RUNNING
+                    - DONE
+                    - FAILED
+                    type: string
+                required:
+                - method
+                - requestPath
+                type: object
               currentRequest:
                 additionalProperties:
                   description: ProvisioningRequest is a definition of a provisioning

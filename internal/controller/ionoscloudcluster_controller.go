@@ -85,9 +85,6 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	logger = logger.WithValues("cluster", klog.KObj(cluster))
-	ctx = ctrl.LoggerInto(ctx, logger)
-
 	if annotations.IsPaused(cluster, ionosCloudCluster) {
 		logger.Info("Either IonosCloudCluster or owner cluster is marked as paused. Reconciliation is skipped")
 		return ctrl.Result{}, nil
@@ -138,7 +135,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(ctx context.Context, clust
 		// proceed with the reconciliation and are stuck in a loop.
 		//
 		// In any case we log the error.
-		clusterScope.Error(err, "Error when trying to determine inflight request states")
+		clusterScope.Error(err, "Error when trying to determine in-flight request states")
 	}
 	if requeue {
 		clusterScope.Info("Request is still in progress")
@@ -180,7 +177,7 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(ctx context.Context, clust
 		// proceed with the reconciliation and are stuck in a loop.
 		//
 		// In any case we log the error.
-		clusterScope.Error(err, "Error when trying to determine inflight request states")
+		clusterScope.Error(err, "Error when trying to determine in-flight request states")
 	}
 	if requeue {
 		clusterScope.Info("Request is still in progress")
@@ -190,7 +187,6 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(ctx context.Context, clust
 	// TODO(lubedacht): check if there are any more machine CRs existing.
 	// If there are requeue with an offset.
 
-	// TODO(lubedacht): delete remaining cloud resources.
 	reconcileSequence := []serviceReconcileStep{
 		{
 			"ReconcileControlPlaneEndpointDeletion",
@@ -216,7 +212,7 @@ func (r *IonosCloudClusterReconciler) checkRequestStatus(
 	ctx context.Context, clusterScope *scope.ClusterScope, cloudService *cloud.Service,
 ) (requeue bool, retErr error) {
 	ionosCluster := clusterScope.IonosCluster
-	if req, exists := ionosCluster.Status.CurrentRequestByDatacenter[scope.ControlPlaneEndpointRequestKey]; exists {
+	if req := ionosCluster.Status.CurrentClusterRequest; req != nil {
 		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
 		if err != nil {
 			retErr = fmt.Errorf("could not get request status: %w", err)
@@ -224,8 +220,8 @@ func (r *IonosCloudClusterReconciler) checkRequestStatus(
 			requeue, retErr = withStatus(status, message, clusterScope.Logger,
 				func() error {
 					// remove the request from the status and patch the cluster
-					ionosCluster.DeleteCurrentRequest(scope.ControlPlaneEndpointRequestKey)
-					return clusterScope.PatchObject()
+					ionosCluster.Status.CurrentClusterRequest = nil
+					return nil
 				},
 			)
 		}

@@ -288,7 +288,7 @@ func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, region stri
 	if region == "" {
 		return "", errors.New("region must be set")
 	}
-	if size > 0 {
+	if size <= 0 {
 		return "", errors.New("size must be greater than 0")
 	}
 	if name == "" {
@@ -311,9 +311,10 @@ func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, region stri
 	return "", errors.New(apiNoLocationErrMessage)
 }
 
+// GetIPBlock returns the IP block that matches the provided ipBlockID.
 func (c *IonosCloudClient) GetIPBlock(ctx context.Context, ipBlockID string) (*sdk.IpBlock, error) {
 	if ipBlockID == "" {
-		return nil, errors.New("ipBlockID must be set")
+		return nil, errIPBlockIDIsEmpty
 	}
 	ipBlock, _, err := c.API.IPBlocksApi.IpblocksFindById(ctx, ipBlockID).Execute()
 	if err != nil {
@@ -325,7 +326,7 @@ func (c *IonosCloudClient) GetIPBlock(ctx context.Context, ipBlockID string) (*s
 // DeleteIPBlock deletes the IP block that matches the provided ipBlockID.
 func (c *IonosCloudClient) DeleteIPBlock(ctx context.Context, ipBlockID string) (requestPath string, err error) {
 	if ipBlockID == "" {
-		return "", errors.New("ipBlockID must be set")
+		return "", errIPBlockIDIsEmpty
 	}
 	req, err := c.API.IPBlocksApi.IpblocksDelete(ctx, ipBlockID).Execute()
 	if err != nil {
@@ -338,12 +339,12 @@ func (c *IonosCloudClient) DeleteIPBlock(ctx context.Context, ipBlockID string) 
 }
 
 // ListIPBlocks returns a list of IP blocks.
-func (c *IonosCloudClient) ListIPBlocks(ctx context.Context) ([]sdk.IpBlock, error) {
+func (c *IonosCloudClient) ListIPBlocks(ctx context.Context) (*sdk.IpBlocks, error) {
 	blocks, _, err := c.API.IPBlocksApi.IpblocksGet(ctx).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
-	return *blocks.Items, nil
+	return &blocks, nil
 }
 
 // CheckRequestStatus returns the status of a request and an error if checking for it fails.

@@ -39,14 +39,19 @@ type IonosCloudClusterSpec struct {
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 
+	// ControlPlaneEndpointProviderID is the IONOS Cloud provider ID for the control plane endpoint ip block.
+	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
+	// +optional
+	ControlPlaneEndpointProviderID string `json:"controlPlaneEndpointProviderID"`
+
 	// Contract number is the contract number of the IONOS Cloud account.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
 	ContractNumber string `json:"contractNumber"`
 
 	// Region is the location/region where the data centers should be located.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
-	// +kubebuilder:validation:Enum=de/fra;us/las;us/ewr;de/txl;gb/lhr;es/vit;fr/par;us/mci
-	Region Region `json:"region"`
+	// +kubebuilder:example=de/txl
+	Location string `json:"location"`
 }
 
 // IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
@@ -63,6 +68,10 @@ type IonosCloudClusterStatus struct {
 	// CurrentRequestByDatacenter maps data center IDs to a pending provisioning request made during reconciliation.
 	// +optional
 	CurrentRequestByDatacenter map[string]ProvisioningRequest `json:"currentRequest,omitempty"`
+
+	// CurrentClusterRequest is the current pending request made during reconciliation for the whole cluster.
+	// +optional
+	CurrentClusterRequest *ProvisioningRequest `json:"currentClusterRequest,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -103,16 +112,16 @@ func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
 	i.Status.Conditions = conditions
 }
 
-// SetCurrentRequest sets the current provisioning request for the given data center.
+// SetCurrentRequestByDatacenter sets the current provisioning request for the given data center.
 // This function makes sure that the map is initialized before setting the request.
-func (i *IonosCloudCluster) SetCurrentRequest(datacenterID string, request ProvisioningRequest) {
+func (i *IonosCloudCluster) SetCurrentRequestByDatacenter(datacenterID string, request ProvisioningRequest) {
 	if i.Status.CurrentRequestByDatacenter == nil {
 		i.Status.CurrentRequestByDatacenter = map[string]ProvisioningRequest{}
 	}
 	i.Status.CurrentRequestByDatacenter[datacenterID] = request
 }
 
-// DeleteCurrentRequest deletes the current provisioning request for the given data center.
-func (i *IonosCloudCluster) DeleteCurrentRequest(datacenterID string) {
+// DeleteCurrentRequestByDatacenter deletes the current provisioning request for the given data center.
+func (i *IonosCloudCluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
 	delete(i.Status.CurrentRequestByDatacenter, datacenterID)
 }

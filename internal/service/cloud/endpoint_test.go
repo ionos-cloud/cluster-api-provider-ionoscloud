@@ -28,7 +28,6 @@ import (
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 type EndpointTestSuite struct {
@@ -40,17 +39,19 @@ func TestEndpointTestSuite(t *testing.T) {
 }
 
 func (s *EndpointTestSuite) TestGetIPBlock_MultipleMatches() {
-	s.mockListIPBlockCall().Return([]sdk.IpBlock{
-		{
-			Properties: &sdk.IpBlockProperties{
-				Name:     ptr.To("k8s-default-test-cluster"),
-				Location: ptr.To(string(infrav1.RegionBerlin)),
+	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
+		Items: &[]sdk.IpBlock{
+			{
+				Properties: &sdk.IpBlockProperties{
+					Name:     ptr.To("k8s-default-test-cluster"),
+					Location: ptr.To(exampleLocation),
+				},
 			},
-		},
-		{
-			Properties: &sdk.IpBlockProperties{
-				Name:     ptr.To("k8s-default-test-cluster"),
-				Location: ptr.To(string(infrav1.RegionBerlin)),
+			{
+				Properties: &sdk.IpBlockProperties{
+					Name:     ptr.To("k8s-default-test-cluster"),
+					Location: ptr.To(exampleLocation),
+				},
 			},
 		},
 	}, nil).Once()
@@ -61,12 +62,14 @@ func (s *EndpointTestSuite) TestGetIPBlock_MultipleMatches() {
 
 func (s *EndpointTestSuite) TestGetIPBlock_SingleMatch() {
 	name := ptr.To("k8s-default-test-cluster")
-	location := ptr.To(string(infrav1.RegionBerlin))
-	s.mockListIPBlockCall().Return([]sdk.IpBlock{
-		{
-			Properties: &sdk.IpBlockProperties{
-				Name:     name,
-				Location: location,
+	location := ptr.To(exampleLocation)
+	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
+		Items: &[]sdk.IpBlock{
+			{
+				Properties: &sdk.IpBlockProperties{
+					Name:     name,
+					Location: location,
+				},
 			},
 		},
 	}, nil).Once()
@@ -78,11 +81,13 @@ func (s *EndpointTestSuite) TestGetIPBlock_SingleMatch() {
 }
 
 func (s *EndpointTestSuite) TestGetIPBlock_NoMatch() {
-	s.mockListIPBlockCall().Return([]sdk.IpBlock{
-		{
-			Properties: &sdk.IpBlockProperties{
-				Name:     ptr.To("k8s-default-test-cluster"),
-				Location: ptr.To(string(infrav1.RegionFrankfurt)),
+	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
+		Items: &[]sdk.IpBlock{
+			{
+				Properties: &sdk.IpBlockProperties{
+					Name:     ptr.To("k8s-default-test-cluster"),
+					Location: ptr.To("de/fra"),
+				},
 			},
 		},
 	}, nil).Once()
@@ -91,26 +96,14 @@ func (s *EndpointTestSuite) TestGetIPBlock_NoMatch() {
 	s.Nil(block)
 }
 
-func (s *EndpointTestSuite) TestReserveIPBlock_RequestFailure() {
-	s.mockReserveIPBlockCall().Return("", errMock).Once()
-	err := s.service.reserveIPBlock(s.ctx, s.clusterScope)
-	s.Error(err)
-}
-
 func (s *EndpointTestSuite) TestReserveIPBlock_RequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockReserveIPBlockCall().Return(requestPath, nil).Once()
 	err := s.service.reserveIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
+	s.NotNil(s.clusterScope.IonosCluster.Status.CurrentClusterRequest)
 	req := infrav1.NewQueuedRequest(http.MethodPost, requestPath)
-	s.Contains(s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter, scope.ControlPlaneEndpointRequestKey)
-	s.Equal(req, s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter[scope.ControlPlaneEndpointRequestKey])
-}
-
-func (s *EndpointTestSuite) TestDeleteIPBlock_RequestFailure() {
-	s.mockDeleteIPBlockCall().Return("", errMock).Once()
-	err := s.service.deleteIPBlock(s.ctx, s.clusterScope, exampleID)
-	s.Error(err)
+	s.Equal(req, *s.clusterScope.IonosCluster.Status.CurrentClusterRequest)
 }
 
 func (s *EndpointTestSuite) TestDeleteIPBlock_RequestSuccess() {
@@ -118,9 +111,9 @@ func (s *EndpointTestSuite) TestDeleteIPBlock_RequestSuccess() {
 	s.mockDeleteIPBlockCall().Return(requestPath, nil).Once()
 	err := s.service.deleteIPBlock(s.ctx, s.clusterScope, exampleID)
 	s.NoError(err)
+	s.NotNil(s.clusterScope.IonosCluster.Status.CurrentClusterRequest)
 	req := infrav1.NewQueuedRequest(http.MethodDelete, requestPath)
-	s.Contains(s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter, scope.ControlPlaneEndpointRequestKey)
-	s.Equal(req, s.clusterScope.IonosCluster.Status.CurrentRequestByDatacenter[scope.ControlPlaneEndpointRequestKey])
+	s.Equal(req, *s.clusterScope.IonosCluster.Status.CurrentClusterRequest)
 }
 
 func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_NoRequest() {
@@ -131,19 +124,12 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_NoRequest() {
 }
 
 func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_Request() {
-	req := s.buildRequest(infrav1.RequestStatusQueued, http.MethodPost, "")
+	req := s.buildRequest(sdk.RequestStatusQueued, http.MethodPost, "")
 	reqs := []sdk.Request{req}
 	s.mockGetRequestsCallPost().Return(reqs, nil)
 	info, err := s.service.getLatestIPBlockCreationRequest(s.clusterScope)(s.ctx)
 	s.NoError(err)
 	s.NotNil(info)
-}
-
-func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_RequestError() {
-	s.mockGetRequestsCallPost().Return(nil, errMock)
-	info, err := s.service.getLatestIPBlockCreationRequest(s.clusterScope)(s.ctx)
-	s.Error(err)
-	s.Nil(info)
 }
 
 func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_NoRequest() {
@@ -154,7 +140,7 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_NoRequest() {
 }
 
 func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_Request() {
-	req := s.buildRequest(infrav1.RequestStatusQueued, http.MethodDelete, exampleID)
+	req := s.buildRequest(sdk.RequestStatusQueued, http.MethodDelete, exampleID)
 	reqs := []sdk.Request{req}
 	s.mockGetRequestsCallDelete(exampleID).Return(reqs, nil)
 	info, err := s.service.getLatestIPBlockDeletionRequest(s.ctx, exampleID)
@@ -162,15 +148,10 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_Request() {
 	s.NotNil(info)
 }
 
-func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_RequestError() {
-	s.mockGetRequestsCallDelete(exampleID).Return(nil, errMock)
-	info, err := s.service.getLatestIPBlockDeletionRequest(s.ctx, exampleID)
-	s.Error(err)
-	s.Nil(info)
-}
-
 func (s *EndpointTestSuite) mockReserveIPBlockCall() *clienttest.MockClient_ReserveIPBlock_Call {
-	return s.ionosClient.EXPECT().ReserveIPBlock(s.ctx, s.clusterScope.DefaultResourceName(), string(s.clusterScope.Region()), 1)
+	return s.ionosClient.
+		EXPECT().
+		ReserveIPBlock(s.ctx, s.service.defaultResourceName(s.clusterScope), s.clusterScope.Location(), 1)
 }
 
 func (s *EndpointTestSuite) mockListIPBlockCall() *clienttest.MockClient_ListIPBlocks_Call {
@@ -189,9 +170,9 @@ func (s *EndpointTestSuite) mockGetRequestsCallDelete(id string) *clienttest.Moc
 	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, path.Join(ipBlocksPath, id))
 }
 
-func (s *EndpointTestSuite) buildRequest(status infrav1.RequestStatus, method, id string) sdk.Request {
+func (s *EndpointTestSuite) buildRequest(status string, method, id string) sdk.Request {
 	opts := requestBuildOptions{
-		status:     string(status),
+		status:     status,
 		method:     method,
 		url:        ipBlocksPath,
 		href:       exampleRequestPath,
@@ -203,7 +184,7 @@ func (s *EndpointTestSuite) buildRequest(status infrav1.RequestStatus, method, i
 	}
 	if method == http.MethodPost {
 		opts.body = fmt.Sprintf(`{"properties":{"location":"%s","name":"%s","size":1}}`,
-			s.clusterScope.Region(), s.clusterScope.DefaultResourceName())
+			s.clusterScope.Location(), s.service.defaultResourceName(s.clusterScope))
 	}
 	return s.exampleRequest(opts)
 }

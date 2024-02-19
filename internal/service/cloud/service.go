@@ -39,9 +39,6 @@ type Service struct {
 
 // NewService returns a new Service.
 func NewService(ctx context.Context, s *scope.MachineScope) (*Service, error) {
-	if s == nil {
-		return nil, errors.New("cloud service cannot use a nil machine scope")
-	}
 	return &Service{
 		scope: s,
 		ctx:   ctx,

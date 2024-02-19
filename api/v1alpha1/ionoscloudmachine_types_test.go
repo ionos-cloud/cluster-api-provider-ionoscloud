@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/google/go-cmp/cmp"
+	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api/errors"
@@ -388,7 +389,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			m.Status.CurrentRequest = &ProvisioningRequest{
 				Method:      "GET",
 				RequestPath: "path/to/resource",
-				State:       RequestStatusRunning,
+				State:       sdk.RequestStatusRunning,
 				Message:     nil,
 			}
 			m.Status.FailureReason = ptr.To(errors.InvalidConfigurationMachineError)

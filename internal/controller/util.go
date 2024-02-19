@@ -30,7 +30,7 @@ const (
 
 type serviceReconcileStep struct {
 	name          string
-	reconcileFunc func() (bool, error)
+	reconcileFunc func() (requeue bool, err error)
 }
 
 // withStatus is a helper function to handle the different request states
@@ -39,8 +39,8 @@ func withStatus(
 	status string,
 	message string,
 	log *logr.Logger,
-	doneCallback func() error,
-) (bool, error) {
+	doneOrFailedCallback func() error,
+) (requeue bool, err error) {
 	switch status {
 	case sdk.RequestStatusQueued, sdk.RequestStatusRunning:
 		return true, nil
@@ -50,7 +50,7 @@ func withStatus(
 		fallthrough // we run the same logic as for status done
 	case sdk.RequestStatusDone:
 		// we don't requeue
-		return false, doneCallback()
+		return false, doneOrFailedCallback()
 	}
 
 	return false, fmt.Errorf("unknown request status %s", status)

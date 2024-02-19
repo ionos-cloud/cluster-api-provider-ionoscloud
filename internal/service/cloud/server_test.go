@@ -275,7 +275,7 @@ func (s *serverSuite) examplePostRequest(status string) []sdk.Request {
 		method:     http.MethodPost,
 		url:        s.service.serversURL(),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName()),
-		href:       reqPath,
+		href:       exampleRequestPath,
 		targetID:   testServerID,
 		targetType: sdk.SERVER,
 	}

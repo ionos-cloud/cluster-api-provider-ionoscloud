@@ -35,10 +35,6 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 )
 
-const (
-	ControlPlaneEndpointRequestKey = "region-wide"
-)
-
 // ClusterScope defines the basic context for an actuator to operate upon.
 type ClusterScope struct {
 	*logr.Logger // Deprecated
@@ -106,14 +102,13 @@ func (c *ClusterScope) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
 	return c.IonosCluster.Spec.ControlPlaneEndpoint
 }
 
-// DefaultResourceName returns the name that should be used for cluster context resources.
-func (c *ClusterScope) DefaultResourceName() string {
-	return fmt.Sprintf("k8s-%s-%s", c.Cluster.Namespace, c.Cluster.Name)
+func (c *ClusterScope) SetControlPlaneEndpointProviderID(id string) {
+	c.IonosCluster.Spec.ControlPlaneEndpointProviderID = fmt.Sprintf("ionos://%s", id)
 }
 
-// Region is a shortcut for getting the region used by the IONOS Cloud cluster IP block.
-func (c *ClusterScope) Region() infrav1.Region {
-	return c.IonosCluster.Spec.Region
+// Location is a shortcut for getting the location used by the IONOS Cloud cluster IP block.
+func (c *ClusterScope) Location() string {
+	return c.IonosCluster.Spec.Location
 }
 
 // PatchObject will apply all changes from the IonosCloudCluster.
