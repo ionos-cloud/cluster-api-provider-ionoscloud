@@ -47,7 +47,7 @@ func (s *serverSuite) TestServerName() {
 	s.Equal("k8s-default-test-machine", serverName)
 }
 
-func (s *serverSuite) TestReconcileServer_NoBootstrapSecret() {
+func (s *serverSuite) TestReconcileServerNoBootstrapSecret() {
 	requeue, err := s.service.ReconcileServer()
 	s.True(requeue)
 	s.Error(err)
@@ -58,7 +58,7 @@ func (s *serverSuite) TestReconcileServer_NoBootstrapSecret() {
 	s.NoError(err)
 }
 
-func (s *serverSuite) TestReconcileServer_RequestPending() {
+func (s *serverSuite) TestReconcileServerRequestPending() {
 	bootstrapSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
@@ -85,7 +85,7 @@ func (s *serverSuite) TestReconcileServer_RequestPending() {
 	s.True(requeue)
 }
 
-func (s *serverSuite) TestReconcileServer_RequestDone_StateBusy() {
+func (s *serverSuite) TestReconcileServerRequestDoneStateBusy() {
 	bootstrapSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
@@ -118,7 +118,7 @@ func (s *serverSuite) TestReconcileServer_RequestDone_StateBusy() {
 	s.True(requeue)
 }
 
-func (s *serverSuite) TestReconcileServer_RequestDone_StateAvailable() {
+func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 	bootstrapSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
@@ -152,7 +152,7 @@ func (s *serverSuite) TestReconcileServer_RequestDone_StateAvailable() {
 	s.False(requeue)
 }
 
-func (s *serverSuite) TestReconcileServer_NoRequest() {
+func (s *serverSuite) TestReconcileServerNoRequest() {
 	bootstrapSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
@@ -202,7 +202,7 @@ func (s *serverSuite) TestReconcileServerDeletion() {
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, reqLocation)
 }
 
-func (s *serverSuite) TestReconcileServerDeletion_CreateRequestPending() {
+func (s *serverSuite) TestReconcileServerDeletionCreateRequestPending() {
 	s.mockGetServer(testServerID).Return(nil, nil)
 	s.mockListSevers().Return(&sdk.Servers{}, nil)
 	exampleRequest := s.examplePostRequest(sdk.RequestStatusQueued)
@@ -217,7 +217,7 @@ func (s *serverSuite) TestReconcileServerDeletion_CreateRequestPending() {
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, *exampleRequest.Metadata.RequestStatus.Href)
 }
 
-func (s *serverSuite) TestReconcileServerDeletion_RequestPending() {
+func (s *serverSuite) TestReconcileServerDeletionRequestPending() {
 	s.mockGetServer(testServerID).Return(&sdk.Server{
 		Id: ptr.To(testServerID),
 	}, nil)
@@ -235,7 +235,7 @@ func (s *serverSuite) TestReconcileServerDeletion_RequestPending() {
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, *exampleRequest.Metadata.RequestStatus.Href)
 }
 
-func (s *serverSuite) TestReconcileServerDeletion_RequestDone() {
+func (s *serverSuite) TestReconcileServerDeletionRequestDone() {
 	s.mockGetServer(testServerID).Return(&sdk.Server{
 		Id: ptr.To(testServerID),
 	}, nil)
@@ -251,7 +251,7 @@ func (s *serverSuite) TestReconcileServerDeletion_RequestDone() {
 	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest)
 }
 
-func (s *serverSuite) TestReconcileServerDeletion_RequestFailed() {
+func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
 	s.mockGetServer(testServerID).Return(&sdk.Server{
 		Id: ptr.To(testServerID),
 	}, nil)
@@ -270,7 +270,7 @@ func (s *serverSuite) TestReconcileServerDeletion_RequestFailed() {
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, "delete/triggered")
 }
 
-func (s *serverSuite) TestGetServer_WithProviderID() {
+func (s *serverSuite) TestGetServerWithProviderID() {
 	serverID := testServerID
 	s.mockGetServer(serverID).Return(&sdk.Server{}, nil)
 	server, err := s.service.getServer()
@@ -278,7 +278,7 @@ func (s *serverSuite) TestGetServer_WithProviderID() {
 	s.NotNil(server)
 }
 
-func (s *serverSuite) TestGetServer_WithProviderID_NotFound() {
+func (s *serverSuite) TestGetServerWithProviderIDNotFound() {
 	serverID := testServerID
 	s.mockGetServer(serverID).Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404))
 	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{
@@ -292,7 +292,7 @@ func (s *serverSuite) TestGetServer_WithProviderID_NotFound() {
 	s.Nil(server)
 }
 
-func (s *serverSuite) TestGetServer_WithoutProviderID_FoundInList() {
+func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
 	serverName := s.service.serverName()
 	s.machineScope.IonosMachine.Spec.ProviderID = nil
 	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{

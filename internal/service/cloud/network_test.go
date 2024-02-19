@@ -49,7 +49,7 @@ func (s *lanSuite) TestLANURLs() {
 	s.Equal("datacenters/"+s.service.datacenterID()+"/lans", s.service.lansURL())
 }
 
-func (s *lanSuite) Test_Network_CreateLAN_Successful() {
+func (s *lanSuite) TestNetworkCreateLANSuccessful() {
 	s.mockCreateLANCall().Return(reqPath, nil).Once()
 	s.NoError(s.service.createLAN())
 	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID(), "request should be stored in status")
@@ -59,7 +59,7 @@ func (s *lanSuite) Test_Network_CreateLAN_Successful() {
 	s.Equal(infrav1.RequestStatusQueued, req.State, "request status should be stored in status")
 }
 
-func (s *lanSuite) Test_Network_DeleteLAN_Successful() {
+func (s *lanSuite) TestNetworkDeleteLANSuccessful() {
 	s.mockDeleteLANCall(lanID).Return(reqPath, nil).Once()
 	s.NoError(s.service.deleteLAN(lanID))
 	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID(), "request should be stored in status")
@@ -69,7 +69,7 @@ func (s *lanSuite) Test_Network_DeleteLAN_Successful() {
 	s.Equal(infrav1.RequestStatusQueued, req.State, "request status should be stored in status")
 }
 
-func (s *lanSuite) Test_Network_GetLAN_Successful() {
+func (s *lanSuite) TestNetworkGetLANSuccessful() {
 	lan := s.exampleLAN()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 	foundLAN, err := s.service.getLAN()
@@ -78,21 +78,21 @@ func (s *lanSuite) Test_Network_GetLAN_Successful() {
 	s.Equal(lan, *foundLAN)
 }
 
-func (s *lanSuite) Test_Network_GetLAN_NotFound() {
+func (s *lanSuite) TestNetworkGetLANNotFound() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	lan, err := s.service.getLAN()
 	s.NoError(err)
 	s.Nil(lan)
 }
 
-func (s *lanSuite) Test_Network_GetLAN_Error_NotUnique() {
+func (s *lanSuite) TestNetworkGetLANErrorNotUnique() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN(), s.exampleLAN()}}, nil).Once()
 	lan, err := s.service.getLAN()
 	s.Error(err)
 	s.Nil(lan)
 }
 
-func (s *lanSuite) Test_Network_RemoveLANPendingRequestFromCluster_Successful() {
+func (s *lanSuite) TestNetworkRemoveLANPendingRequestFromClusterSuccessful() {
 	s.infraCluster.Status.CurrentRequestByDatacenter = map[string]infrav1.ProvisioningRequest{
 		s.service.datacenterID(): {
 			RequestPath: reqPath,
@@ -104,11 +104,11 @@ func (s *lanSuite) Test_Network_RemoveLANPendingRequestFromCluster_Successful() 
 	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID(), "request should be removed from status")
 }
 
-func (s *lanSuite) Test_Network_RemoveLANPendingRequestFromCluster_NoRequest() {
+func (s *lanSuite) TestNetworkRemoveLANPendingRequestFromClusterNoRequest() {
 	s.NoError(s.service.removeLANPendingRequestFromCluster())
 }
 
-func (s *lanSuite) Test_Network_ReconcileLAN_NoExistingLAN_NoRequest_Create() {
+func (s *lanSuite) TestNetworkReconcileLANNoExistingLANNoRequestCreate() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	s.mockGetLANCreationRequestsCall().Return([]sdk.Request{}, nil).Once()
 	s.mockCreateLANCall().Return(reqPath, nil).Once()
@@ -117,7 +117,7 @@ func (s *lanSuite) Test_Network_ReconcileLAN_NoExistingLAN_NoRequest_Create() {
 	s.True(requeue)
 }
 
-func (s *lanSuite) Test_Network_ReconcileLAN_NoExistingLAN_ExistingRequest_Pending() {
+func (s *lanSuite) TestNetworkReconcileLANNoExistingLANExistingRequestPending() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	s.mockGetLANCreationRequestsCall().Return(s.examplePostRequest(sdk.RequestStatusQueued), nil).Once()
 	requeue, err := s.service.ReconcileLAN()
@@ -125,14 +125,14 @@ func (s *lanSuite) Test_Network_ReconcileLAN_NoExistingLAN_ExistingRequest_Pendi
 	s.True(requeue)
 }
 
-func (s *lanSuite) Test_Network_ReconcileLAN_ExistingLAN() {
+func (s *lanSuite) TestNetworkReconcileLANExistingLAN() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 	requeue, err := s.service.ReconcileLAN()
 	s.NoError(err)
 	s.False(requeue)
 }
 
-func (s *lanSuite) Test_Network_ReconcileLAN_ExistingLAN_Unavailable() {
+func (s *lanSuite) TestNetworkReconcileLANExistingLANUnavailable() {
 	lan := s.exampleLAN()
 	lan.Metadata.State = ptr.To("BUSY")
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
@@ -141,7 +141,7 @@ func (s *lanSuite) Test_Network_ReconcileLAN_ExistingLAN_Unavailable() {
 	s.True(requeue)
 }
 
-func (s *lanSuite) Test_Network_ReconcileLANDelete_LANExists_NoPendingRequests_NoOtherUsers_Delete() {
+func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsNoOtherUsersDelete() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 	s.mockGetLANDeletionRequestsCall().Return([]sdk.Request{}, nil).Once()
 	s.mockDeleteLANCall(lanID).Return(reqPath, nil).Once()
@@ -150,7 +150,7 @@ func (s *lanSuite) Test_Network_ReconcileLANDelete_LANExists_NoPendingRequests_N
 	s.True(requeue)
 }
 
-func (s *lanSuite) Test_Network_ReconcileLANDelete_LANExists_NoPendingRequests_HasOtherUsers_NoDelete() {
+func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsHasOtherUsersNoDelete() {
 	lan := s.exampleLAN()
 	lan.Entities.Nics.Items = &[]sdk.Nic{{Id: ptr.To("1")}}
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
@@ -161,7 +161,7 @@ func (s *lanSuite) Test_Network_ReconcileLANDelete_LANExists_NoPendingRequests_H
 	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID())
 }
 
-func (s *lanSuite) Test_Network_ReconcileLANDelete_NoExistingLAN_ExistingRequest_Pending() {
+func (s *lanSuite) TestNetworkReconcileLANDeleteNoExistingLANExistingRequestPending() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	s.mockGetLANCreationRequestsCall().Return(s.examplePostRequest(sdk.RequestStatusQueued), nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
@@ -169,7 +169,7 @@ func (s *lanSuite) Test_Network_ReconcileLANDelete_NoExistingLAN_ExistingRequest
 	s.True(requeue)
 }
 
-func (s *lanSuite) Test_Network_ReconcileLANDelete_LANExists_ExistingRequest_Pending() {
+func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsExistingRequestPending() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 	requests := s.exampleDeleteRequest(sdk.RequestStatusQueued)
 	s.mockGetLANDeletionRequestsCall().Return(requests, nil).Once()
@@ -178,7 +178,7 @@ func (s *lanSuite) Test_Network_ReconcileLANDelete_LANExists_ExistingRequest_Pen
 	s.True(requeue)
 }
 
-func (s *lanSuite) Test_Network_ReconcileLANDelete_LANDoesNotExist() {
+func (s *lanSuite) TestNetworkReconcileLANDeleteLANDoesNotExist() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	s.mockGetLANCreationRequestsCall().Return(nil, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
