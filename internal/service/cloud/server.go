@@ -207,9 +207,12 @@ func (s *Service) getServer() (*sdk.Server, error) {
 		return server, err
 	}
 
+	// listing requires one more level of depth to for instance
+	// retrieving the NIC properties.
+	const listDepth = 3
 	// without provider ID, we need to list all servers and see if
 	// there is one with the expected name.
-	serverList, err := s.api().ListServers(s.ctx, s.datacenterID())
+	serverList, err := s.apiWithDepth(listDepth).ListServers(s.ctx, s.datacenterID())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(), err)
 	}
