@@ -37,6 +37,11 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
+const (
+	endpointIP   = "198.51.100.10"
+	testServerID = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
+)
+
 type ServiceTestSuite struct {
 	*require.Assertions
 	suite.Suite

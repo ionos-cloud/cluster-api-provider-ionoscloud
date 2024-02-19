@@ -28,8 +28,8 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
-func (s *Service) nicURL(id string) string {
-	return path.Join("datacenters", s.datacenterID(), "nics", id)
+func (s *Service) nicURL(serverID, nicID string) string {
+	return path.Join("datacenters", s.datacenterID(), "servers", serverID, "nics", nicID)
 }
 
 // reconcileNICConfig ensures that the primary NIC contains the endpoint IP address.
@@ -55,9 +55,10 @@ func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 		return nic, nil
 	}
 
-	nicID := ptr.Deref(server.GetId(), "")
+	serverID := ptr.Deref(server.GetId(), "")
+	nicID := ptr.Deref(nic.GetId(), "")
 	// check if there is a pending patch request for the NIC
-	ri, err := s.getLatestNICPatchRequest(nicID)
+	ri, err := s.getLatestNICPatchRequest(serverID, nicID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to check for pending NIC patch request: %w", err)
 	}
@@ -76,7 +77,7 @@ func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 	nicIPs := ptr.Deref(nic.GetProperties().GetIps(), []string{})
 	nicIPs = append(nicIPs, endpointIP)
 
-	if err := s.patchNIC(nicID, nic, sdk.NicProperties{Ips: &nicIPs}); err != nil {
+	if err := s.patchNIC(serverID, nic, sdk.NicProperties{Ips: &nicIPs}); err != nil {
 		return nil, err
 	}
 
@@ -118,11 +119,11 @@ func (s *Service) patchNIC(serverID string, nic *sdk.Nic, props sdk.NicPropertie
 	return s.api().WaitForRequest(s.ctx, location)
 }
 
-func (s *Service) getLatestNICPatchRequest(nicID string) (*requestInfo, error) {
-	return getMatchingRequest[sdk.Lan](
+func (s *Service) getLatestNICPatchRequest(serverID, nicID string) (*requestInfo, error) {
+	return getMatchingRequest[sdk.Nic](
 		s,
 		http.MethodPatch,
-		s.nicURL(nicID),
+		s.nicURL(serverID, nicID),
 	)
 }
 
