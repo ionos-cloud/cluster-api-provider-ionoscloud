@@ -200,11 +200,7 @@ func (s *Service) getLatestIPBlockCreationRequest(cs *scope.ClusterScope) checkQ
 			ipBlocksPath,
 			matchByName[*sdk.IpBlock, *sdk.IpBlockProperties](s.defaultResourceName(cs)),
 			func(r *sdk.IpBlock, _ sdk.Request) bool {
-				r.GetProperties()
-				if r != nil && r.HasProperties() && r.Properties.HasLocation() {
-					return *r.Properties.Location == cs.Location()
-				}
-				return false
+				return *r.GetProperties().GetLocation() == cs.Location()
 			},
 		)
 	}
