@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"slices"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/cluster-api/util"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -236,16 +236,16 @@ func (s *Service) removeLANPendingRequestFromCluster() error {
 	return nil
 }
 
-// ReconcileIPFailover ensures, that the control plane nodes, will attach the endpoint IP to their primary
+// ReconcileIPFailover ensures that the control plane nodes will attach the endpoint IP to their primary
 // NIC and add the NIC to the failover group of the public LAN.
-// This is needed for KubeVIP in order to set up control plane load balancing.
+// This is needed for kube-vip in order to set up HA control planes.
 //
 // If we want to support private clusters in the future, this will require some adjustments.
 func (s *Service) ReconcileIPFailover() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileIPFailover")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
-		log.V(4).Info("Failover is only applied to control-plane machines.")
+		log.V(4).Info("Failover is only applied to control plane machines.")
 		return false, nil
 	}
 
@@ -263,14 +263,14 @@ func (s *Service) ReconcileIPFailoverDeletion() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileIPFailoverDeletion")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
-		log.V(4).Info("Failover is only applied to control-plane machines.")
+		log.V(4).Info("Failover is only applied to control plane machines.")
 		return false, nil
 	}
 
 	server, err := s.getServer()
 	if err != nil {
 		if isNotFound(err) {
-			log.Info("Server not found. Cannot determine NIC to remove from failover group.")
+			log.Error(err, "Server not found. Cannot determine NIC to remove from failover group.")
 			return false, nil
 		}
 		return false, err
@@ -278,7 +278,7 @@ func (s *Service) ReconcileIPFailoverDeletion() (requeue bool, err error) {
 
 	nic, err := s.findPrimaryNIC(server)
 	if err != nil {
-		log.Info("Unable to find primary NIC on server", "error", err)
+		log.Error(err, "Unable to find primary NIC on server")
 		return false, nil
 	}
 
@@ -286,7 +286,7 @@ func (s *Service) ReconcileIPFailoverDeletion() (requeue bool, err error) {
 	return s.removeNICFromFailoverGroup(nicID)
 }
 
-// reconcileNICConfig ensures, that the primary NIC contains the endpoint IP address.
+// reconcileNICConfig ensures that the primary NIC contains the endpoint IP address.
 func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 	log := s.scope.Logger.WithName("reconcileNICConfig")
 
@@ -297,7 +297,7 @@ func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 		return nil, err
 	}
 
-	// Find the primary NIC and ensure, that the endpoint IP address is added to the NIC.
+	// Find the primary NIC and ensure that the endpoint IP address is added to the NIC.
 	nic, err := s.findPrimaryNIC(server)
 	if err != nil {
 		return nil, err
@@ -317,8 +317,8 @@ func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 		return nil, err
 	}
 
-	log.V(4).Info("Successfully Patched NIC. Finished reconciling NIC config.")
-	// As we are waiting for the request to finish this time, we can assume, that the request was successful
+	log.V(4).Info("Successfully patched NIC. Finished reconciling NIC config.")
+	// As we are waiting for the request to finish this time, we can assume that the request was successful
 	// Therefore we can remove the current request
 	s.scope.IonosMachine.Status.CurrentRequest = nil
 
@@ -356,7 +356,7 @@ func (s *Service) patchNIC(serverID string, nic *sdk.Nic, props sdk.NicPropertie
 }
 
 // reconcileIPFailoverGroup ensures that the public LAN has a failover group with the NIC for this machine and
-// the endpoint IP address. It further ensures, that NICs from additional control plane machines are also added.
+// the endpoint IP address. It further ensures that NICs from additional control plane machines are also added.
 func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("reconcileIPFailoverGroup")
 	if nicID == "" {
@@ -481,6 +481,5 @@ func (s *Service) patchLAN(lanID string, properties sdk.LanProperties) error {
 // nicHasIP returns true if the NIC contains the given IP address.
 func nicHasIP(nic *sdk.Nic, expectedIP string) bool {
 	ips := ptr.Deref(nic.GetProperties().GetIps(), []string{})
-	ipSet := sets.New(ips...)
-	return ipSet.Has(expectedIP)
+	return slices.Contains(ips, expectedIP)
 }
