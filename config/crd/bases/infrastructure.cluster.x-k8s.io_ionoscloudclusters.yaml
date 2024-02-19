@@ -69,11 +69,6 @@ spec:
                 - host
                 - port
                 type: object
-              controlPlaneEndpointProviderID:
-                description: ControlPlaneEndpointProviderID is the IONOS Cloud provider
-                  ID for the control plane endpoint ip block. will be in the format
-                  ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
-                type: string
               location:
                 description: Region is the location/region where the data centers
                   should be located.
@@ -134,6 +129,11 @@ spec:
                   - type
                   type: object
                 type: array
+              controlPlaneEndpointProviderID:
+                description: ControlPlaneEndpointProviderID is the IONOS Cloud provider
+                  ID for the control plane endpoint IP block. It will be in the format
+                  "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+                type: string
               currentClusterRequest:
                 description: CurrentClusterRequest is the current pending request
                   made during reconciliation for the whole cluster.
