@@ -364,7 +364,7 @@ spec:
           snapd.apparmor snapd.autoimport snapd.core-fixup snapd.recovery-chooser-trigger snapd.seeded snapd.system-shutdown ua-timer.timer
         - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/admin.conf get node $(hostname) -ojsonpath='{..systemUUID }')
         - >
-          kubectl --kubeconfig /etc/kubernetes/admin.conf 
+          kubectl --kubeconfig /etc/kubernetes/kubelet.conf 
           patch node $(hostname) 
           --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
       joinConfiguration:
