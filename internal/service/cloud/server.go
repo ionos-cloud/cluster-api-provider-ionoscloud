@@ -139,10 +139,6 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		}
 	}
 
-	if server == nil {
-		return false, nil
-	}
-
 	err = s.deleteServer(*server.Id)
 	return err == nil, err
 }
