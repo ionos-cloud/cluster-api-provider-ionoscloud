@@ -53,6 +53,8 @@ func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (requ
 // Each type mapping for usage in getMatchingRequest() needs to be present here.
 func mapResourceType(cloudResource any) sdk.Type {
 	switch cloudResource.(type) {
+	case sdk.Nic, *sdk.Nic:
+		return sdk.NIC
 	case sdk.Lan, *sdk.Lan:
 		return sdk.LAN
 	case sdk.Server, *sdk.Server:
