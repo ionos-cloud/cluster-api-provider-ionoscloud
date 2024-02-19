@@ -33,6 +33,11 @@ const (
 	testDHCPIP = "198.51.100.1"
 )
 
+const (
+	assertMessageNICIsNil         = "reconcileNICConfig() should return a NIC"
+	assertMessageNICErrorOccurred = "reconcileNICConfig() should not return an error"
+)
+
 type nicSuite struct {
 	ServiceTestSuite
 }
@@ -55,8 +60,8 @@ func (n *nicSuite) TestReconcileNICConfig() {
 
 	nic, err := n.service.reconcileNICConfig(endpointIP)
 
-	n.NotNil(nic, "reconcileNICConfig() should return a NIC")
-	n.NoError(err, "reconcileNICConfig() should not return an error")
+	n.NotNil(nic, assertMessageNICIsNil)
+	n.NoError(err, assertMessageNICErrorOccurred)
 	n.Nil(n.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
 }
 
@@ -65,8 +70,8 @@ func (n *nicSuite) TestReconcileNICConfigIPIsSet() {
 	n.mockGetLatestNICPatchRequest(testServerID, testNICID).Return([]sdk.Request{}, nil).Once()
 	nic, err := n.service.reconcileNICConfig(endpointIP)
 
-	n.NotNil(nic, "reconcileNICConfig() should return a NIC")
-	n.NoError(err, "reconcileNICConfig() should not return an error")
+	n.NotNil(nic, assertMessageNICIsNil)
+	n.NoError(err, assertMessageNICErrorOccurred)
 	n.Nil(n.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
 }
 
@@ -83,8 +88,8 @@ func (n *nicSuite) TestReconcileNICConfigPatchRequestPending() {
 	n.mockWaitForRequest(*patchRequest.Metadata.RequestStatus.Href).Return(nil).Once()
 
 	nic, err := n.service.reconcileNICConfig(endpointIP)
-	n.NotNil(nic, "reconcileNICConfig() should return a NIC")
-	n.NoError(err, "reconcileNICConfig() should not return an error")
+	n.NotNil(nic, assertMessageNICIsNil)
+	n.NoError(err, assertMessageNICErrorOccurred)
 	n.Nil(n.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
 }
 
