@@ -240,17 +240,15 @@ func (s *serverSuite) TestReconcileServerDeletion_RequestDone() {
 		Id: ptr.To(testServerID),
 	}, nil)
 
-	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusQueued, testServerID)
+	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusDone, testServerID)
 
 	s.mockGetServerDeletionRequest(testServerID).Return([]sdk.Request{exampleRequest}, nil)
 
 	res, err := s.service.ReconcileServerDeletion()
 	s.NoError(err)
-	s.True(res)
+	s.False(res)
 
-	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, *exampleRequest.Metadata.RequestStatus.Href)
+	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest)
 }
 
 func (s *serverSuite) TestReconcileServerDeletion_RequestFailed() {
