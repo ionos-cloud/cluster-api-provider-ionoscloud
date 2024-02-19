@@ -202,29 +202,25 @@ func (s *Service) deleteLAN(lanID string) error {
 	return nil
 }
 
-func (s *Service) getLatestLANCreationRequest() (*requestInfo, error) {
-	return getMatchingRequest(
+func (s *Service) getLatestLANRequestByMethod(method, url string, matchers ...matcherFunc[*sdk.Lan]) (*requestInfo, error) {
+	return getMatchingRequest[sdk.Lan](
 		s,
-		http.MethodPost,
-		s.lansURL(),
-		matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName()),
+		method,
+		url,
+		matchers...,
 	)
+}
+
+func (s *Service) getLatestLANCreationRequest() (*requestInfo, error) {
+	return s.getLatestLANRequestByMethod(http.MethodPost, s.lansURL(), matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName()))
 }
 
 func (s *Service) getLatestLANDeletionRequest(lanID string) (*requestInfo, error) {
-	return getMatchingRequest[sdk.Lan](
-		s,
-		http.MethodDelete,
-		s.lanURL(lanID),
-	)
+	return s.getLatestLANRequestByMethod(http.MethodDelete, s.lanURL(lanID))
 }
 
 func (s *Service) getLatestLANPatchRequest(lanID string) (*requestInfo, error) {
-	return getMatchingRequest[sdk.Lan](
-		s,
-		http.MethodPatch,
-		s.lanURL(lanID),
-	)
+	return s.getLatestLANRequestByMethod(http.MethodPatch, s.lanURL(lanID))
 }
 
 func (s *Service) removeLANPendingRequestFromCluster() error {
