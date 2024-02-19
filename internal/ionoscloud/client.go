@@ -51,8 +51,8 @@ type Client interface {
 	GetVolume(ctx context.Context, datacenterID, volumeID string) (*sdk.Volume, error)
 	// DeleteVolume deletes the volume that matches volumeID in the specified data center.
 	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
-	// ReserveIPBlock reserves an IP block with the provided properties in the specified region.
-	ReserveIPBlock(ctx context.Context, name, region string, size int) (requestPath string, err error)
+	// ReserveIPBlock reserves an IP block with the provided properties in the specified location.
+	ReserveIPBlock(ctx context.Context, name, location string, size int) (requestPath string, err error)
 	// GetIPBlock returns the IP block that matches the provided ipBlockID.
 	GetIPBlock(ctx context.Context, ipBlockID string) (*sdk.IpBlock, error)
 	// ListIPBlocks returns a list of IP blocks.

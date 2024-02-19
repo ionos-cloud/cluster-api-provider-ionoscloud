@@ -18,9 +18,22 @@ package client
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+)
+
+const (
+	exampleID       = "814fcf5c-41dd-45e1-b9dc-1192844848a7"
+	examplePath     = "/a/b/c/d/e"
+	exampleLocation = "de/fkb"
+
+	// catchAllMockUrl is a regex that matches all URLs, so no one needs to write
+	// the proper path for each test that uses httpmock.
+	catchAllMockUrl = "=~^.*$"
 )
 
 func TestNewClient(t *testing.T) {
@@ -61,4 +74,110 @@ func TestNewClient(t *testing.T) {
 			}
 		})
 	}
+}
+
+type IonosCloudClientTestSuite struct {
+	*require.Assertions
+	suite.Suite
+	client *IonosCloudClient
+}
+
+func TestIonosCloudClientTestSuite(t *testing.T) {
+	suite.Run(t, new(IonosCloudClientTestSuite))
+}
+
+func (s *IonosCloudClientTestSuite) SetupSuite() {
+	s.Assertions = s.Require()
+	var err error
+	s.client, err = NewClient("username", "password", "", "localhost")
+	s.NoError(err)
+	httpmock.Activate()
+}
+
+func (s *IonosCloudClientTestSuite) TearDownSuite() {
+	httpmock.Deactivate()
+}
+
+func (s *IonosCloudClientTestSuite) TearDownTest() {
+	httpmock.Reset()
+}
+
+func (s *IonosCloudClientTestSuite) TestReserveIPBlock_Success() {
+	header := http.Header{}
+	header.Add(locationHeaderKey, examplePath)
+	responder := httpmock.NewJsonResponderOrPanic(http.StatusAccepted, map[string]any{}).HeaderSet(header)
+	httpmock.RegisterResponder(
+		http.MethodPost,
+		catchAllMockUrl,
+		responder,
+	)
+	requestLocation, err := s.client.ReserveIPBlock(nil, "test", "de/fkb", 1)
+	s.NoError(err)
+	s.Equal(examplePath, requestLocation)
+}
+
+func (s *IonosCloudClientTestSuite) TestReserveIPBlock_Failure() {
+	tcs := []struct {
+		testName string
+		name     string
+		location string
+		size     int
+	}{
+		{"empty name", "", exampleLocation, 1},
+		{"empty location", "test", "", 1},
+		{"invalid size (zero)", "test", exampleLocation, 0},
+		{"invalid size (negative)", "test", "exampleLocation", -1},
+	}
+
+	for _, test := range tcs {
+		s.Run(test.testName, func() {
+			requestLocation, err := s.client.ReserveIPBlock(nil, test.name, test.location, test.size)
+			s.Error(err)
+			s.Empty(requestLocation)
+		})
+	}
+}
+
+func (s *IonosCloudClientTestSuite) TestGetIPBlock_Success() {
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		catchAllMockUrl,
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{}),
+	)
+	ipBlock, err := s.client.GetIPBlock(nil, exampleID)
+	s.NoError(err)
+	s.NotNil(ipBlock)
+}
+
+func (s *IonosCloudClientTestSuite) TestGetIPBlock_Failure_EmptyID() {
+	ipBlock, err := s.client.GetIPBlock(nil, "")
+	s.Error(err)
+	s.Nil(ipBlock)
+}
+
+func (s *IonosCloudClientTestSuite) TestListIPBlocks_Success() {
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		catchAllMockUrl,
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{}),
+	)
+	ipBlocks, err := s.client.ListIPBlocks(nil)
+	s.NoError(err)
+	s.NotNil(ipBlocks)
+}
+
+func (s *IonosCloudClientTestSuite) TestDeleteIPBlock_Success() {
+	header := http.Header{}
+	header.Set(locationHeaderKey, examplePath)
+	responder := httpmock.NewJsonResponderOrPanic(http.StatusAccepted, map[string]any{}).HeaderSet(header)
+	httpmock.RegisterResponder(http.MethodDelete, catchAllMockUrl, responder)
+	requestLocation, err := s.client.DeleteIPBlock(nil, exampleID)
+	s.NoError(err)
+	s.Equal(examplePath, requestLocation)
+}
+
+func (s *IonosCloudClientTestSuite) TestDeleteIPBlock_Failure_EmptyID() {
+	requestLocation, err := s.client.DeleteIPBlock(nil, "")
+	s.Error(err)
+	s.Empty(requestLocation)
 }
