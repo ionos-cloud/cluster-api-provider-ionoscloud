@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"slices"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"sigs.k8s.io/cluster-api/util"
@@ -290,19 +291,14 @@ func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bo
 	}
 
 	// Add the NIC to the failover group of the LAN
-	lan, err := s.getLAN()
-	if err != nil {
-		return false, err
+
+	lan, failoverConfig := &sdk.Lan{}, &[]sdk.IPFailover{}
+	if requeue, err := s.retrieveLANFailoverConfig(lan, failoverConfig); err != nil || requeue {
+		return requeue, err
 	}
 
-	// Check if the LAN is currently being updated
-	lanID := ptr.Deref(lan.GetId(), "")
-	if pending, err := s.isLANPatchPending(lanID); pending || err != nil {
-		return pending, err
-	}
-
-	log.V(4).Info("Checking failover group of LAN", "id", lanID)
-	ipFailoverConfig := ptr.Deref(lan.GetProperties().GetIpFailover(), []sdk.IPFailover{})
+	ipFailoverConfig := *failoverConfig
+	lanID := *lan.GetId()
 
 	for index, entry := range ipFailoverConfig {
 		nicUUID := ptr.Deref(entry.GetNicUuid(), "undefined")
@@ -349,35 +345,41 @@ func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bo
 func (s *Service) removeNICFromFailoverGroup(nicID string) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("removeNICFromFailoverGroup")
 
-	lan, err := s.getLAN()
-	if err != nil {
-		return false, err
+	lan, failoverConfig := &sdk.Lan{}, &[]sdk.IPFailover{}
+	if requeue, err := s.retrieveLANFailoverConfig(lan, failoverConfig); err != nil || requeue {
+		return requeue, err
 	}
 
-	// check if there is a pending patch request for the LAN
+	ipFailoverConfig := *failoverConfig
+	lanID := *lan.GetId()
+
+	index := slices.IndexFunc(ipFailoverConfig, func(fo sdk.IPFailover) bool {
+		return ptr.Deref(fo.GetNicUuid(), "undefined") == nicID
+	})
+
+	if index < 0 {
+		log.V(4).Info("NIC not found in failover group. No action required.")
+		return false, nil
+	}
+
+	// found the NIC, remove it from the failover group
+	log.V(4).Info("Found NIC in failover group", "nicUUID", nicID)
+	ipFailoverConfig = append(ipFailoverConfig[:index], ipFailoverConfig[index+1:]...)
+	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
+
+	log.V(4).Info("Patching LAN failover group to remove NIC", "nicID", nicID)
+	return true, s.patchLAN(lanID, props)
+}
+
+func (s *Service) retrieveLANFailoverConfig(lan *sdk.Lan, failoverConfig *[]sdk.IPFailover) (requeue bool, err error) {
+	log := s.scope.Logger.WithName("retrieveLANFailoverConfig")
 	lanID := ptr.Deref(lan.GetId(), "")
 	if pending, err := s.isLANPatchPending(lanID); pending || err != nil {
 		return pending, err
 	}
 
 	log.V(4).Info("Checking failover group of LAN", "id", lanID)
-	ipFailoverConfig := ptr.Deref(lan.GetProperties().GetIpFailover(), []sdk.IPFailover{})
-
-	for index, entry := range ipFailoverConfig {
-		if ptr.Deref(entry.GetNicUuid(), "undefined") != nicID {
-			continue
-		}
-
-		log.V(4).Info("Found NIC in failover group", "nicUUID", nicID)
-		ipFailoverConfig = append(ipFailoverConfig[:index], ipFailoverConfig[index+1:]...)
-		props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
-
-		log.V(4).Info("Patching LAN failover group to remove NIC", "nicID", nicID)
-		err := s.patchLAN(lanID, props)
-		return true, err
-	}
-
-	log.V(4).Info("NIC not found in failover group. No action required.")
+	*failoverConfig = ptr.Deref(lan.GetProperties().GetIpFailover(), []sdk.IPFailover{})
 	return false, nil
 }
 
