@@ -150,7 +150,7 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) listAndFilterFunc[sdk.IpBlo
 }
 
 func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.ClusterScope) (*sdk.IpBlock, error) {
-	id := strings.TrimPrefix(cs.IonosCluster.Spec.ControlPlaneEndpointProviderID, "ionos://")
+	id := strings.TrimPrefix(cs.IonosCluster.Status.ControlPlaneEndpointProviderID, "ionos://")
 	if id == "" {
 		s.logger.Info("Could not find any IP block by ID as the provider ID is not set.")
 		return nil, nil

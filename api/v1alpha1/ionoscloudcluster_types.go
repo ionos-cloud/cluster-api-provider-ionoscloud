@@ -39,11 +39,6 @@ type IonosCloudClusterSpec struct {
 	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 
-	// ControlPlaneEndpointProviderID is the IONOS Cloud provider ID for the control plane endpoint ip block.
-	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
-	// +optional
-	ControlPlaneEndpointProviderID string `json:"controlPlaneEndpointProviderID"`
-
 	// Contract number is the contract number of the IONOS Cloud account.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
 	ContractNumber string `json:"contractNumber"`
@@ -72,6 +67,11 @@ type IonosCloudClusterStatus struct {
 	// CurrentClusterRequest is the current pending request made during reconciliation for the whole cluster.
 	// +optional
 	CurrentClusterRequest *ProvisioningRequest `json:"currentClusterRequest,omitempty"`
+
+	// ControlPlaneEndpointProviderID is the IONOS Cloud provider ID for the control plane endpoint ip block.
+	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
+	// +optional
+	ControlPlaneEndpointProviderID string `json:"controlPlaneEndpointProviderID"`
 }
 
 // +kubebuilder:object:root=true
