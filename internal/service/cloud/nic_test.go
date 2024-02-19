@@ -58,7 +58,6 @@ func (n *nicSuite) TestReconcileNICConfig() {
 	n.NotNil(nic, "reconcileNICConfig() should return a NIC")
 	n.NoError(err, "reconcileNICConfig() should not return an error")
 	n.Nil(n.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
-
 }
 
 func (n *nicSuite) TestReconcileNICConfigIPIsSet() {
@@ -87,10 +86,6 @@ func (n *nicSuite) TestReconcileNICConfigPatchRequestPending() {
 	n.NotNil(nic, "reconcileNICConfig() should return a NIC")
 	n.NoError(err, "reconcileNICConfig() should not return an error")
 	n.Nil(n.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
-}
-
-func (n *nicSuite) mockListSevers() *clienttest.MockClient_ListServers_Call {
-	return n.ionosClient.EXPECT().ListServers(n.ctx, n.service.datacenterID())
 }
 
 func (n *nicSuite) mockGetServer(serverID string) *clienttest.MockClient_GetServer_Call {
