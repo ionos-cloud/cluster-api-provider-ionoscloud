@@ -88,9 +88,8 @@ spec:
       - sysctl --system
     postKubeadmCommands:
       - >
-        systemctl disable --now accounts-daemon atd unattended-upgrades udisks2 multipathd apt-daily apt-daily.timer
-        apt-daily-upgrade apt-daily-upgrade.timer motd-news.timer fwupd-refresh.timer packagekit ModemManager snapd snapd.socket
-        snapd.apparmor snapd.autoimport snapd.core-fixup snapd.recovery-chooser-trigger snapd.seeded snapd.system-shutdown ua-timer.timer
+        systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
+        packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
       # TODO(jriedel-ionos): remove that if we have a CCM
       - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
       - >
@@ -217,9 +216,8 @@ spec:
         - sysctl --system
       postKubeadmCommands:
         - >
-          systemctl disable --now accounts-daemon atd unattended-upgrades udisks2 multipathd apt-daily apt-daily.timer
-          apt-daily-upgrade apt-daily-upgrade.timer motd-news.timer fwupd-refresh.timer packagekit ModemManager snapd snapd.socket
-          snapd.apparmor snapd.autoimport snapd.core-fixup snapd.recovery-chooser-trigger snapd.seeded snapd.system-shutdown ua-timer.timer
+          systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
+          packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
         # TODO(jriedel-ionos): remove that if we have a CCM
         - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
         - >
