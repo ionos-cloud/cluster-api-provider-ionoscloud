@@ -1,0 +1,45 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: '${CLUSTER_NAME}'
+  namespace: '${NAMESPACE}'
+spec:
+  topology:
+    class: '${CLUSTER_CLASS_NAME}'
+    controlPlane:
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+    variables:
+    - name: sshKey
+      value: '${VSPHERE_SSH_AUTHORIZED_KEY}'
+    - name: controlPlaneIpAddr
+      value: ${CONTROL_PLANE_ENDPOINT_IP}
+    - name: controlPlanePort
+      value: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
+    - name: credsSecretName
+      value: '${CLUSTER_NAME}'
+    - name: datacenterID
+      value: '${IONOSCLOUD_DATACENTER_ID}'
+    - name: contractNumber
+      value: '${IONOSCLOUD_CONTRACT_NUMBER}'
+    - name: location
+      value: '${CONTROL_PLANE_ENDPOINT_LOCATION}'
+    version: '${KUBERNETES_VERSION}'
+    workers:
+      machineDeployments:
+      - class: ${CLUSTER_CLASS_NAME}-worker
+        metadata: {}
+        name: md-0
+        replicas: ${WORKER_MACHINE_COUNT}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "${CLUSTER_NAME}-credentials"
+  namespace: '${NAMESPACE}'
+type: Opaque
+stringData:
+  token: "${IONOS_TOKEN}"
+  apiURL: "${IONOS_API_URL:-https://api.ionos.com/cloudapi/v6}"
