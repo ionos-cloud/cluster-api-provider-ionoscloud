@@ -1,0 +1,523 @@
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: IonosCloudClusterTemplate
+metadata:
+  name: '${CLUSTER_CLASS_NAME}'
+  namespace: '${NAMESPACE}'
+spec:
+  template:
+    spec:
+      credentialsRef: {}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: '${CLUSTER_CLASS_NAME}'
+  namespace: '${NAMESPACE}'
+spec:
+  controlPlane:
+    machineInfrastructure:
+      ref:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: IonosCloudMachineTemplate
+        name: ${CLUSTER_CLASS_NAME}-template
+        namespace: '${NAMESPACE}'
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: KubeadmControlPlaneTemplate
+      name: ${CLUSTER_CLASS_NAME}-controlplane
+      namespace: '${NAMESPACE}'
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+      kind: IonosCloudClusterTemplate
+      name: '${CLUSTER_CLASS_NAME}'
+      namespace: '${NAMESPACE}'
+  patches:
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/kubeadmConfigSpec/users
+        valueFrom:
+          template: |
+            - name: capv
+              sshAuthorizedKeys:
+              - '{{ .sshKey }}'
+              sudo: ALL=(ALL) NOPASSWD:ALL
+      selector:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: KubeadmControlPlaneTemplate
+        matchResources:
+          controlPlane: true
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/users
+        valueFrom:
+          template: |
+            - name: capv
+              sshAuthorizedKeys:
+              - '{{ .sshKey }}'
+              sudo: ALL=(ALL) NOPASSWD:ALL
+      selector:
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        kind: KubeadmConfigTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ${CLUSTER_CLASS_NAME}-worker
+    enabledIf: '{{ if .sshKey }}true{{end}}'
+    name: enableSSHIntoNodes
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/kubeadmConfigSpec/files/-
+        valueFrom:
+          template: |
+            # CSI Metadata config
+            content: |
+              {
+                "datacenter-id": "{{ .datacenterID }}"
+              }
+            owner: root:root
+            path: /etc/ie-csi/cfg.json
+            permissions: '0644'
+      selector:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: KubeadmControlPlaneTemplate
+        matchResources:
+          controlPlane: true
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/files/-
+        valueFrom:
+          template: |
+            # CSI Metadata config
+            content: |
+              {
+                "datacenter-id": "{{ .datacenterID }}"
+              }
+            owner: root:root
+            path: /etc/ie-csi/cfg.json
+            permissions: '0644'
+      selector:
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        kind: KubeadmConfigTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ${CLUSTER_CLASS_NAME}-worker
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/datacenterID
+        valueFrom:
+          variable: datacenterID
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: IonosCloudMachineTemplate
+        matchResources:
+          controlPlane: true
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/datacenterID
+        valueFrom:
+          variable: datacenterID
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: IonosCloudMachineTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ${CLUSTER_CLASS_NAME}-worker
+    name: datacenterIdSubstitutionsOnKubeadm
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/kubeadmConfigSpec/initConfiguration/localAPIEndpoint/bindPort
+        valueFrom:
+          variable: controlPlanePort
+      selector:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: KubeadmControlPlaneTemplate
+        matchResources:
+          controlPlane: true
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/controlPlaneEndpoint
+        valueFrom:
+          template: |
+            host: '{{ .controlPlaneHost | default .controlPlaneIpAddr }}'
+            port: {{ .controlPlanePort }}
+      - op: add
+        path: /spec/template/spec/credentialsRef/name
+        valueFrom:
+          variable: credsSecretName
+      - op: add
+        path: /spec/template/spec/location
+        valueFrom:
+          variable: location
+      - op: add
+        path: /spec/template/spec/contractNumber
+        valueFrom:
+          variable: contractNumber
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: IonosCloudClusterTemplate
+        matchResources:
+          infrastructureCluster: true
+    name: infraClusterSubstitutions
+  - definitions:
+    - jsonPatches:
+      - op: add
+        path: /spec/template/spec/kubeadmConfigSpec/files/-
+        valueFrom:
+          template: |-
+            owner: "root:root"
+            path: "/etc/kubernetes/manifests/kube-vip.yaml"
+            content: |
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                name: kube-vip
+                namespace: kube-system
+              spec:
+                containers:
+                - args:
+                  - manager
+                  env:
+                  - name: cp_enable
+                    value: "true"
+                  - name: vip_interface
+                    value: ${VIP_NETWORK_INTERFACE=""}
+                  - name: address
+                    value: ${CONTROL_PLANE_ENDPOINT_IP}
+                  - name: port
+                    value: "${CONTROL_PLANE_ENDPOINT_PORT:-6443}"
+                  - name: vip_arp
+                    value: "true"
+                  - name: vip_leaderelection
+                    value: "true"
+                  - name: vip_leaseduration
+                    value: "15"
+                  - name: vip_renewdeadline
+                    value: "10"
+                  - name: vip_retryperiod
+                    value: "2"
+                  image: ghcr.io/kube-vip/kube-vip:v0.7.1
+                  imagePullPolicy: IfNotPresent
+                  name: kube-vip
+                  resources: {}
+                  securityContext:
+                    capabilities:
+                      add:
+                      - NET_ADMIN
+                      - NET_RAW
+                  volumeMounts:
+                  - mountPath: /etc/kubernetes/admin.conf
+                    name: kubeconfig
+                hostAliases:
+                - hostnames:
+                  - kubernetes
+                  - localhost
+                  ip: 127.0.0.1
+                hostNetwork: true
+                volumes:
+                - hostPath:
+                    path: /etc/kubernetes/admin.conf
+                    type: FileOrCreate
+                  name: kubeconfig
+              status: {}
+            permissions: "0644"
+      - op: add
+        path: /spec/template/spec/kubeadmConfigSpec/files/-
+        valueFrom:
+          template: |
+            content: |
+              #!/bin/bash
+
+              # Copyright 2020 The Kubernetes Authors.
+              #
+              # Licensed under the Apache License, Version 2.0 (the "License");
+              # you may not use this file except in compliance with the License.
+              # You may obtain a copy of the License at
+              #
+              #     http://www.apache.org/licenses/LICENSE-2.0
+              #
+              # Unless required by applicable law or agreed to in writing, software
+              # distributed under the License is distributed on an "AS IS" BASIS,
+              # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+              # See the License for the specific language governing permissions and
+              # limitations under the License.
+
+              set -e
+
+              # Configure the workaround required for kubeadm init with kube-vip:
+              # xref: https://github.com/kube-vip/kube-vip/issues/684
+
+              # Nothing to do for kubernetes < v1.29
+              KUBEADM_MINOR="$(kubeadm version -o short | cut -d '.' -f 2)"
+              if [[ "$KUBEADM_MINOR" -lt "29" ]]; then
+                exit 0
+              fi
+
+              IS_KUBEADM_INIT="false"
+
+              # cloud-init kubeadm init
+              if [[ -f /run/kubeadm/kubeadm.yaml ]]; then
+                IS_KUBEADM_INIT="true"
+              fi
+
+              # ignition kubeadm init
+              if [[ -f /etc/kubeadm.sh ]] && grep -q -e "kubeadm init" /etc/kubeadm.sh; then
+                IS_KUBEADM_INIT="true"
+              fi
+
+              if [[ "$IS_KUBEADM_INIT" == "true" ]]; then
+                sed -i 's#path: /etc/kubernetes/admin.conf#path: /etc/kubernetes/super-admin.conf#' \
+                  /etc/kubernetes/manifests/kube-vip.yaml
+              fi
+            owner: root:root
+            path: /etc/pre-kubeadm-commands/50-kube-vip-prepare.sh
+            permissions: "0700"
+      selector:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: KubeadmControlPlaneTemplate
+        matchResources:
+          controlPlane: true
+    name: kubeVipPodManifest
+  variables:
+  - metadata: {}
+    name: sshKey
+    required: false
+    schema:
+      openAPIV3Schema:
+        description: Public key to SSH onto the cluster nodes.
+        type: string
+  - metadata: {}
+    name: datacenterID
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: datacenterID for IONOS
+        type: string
+  - metadata: {}
+    name: controlPlaneIpAddr
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: Floating VIP for the control plane.
+        type: string
+  - metadata: {}
+    name: controlPlaneHost
+    required: false
+    schema:
+      openAPIV3Schema:
+        description: FQDN for the control plane.
+        type: string
+  - metadata: {}
+    name: controlPlanePort
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: Port for the control plane endpoint.
+        type: integer
+  - metadata: {}
+    name: credsSecretName
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: Secret containing the credentials for the infra cluster.
+        type: string
+  - metadata: {}
+    name: location
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: cluster location on IONOS
+        type: string
+  - metadata: {}
+    name: contractNumber
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: contract number to use on IONOS
+        type: string
+  workers:
+    machineDeployments:
+    - class: ${CLUSTER_CLASS_NAME}-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: ${CLUSTER_CLASS_NAME}-worker
+            namespace: '${NAMESPACE}'
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+            kind: IonosCloudMachineTemplate
+            name: ${CLUSTER_CLASS_NAME}-worker-machinetemplate
+            namespace: '${NAMESPACE}'
+        metadata: {}
+---
+kind: KubeadmControlPlaneTemplate
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "${CLUSTER_CLASS_NAME}-controlplane"
+  namespace: '${NAMESPACE}'
+spec:
+  template:
+    spec:
+      kubeadmConfigSpec:
+        ntp:
+            enabled: true
+            servers:
+              - 0.de.pool.ntp.org
+              - 1.de.pool.ntp.org
+              - 2.de.pool.ntp.org
+              - 3.de.pool.ntp.org
+        files:
+          - path: /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
+            owner: root:root
+            permissions: '0644'
+            content: |
+              # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
+              # hardening guide.
+              KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+              Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+              MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+              HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
+          - path: /etc/sysctl.d/k8s.conf
+            content: |
+              fs.inotify.max_user_watches = 65536
+              net.netfilter.nf_conntrack_max = 1000000
+          - path: /etc/modules-load.d/k8s.conf
+            content: |
+              ip_vs
+              ip_vs_rr
+              ip_vs_wrr
+              ip_vs_sh
+              ip_vs_sed
+          # Crictl config
+          - path: /etc/crictl.yaml
+            content: |
+              runtime-endpoint: unix:///run/containerd/containerd.sock
+              timeout: 10
+        preKubeadmCommands:
+          - systemctl restart systemd-networkd.service systemd-modules-load.service systemd-journald containerd
+          # disable swap
+          - swapoff -apostKubeadmCommands
+        postKubeadmCommands:
+          - >
+            sed -i 's#path: /etc/kubernetes/super-admin.conf#path: /etc/kubernetes/admin.conf#' \
+            /etc/kubernetes/manifests/kube-vip.yaml
+          - >
+            systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
+            packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
+          # TODO(jriedel-ionos): remove that if we have a CCM
+          - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
+          - >
+            kubectl --kubeconfig /etc/kubernetes/kubelet.conf
+            patch node $(hostname)
+            --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
+        nodeRegistration:
+          kubeletExtraArgs:
+            # use cloud-provider: external when using a CCM
+            cloud-provider: ""
+        initConfiguration:
+          localAPIEndpoint: {}
+        joinConfiguration:
+          nodeRegistration:
+            criSocket: unix:///run/containerd/containerd.sock
+---
+kind: IonosCloudMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+metadata:
+  name: "${CLUSTER_CLASS_NAME}-template"
+  namespace: '${NAMESPACE}'
+spec:
+  template:
+    spec:
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+      disk:
+        image:
+          id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: IonosCloudMachineTemplate
+metadata:
+  name: "${CLUSTER_CLASS_NAME}-worker-machinetemplate"
+  namespace: '${NAMESPACE}'
+spec:
+  template:
+    spec:
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+      disk:
+        image:
+          id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_CLASS_NAME}-worker"
+  namespace: '${NAMESPACE}'
+spec:
+  template:
+    spec:
+      ntp:
+        enabled: true
+        servers:
+          - 0.de.pool.ntp.org
+          - 1.de.pool.ntp.org
+          - 2.de.pool.ntp.org
+          - 3.de.pool.ntp.org
+      files:
+        - path: /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
+          owner: root:root
+          permissions: '0644'
+          content: |
+            # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
+            # hardening guide.
+            KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+            Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+            MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+            HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
+        - path: /etc/sysctl.d/k8s.conf
+          content: |
+            fs.inotify.max_user_watches = 65536
+            net.netfilter.nf_conntrack_max = 1000000
+        - path: /etc/modules-load.d/k8s.conf
+          content: |
+            ip_vs
+            ip_vs_rr
+            ip_vs_wrr
+            ip_vs_sh
+            ip_vs_sed
+        # Crictl config
+        - path: /etc/crictl.yaml
+          content: |
+            runtime-endpoint: unix:///run/containerd/containerd.sock
+            timeout: 10
+      preKubeadmCommands:
+        - systemctl restart systemd-networkd.service systemd-modules-load.service systemd-journald containerd
+        # disable swap
+        - swapoff -a
+        - sed -i '/ swap / s/^/#/' /etc/fstab
+        - sysctl --system
+      postKubeadmCommands:
+        - >
+          systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
+          packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
+        # TODO(jriedel-ionos): remove that if we have a CCM
+        - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
+        - >
+          kubectl --kubeconfig /etc/kubernetes/kubelet.conf
+          patch node $(hostname)
+          --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            # use cloud-provider: external when using a CCM
+            cloud-provider: ""
+          criSocket: unix:///run/containerd/containerd.sock
