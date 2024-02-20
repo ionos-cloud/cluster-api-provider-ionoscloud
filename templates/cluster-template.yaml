@@ -41,7 +41,6 @@ spec:
     users:
       - name: root
         sshAuthorizedKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
-
     ntp:
         enabled: true
         servers:
@@ -71,6 +70,11 @@ spec:
           ip_vs_wrr
           ip_vs_sh
           ip_vs_sed
+      # Crictl config
+      - path: /etc/crictl.yaml
+        content: |
+          image-endpoint: unix:///run/containerd/containerd.sock
+          timeout: 10
     preKubeadmCommands:
       # TODO(lubedacht) remove this when using KubeVIP
       - ip addr add dev ens6 ${CONTROL_PLANE_ENDPOINT_IP}/32
@@ -197,6 +201,11 @@ spec:
             ip_vs_wrr
             ip_vs_sh
             ip_vs_sed
+        # Crictl config
+        - path: /etc/crictl.yaml
+          content: |
+            image-endpoint: unix:///run/containerd/containerd.sock
+            timeout: 10
       preKubeadmCommands:
         - rm /var/lib/dbus/machine-id /etc/machine-id # fix the machine id
         - dbus-uuidgen --ensure=/etc/machine-id
