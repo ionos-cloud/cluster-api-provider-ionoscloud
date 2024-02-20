@@ -70,15 +70,17 @@ spec:
                 - port
                 type: object
               location:
-                description: Region is the location/region where the data centers
-                  should be located.
+                description: Location is the location where the data centers should
+                  be located.
                 example: de/txl
+                minLength: 1
                 type: string
                 x-kubernetes-validations:
                 - message: location is immutable
                   rule: self == oldSelf
             required:
             - contractNumber
+            - controlPlaneEndpoint
             - location
             type: object
           status:

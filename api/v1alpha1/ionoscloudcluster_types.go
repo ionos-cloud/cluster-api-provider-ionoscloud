@@ -36,16 +36,16 @@ const (
 // IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
 type IonosCloudClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
-	// +optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 
 	// Contract number is the contract number of the IONOS Cloud account.
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
 	ContractNumber string `json:"contractNumber"`
 
-	// Region is the location/region where the data centers should be located.
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
-	// +kubebuilder:example=de/txl
+	// Location is the location where the data centers should be located.
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
+	//+kubebuilder:example=de/txl
+	//+kubebuilder:validation:MinLength=1
 	Location string `json:"location"`
 }
 

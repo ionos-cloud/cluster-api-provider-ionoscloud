@@ -1093,23 +1093,23 @@ func (_c *MockClient_PatchNIC_Call) RunAndReturn(run func(context.Context, strin
 	return _c
 }
 
-// ReserveIPBlock provides a mock function with given fields: ctx, name, region, size
-func (_m *MockClient) ReserveIPBlock(ctx context.Context, name string, region string, size int) (string, error) {
-	ret := _m.Called(ctx, name, region, size)
+// ReserveIPBlock provides a mock function with given fields: ctx, name, location, size
+func (_m *MockClient) ReserveIPBlock(ctx context.Context, name string, location string, size int) (string, error) {
+	ret := _m.Called(ctx, name, location, size)
 
 	var r0 string
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, int) (string, error)); ok {
-		return rf(ctx, name, region, size)
+		return rf(ctx, name, location, size)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, int) string); ok {
-		r0 = rf(ctx, name, region, size)
+		r0 = rf(ctx, name, location, size)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, string, string, int) error); ok {
-		r1 = rf(ctx, name, region, size)
+		r1 = rf(ctx, name, location, size)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1125,13 +1125,13 @@ type MockClient_ReserveIPBlock_Call struct {
 // ReserveIPBlock is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-//   - region string
+//   - location string
 //   - size int
-func (_e *MockClient_Expecter) ReserveIPBlock(ctx interface{}, name interface{}, region interface{}, size interface{}) *MockClient_ReserveIPBlock_Call {
-	return &MockClient_ReserveIPBlock_Call{Call: _e.mock.On("ReserveIPBlock", ctx, name, region, size)}
+func (_e *MockClient_Expecter) ReserveIPBlock(ctx interface{}, name interface{}, location interface{}, size interface{}) *MockClient_ReserveIPBlock_Call {
+	return &MockClient_ReserveIPBlock_Call{Call: _e.mock.On("ReserveIPBlock", ctx, name, location, size)}
 }
 
-func (_c *MockClient_ReserveIPBlock_Call) Run(run func(ctx context.Context, name string, region string, size int)) *MockClient_ReserveIPBlock_Call {
+func (_c *MockClient_ReserveIPBlock_Call) Run(run func(ctx context.Context, name string, location string, size int)) *MockClient_ReserveIPBlock_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(int))
 	})

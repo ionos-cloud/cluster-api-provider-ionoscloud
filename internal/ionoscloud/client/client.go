@@ -282,8 +282,8 @@ func (c *IonosCloudClient) GetVolume(ctx context.Context, datacenterID, volumeID
 	return &volume, nil
 }
 
-// ReserveIPBlock reserves an IP block with the provided properties in the specified region, returning the request
-// location.
+// ReserveIPBlock reserves an IP block with the provided properties in the specified location, returning the request
+// path.
 func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, location string, size int) (requestPath string, err error) {
 	if location == "" {
 		return "", errors.New("location must be set")

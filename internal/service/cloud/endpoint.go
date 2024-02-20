@@ -124,7 +124,7 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) listAndFilterFunc[sdk.IpBlo
 		}
 
 		var (
-			expectedName     = s.defaultResourceName(cs)
+			expectedName     = s.ipBlockName(cs)
 			expectedLocation = cs.Location()
 			count            = 0
 			foundBlock       *sdk.IpBlock
@@ -167,7 +167,7 @@ func (s *Service) reserveIPBlock(ctx context.Context, cs *scope.ClusterScope) er
 	var err error
 	log := s.logger.WithName("reserveIPBlock")
 
-	requestPath, err := s.cloud.ReserveIPBlock(ctx, s.defaultResourceName(cs), cs.Location(), 1)
+	requestPath, err := s.cloud.ReserveIPBlock(ctx, s.ipBlockName(cs), cs.Location(), 1)
 	if err != nil {
 		return fmt.Errorf("failed to request the cloud for IP block reservation: %w", err)
 	}
@@ -198,9 +198,9 @@ func (s *Service) getLatestIPBlockCreationRequest(cs *scope.ClusterScope) checkQ
 			s,
 			http.MethodPost,
 			ipBlocksPath,
-			matchByName[*sdk.IpBlock, *sdk.IpBlockProperties](s.defaultResourceName(cs)),
+			matchByName[*sdk.IpBlock, *sdk.IpBlockProperties](s.ipBlockName(cs)),
 			func(r *sdk.IpBlock, _ sdk.Request) bool {
-				return *r.GetProperties().GetLocation() == cs.Location()
+				return ptr.Deref(r.GetProperties().GetLocation(), "UnknownLocation") == cs.Location()
 			},
 		)
 	}
@@ -217,7 +217,7 @@ func (s *Service) removeIPBlockLeftovers(cs *scope.ClusterScope) {
 	cs.IonosCluster.Spec.ControlPlaneEndpoint.Host = ""
 }
 
-// defaultResourceName returns the name that should be used for cluster context resources.
-func (s *Service) defaultResourceName(cs *scope.ClusterScope) string {
+// ipBlockName returns the name that should be used for cluster context resources.
+func (s *Service) ipBlockName(cs *scope.ClusterScope) string {
 	return fmt.Sprintf("k8s-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
 }

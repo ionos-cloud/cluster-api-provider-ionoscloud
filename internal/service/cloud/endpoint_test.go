@@ -151,7 +151,7 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_Request() {
 func (s *EndpointTestSuite) mockReserveIPBlockCall() *clienttest.MockClient_ReserveIPBlock_Call {
 	return s.ionosClient.
 		EXPECT().
-		ReserveIPBlock(s.ctx, s.service.defaultResourceName(s.clusterScope), s.clusterScope.Location(), 1)
+		ReserveIPBlock(s.ctx, s.service.ipBlockName(s.clusterScope), s.clusterScope.Location(), 1)
 }
 
 func (s *EndpointTestSuite) mockListIPBlockCall() *clienttest.MockClient_ListIPBlocks_Call {
@@ -184,7 +184,7 @@ func (s *EndpointTestSuite) buildRequest(status string, method, id string) sdk.R
 	}
 	if method == http.MethodPost {
 		opts.body = fmt.Sprintf(`{"properties":{"location":"%s","name":"%s","size":1}}`,
-			s.clusterScope.Location(), s.service.defaultResourceName(s.clusterScope))
+			s.clusterScope.Location(), s.service.ipBlockName(s.clusterScope))
 	}
 	return s.exampleRequest(opts)
 }
