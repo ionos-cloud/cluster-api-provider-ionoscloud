@@ -47,7 +47,7 @@ func defaultCluster() *IonosCloudCluster {
 		},
 		Spec: IonosCloudClusterSpec{
 			ControlPlaneEndpoint: clusterv1.APIEndpoint{
-				Host: "1.2.3.4",
+				Host: "1.2.3.4", //nolint:gosec // this is just a randomIP
 				Port: 5678,
 			},
 			ContractNumber: "12345678",
