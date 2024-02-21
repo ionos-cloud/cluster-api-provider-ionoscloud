@@ -90,6 +90,44 @@ func (s *EndpointTestSuite) TestGetIPBlock_SingleMatch() {
 	s.Equal(location, block.Properties.Location, "IP block location does not match")
 }
 
+func (s *EndpointTestSuite) TestGetIPBlock_UserSetIP() {
+	s.clusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleIP
+	name := ptr.To("random name")
+	location := ptr.To(exampleLocation)
+	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
+		Items: &[]sdk.IpBlock{
+			{
+				Properties: &sdk.IpBlockProperties{
+					Name:     name,
+					Location: location,
+					Ips: &[]string{
+						exampleIP,
+					},
+				},
+			},
+			{
+				Properties: &sdk.IpBlockProperties{
+					Name:     name,
+					Location: location,
+				},
+			},
+		},
+	}, nil).Once()
+	block, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
+	s.NoError(err)
+	s.Contains(*block.GetProperties().GetIps(), exampleIP)
+}
+
+func (s *EndpointTestSuite) TestGetIPBlock_PreviouslySetID() {
+	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID = exampleID
+	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
+		Id: ptr.To(exampleID),
+	}, nil)
+	block, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
+	s.NoError(err)
+	s.Equal(*block.Id, exampleID)
+}
+
 func (s *EndpointTestSuite) TestGetIPBlock_NoMatch() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{
@@ -158,10 +196,49 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequest_Request() {
 	s.NotNil(info)
 }
 
+func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointCreation_UserSetIP() {
+	s.clusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleIP
+	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
+		Items: &[]sdk.IpBlock{
+			{
+				Id: ptr.To(exampleID),
+				Metadata: &sdk.DatacenterElementMetadata{
+					State: ptr.To(sdk.Available),
+				},
+				Properties: &sdk.IpBlockProperties{
+					Location: ptr.To(exampleLocation),
+					Ips: &[]string{
+						"another IP",
+						exampleIP,
+					},
+				},
+			},
+		},
+	}, nil)
+	requeue, err := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
+	s.False(requeue)
+	s.NoError(err)
+	s.Equal(s.clusterScope.GetControlPlaneEndpoint().Host, exampleIP)
+}
+
+func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_UserSetIP() {
+	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID = exampleID
+	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
+		Id: ptr.To(exampleID),
+	}, nil)
+	requeue, err := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
+	s.False(requeue)
+	s.NoError(err)
+}
+
 func (s *EndpointTestSuite) mockReserveIPBlockCall() *clienttest.MockClient_ReserveIPBlock_Call {
 	return s.ionosClient.
 		EXPECT().
 		ReserveIPBlock(s.ctx, s.service.ipBlockName(s.clusterScope), s.clusterScope.Location(), 1)
+}
+
+func (s *EndpointTestSuite) mockGetIPBlockByIDCall() *clienttest.MockClient_GetIPBlock_Call {
+	return s.ionosClient.EXPECT().GetIPBlock(s.ctx, exampleID)
 }
 
 func (s *EndpointTestSuite) mockListIPBlockCall() *clienttest.MockClient_ListIPBlocks_Call {

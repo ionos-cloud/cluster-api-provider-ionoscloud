@@ -72,9 +72,7 @@ func (s *ServiceTestSuite) SetupTest() {
 			Namespace: metav1.NamespaceDefault,
 			Name:      "test-cluster",
 		},
-		Spec: clusterv1.ClusterSpec{
-			Paused: false,
-		},
+		Spec: clusterv1.ClusterSpec{},
 	}
 	s.infraCluster = &infrav1.IonosCloudCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -209,4 +207,5 @@ const (
 	exampleID          = "42"
 	exampleRequestPath = "/test"
 	exampleLocation    = "de/txl"
+	exampleIP          = "1.2.3.4"
 )

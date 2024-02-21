@@ -29,6 +29,11 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
+const (
+	// UnknownValue is a placeholder string, used as defaults when we deref string pointers.
+	UnknownValue = "107df78c-cee8-4902-963a-655cc6ea9865"
+)
+
 // Service offers infra resources services for IONOS Cloud machine reconciliation.
 type Service struct {
 	scope  *scope.MachineScope // Deprecated: pass machine scope explicitly to each method.
