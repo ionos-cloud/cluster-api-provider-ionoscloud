@@ -80,7 +80,6 @@ spec:
                   rule: self == oldSelf
             required:
             - contractNumber
-            - controlPlaneEndpoint
             - location
             type: object
           status:

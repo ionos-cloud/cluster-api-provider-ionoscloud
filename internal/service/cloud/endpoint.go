@@ -129,23 +129,20 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) listAndFilterFunc[sdk.IpBlo
 			count            = 0
 			foundBlock       *sdk.IpBlock
 		)
-		if len(*blocks.Items) > 0 {
-			for _, block := range *blocks.Items {
-				if props := block.Properties; props != nil {
-					if *props.Name == expectedName && *props.Location == expectedLocation {
-						count++
-						foundBlock = ptr.To(block)
-					}
-				}
-				if count > 1 {
-					return nil, fmt.Errorf(
-						"cannot determine IP block for Control Plane Endpoint as there are multiple IP blocks with the name %s",
-						expectedName)
-				}
+		for _, block := range *blocks.GetItems() {
+			props := block.GetProperties()
+			if ptr.Deref(props.GetName(), "") == expectedName &&
+				ptr.Deref(props.GetLocation(), "") == expectedLocation {
+				count++
+				foundBlock = ptr.To(block)
 			}
-			return foundBlock, nil
+			if count > 1 {
+				return nil, fmt.Errorf(
+					"cannot determine IP block for Control Plane Endpoint as there are multiple IP blocks with the name %s",
+					expectedName)
+			}
 		}
-		return nil, nil
+		return foundBlock, nil
 	}
 }
 

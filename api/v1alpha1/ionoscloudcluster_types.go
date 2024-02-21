@@ -36,16 +36,17 @@ const (
 // IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
 type IonosCloudClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+	// +optional
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 
 	// Contract number is the contract number of the IONOS Cloud account.
-	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
 	ContractNumber string `json:"contractNumber"`
 
 	// Location is the location where the data centers should be located.
-	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
-	//+kubebuilder:example=de/txl
-	//+kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
+	// +kubebuilder:example=de/txl
+	// +kubebuilder:validation:MinLength=1
 	Location string `json:"location"`
 }
 
@@ -54,7 +55,7 @@ type IonosCloudClusterStatus struct {
 	// Ready indicates that the cluster is ready.
 	// +optional
 	// +kubebuilder:default=false
-	Ready bool `json:"ready"`
+	Ready bool `json:"ready,omitempty"`
 
 	// Conditions defines current service state of the IonosCloudCluster.
 	// +optional
@@ -71,7 +72,7 @@ type IonosCloudClusterStatus struct {
 	// ControlPlaneEndpointProviderID is the IONOS Cloud provider ID for the control plane endpoint IP block.
 	// It will be in the format "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
 	// +optional
-	ControlPlaneEndpointProviderID string `json:"controlPlaneEndpointProviderID"`
+	ControlPlaneEndpointProviderID string `json:"controlPlaneEndpointProviderID,omitempty"`
 }
 
 // +kubebuilder:object:root=true

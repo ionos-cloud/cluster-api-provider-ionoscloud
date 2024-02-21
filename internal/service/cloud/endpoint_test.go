@@ -38,18 +38,22 @@ func TestEndpointTestSuite(t *testing.T) {
 	suite.Run(t, new(EndpointTestSuite))
 }
 
+const (
+	exampleName = "k8s-default-test-cluster"
+)
+
 func (s *EndpointTestSuite) TestGetIPBlock_MultipleMatches() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{
 			{
 				Properties: &sdk.IpBlockProperties{
-					Name:     ptr.To("k8s-default-test-cluster"),
+					Name:     ptr.To(exampleName),
 					Location: ptr.To(exampleLocation),
 				},
 			},
 			{
 				Properties: &sdk.IpBlockProperties{
-					Name:     ptr.To("k8s-default-test-cluster"),
+					Name:     ptr.To(exampleName),
 					Location: ptr.To(exampleLocation),
 				},
 			},
@@ -61,7 +65,7 @@ func (s *EndpointTestSuite) TestGetIPBlock_MultipleMatches() {
 }
 
 func (s *EndpointTestSuite) TestGetIPBlock_SingleMatch() {
-	name := ptr.To("k8s-default-test-cluster")
+	name := ptr.To(exampleName)
 	location := ptr.To(exampleLocation)
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{
@@ -69,6 +73,12 @@ func (s *EndpointTestSuite) TestGetIPBlock_SingleMatch() {
 				Properties: &sdk.IpBlockProperties{
 					Name:     name,
 					Location: location,
+				},
+			},
+			{
+				Properties: &sdk.IpBlockProperties{
+					Name:     name,
+					Location: ptr.To("es/vit"),
 				},
 			},
 		},
@@ -85,7 +95,7 @@ func (s *EndpointTestSuite) TestGetIPBlock_NoMatch() {
 		Items: &[]sdk.IpBlock{
 			{
 				Properties: &sdk.IpBlockProperties{
-					Name:     ptr.To("k8s-default-test-cluster"),
+					Name:     ptr.To(exampleName),
 					Location: ptr.To("de/fra"),
 				},
 			},
