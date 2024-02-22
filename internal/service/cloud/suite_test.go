@@ -139,7 +139,6 @@ func (s *ServiceTestSuite) SetupTest() {
 		Logger:       &s.log,
 		Cluster:      s.capiCluster,
 		IonosCluster: s.infraCluster,
-		IonosClient:  s.ionosClient,
 	})
 	s.NoError(err, "failed to create cluster scope")
 
@@ -153,8 +152,7 @@ func (s *ServiceTestSuite) SetupTest() {
 	})
 	s.NoError(err, "failed to create machine scope")
 
-	s.service, err = NewService(s.machineScope)
-	s.service.cloud = s.ionosClient
+	s.service, err = NewService(s.machineScope, s.ionosClient)
 	s.service.logger = &s.log
 	s.NoError(err, "failed to create service")
 }

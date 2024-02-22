@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 )
 
 // ClusterScope defines the basic context for an actuator to operate upon.
@@ -44,8 +43,6 @@ type ClusterScope struct {
 
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
-
-	IonosClient ionoscloud.Client // Deprecated
 }
 
 // ClusterScopeParams are the parameters, which are used to create a cluster scope.
@@ -54,7 +51,6 @@ type ClusterScopeParams struct {
 	Logger       *logr.Logger
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
-	IonosClient  ionoscloud.Client
 }
 
 // NewClusterScope creates a new scope for the supplied parameters.
@@ -66,13 +62,6 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 
 	if params.Cluster == nil {
 		return nil, errors.New("cluster is required when creating a ClusterScope")
-	}
-
-	if params.IonosCluster == nil {
-		return nil, errors.New("IonosCluster is required when creating a ClusterScope")
-	}
-	if params.IonosClient == nil {
-		return nil, errors.New("IonosClient is required when creating a ClusterScope")
 	}
 
 	if params.Logger == nil {
@@ -88,10 +77,9 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	clusterScope := &ClusterScope{
 		Logger:       params.Logger,
 		Cluster:      params.Cluster,
-		IonosCluster: params.IonosCluster,
-		IonosClient:  params.IonosClient,
 		client:       params.Client,
 		patchHelper:  helper,
+		IonosCluster: params.IonosCluster,
 	}
 
 	return clusterScope, nil

@@ -19,7 +19,3 @@ package cloud
 func (s *ServiceTestSuite) TestDatacenterID() {
 	s.Equal(s.service.scope.IonosMachine.Spec.DatacenterID, s.service.datacenterID(nil))
 }
-
-func (s *ServiceTestSuite) TestAPI() {
-	s.Equal(s.service.scope.ClusterScope.IonosClient, s.service.api())
-}

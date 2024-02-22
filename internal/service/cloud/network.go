@@ -125,7 +125,7 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, cs *scope.ClusterSco
 func (s *Service) getLAN(cs *scope.ClusterScope, ms *scope.MachineScope) listAndFilterFunc[sdk.Lan] {
 	return func(ctx context.Context) (*sdk.Lan, error) {
 		// check if the LAN exists
-		lans, err := s.api().ListLANs(ctx, s.datacenterID(ms))
+		lans, err := s.cloud.ListLANs(ctx, s.datacenterID(ms))
 		if err != nil {
 			return nil, fmt.Errorf("could not list LANs in data center %s: %w", s.datacenterID(ms), err)
 		}
@@ -156,7 +156,7 @@ func (s *Service) getLAN(cs *scope.ClusterScope, ms *scope.MachineScope) listAnd
 func (s *Service) createLAN(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) error {
 	log := s.scope.Logger.WithName("createLAN")
 
-	requestPath, err := s.api().CreateLAN(ctx, s.datacenterID(ms), sdk.LanPropertiesPost{
+	requestPath, err := s.cloud.CreateLAN(ctx, s.datacenterID(ms), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.lanName(cs)),
 		Public: ptr.To(true),
 	})
@@ -182,7 +182,7 @@ func (s *Service) createLAN(ctx context.Context, cs *scope.ClusterScope, ms *sco
 func (s *Service) deleteLAN(ctx context.Context, _ *scope.ClusterScope, ms *scope.MachineScope, lanID string) error {
 	log := s.scope.Logger.WithName("deleteLAN")
 
-	requestPath, err := s.api().DeleteLAN(ctx, s.datacenterID(ms), lanID)
+	requestPath, err := s.cloud.DeleteLAN(ctx, s.datacenterID(ms), lanID)
 	if err != nil {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
@@ -281,7 +281,7 @@ func (s *Service) patchNIC(ctx context.Context, _ *scope.MachineScope, serverID 
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)
 
-	location, err := s.api().PatchNIC(ctx, s.datacenterID(nil), serverID, nicID, props)
+	location, err := s.cloud.PatchNIC(ctx, s.datacenterID(nil), serverID, nicID, props)
 	if err != nil {
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}

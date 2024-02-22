@@ -32,7 +32,7 @@ import (
 // GetRequestStatus returns the status of a request for a given request URL.
 // If the request contains a message, it is also returned.
 func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (requestStatus string, statusMessage string, err error) {
-	status, err := s.api().CheckRequestStatus(ctx, requestURL)
+	status, err := s.cloud.CheckRequestStatus(ctx, requestURL)
 	if err != nil {
 		return "", "", fmt.Errorf("unable to retrieve the request status: %w", err)
 	}
@@ -117,7 +117,7 @@ func getMatchingRequest[T any](
 	// As we later on ignore query parameters in found requests, we need to do the same here for consistency.
 	urlWithoutQueryParams := strings.Split(url, "?")[0]
 
-	requests, err := s.api().GetRequests(ctx, method, urlWithoutQueryParams)
+	requests, err := s.cloud.GetRequests(ctx, method, urlWithoutQueryParams)
 	if err != nil {
 		return nil, fmt.Errorf("could not get requests: %w", err)
 	}

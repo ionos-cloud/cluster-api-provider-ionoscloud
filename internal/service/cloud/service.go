@@ -41,16 +41,11 @@ type Service struct {
 }
 
 // NewService returns a new Service.
-func NewService(s *scope.MachineScope) (*Service, error) {
+func NewService(ms *scope.MachineScope, cloud ionoscloud.Client) (*Service, error) {
 	return &Service{
-		scope: s,
+		scope: ms,
+		cloud: cloud,
 	}, nil
-}
-
-// api is a shortcut for the IONOS Cloud Client.
-// Deprecated: use Service.cloud instead.
-func (s *Service) api() ionoscloud.Client {
-	return s.scope.ClusterScope.IonosClient
 }
 
 // datacenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.

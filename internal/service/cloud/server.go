@@ -94,7 +94,7 @@ func (s *Service) ReconcileServer(ctx context.Context, cs *scope.ClusterScope, m
 }
 
 // ReconcileServerDeletion ensures the server is deleted.
-func (s *Service) ReconcileServerDeletion(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) (requeue bool, err error) {
+func (s *Service) ReconcileServerDeletion(ctx context.Context, _ *scope.ClusterScope, ms *scope.MachineScope) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLANDeletion")
 
 	server, request, err := findResource(ctx, s.getServer(ms), s.getLatestServerCreationRequest(ms))
@@ -195,7 +195,7 @@ func (s *Service) getServerByProviderID(ctx context.Context, _ *scope.MachineSco
 			return nil, fmt.Errorf("invalid server ID %s: %w", serverID, err)
 		}
 
-		server, err := s.api().GetServer(ctx, s.datacenterID(nil), serverID)
+		server, err := s.cloud.GetServer(ctx, s.datacenterID(nil), serverID)
 		// if the server was not found, we will continue, as the request might not
 		// have been completed yet
 		if err != nil && !isNotFound(err) {
@@ -222,7 +222,7 @@ func (s *Service) getServer(ms *scope.MachineScope) listAndFilterFunc[sdk.Server
 
 		// without provider ID, we need to list all servers and see if
 		// there is one with the expected name.
-		serverList, err := s.api().ListServers(ctx, s.datacenterID(nil))
+		serverList, err := s.cloud.ListServers(ctx, s.datacenterID(nil))
 		if err != nil {
 			return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(nil), err)
 		}
@@ -245,7 +245,7 @@ func (s *Service) deleteServer(ctx context.Context, _ *scope.MachineScope, serve
 	log := s.scope.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
-	requestLocation, err := s.api().DeleteServer(ctx, s.datacenterID(nil), serverID)
+	requestLocation, err := s.cloud.DeleteServer(ctx, s.datacenterID(nil), serverID)
 	if err != nil {
 		return fmt.Errorf("failed to request server deletion: %w", err)
 	}
@@ -305,7 +305,7 @@ func (s *Service) createServer(ctx context.Context, _ *scope.ClusterScope, ms *s
 		lanID:        int32(lanID),
 	}
 
-	server, requestLocation, err := s.api().CreateServer(
+	server, requestLocation, err := s.cloud.CreateServer(
 		ctx,
 		s.datacenterID(nil),
 		s.buildServerProperties(ms, copySpec),
