@@ -114,7 +114,6 @@ func (s *ServiceTestSuite) SetupTest() {
 				DiskType:         infrav1.VolumeDiskTypeHDD,
 				SizeGB:           20,
 				AvailabilityZone: infrav1.AvailabilityZoneAuto,
-				SSHKeys:          []string{"ssh-rsa AAAAB3Nz"},
 				Image: &infrav1.ImageSpec{
 					ID: ptr.To("3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
 				},
