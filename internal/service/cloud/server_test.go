@@ -172,7 +172,7 @@ func (s *serverSuite) TestReconcileServer_NoRequest() {
 	s.mockListLANs().Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To("1"),
 		Properties: &sdk.LanProperties{
-			Name:   ptr.To(s.service.lanName()),
+			Name:   ptr.To(s.service.lanName(s.clusterScope)),
 			Public: ptr.To(true),
 		},
 	}}}, nil)
@@ -245,11 +245,11 @@ func (s *serverSuite) exampleServer() sdk.Server {
 }
 
 func (s *serverSuite) mockListSevers() *clienttest.MockClient_ListServers_Call {
-	return s.ionosClient.EXPECT().ListServers(s.ctx, s.service.datacenterID())
+	return s.ionosClient.EXPECT().ListServers(s.ctx, s.service.datacenterID(nil))
 }
 
 func (s *serverSuite) mockGetServer(serverID string) *clienttest.MockClient_GetServer_Call {
-	return s.ionosClient.EXPECT().GetServer(s.ctx, s.service.datacenterID(), serverID)
+	return s.ionosClient.EXPECT().GetServer(s.ctx, s.service.datacenterID(nil), serverID)
 }
 
 func (s *serverSuite) mockGetServerCreationRequest() *clienttest.MockClient_GetRequests_Call {
@@ -259,14 +259,14 @@ func (s *serverSuite) mockGetServerCreationRequest() *clienttest.MockClient_GetR
 func (s *serverSuite) mockCreateServer() *clienttest.MockClient_CreateServer_Call {
 	return s.ionosClient.EXPECT().CreateServer(
 		s.ctx,
-		s.service.datacenterID(),
+		s.service.datacenterID(nil),
 		mock.Anything,
 		mock.Anything,
 	)
 }
 
 func (s *serverSuite) mockListLANs() *clienttest.MockClient_ListLANs_Call {
-	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.service.datacenterID())
+	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.service.datacenterID(nil))
 }
 
 func (s *serverSuite) examplePostRequest(status string) []sdk.Request {

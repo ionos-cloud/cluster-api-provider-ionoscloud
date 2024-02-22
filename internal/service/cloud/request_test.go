@@ -131,7 +131,7 @@ func (s *getMatchingRequestSuite) examplePostRequest(href, status string) sdk.Re
 		status:     status,
 		method:     http.MethodPost,
 		url:        fmt.Sprintf("%s/?depth=10", baseTestURL),
-		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName()),
+		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName(s.clusterScope)),
 		href:       href,
 		targetID:   "1",
 		targetType: sdk.LAN,
@@ -161,7 +161,7 @@ func (s *getMatchingRequestSuite) TestMatching() {
 
 	// req3 doesn't fulfill the matcher function
 	req3 := s.examplePostRequest("req3", sdk.RequestStatusQueued)
-	renamed := strings.Replace(*req3.Properties.Body, s.service.lanName(), "wrongName", 1)
+	renamed := strings.Replace(*req3.Properties.Body, s.service.lanName(s.clusterScope), "wrongName", 1)
 	req3.Properties.Body = ptr.To(renamed)
 
 	// req4 is the one we want to find
@@ -179,7 +179,7 @@ func (s *getMatchingRequestSuite) TestMatching() {
 		http.MethodPost,
 		"path?foo=bar&baz=qux",
 		func(resource *sdk.Lan, _ sdk.Request) bool {
-			return *resource.Properties.Name == s.service.lanName()
+			return *resource.Properties.Name == s.service.lanName(s.clusterScope)
 		},
 	)
 	s.NoError(err)

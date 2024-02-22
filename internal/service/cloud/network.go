@@ -27,29 +27,30 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 // lanName returns the name of the cluster LAN.
-func (s *Service) lanName() string {
+func (s *Service) lanName(_ *scope.ClusterScope) string {
 	return fmt.Sprintf(
 		"k8s-%s-%s",
 		s.scope.ClusterScope.Cluster.Namespace,
 		s.scope.ClusterScope.Cluster.Name)
 }
 
-func (s *Service) lanURL(id string) string {
-	return path.Join("datacenters", s.datacenterID(), "lans", id)
+func (s *Service) lanURL(ms *scope.MachineScope, id string) string {
+	return path.Join("datacenters", s.datacenterID(ms), "lans", id)
 }
 
-func (s *Service) lansURL() string {
-	return path.Join("datacenters", s.datacenterID(), "lans")
+func (s *Service) lansURL(ms *scope.MachineScope) string {
+	return path.Join("datacenters", s.datacenterID(ms), "lans")
 }
 
 // ReconcileLAN ensures the cluster LAN exist, creating one if it doesn't.
-func (s *Service) ReconcileLAN() (requeue bool, err error) {
+func (s *Service) ReconcileLAN(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLAN")
 
-	lan, request, err := findResource(s.ctx, s.getLAN, s.getLatestLANCreationRequest)
+	lan, request, err := findResource(s.ctx, s.getLAN(cs, ms), s.getLatestLANCreationRequest(cs, ms))
 	if err != nil {
 		return false, err
 	}
@@ -69,7 +70,7 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 	}
 
 	log.V(4).Info("No LAN was found. Creating new LAN")
-	if err := s.createLAN(); err != nil {
+	if err := s.createLAN(ctx, cs, ms); err != nil {
 		return false, err
 	}
 
@@ -79,11 +80,11 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 
 // ReconcileLANDeletion ensures there's no cluster LAN available, requesting for deletion (if no other resource
 // uses it) otherwise.
-func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
+func (s *Service) ReconcileLANDeletion(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLANDeletion")
 
 	// Try to retrieve the cluster LAN or even check if it's currently still being created.
-	lan, request, err := findResource(s.ctx, s.getLAN, s.getLatestLANCreationRequest)
+	lan, request, err := findResource(s.ctx, s.getLAN(cs, ms), s.getLatestLANCreationRequest(cs, ms))
 	if err != nil {
 		return false, err
 	}
@@ -95,12 +96,12 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 	}
 
 	if lan == nil {
-		err = s.removeLANPendingRequestFromCluster()
+		err = s.removeLANPendingRequestFromCluster(cs, ms)
 		return err != nil, err
 	}
 
 	// If we found a LAN, we check if there is a deletion already in progress.
-	request, err = s.getLatestLANDeletionRequest(*lan.Id)
+	request, err = s.getLatestLANDeletionRequest(ctx, ms, *lan.Id)
 	if err != nil {
 		return false, err
 	}
@@ -116,54 +117,55 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 	}
 
 	// Request for LAN deletion
-	err = s.deleteLAN(*lan.Id)
+	err = s.deleteLAN(cs, ms, *lan.Id)
 	return err == nil, err
 }
 
 // getLAN tries to retrieve the cluster-related LAN in the data center.
-func (s *Service) getLAN(_ context.Context) (*sdk.Lan, error) {
-	// check if the LAN exists
-	lans, err := s.api().ListLANs(s.ctx, s.datacenterID())
-	if err != nil {
-		return nil, fmt.Errorf("could not list LANs in data center %s: %w", s.datacenterID(), err)
-	}
-
-	var (
-		expectedName = s.lanName()
-		lanCount     = 0
-		foundLAN     *sdk.Lan
-	)
-
-	for _, l := range *lans.Items {
-		if l.Properties.HasName() && *l.Properties.Name == expectedName {
-			l := l
-			foundLAN = &l
-			lanCount++
+func (s *Service) getLAN(cs *scope.ClusterScope, ms *scope.MachineScope) listAndFilterFunc[sdk.Lan] {
+	return func(ct context.Context) (*sdk.Lan, error) {
+		// check if the LAN exists
+		lans, err := s.api().ListLANs(s.ctx, s.datacenterID(ms))
+		if err != nil {
+			return nil, fmt.Errorf("could not list LANs in data center %s: %w", s.datacenterID(ms), err)
 		}
 
-		// If there are multiple LANs with the same name, we should return an error.
-		// Our logic won't be able to proceed as we cannot select the correct LAN.
-		if lanCount > 1 {
-			return nil, fmt.Errorf("found multiple LANs with the name: %s", expectedName)
-		}
-	}
+		var (
+			expectedName = s.lanName(cs)
+			lanCount     = 0
+			foundLAN     *sdk.Lan
+		)
 
-	return foundLAN, nil
+		for _, l := range *lans.Items {
+			if l.Properties.HasName() && *l.Properties.Name == expectedName {
+				foundLAN = ptr.To(l)
+				lanCount++
+			}
+
+			// If there are multiple LANs with the same name, we should return an error.
+			// Our logic won't be able to proceed as we cannot select the correct LAN.
+			if lanCount > 1 {
+				return nil, fmt.Errorf("found multiple LANs with the name: %s", expectedName)
+			}
+		}
+
+		return foundLAN, nil
+	}
 }
 
-func (s *Service) createLAN() error {
+func (s *Service) createLAN(_ context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) error {
 	log := s.scope.Logger.WithName("createLAN")
 
-	requestPath, err := s.api().CreateLAN(s.ctx, s.datacenterID(), sdk.LanPropertiesPost{
-		Name:   ptr.To(s.lanName()),
+	requestPath, err := s.api().CreateLAN(s.ctx, s.datacenterID(ms), sdk.LanPropertiesPost{
+		Name:   ptr.To(s.lanName(cs)),
 		Public: ptr.To(true),
 	})
 	if err != nil {
-		return fmt.Errorf("unable to create LAN in data center %s: %w", s.datacenterID(), err)
+		return fmt.Errorf("unable to create LAN in data center %s: %w", s.datacenterID(ms), err)
 	}
 
 	s.scope.ClusterScope.IonosCluster.SetCurrentRequestByDatacenter(
-		s.datacenterID(),
+		s.datacenterID(ms),
 		infrav1.NewQueuedRequest(http.MethodPost, requestPath),
 	)
 
@@ -177,10 +179,10 @@ func (s *Service) createLAN() error {
 	return nil
 }
 
-func (s *Service) deleteLAN(lanID string) error {
+func (s *Service) deleteLAN(_ *scope.ClusterScope, ms *scope.MachineScope, lanID string) error {
 	log := s.scope.Logger.WithName("deleteLAN")
 
-	requestPath, err := s.api().DeleteLAN(s.ctx, s.datacenterID(), lanID)
+	requestPath, err := s.api().DeleteLAN(s.ctx, s.datacenterID(ms), lanID)
 	if err != nil {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
@@ -188,7 +190,7 @@ func (s *Service) deleteLAN(lanID string) error {
 	if s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter == nil {
 		s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter = make(map[string]infrav1.ProvisioningRequest)
 	}
-	s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter[s.datacenterID()] = infrav1.ProvisioningRequest{
+	s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter[s.datacenterID(ms)] = infrav1.ProvisioningRequest{
 		Method:      http.MethodDelete,
 		RequestPath: requestPath,
 		State:       sdk.RequestStatusQueued,
@@ -202,27 +204,29 @@ func (s *Service) deleteLAN(lanID string) error {
 	return nil
 }
 
-func (s *Service) getLatestLANCreationRequest(_ context.Context) (*requestInfo, error) {
-	return getMatchingRequest(
-		s.ctx,
-		s,
-		http.MethodPost,
-		s.lansURL(),
-		matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName()),
-	)
+func (s *Service) getLatestLANCreationRequest(cs *scope.ClusterScope, ms *scope.MachineScope) checkQueueFunc {
+	return func(ctx context.Context) (*requestInfo, error) {
+		return getMatchingRequest(
+			ctx,
+			s,
+			http.MethodPost,
+			s.lansURL(ms),
+			matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName(cs)),
+		)
+	}
 }
 
-func (s *Service) getLatestLANDeletionRequest(lanID string) (*requestInfo, error) {
+func (s *Service) getLatestLANDeletionRequest(_ context.Context, ms *scope.MachineScope, lanID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Lan](
 		s.ctx,
 		s,
 		http.MethodDelete,
-		path.Join(s.lansURL(), lanID),
+		path.Join(s.lansURL(ms), lanID),
 	)
 }
 
-func (s *Service) removeLANPendingRequestFromCluster() error {
-	s.scope.ClusterScope.IonosCluster.DeleteCurrentRequestByDatacenter(s.datacenterID())
+func (s *Service) removeLANPendingRequestFromCluster(_ *scope.ClusterScope, ms *scope.MachineScope) error {
+	s.scope.ClusterScope.IonosCluster.DeleteCurrentRequestByDatacenter(s.datacenterID(ms))
 	if err := s.scope.ClusterScope.PatchObject(); err != nil {
 		return fmt.Errorf("could not remove stale LAN pending request from cluster: %w", err)
 	}
@@ -277,7 +281,7 @@ func (s *Service) patchNIC(serverID string, nic sdk.Nic, props sdk.NicProperties
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)
 
-	location, err := s.api().PatchNIC(s.ctx, s.datacenterID(), serverID, nicID, props)
+	location, err := s.api().PatchNIC(s.ctx, s.datacenterID(nil), serverID, nicID, props)
 	if err != nil {
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}

@@ -210,7 +210,12 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
 	reconcileSequence := []serviceReconcileStep{
-		{name: "ReconcileLAN", reconcileFunc: cloudService.ReconcileLAN},
+		{
+			name: "ReconcileLAN",
+			reconcileFunc: func() (requeue bool, err error) {
+				return cloudService.ReconcileLAN(ctx, clusterScope, machineScope)
+			},
+		},
 		{name: "ReconcileServer", reconcileFunc: cloudService.ReconcileServer},
 	}
 
@@ -307,7 +312,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 	}
 
-	if requeue, err := cloudService.ReconcileLANDeletion(); requeue || err != nil {
+	if requeue, err := cloudService.ReconcileLANDeletion(ctx, cs, ms); requeue || err != nil {
 		if err != nil {
 			err = fmt.Errorf("could not reconcile LAN deletion: %w", err)
 		}

@@ -202,11 +202,11 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 			return nil, fmt.Errorf("invalid server ID %s: %w", serverID, err)
 		}
 
-		server, err := s.api().GetServer(s.ctx, s.datacenterID(), serverID)
+		server, err := s.api().GetServer(s.ctx, s.datacenterID(nil), serverID)
 		// if the server was not found, we will continue, as the request might not
 		// have been completed yet
 		if err != nil && !isNotFound(err) {
-			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, s.datacenterID(), err)
+			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, s.datacenterID(nil), err)
 		}
 
 		// if the server was found, we return it
@@ -228,9 +228,9 @@ func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
 
 	// without provider ID, we need to list all servers and see if
 	// there is one with the expected name.
-	serverList, err := s.api().ListServers(s.ctx, s.datacenterID())
+	serverList, err := s.api().ListServers(s.ctx, s.datacenterID(nil))
 	if err != nil {
-		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(), err)
+		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(nil), err)
 	}
 
 	items := ptr.Deref(serverList.Items, []sdk.Server{})
@@ -250,7 +250,7 @@ func (s *Service) deleteServer(serverID string) error {
 	log := s.scope.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
-	requestLocation, err := s.api().DeleteServer(s.ctx, s.datacenterID(), serverID)
+	requestLocation, err := s.api().DeleteServer(s.ctx, s.datacenterID(nil), serverID)
 	if err != nil {
 		return fmt.Errorf("failed to request server deletion: %w", err)
 	}
@@ -267,7 +267,7 @@ func (s *Service) getLatestServerCreationRequest(_ context.Context) (*requestInf
 		s.ctx,
 		s,
 		http.MethodPost,
-		path.Join("datacenters", s.datacenterID(), "servers"),
+		path.Join("datacenters", s.datacenterID(nil), "servers"),
 		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName()),
 	)
 }
@@ -277,7 +277,7 @@ func (s *Service) getLatestServerDeletionRequest(_ context.Context, serverID str
 		s.ctx,
 		s,
 		http.MethodDelete,
-		path.Join("datacenters", s.datacenterID(), "servers", serverID),
+		path.Join("datacenters", s.datacenterID(nil), "servers", serverID),
 		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName()),
 	)
 }
@@ -290,7 +290,7 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	lan, err := s.getLAN(s.ctx)
+	lan, err := s.getLAN(s.scope.ClusterScope, s.scope)(s.ctx)
 	if err != nil {
 		return err
 	}
@@ -310,12 +310,12 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 
 	server, requestLocation, err := s.api().CreateServer(
 		s.ctx,
-		s.datacenterID(),
+		s.datacenterID(nil),
 		s.buildServerProperties(copySpec),
 		s.buildServerEntities(entityParams),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create server in data center %s: %w", s.datacenterID(), err)
+		return fmt.Errorf("failed to create server in data center %s: %w", s.datacenterID(nil), err)
 	}
 
 	log.Info("Successfully requested for server creation", "location", requestLocation)
@@ -421,7 +421,7 @@ func (s *Service) renderUserData(input string) string {
 }
 
 func (s *Service) serversURL() string {
-	return path.Join("datacenters", s.datacenterID(), "servers")
+	return path.Join("datacenters", s.datacenterID(nil), "servers")
 }
 
 // serverName returns a formatted name for the expected cloud server resource.
