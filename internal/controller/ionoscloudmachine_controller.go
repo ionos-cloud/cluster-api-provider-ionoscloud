@@ -113,7 +113,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Create the machine scope
 	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 		Client:       r.Client,
-		Cluster:      cluster,
 		Machine:      machine,
 		ClusterScope: clusterScope,
 		IonosMachine: ionosCloudMachine,
@@ -140,9 +139,9 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.reconcileNormal(ctx, clusterScope, machineScope, cloudService)
 }
 
-func (r *IonosCloudMachineReconciler) isInfrastructureReady(_ *scope.ClusterScope, ms *scope.MachineScope) bool {
+func (r *IonosCloudMachineReconciler) isInfrastructureReady(cs *scope.ClusterScope, ms *scope.MachineScope) bool {
 	// Make sure the infrastructure is ready.
-	if !ms.Cluster.Status.InfrastructureReady {
+	if !cs.Cluster.Status.InfrastructureReady {
 		ms.Info("Cluster infrastructure is not ready yet")
 		conditions.MarkFalse(
 			ms.IonosMachine,
@@ -246,12 +245,12 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 //   - Done => Clear request from the status and continue reconciliation.
 func (r *IonosCloudMachineReconciler) checkRequestStates(
 	ctx context.Context,
-	_ *scope.ClusterScope,
+	clusterScope *scope.ClusterScope,
 	machineScope *scope.MachineScope,
 	cloudService *cloud.Service,
 ) (requeue bool, retErr error) {
 	// check cluster wide request
-	ionosCluster := machineScope.ClusterScope.IonosCluster
+	ionosCluster := clusterScope.IonosCluster
 	if req, exists := ionosCluster.Status.CurrentRequestByDatacenter[machineScope.DatacenterID()]; exists {
 		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
 		if err != nil {
@@ -261,7 +260,7 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 				func() error {
 					// remove the request from the status and patch the cluster
 					ionosCluster.DeleteCurrentRequestByDatacenter(machineScope.DatacenterID())
-					return machineScope.ClusterScope.PatchObject()
+					return clusterScope.PatchObject()
 				},
 			)
 		}

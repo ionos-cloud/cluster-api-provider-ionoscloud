@@ -41,18 +41,16 @@ type MachineScope struct {
 
 	client      client.Client
 	patchHelper *patch.Helper
-	Cluster     *clusterv1.Cluster
 	Machine     *clusterv1.Machine
 
-	ClusterScope *ClusterScope
 	IonosMachine *infrav1.IonosCloudMachine
 }
 
 // MachineScopeParams is a struct that contains the params used to create a new MachineScope through NewMachineScope.
 type MachineScopeParams struct {
-	Client       client.Client
-	Logger       *logr.Logger
-	Cluster      *clusterv1.Cluster
+	Client client.Client
+	Logger *logr.Logger
+	// Cluster      *clusterv1.Cluster
 	Machine      *clusterv1.Machine
 	ClusterScope *ClusterScope
 	IonosMachine *infrav1.IonosCloudMachine
@@ -62,9 +60,6 @@ type MachineScopeParams struct {
 func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	if params.Client == nil {
 		return nil, errors.New("machine scope params lack a client")
-	}
-	if params.Cluster == nil {
-		return nil, errors.New("machine scope params lack a cluster")
 	}
 	if params.Machine == nil {
 		return nil, errors.New("machine scope params lack a Cluster API machine")
@@ -87,9 +82,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		Logger:       params.Logger,
 		client:       params.Client,
 		patchHelper:  helper,
-		Cluster:      params.Cluster,
 		Machine:      params.Machine,
-		ClusterScope: params.ClusterScope,
 		IonosMachine: params.IonosMachine,
 	}, nil
 }

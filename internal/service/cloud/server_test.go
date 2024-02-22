@@ -177,7 +177,7 @@ func (s *serverSuite) TestReconcileServer_NoRequest() {
 		},
 	}}}, nil)
 
-	requeue, err := s.service.ReconcileServer(s.ctx, nil, nil)
+	requeue, err := s.service.ReconcileServer(s.ctx, s.clusterScope, nil)
 	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
 	s.NoError(err)
 	s.True(requeue)

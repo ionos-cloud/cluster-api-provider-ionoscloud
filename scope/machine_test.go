@@ -38,7 +38,6 @@ func exampleParams(t *testing.T) MachineScopeParams {
 	return MachineScopeParams{
 		Client:       fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
 		Logger:       &logger,
-		Cluster:      &clusterv1.Cluster{},
 		Machine:      &clusterv1.Machine{},
 		ClusterScope: &ClusterScope{},
 		IonosMachine: &infrav1.IonosCloudMachine{},
@@ -67,14 +66,6 @@ func TestMachineScopeParams_NilLoggerShouldWork(t *testing.T) {
 	require.NotNil(t, scope, "returned machine scope shouldn't be nil")
 	require.NoError(t, err)
 	require.NotNil(t, scope.Logger, "logger should not be nil")
-}
-
-func TestMachineScopeParams_NilClusterShouldFail(t *testing.T) {
-	params := exampleParams(t)
-	params.Cluster = nil
-	scope, err := NewMachineScope(params)
-	require.Nil(t, scope, "returned machine scope should be nil")
-	require.Error(t, err)
 }
 
 func TestMachineScopeParams_NilMachineShouldFail(t *testing.T) {

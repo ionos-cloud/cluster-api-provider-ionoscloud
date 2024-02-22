@@ -31,11 +31,11 @@ import (
 )
 
 // lanName returns the name of the cluster LAN.
-func (s *Service) lanName(_ *scope.ClusterScope) string {
+func (s *Service) lanName(cs *scope.ClusterScope) string {
 	return fmt.Sprintf(
 		"k8s-%s-%s",
-		s.scope.ClusterScope.Cluster.Namespace,
-		s.scope.ClusterScope.Cluster.Name)
+		cs.Cluster.Namespace,
+		cs.Cluster.Name)
 }
 
 func (s *Service) lanURL(ms *scope.MachineScope, id string) string {
@@ -164,12 +164,12 @@ func (s *Service) createLAN(ctx context.Context, cs *scope.ClusterScope, ms *sco
 		return fmt.Errorf("unable to create LAN in data center %s: %w", s.datacenterID(ms), err)
 	}
 
-	s.scope.ClusterScope.IonosCluster.SetCurrentRequestByDatacenter(
+	cs.IonosCluster.SetCurrentRequestByDatacenter(
 		s.datacenterID(ms),
 		infrav1.NewQueuedRequest(http.MethodPost, requestPath),
 	)
 
-	err = s.scope.ClusterScope.PatchObject()
+	err = cs.PatchObject()
 	if err != nil {
 		return fmt.Errorf("unable to patch the cluster: %w", err)
 	}
@@ -179,7 +179,7 @@ func (s *Service) createLAN(ctx context.Context, cs *scope.ClusterScope, ms *sco
 	return nil
 }
 
-func (s *Service) deleteLAN(ctx context.Context, _ *scope.ClusterScope, ms *scope.MachineScope, lanID string) error {
+func (s *Service) deleteLAN(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope, lanID string) error {
 	log := s.scope.Logger.WithName("deleteLAN")
 
 	requestPath, err := s.cloud.DeleteLAN(ctx, s.datacenterID(ms), lanID)
@@ -187,16 +187,16 @@ func (s *Service) deleteLAN(ctx context.Context, _ *scope.ClusterScope, ms *scop
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
 
-	if s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter == nil {
-		s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter = make(map[string]infrav1.ProvisioningRequest)
+	if cs.IonosCluster.Status.CurrentRequestByDatacenter == nil {
+		cs.IonosCluster.Status.CurrentRequestByDatacenter = make(map[string]infrav1.ProvisioningRequest)
 	}
-	s.scope.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter[s.datacenterID(ms)] = infrav1.ProvisioningRequest{
+	cs.IonosCluster.Status.CurrentRequestByDatacenter[s.datacenterID(ms)] = infrav1.ProvisioningRequest{
 		Method:      http.MethodDelete,
 		RequestPath: requestPath,
 		State:       sdk.RequestStatusQueued,
 	}
 
-	err = s.scope.ClusterScope.PatchObject()
+	err = cs.PatchObject()
 	if err != nil {
 		return fmt.Errorf("unable to patch cluster: %w", err)
 	}
@@ -225,9 +225,9 @@ func (s *Service) getLatestLANDeletionRequest(ctx context.Context, ms *scope.Mac
 	)
 }
 
-func (s *Service) removeLANPendingRequestFromCluster(_ *scope.ClusterScope, ms *scope.MachineScope) error {
-	s.scope.ClusterScope.IonosCluster.DeleteCurrentRequestByDatacenter(s.datacenterID(ms))
-	if err := s.scope.ClusterScope.PatchObject(); err != nil {
+func (s *Service) removeLANPendingRequestFromCluster(cs *scope.ClusterScope, ms *scope.MachineScope) error {
+	cs.IonosCluster.DeleteCurrentRequestByDatacenter(s.datacenterID(ms))
+	if err := cs.PatchObject(); err != nil {
 		return fmt.Errorf("could not remove stale LAN pending request from cluster: %w", err)
 	}
 	return nil
@@ -237,7 +237,7 @@ func (s *Service) removeLANPendingRequestFromCluster(_ *scope.ClusterScope, ms *
 // This is needed for KubeVIP in order to set up control plane load balancing.
 //
 // If we want to support private clusters in the future, this will require some adjustments.
-func (s *Service) checkPrimaryNIC(ctx context.Context, _ *scope.ClusterScope, ms *scope.MachineScope, server *sdk.Server) (requeue bool, err error) {
+func (s *Service) checkPrimaryNIC(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope, server *sdk.Server) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("checkPrimaryNIC")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
@@ -255,7 +255,7 @@ func (s *Service) checkPrimaryNIC(ctx context.Context, _ *scope.ClusterScope, ms
 		log.V(4).Info("Found primary NIC", "name", s.serverName(ms))
 		ips := ptr.Deref(nic.GetProperties().GetIps(), []string{})
 		for _, ip := range ips {
-			if ip == s.scope.ClusterScope.GetControlPlaneEndpoint().Host {
+			if ip == cs.GetControlPlaneEndpoint().Host {
 				log.V(4).Info("Primary NIC contains endpoint IP address")
 				return false, nil
 			}
@@ -263,7 +263,7 @@ func (s *Service) checkPrimaryNIC(ctx context.Context, _ *scope.ClusterScope, ms
 
 		// Patch the NIC and include the complete set of IP addresses
 		// The primary IP must be in the first position.
-		patchSet := append(ips, s.scope.ClusterScope.GetControlPlaneEndpoint().Host)
+		patchSet := append(ips, cs.GetControlPlaneEndpoint().Host)
 
 		serverID := ptr.Deref(server.GetId(), "")
 		nicProperties := sdk.NicProperties{Ips: &patchSet}

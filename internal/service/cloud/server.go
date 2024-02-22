@@ -279,7 +279,7 @@ func (s *Service) getLatestServerDeletionRequest(ctx context.Context, ms *scope.
 	)
 }
 
-func (s *Service) createServer(ctx context.Context, _ *scope.ClusterScope, ms *scope.MachineScope, secret *corev1.Secret) error {
+func (s *Service) createServer(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope, secret *corev1.Secret) error {
 	log := s.scope.WithName("createServer")
 
 	bootstrapData, exists := secret.Data["value"]
@@ -287,7 +287,7 @@ func (s *Service) createServer(ctx context.Context, _ *scope.ClusterScope, ms *s
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	lan, err := s.getLAN(s.scope.ClusterScope, s.scope)(ctx)
+	lan, err := s.getLAN(cs, s.scope)(ctx)
 	if err != nil {
 		return err
 	}

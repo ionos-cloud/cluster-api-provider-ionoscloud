@@ -145,7 +145,6 @@ func (s *ServiceTestSuite) SetupTest() {
 	s.machineScope, err = scope.NewMachineScope(scope.MachineScopeParams{
 		Client:       s.k8sClient,
 		Logger:       &s.log,
-		Cluster:      s.capiCluster,
 		Machine:      s.capiMachine,
 		ClusterScope: s.clusterScope,
 		IonosMachine: s.infraMachine,
