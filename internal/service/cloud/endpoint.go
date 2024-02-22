@@ -58,7 +58,7 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 
 	if request != nil && request.isPending() {
 		// We want to requeue and check again after some time
-		cs.IonosCluster.Status.CurrentClusterRequest.State = request.status
+		cs.IonosCluster.SetCurrentClusterRequest(http.MethodPost, request.status, request.location)
 		log.Info("Request is pending", "location", request.location)
 		return true, nil
 	}
@@ -80,9 +80,9 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 		return false, err
 	}
 
-	// NOTE: the second check covers the case where customers have set the control plane endpoint IP themselves.
+	// NOTE: this check covers the case where customers have set the control plane endpoint IP themselves.
 	// If this is the case we don't request for the deletion of the IP block.
-	if ptr.Deref(ipBlock.GetProperties().GetName(), UnknownValue) != s.ipBlockName(cs) {
+	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), UnknownValue) != s.ipBlockName(cs) {
 		log.Info("Control Plane Endpoint was created externally by the user. Skipping deletion")
 		return false, nil
 	}
@@ -138,7 +138,7 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) listAndFilterFunc[sdk.IpBlo
 			count            = 0
 			foundBlock       *sdk.IpBlock
 		)
-		for _, block := range *blocks.GetItems() {
+		for _, block := range ptr.Deref(blocks.GetItems(), nil) {
 			props := block.GetProperties()
 			if ptr.Deref(props.GetLocation(), "") != expectedLocation {
 				continue

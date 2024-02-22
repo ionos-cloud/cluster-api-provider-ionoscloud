@@ -126,3 +126,18 @@ func (i *IonosCloudCluster) SetCurrentRequestByDatacenter(datacenterID string, r
 func (i *IonosCloudCluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
 	delete(i.Status.CurrentRequestByDatacenter, datacenterID)
 }
+
+// SetCurrentClusterRequest sets the current provisioning request for the cluster.
+func (i *IonosCloudCluster) SetCurrentClusterRequest(method, status, requestPath string) {
+	i.Status.CurrentClusterRequest = &ProvisioningRequest{
+		Method:      method,
+		RequestPath: requestPath,
+		State:       status,
+		Message:     nil,
+	}
+}
+
+// DeleteCurrentClusterRequest deletes the current provisioning request for the cluster.
+func (i *IonosCloudCluster) DeleteCurrentClusterRequest() {
+	i.Status.CurrentClusterRequest = nil
+}

@@ -207,5 +207,5 @@ const (
 	exampleID          = "42"
 	exampleRequestPath = "/test"
 	exampleLocation    = "de/txl"
-	exampleIP          = "1.2.3.4" //nolint:gosec // this is just a randomIP
+	exampleIP          = "1.2.3.4"
 )
