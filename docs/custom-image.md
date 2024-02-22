@@ -53,4 +53,9 @@ To enable cloud-init functionality for your image, you need to make some adjustm
 1. Go to Management -> Images & Snapshots -> select your image.
 2. Set the "OS Type" to `Linux` and the "Cloud Init Support" to `V1 - User Data`, and save your changes.
 
+You can also do that via Cloud API:
+```sh
+ionosctl img update --image-id <image-id> --cloudinit V1 --licence-type LINUX
+```
+
 Now, you can copy the ID of your image and set it as the `IONOSCLOUD_MACHINE_IMAGE_ID` environment variable. Your custom image will then be used.
