@@ -237,7 +237,7 @@ func (s *Service) removeLANPendingRequestFromCluster(_ *scope.ClusterScope, ms *
 // This is needed for KubeVIP in order to set up control plane load balancing.
 //
 // If we want to support private clusters in the future, this will require some adjustments.
-func (s *Service) checkPrimaryNIC(server *sdk.Server) (requeue bool, err error) {
+func (s *Service) checkPrimaryNIC(_ *scope.ClusterScope, ms *scope.MachineScope, server *sdk.Server) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("checkPrimaryNIC")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
@@ -248,11 +248,11 @@ func (s *Service) checkPrimaryNIC(server *sdk.Server) (requeue bool, err error) 
 	serverNICs := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
 	for _, nic := range serverNICs {
 		// if the name doesn't match, we can continue
-		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name != s.serverName() {
+		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name != s.serverName(ms) {
 			continue
 		}
 
-		log.V(4).Info("Found primary NIC", "name", s.serverName())
+		log.V(4).Info("Found primary NIC", "name", s.serverName(ms))
 		ips := ptr.Deref(nic.GetProperties().GetIps(), []string{})
 		for _, ip := range ips {
 			if ip == s.scope.ClusterScope.GetControlPlaneEndpoint().Host {
@@ -268,14 +268,14 @@ func (s *Service) checkPrimaryNIC(server *sdk.Server) (requeue bool, err error) 
 		serverID := ptr.Deref(server.GetId(), "")
 		nicProperties := sdk.NicProperties{Ips: &patchSet}
 
-		err = s.patchNIC(serverID, nic, nicProperties)
+		err = s.patchNIC(s.ctx, ms, serverID, nic, nicProperties)
 		return true, err
 	}
 
-	return true, fmt.Errorf("could not find primary NIC with name %s", s.serverName())
+	return true, fmt.Errorf("could not find primary NIC with name %s", s.serverName(ms))
 }
 
-func (s *Service) patchNIC(serverID string, nic sdk.Nic, props sdk.NicProperties) error {
+func (s *Service) patchNIC(_ context.Context, _ *scope.MachineScope, serverID string, nic sdk.Nic, props sdk.NicProperties) error {
 	log := s.scope.Logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")

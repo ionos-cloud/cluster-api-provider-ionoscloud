@@ -216,7 +216,12 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 				return cloudService.ReconcileLAN(ctx, clusterScope, machineScope)
 			},
 		},
-		{name: "ReconcileServer", reconcileFunc: cloudService.ReconcileServer},
+		{
+			name: "ReconcileServer",
+			reconcileFunc: func() (requeue bool, err error) {
+				return cloudService.ReconcileServer(ctx, clusterScope, machineScope)
+			},
+		},
 	}
 
 	for _, step := range reconcileSequence {
@@ -305,7 +310,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	if requeue, err := cloudService.ReconcileServerDeletion(); requeue || err != nil {
+	if requeue, err := cloudService.ReconcileServerDeletion(ctx, cs, ms); requeue || err != nil {
 		if err != nil {
 			err = fmt.Errorf("could not reconcile server deletion: %w", err)
 		}

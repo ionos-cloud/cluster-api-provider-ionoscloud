@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	// UnknownValue is a placeholder string, used as defaults when we deref string pointers.
+	// UnknownValue is a placeholder string, used as default when we deref string pointers.
 	UnknownValue = "107df78c-cee8-4902-963a-655cc6ea9865"
 )
 

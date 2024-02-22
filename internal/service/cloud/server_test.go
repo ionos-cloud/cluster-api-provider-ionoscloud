@@ -42,17 +42,17 @@ func TestServerSuite(t *testing.T) {
 }
 
 func (s *serverSuite) TestServerName() {
-	serverName := s.service.serverName()
+	serverName := s.service.serverName(s.machineScope)
 	s.Equal("k8s-default-test-machine", serverName)
 }
 
 func (s *serverSuite) TestReconcileServer_NoBootstrapSecret() {
-	requeue, err := s.service.ReconcileServer()
+	requeue, err := s.service.ReconcileServer(s.ctx, nil, nil)
 	s.True(requeue)
 	s.Error(err)
 
 	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
-	requeue, err = s.service.ReconcileServer()
+	requeue, err = s.service.ReconcileServer(s.ctx, nil, nil)
 	s.False(requeue)
 	s.NoError(err)
 }
@@ -79,7 +79,7 @@ func (s *serverSuite) TestReconcileServer_RequestPending() {
 	}}, nil)
 
 	s.mockGetServerCreationRequest().Return(s.examplePostRequest(sdk.RequestStatusQueued), nil)
-	requeue, err := s.service.ReconcileServer()
+	requeue, err := s.service.ReconcileServer(s.ctx, nil, nil)
 	s.NoError(err)
 	s.True(requeue)
 }
@@ -107,12 +107,12 @@ func (s *serverSuite) TestReconcileServer_RequestDone_StateBusy() {
 				State: ptr.To(sdk.Busy),
 			},
 			Properties: &sdk.ServerProperties{
-				Name: ptr.To(s.service.serverName()),
+				Name: ptr.To(s.service.serverName(s.machineScope)),
 			},
 		},
 	}}, nil).Once()
 
-	requeue, err := s.service.ReconcileServer()
+	requeue, err := s.service.ReconcileServer(s.ctx, nil, nil)
 	s.NoError(err)
 	s.True(requeue)
 }
@@ -140,13 +140,13 @@ func (s *serverSuite) TestReconcileServer_RequestDone_StateAvailable() {
 				State: ptr.To(sdk.Available),
 			},
 			Properties: &sdk.ServerProperties{
-				Name:    ptr.To(s.service.serverName()),
+				Name:    ptr.To(s.service.serverName(s.machineScope)),
 				VmState: ptr.To("RUNNING"),
 			},
 		},
 	}}, nil).Once()
 
-	requeue, err := s.service.ReconcileServer()
+	requeue, err := s.service.ReconcileServer(s.ctx, nil, nil)
 	s.NoError(err)
 	s.False(requeue)
 }
@@ -177,7 +177,7 @@ func (s *serverSuite) TestReconcileServer_NoRequest() {
 		},
 	}}}, nil)
 
-	requeue, err := s.service.ReconcileServer()
+	requeue, err := s.service.ReconcileServer(s.ctx, nil, nil)
 	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
 	s.NoError(err)
 	s.True(requeue)
@@ -186,7 +186,7 @@ func (s *serverSuite) TestReconcileServer_NoRequest() {
 func (s *serverSuite) TestGetServer_WithProviderID() {
 	serverID := testServerID
 	s.mockGetServer(serverID).Return(&sdk.Server{}, nil)
-	server, err := s.service.getServer(s.ctx)
+	server, err := s.service.getServer(s.machineScope)(s.ctx)
 	s.NoError(err)
 	s.NotNil(server)
 }
@@ -200,13 +200,13 @@ func (s *serverSuite) TestGetServer_WithProviderID_NotFound() {
 		},
 	}}, nil)
 
-	server, err := s.service.getServer(s.ctx)
+	server, err := s.service.getServer(s.machineScope)(s.ctx)
 	s.NoError(err)
 	s.Nil(server)
 }
 
 func (s *serverSuite) TestGetServer_WithoutProviderID_FoundInList() {
-	serverName := s.service.serverName()
+	serverName := s.service.serverName(s.machineScope)
 	s.machineScope.IonosMachine.Spec.ProviderID = nil
 	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
@@ -216,7 +216,7 @@ func (s *serverSuite) TestGetServer_WithoutProviderID_FoundInList() {
 		},
 	}}, nil)
 
-	server, err := s.service.getServer(s.ctx)
+	server, err := s.service.getServer(s.machineScope)(s.ctx)
 	s.NoError(err)
 	s.NotNil(server)
 }
@@ -274,7 +274,7 @@ func (s *serverSuite) examplePostRequest(status string) []sdk.Request {
 		status:     status,
 		method:     http.MethodPost,
 		url:        s.service.serversURL(),
-		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName()),
+		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName(s.machineScope)),
 		href:       exampleRequestPath,
 		targetID:   testServerID,
 		targetType: sdk.SERVER,
