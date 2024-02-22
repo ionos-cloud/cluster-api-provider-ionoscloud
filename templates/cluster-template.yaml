@@ -73,7 +73,7 @@ spec:
       # Crictl config
       - path: /etc/crictl.yaml
         content: |
-          image-endpoint: unix:///run/containerd/containerd.sock
+          runtime-endpoint: unix:///run/containerd/containerd.sock
           timeout: 10
     preKubeadmCommands:
       - rm /var/lib/dbus/machine-id /etc/machine-id # fix the machine id
@@ -201,7 +201,7 @@ spec:
         # Crictl config
         - path: /etc/crictl.yaml
           content: |
-            image-endpoint: unix:///run/containerd/containerd.sock
+            runtime-endpoint: unix:///run/containerd/containerd.sock
             timeout: 10
       preKubeadmCommands:
         - rm /var/lib/dbus/machine-id /etc/machine-id # fix the machine id
