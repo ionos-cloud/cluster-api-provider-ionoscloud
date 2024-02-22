@@ -61,7 +61,7 @@ func (s *lanSuite) Test_Network_CreateLAN_Successful() {
 
 func (s *lanSuite) Test_Network_DeleteLAN_Successful() {
 	s.mockDeleteLANCall(exampleID).Return(exampleRequestPath, nil).Once()
-	s.NoError(s.service.deleteLAN(s.clusterScope, s.machineScope, exampleID))
+	s.NoError(s.service.deleteLAN(s.ctx, s.clusterScope, s.machineScope, exampleID))
 	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID(s.machineScope), "request should be stored in status")
 	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.datacenterID(s.machineScope)]
 	s.Equal(exampleRequestPath, req.RequestPath, "request path should be stored in status")

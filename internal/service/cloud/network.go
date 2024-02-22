@@ -50,7 +50,7 @@ func (s *Service) lansURL(ms *scope.MachineScope) string {
 func (s *Service) ReconcileLAN(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLAN")
 
-	lan, request, err := findResource(s.ctx, s.getLAN(cs, ms), s.getLatestLANCreationRequest(cs, ms))
+	lan, request, err := findResource(ctx, s.getLAN(cs, ms), s.getLatestLANCreationRequest(cs, ms))
 	if err != nil {
 		return false, err
 	}
@@ -84,7 +84,7 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, cs *scope.ClusterSco
 	log := s.scope.Logger.WithName("ReconcileLANDeletion")
 
 	// Try to retrieve the cluster LAN or even check if it's currently still being created.
-	lan, request, err := findResource(s.ctx, s.getLAN(cs, ms), s.getLatestLANCreationRequest(cs, ms))
+	lan, request, err := findResource(ctx, s.getLAN(cs, ms), s.getLatestLANCreationRequest(cs, ms))
 	if err != nil {
 		return false, err
 	}
@@ -117,15 +117,15 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, cs *scope.ClusterSco
 	}
 
 	// Request for LAN deletion
-	err = s.deleteLAN(cs, ms, *lan.Id)
+	err = s.deleteLAN(ctx, cs, ms, *lan.Id)
 	return err == nil, err
 }
 
 // getLAN tries to retrieve the cluster-related LAN in the data center.
 func (s *Service) getLAN(cs *scope.ClusterScope, ms *scope.MachineScope) listAndFilterFunc[sdk.Lan] {
-	return func(ct context.Context) (*sdk.Lan, error) {
+	return func(ctx context.Context) (*sdk.Lan, error) {
 		// check if the LAN exists
-		lans, err := s.api().ListLANs(s.ctx, s.datacenterID(ms))
+		lans, err := s.api().ListLANs(ctx, s.datacenterID(ms))
 		if err != nil {
 			return nil, fmt.Errorf("could not list LANs in data center %s: %w", s.datacenterID(ms), err)
 		}
@@ -153,10 +153,10 @@ func (s *Service) getLAN(cs *scope.ClusterScope, ms *scope.MachineScope) listAnd
 	}
 }
 
-func (s *Service) createLAN(_ context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) error {
+func (s *Service) createLAN(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) error {
 	log := s.scope.Logger.WithName("createLAN")
 
-	requestPath, err := s.api().CreateLAN(s.ctx, s.datacenterID(ms), sdk.LanPropertiesPost{
+	requestPath, err := s.api().CreateLAN(ctx, s.datacenterID(ms), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.lanName(cs)),
 		Public: ptr.To(true),
 	})
@@ -179,10 +179,10 @@ func (s *Service) createLAN(_ context.Context, cs *scope.ClusterScope, ms *scope
 	return nil
 }
 
-func (s *Service) deleteLAN(_ *scope.ClusterScope, ms *scope.MachineScope, lanID string) error {
+func (s *Service) deleteLAN(ctx context.Context, _ *scope.ClusterScope, ms *scope.MachineScope, lanID string) error {
 	log := s.scope.Logger.WithName("deleteLAN")
 
-	requestPath, err := s.api().DeleteLAN(s.ctx, s.datacenterID(ms), lanID)
+	requestPath, err := s.api().DeleteLAN(ctx, s.datacenterID(ms), lanID)
 	if err != nil {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
@@ -216,9 +216,9 @@ func (s *Service) getLatestLANCreationRequest(cs *scope.ClusterScope, ms *scope.
 	}
 }
 
-func (s *Service) getLatestLANDeletionRequest(_ context.Context, ms *scope.MachineScope, lanID string) (*requestInfo, error) {
+func (s *Service) getLatestLANDeletionRequest(ctx context.Context, ms *scope.MachineScope, lanID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Lan](
-		s.ctx,
+		ctx,
 		s,
 		http.MethodDelete,
 		path.Join(s.lansURL(ms), lanID),
@@ -237,7 +237,7 @@ func (s *Service) removeLANPendingRequestFromCluster(_ *scope.ClusterScope, ms *
 // This is needed for KubeVIP in order to set up control plane load balancing.
 //
 // If we want to support private clusters in the future, this will require some adjustments.
-func (s *Service) checkPrimaryNIC(_ *scope.ClusterScope, ms *scope.MachineScope, server *sdk.Server) (requeue bool, err error) {
+func (s *Service) checkPrimaryNIC(ctx context.Context, _ *scope.ClusterScope, ms *scope.MachineScope, server *sdk.Server) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("checkPrimaryNIC")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
@@ -268,20 +268,20 @@ func (s *Service) checkPrimaryNIC(_ *scope.ClusterScope, ms *scope.MachineScope,
 		serverID := ptr.Deref(server.GetId(), "")
 		nicProperties := sdk.NicProperties{Ips: &patchSet}
 
-		err = s.patchNIC(s.ctx, ms, serverID, nic, nicProperties)
+		err = s.patchNIC(ctx, ms, serverID, nic, nicProperties)
 		return true, err
 	}
 
 	return true, fmt.Errorf("could not find primary NIC with name %s", s.serverName(ms))
 }
 
-func (s *Service) patchNIC(_ context.Context, _ *scope.MachineScope, serverID string, nic sdk.Nic, props sdk.NicProperties) error {
+func (s *Service) patchNIC(ctx context.Context, _ *scope.MachineScope, serverID string, nic sdk.Nic, props sdk.NicProperties) error {
 	log := s.scope.Logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)
 
-	location, err := s.api().PatchNIC(s.ctx, s.datacenterID(nil), serverID, nicID, props)
+	location, err := s.api().PatchNIC(ctx, s.datacenterID(nil), serverID, nicID, props)
 	if err != nil {
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}
