@@ -89,7 +89,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 
 	if request != nil && request.isPending() {
 		// We want to requeue and check again after some time
-		cs.IonosCluster.Status.CurrentClusterRequest.State = request.status
+		cs.IonosCluster.SetCurrentClusterRequest(http.MethodPost, request.status, request.location)
 		log.Info("Creation request is pending", "location", request.location)
 		return true, nil
 	}
