@@ -32,6 +32,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -44,7 +45,7 @@ func (s *Service) ReconcileServer(ctx context.Context, cs *scope.ClusterScope, m
 
 	log.V(4).Info("Reconciling server")
 
-	secret, err := s.scope.GetBootstrapDataSecret(ctx)
+	secret, err := s.GetBootstrapDataSecret(ctx, ms)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// secret not available yet
@@ -413,6 +414,30 @@ func (s *Service) renderUserData(ms *scope.MachineScope, input string) string {
 	input = fmt.Sprintf("%s\n%s", input, bootCmdString)
 
 	return base64.StdEncoding.EncodeToString([]byte(input))
+}
+
+// GetBootstrapDataSecret returns the bootstrap data secret, which has been created by the
+// Kubeadm provider.
+func (s *Service) GetBootstrapDataSecret(ctx context.Context, ms *scope.MachineScope) (*corev1.Secret, error) {
+	name := ptr.Deref(ms.Machine.Spec.Bootstrap.DataSecretName, "")
+	if name == "" {
+		return nil, errors.New("machine has no bootstrap data yet")
+	}
+	key := client.ObjectKey{
+		Name:      name,
+		Namespace: ms.IonosMachine.Namespace,
+	}
+
+	s.logger.WithName("GetBoostrapDataSecret").
+		V(4).
+		Info("searching for bootstrap data", "secret", key.String())
+
+	var lookupSecret corev1.Secret
+	if err := ms.Client().Get(ctx, key, &lookupSecret); err != nil {
+		return nil, err
+	}
+
+	return &lookupSecret, nil
 }
 
 func (s *Service) serversURL() string {

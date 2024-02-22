@@ -47,12 +47,12 @@ func (s *serverSuite) TestServerName() {
 }
 
 func (s *serverSuite) TestReconcileServer_NoBootstrapSecret() {
-	requeue, err := s.service.ReconcileServer(s.ctx, nil, nil)
+	requeue, err := s.service.ReconcileServer(s.ctx, nil, s.machineScope)
 	s.True(requeue)
 	s.Error(err)
 
 	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
-	requeue, err = s.service.ReconcileServer(s.ctx, nil, nil)
+	requeue, err = s.service.ReconcileServer(s.ctx, nil, s.machineScope)
 	s.False(requeue)
 	s.NoError(err)
 }
@@ -79,7 +79,7 @@ func (s *serverSuite) TestReconcileServer_RequestPending() {
 	}}, nil)
 
 	s.mockGetServerCreationRequest().Return(s.examplePostRequest(sdk.RequestStatusQueued), nil)
-	requeue, err := s.service.ReconcileServer(s.ctx, nil, nil)
+	requeue, err := s.service.ReconcileServer(s.ctx, nil, s.machineScope)
 	s.NoError(err)
 	s.True(requeue)
 }
@@ -112,7 +112,7 @@ func (s *serverSuite) TestReconcileServer_RequestDone_StateBusy() {
 		},
 	}}, nil).Once()
 
-	requeue, err := s.service.ReconcileServer(s.ctx, nil, nil)
+	requeue, err := s.service.ReconcileServer(s.ctx, nil, s.machineScope)
 	s.NoError(err)
 	s.True(requeue)
 }
@@ -146,7 +146,7 @@ func (s *serverSuite) TestReconcileServer_RequestDone_StateAvailable() {
 		},
 	}}, nil).Once()
 
-	requeue, err := s.service.ReconcileServer(s.ctx, nil, nil)
+	requeue, err := s.service.ReconcileServer(s.ctx, nil, s.machineScope)
 	s.NoError(err)
 	s.False(requeue)
 }
@@ -177,7 +177,7 @@ func (s *serverSuite) TestReconcileServer_NoRequest() {
 		},
 	}}}, nil)
 
-	requeue, err := s.service.ReconcileServer(s.ctx, s.clusterScope, nil)
+	requeue, err := s.service.ReconcileServer(s.ctx, s.clusterScope, s.machineScope)
 	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
 	s.NoError(err)
 	s.True(requeue)
