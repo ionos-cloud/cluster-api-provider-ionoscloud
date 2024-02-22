@@ -246,7 +246,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_CreationPe
 	s.mockGetRequestsCallPost().Return([]sdk.Request{
 		s.buildRequest(sdk.RequestStatusRunning, http.MethodPost, ""),
 	}, nil).Once()
-	requeue, _ := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
+	requeue, _ := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
 	s.True(requeue)
 	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath, exampleRequestPath)
 	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.State, sdk.RequestStatusRunning)
