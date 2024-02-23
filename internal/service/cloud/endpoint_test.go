@@ -125,7 +125,7 @@ func (s *EndpointTestSuite) TestGetIPBlock_PreviouslySetID() {
 	}, nil).Once()
 	block, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
 	s.NoError(err)
-	s.Equal(*block.Id, exampleID)
+	s.Equal(exampleID, *block.Id)
 }
 
 func (s *EndpointTestSuite) TestGetIPBlock_NoMatch() {
