@@ -109,7 +109,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, _ *scope.ClusterS
 	}
 
 	if server == nil {
-		s.scope.IonosMachine.Status.CurrentRequest = nil
+		ms.IonosMachine.Status.CurrentRequest = nil
 		return false, nil
 	}
 
@@ -161,9 +161,9 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, _ *scope.ClusterS
 //	return false, nil
 // }
 
-func (s *Service) finalizeServerProvisioning(_ *scope.MachineScope) (bool, error) {
-	conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
-	conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)
+func (s *Service) finalizeServerProvisioning(ms *scope.MachineScope) (bool, error) {
+	conditions.MarkTrue(ms.IonosMachine, clusterv1.ReadyCondition)
+	conditions.MarkTrue(ms.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil
 }
 
@@ -187,10 +187,10 @@ func (s *Service) isServerAvailable(server *sdk.Server) bool {
 // getServerByProviderID checks if the IonosCloudMachine has a provider ID set.
 // If it does, it will attempt to extract the server ID from the provider ID and
 // query for the server in the cloud.
-func (s *Service) getServerByProviderID(ctx context.Context, _ *scope.MachineScope) (*sdk.Server, error) {
+func (s *Service) getServerByProviderID(ctx context.Context, ms *scope.MachineScope) (*sdk.Server, error) {
 	// first we check if the provider ID is set
-	if !ptr.IsNullOrDefault(s.scope.IonosMachine.Spec.ProviderID) {
-		serverID := s.scope.IonosMachine.ExtractServerID()
+	if !ptr.IsNullOrDefault(ms.IonosMachine.Spec.ProviderID) {
+		serverID := ms.IonosMachine.ExtractServerID()
 		// we expect the server ID to be a valid UUID
 		if err := uuid.Validate(serverID); err != nil {
 			return nil, fmt.Errorf("invalid server ID %s: %w", serverID, err)
@@ -233,7 +233,7 @@ func (s *Service) getServer(ms *scope.MachineScope) listAndFilterFunc[sdk.Server
 		for _, server := range items {
 			if server.HasProperties() && *server.Properties.Name == s.serverName(ms) {
 				// if the server was found, we set the provider ID and return it
-				s.scope.SetProviderID(ptr.Deref(server.Id, ""))
+				ms.SetProviderID(ptr.Deref(server.Id, ""))
 				return &server, nil
 			}
 		}
@@ -242,7 +242,7 @@ func (s *Service) getServer(ms *scope.MachineScope) listAndFilterFunc[sdk.Server
 	}
 }
 
-func (s *Service) deleteServer(ctx context.Context, _ *scope.MachineScope, serverID string) error {
+func (s *Service) deleteServer(ctx context.Context, ms *scope.MachineScope, serverID string) error {
 	log := s.logger.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
@@ -252,7 +252,7 @@ func (s *Service) deleteServer(ctx context.Context, _ *scope.MachineScope, serve
 	}
 
 	log.Info("Successfully requested for server deletion", "location", requestLocation)
-	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodDelete, requestLocation))
+	ms.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodDelete, requestLocation))
 
 	log.V(4).Info("Done deleting server")
 	return nil
@@ -288,7 +288,7 @@ func (s *Service) createServer(ctx context.Context, cs *scope.ClusterScope, ms *
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	lan, err := s.getLAN(cs, s.scope)(ctx)
+	lan, err := s.getLAN(cs, ms)(ctx)
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func (s *Service) createServer(ctx context.Context, cs *scope.ClusterScope, ms *
 	}
 
 	renderedData := s.renderUserData(ms, string(bootstrapData))
-	copySpec := s.scope.IonosMachine.Spec.DeepCopy()
+	copySpec := ms.IonosMachine.Spec.DeepCopy()
 	entityParams := serverEntityParams{
 		boostrapData: renderedData,
 		machineSpec:  *copySpec,
@@ -317,7 +317,7 @@ func (s *Service) createServer(ctx context.Context, cs *scope.ClusterScope, ms *
 	}
 
 	log.Info("Successfully requested for server creation", "location", requestLocation)
-	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPost, requestLocation))
+	ms.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPost, requestLocation))
 
 	serverID := ptr.Deref(server.GetId(), "")
 	if serverID == "" {
@@ -325,7 +325,7 @@ func (s *Service) createServer(ctx context.Context, cs *scope.ClusterScope, ms *
 	}
 
 	// make sure to set the provider ID
-	s.scope.SetProviderID(serverID)
+	ms.SetProviderID(serverID)
 
 	log.V(4).Info("Done creating server")
 	return nil
@@ -390,7 +390,7 @@ func (s *Service) buildServerEntities(ms *scope.MachineScope, params serverEntit
 
 	// Attach server to additional LANs
 	items := *serverNICs.Items
-	for _, nic := range s.scope.IonosMachine.Spec.AdditionalNetworks {
+	for _, nic := range ms.IonosMachine.Spec.AdditionalNetworks {
 		items = append(items, sdk.Nic{Properties: &sdk.NicProperties{
 			Lan: ptr.To(nic.NetworkID),
 		}})
@@ -445,9 +445,9 @@ func (s *Service) serversURL() string {
 }
 
 // serverName returns a formatted name for the expected cloud server resource.
-func (s *Service) serverName(_ *scope.MachineScope) string {
+func (s *Service) serverName(ms *scope.MachineScope) string {
 	return fmt.Sprintf(
 		"k8s-%s-%s",
-		s.scope.IonosMachine.Namespace,
-		s.scope.IonosMachine.Name)
+		ms.IonosMachine.Namespace,
+		ms.IonosMachine.Name)
 }

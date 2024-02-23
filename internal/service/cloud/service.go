@@ -35,22 +35,21 @@ const (
 
 // Service offers infra resources services for IONOS Cloud machine reconciliation.
 type Service struct {
-	scope  *scope.MachineScope // Deprecated: pass machine scope explicitly to each method.
 	logger *logr.Logger
 	cloud  ionoscloud.Client
 }
 
 // NewService returns a new Service.
-func NewService(ms *scope.MachineScope, cloud ionoscloud.Client) (*Service, error) {
+func NewService(cloud ionoscloud.Client, log *logr.Logger) (*Service, error) {
 	return &Service{
-		scope: ms,
-		cloud: cloud,
+		cloud:  cloud,
+		logger: log,
 	}, nil
 }
 
 // datacenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
-func (s *Service) datacenterID(_ *scope.MachineScope) string {
-	return s.scope.IonosMachine.Spec.DatacenterID
+func (s *Service) datacenterID(ms *scope.MachineScope) string {
+	return ms.IonosMachine.Spec.DatacenterID
 }
 
 // isNotFound is a shortcut for checking if an error is a not found error.

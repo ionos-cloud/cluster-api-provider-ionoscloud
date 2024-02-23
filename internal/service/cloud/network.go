@@ -240,7 +240,7 @@ func (s *Service) removeLANPendingRequestFromCluster(cs *scope.ClusterScope, ms 
 func (s *Service) checkPrimaryNIC(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope, server *sdk.Server) (requeue bool, err error) {
 	log := s.logger.WithName("checkPrimaryNIC")
 
-	if !util.IsControlPlaneMachine(s.scope.Machine) {
+	if !util.IsControlPlaneMachine(ms.Machine) {
 		log.V(4).Info("Machine is a worker node and doesn't need a second IP address")
 		return false, nil
 	}
@@ -275,7 +275,7 @@ func (s *Service) checkPrimaryNIC(ctx context.Context, cs *scope.ClusterScope, m
 	return true, fmt.Errorf("could not find primary NIC with name %s", s.serverName(ms))
 }
 
-func (s *Service) patchNIC(ctx context.Context, _ *scope.MachineScope, serverID string, nic sdk.Nic, props sdk.NicProperties) error {
+func (s *Service) patchNIC(ctx context.Context, ms *scope.MachineScope, serverID string, nic sdk.Nic, props sdk.NicProperties) error {
 	log := s.logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")
@@ -286,7 +286,7 @@ func (s *Service) patchNIC(ctx context.Context, _ *scope.MachineScope, serverID 
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}
 
-	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPatch, location))
+	ms.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPatch, location))
 
 	log.V(4).Info("Successfully patched NIC", "location", location)
 	return nil
