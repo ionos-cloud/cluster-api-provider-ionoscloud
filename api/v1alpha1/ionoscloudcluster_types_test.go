@@ -31,6 +31,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+const (
+	// newValueStr is a string that represents a changed value.
+	newValueStr = "changed"
+)
+
 func TestIonosCloudCluster_Conditions(t *testing.T) {
 	conds := clusterv1.Conditions{{Type: "type"}}
 	cluster := &IonosCloudCluster{}
@@ -73,8 +78,36 @@ var _ = Describe("IonosCloudCluster", func() {
 			cluster := defaultCluster()
 			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
 
-			cluster.Spec.ContractNumber = "changed"
+			cluster.Spec.ContractNumber = newValueStr
 			Expect(k8sClient.Update(context.Background(), cluster)).Should(MatchError(ContainSubstring("contractNumber is immutable")))
+		})
+
+		It("should not allow changing the location", func() {
+			cluster := defaultCluster()
+			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+			cluster.Spec.Location = newValueStr
+			Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
+		})
+
+		When("trying to update the control plane endpoint", func() {
+			It("should fail if the endpoint is already set", func() {
+				cluster := defaultCluster()
+				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+				cluster.Spec.ControlPlaneEndpoint.Host = newValueStr
+				cluster.Spec.ControlPlaneEndpoint.Port = 1234
+				Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
+			})
+			It("should work if the endpoint is not set", func() {
+				cluster := defaultCluster()
+				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{}
+				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+				cluster.Spec.ControlPlaneEndpoint.Host = newValueStr
+				cluster.Spec.ControlPlaneEndpoint.Port = 1234
+				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
+			})
 		})
 	})
 	Context("Status", func() {
