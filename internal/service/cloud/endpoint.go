@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -140,21 +141,16 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) listAndFilterFunc[sdk.IpBlo
 		)
 		for _, block := range ptr.Deref(blocks.GetItems(), nil) {
 			props := block.GetProperties()
-			if ptr.Deref(props.GetLocation(), "") != expectedLocation {
+			switch {
+			case ptr.Deref(props.GetLocation(), "") != expectedLocation:
 				continue
-			}
-			if ptr.Deref(props.GetName(), "") == expectedName {
+			case ptr.Deref(props.GetName(), "") == expectedName:
 				count++
 				// NOTE(gfariasalves): Change this to &block after we move to go1.22
 				foundBlock = ptr.To(block)
-			} else if cpeHost := cs.GetControlPlaneEndpoint().Host; cpeHost != "" {
+			case s.checkIfUserSetBlock(cs, props):
 				// NOTE: this is for when customers set IPs for the control plane endpoint themselves.
-				for _, ip := range ptr.Deref(props.GetIps(), nil) {
-					if ip == cpeHost {
-						// IPs are unique, so we can already return the block in this case.
-						return ptr.To(block), nil
-					}
-				}
+				return ptr.To(block), nil
 			}
 			if count > 1 {
 				return nil, fmt.Errorf(
@@ -162,8 +158,17 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) listAndFilterFunc[sdk.IpBlo
 					expectedName)
 			}
 		}
+		if count == 0 && cs.GetControlPlaneEndpoint().Host != "" {
+			return nil, fmt.Errorf("could not find any IP block for the already set control plane endpoint")
+		}
 		return foundBlock, nil
 	}
+}
+
+func (s *Service) checkIfUserSetBlock(cs *scope.ClusterScope, props *sdk.IpBlockProperties) bool {
+	ip := cs.GetControlPlaneEndpoint().Host
+	ips := ptr.Deref(props.GetIps(), nil)
+	return ip != "" && slices.Contains(ips, ip)
 }
 
 func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.ClusterScope) (*sdk.IpBlock, error) {
