@@ -82,7 +82,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 
 	// NOTE: this check covers the case where customers have set the control plane endpoint IP themselves.
 	// If this is the case we don't request for the deletion of the IP block.
-	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), UnknownValue) != s.ipBlockName(cs) {
+	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), unknownValue) != s.ipBlockName(cs) {
 		log.Info("Control Plane Endpoint was created externally by the user. Skipping deletion")
 		return false, nil
 	}
@@ -217,7 +217,7 @@ func (s *Service) getLatestIPBlockCreationRequest(cs *scope.ClusterScope) checkQ
 			ipBlocksPath,
 			matchByName[*sdk.IpBlock, *sdk.IpBlockProperties](s.ipBlockName(cs)),
 			func(r *sdk.IpBlock, _ sdk.Request) bool {
-				return ptr.Deref(r.GetProperties().GetLocation(), UnknownValue) == cs.Location()
+				return ptr.Deref(r.GetProperties().GetLocation(), unknownValue) == cs.Location()
 			},
 		)
 	}
