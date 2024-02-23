@@ -25,7 +25,6 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 const (
@@ -45,11 +44,6 @@ func NewService(cloud ionoscloud.Client, log *logr.Logger) (*Service, error) {
 		cloud:  cloud,
 		logger: log,
 	}, nil
-}
-
-// datacenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
-func (s *Service) datacenterID(ms *scope.MachineScope) string {
-	return ms.IonosMachine.Spec.DatacenterID
 }
 
 // isNotFound is a shortcut for checking if an error is a not found error.

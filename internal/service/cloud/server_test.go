@@ -245,35 +245,35 @@ func (s *serverSuite) exampleServer() sdk.Server {
 }
 
 func (s *serverSuite) mockListSevers() *clienttest.MockClient_ListServers_Call {
-	return s.ionosClient.EXPECT().ListServers(s.ctx, s.service.datacenterID(nil))
+	return s.ionosClient.EXPECT().ListServers(s.ctx, s.machineScope.DatacenterID())
 }
 
 func (s *serverSuite) mockGetServer(serverID string) *clienttest.MockClient_GetServer_Call {
-	return s.ionosClient.EXPECT().GetServer(s.ctx, s.service.datacenterID(nil), serverID)
+	return s.ionosClient.EXPECT().GetServer(s.ctx, s.machineScope.DatacenterID(), serverID)
 }
 
 func (s *serverSuite) mockGetServerCreationRequest() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.serversURL())
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.serversURL(s.machineScope))
 }
 
 func (s *serverSuite) mockCreateServer() *clienttest.MockClient_CreateServer_Call {
 	return s.ionosClient.EXPECT().CreateServer(
 		s.ctx,
-		s.service.datacenterID(nil),
+		s.machineScope.DatacenterID(),
 		mock.Anything,
 		mock.Anything,
 	)
 }
 
 func (s *serverSuite) mockListLANs() *clienttest.MockClient_ListLANs_Call {
-	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.service.datacenterID(nil))
+	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
 }
 
 func (s *serverSuite) examplePostRequest(status string) []sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPost,
-		url:        s.service.serversURL(),
+		url:        s.service.serversURL(s.machineScope),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName(s.machineScope)),
 		href:       exampleRequestPath,
 		targetID:   testServerID,
