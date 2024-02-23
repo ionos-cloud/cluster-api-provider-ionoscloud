@@ -338,7 +338,6 @@ func (s *Service) buildServerEntities(
 			AvailabilityZone: ptr.To(machineSpec.Disk.AvailabilityZone.String()),
 			Name:             ptr.To(s.serverName()),
 			Size:             ptr.To(float32(machineSpec.Disk.SizeGB)),
-			SshKeys:          ptr.To(machineSpec.Disk.SSHKeys),
 			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
 			UserData:         ptr.To(params.boostrapData),
 		},

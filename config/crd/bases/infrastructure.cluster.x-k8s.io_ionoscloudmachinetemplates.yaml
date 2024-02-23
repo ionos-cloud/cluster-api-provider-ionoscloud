@@ -154,13 +154,6 @@ spec:
                               GB
                             minimum: 10
                             type: integer
-                          sshKeys:
-                            description: SSHKeys contains a set of public SSH keys
-                              which will be added to the list of authorized keys.
-                            items:
-                              type: string
-                            type: array
-                            x-kubernetes-list-type: set
                         required:
                         - image
                         type: object

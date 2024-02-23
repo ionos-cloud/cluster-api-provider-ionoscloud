@@ -169,12 +169,6 @@ type Volume struct {
 	// +optional
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
-	// SSHKeys contains a set of public SSH keys which will be added to the
-	// list of authorized keys.
-	// +listType=set
-	// +optional
-	SSHKeys []string `json:"sshKeys,omitempty"`
-
 	// Image is the image to use for the VM.
 	// +kubebuilder:validation:XValidation:rule="has(self.id) && self.id != '' || self.aliases.size() > 0",message="either id or aliases must be set"
 	// +required

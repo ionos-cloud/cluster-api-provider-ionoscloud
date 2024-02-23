@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/go-logr/logr v1.4.1
 	github.com/google/go-cmp v0.6.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/ionos-cloud/sdk-go/v6 v6.1.11
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
@@ -15,8 +15,8 @@ require (
 	k8s.io/apimachinery v0.28.4
 	k8s.io/client-go v0.28.4
 	k8s.io/klog/v2 v2.110.1
-	sigs.k8s.io/cluster-api v1.6.1
-	sigs.k8s.io/controller-runtime v0.16.3
+	sigs.k8s.io/cluster-api v1.6.2
+	sigs.k8s.io/controller-runtime v0.16.5
 )
 
 require (
