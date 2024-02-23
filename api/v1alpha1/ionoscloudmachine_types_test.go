@@ -51,7 +51,6 @@ func defaultMachine() *IonosCloudMachine {
 				DiskType:         VolumeDiskTypeSSDStandard,
 				SizeGB:           23,
 				AvailabilityZone: AvailabilityZoneOne,
-				SSHKeys:          []string{"public-key"},
 				Image: &ImageSpec{
 					ID: ptr.To("1eef-48ec-a246-a51a33aa4f3a"),
 				},
@@ -258,20 +257,6 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 					Entry("ZONE_2", AvailabilityZoneTwo),
 					Entry("ZONE_3", AvailabilityZoneThree),
 				)
-			})
-			Context("SSH keys", func() {
-				It("can be created without them", func() {
-					m := defaultMachine()
-					var want []string
-					m.Spec.Disk.SSHKeys = want
-					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-					Expect(m.Spec.Disk.SSHKeys).To(Equal(want))
-				})
-				It("should prevent duplicates", func() {
-					m := defaultMachine()
-					m.Spec.Disk.SSHKeys = []string{"Key1", "Key1", "Key2", "Key3"}
-					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
-				})
 			})
 			Context("Size (in GB)", func() {
 				It("should fail if less than 10", func() {
