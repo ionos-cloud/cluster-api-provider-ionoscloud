@@ -90,39 +90,39 @@ func (a AvailabilityZone) String() string {
 type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
-	// +optional
+	//+optional
 	ProviderID *string `json:"providerID,omitempty"`
 
 	// DatacenterID is the ID of the data center where the VM should be created in.
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
-	// +kubebuilder:validation:Format=uuid
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
+	//+kubebuilder:validation:Format=uuid
 	DatacenterID string `json:"datacenterID"`
 
 	// NumCores defines the number of cores for the VM.
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:default=1
-	// +optional
+	//+kubebuilder:validation:Minimum=1
+	//+kubebuilder:default=1
+	//+optional
 	NumCores int32 `json:"numCores,omitempty"`
 
 	// AvailabilityZone is the availability zone in which the VM should be provisioned.
-	// +kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2
-	// +kubebuilder:default=AUTO
-	// +optional
+	//+kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2
+	//+kubebuilder:default=AUTO
+	//+optional
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	// MemoryMB is the memory size for the VM in MB.
 	// Size must be specified in multiples of 256 MB with a minimum of 1024 MB
 	// which is required as we are using hot-pluggable RAM by default.
-	// +kubebuilder:validation:MultipleOf=1024
-	// +kubebuilder:validation:Minimum=2048
-	// +kubebuilder:default=3072
-	// +optional
+	//+kubebuilder:validation:MultipleOf=1024
+	//+kubebuilder:validation:Minimum=2048
+	//+kubebuilder:default=3072
+	//+optional
 	MemoryMB int32 `json:"memoryMB,omitempty"`
 
 	// CPUFamily defines the CPU architecture, which will be used for this VM.
 	// Not all CPU architectures are available in all data centers.
-	// +kubebuilder:example=AMD_OPTERON
-	// +kubebuilder:validation:MinLength=1
+	//+kubebuilder:example=AMD_OPTERON
+	//+kubebuilder:validation:MinLength=1
 	CPUFamily string `json:"cpuFamily"`
 
 	// Disk defines the boot volume of the VM.
@@ -130,7 +130,7 @@ type IonosCloudMachineSpec struct {
 
 	// AdditionalNetworks defines the additional network configurations for the VM.
 	// NOTE(lubedacht): We currently only support networks with DHCP enabled.
-	// +optional
+	//+optional
 	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
 }
 
@@ -141,43 +141,43 @@ type Networks []Network
 type Network struct {
 	// NetworkID represents an ID an existing LAN in the data center.
 	// This LAN will be excluded from the deletion process.
-	// +kubebuilder:validation:Minimum=1
+	//+kubebuilder:validation:Minimum=1
 	NetworkID int32 `json:"networkID"`
 }
 
 // Volume is the physical storage on the VM.
 type Volume struct {
 	// Name is the name of the volume
-	// +optional
+	//+optional
 	Name string `json:"name,omitempty"`
 
 	// DiskType defines the type of the hard drive.
-	// +kubebuilder:validation:Enum=HDD;SSD Standard;SSD Premium
-	// +kubebuilder:default=HDD
-	// +optional
+	//+kubebuilder:validation:Enum=HDD;SSD Standard;SSD Premium
+	//+kubebuilder:default=HDD
+	//+optional
 	DiskType VolumeDiskType `json:"diskType,omitempty"`
 
 	// SizeGB defines the size of the volume in GB
-	// +kubebuilder:validation:Minimum=10
-	// +kubebuilder:default=20
-	// +optional
+	//+kubebuilder:validation:Minimum=10
+	//+kubebuilder:default=20
+	//+optional
 	SizeGB int `json:"sizeGB,omitempty"`
 
 	// AvailabilityZone is the availability zone where the volume will be created.
-	// +kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2;ZONE_3
-	// +kubebuilder:default=AUTO
-	// +optional
+	//+kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2;ZONE_3
+	//+kubebuilder:default=AUTO
+	//+optional
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	// SSHKeys contains a set of public SSH keys which will be added to the
 	// list of authorized keys.
-	// +listType=set
-	// +optional
+	//+listType=set
+	//+optional
 	SSHKeys []string `json:"sshKeys,omitempty"`
 
 	// Image is the image to use for the VM.
-	// +kubebuilder:validation:XValidation:rule="has(self.id) && self.id != '' || self.aliases.size() > 0",message="either id or aliases must be set"
-	// +required
+	//+kubebuilder:validation:XValidation:rule="has(self.id) && self.id != '' || self.aliases.size() > 0",message="either id or aliases must be set"
+	//+required
 	Image *ImageSpec `json:"image"`
 }
 
@@ -185,18 +185,18 @@ type Volume struct {
 // +optional.
 type ImageSpec struct {
 	// ID is the ID of the image to use for the VM.
-	// +optional
+	//+optional
 	ID *string `json:"id,omitempty"`
 	// Aliases is a list of image aliases to use for the VM.
 	// TODO(lubedacht): Needs implementation.
-	// +optional
+	//+optional
 	Aliases []string `json:"aliases,omitempty"`
 }
 
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
 type IonosCloudMachineStatus struct {
 	// Ready indicates the VM has been provisioned and is ready.
-	// +optional
+	//+optional
 	Ready bool `json:"ready"`
 
 	// FailureReason will be set in the event that there is a terminal problem
@@ -215,7 +215,7 @@ type IonosCloudMachineStatus struct {
 	// Any transient errors that occur during the reconciliation of IonosCloudMachines
 	// can be added as events to the IonosCloudMachine object and/or logged in the
 	// controller's output.
-	// +optional
+	//+optional
 	FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
 
 	// FailureMessage will be set in the event that there is a terminal problem
@@ -234,16 +234,16 @@ type IonosCloudMachineStatus struct {
 	// Any transient errors that occur during the reconciliation of IonosCloudMachines
 	// can be added as events to the IonosCloudMachine object and/or logged in the
 	// controller's output.
-	// +optional
+	//+optional
 	FailureMessage *string `json:"failureMessage,omitempty"`
 
 	// Conditions defines current service state of the IonosCloudMachine.
-	// +optional
+	//+optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
 	// CurrentRequest shows the current provisioning request for any
 	// cloud resource that is being provisioned.
-	// +optional
+	//+optional
 	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
 }
 

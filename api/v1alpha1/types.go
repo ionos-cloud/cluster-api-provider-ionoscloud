@@ -35,12 +35,12 @@ type ProvisioningRequest struct {
 	RequestPath string `json:"requestPath"`
 
 	// RequestStatus is the status of the request in the queue.
-	// +kubebuilder:validation:Enum=QUEUED;RUNNING;DONE;FAILED
-	// +optional
+	//+kubebuilder:validation:Enum=QUEUED;RUNNING;DONE;FAILED
+	//+optional
 	State string `json:"state,omitempty"`
 
 	// Message is the request message, which can also contain error information.
-	// +optional
+	//+optional
 	Message *string `json:"message,omitempty"`
 }
 
