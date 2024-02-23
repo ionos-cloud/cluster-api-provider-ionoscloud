@@ -30,7 +30,7 @@ import (
 
 const (
 	testNICID  = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3e"
-	testDHCPIP = "198.51.100.1"
+	testDHCPIP = "1.2.3.1"
 )
 
 const (
@@ -46,92 +46,91 @@ func TestNICSuite(t *testing.T) {
 	suite.Run(t, new(nicSuite))
 }
 
-func (n *nicSuite) TestReconcileNICConfig() {
-	n.mockGetServer(testServerID).Return(n.defaultServer(testDHCPIP), nil).Once()
+func (s *nicSuite) TestReconcileNICConfig() {
+	s.mockGetServer(testServerID).Return(s.defaultServer(testDHCPIP), nil).Once()
 
 	// no patch request
-	n.mockGetLatestNICPatchRequest(testServerID, testNICID).Return([]sdk.Request{}, nil).Once()
+	s.mockGetLatestNICPatchRequest(testServerID, testNICID).Return([]sdk.Request{}, nil).Once()
 	location := "test/nic/request/path"
 
-	expectedIPs := []string{testDHCPIP, endpointIP}
-	n.mockPatchNIC(testServerID, testNICID, sdk.NicProperties{Ips: &expectedIPs}).Return(location, nil).Once()
+	expectedIPs := []string{testDHCPIP, exampleIP}
+	s.mockPatchNIC(testServerID, testNICID, sdk.NicProperties{Ips: &expectedIPs}).Return(location, nil).Once()
 	// expect request to be successful
-	n.mockWaitForRequest(location).Return(nil).Once()
+	s.mockWaitForRequest(location).Return(nil).Once()
 
-	nic, err := n.service.reconcileNICConfig(endpointIP)
+	nic, err := s.service.reconcileNICConfig(exampleIP)
 
-	n.NotNil(nic, assertMessageNICIsNil)
-	n.NoError(err, assertMessageNICErrorOccurred)
-	n.Nil(n.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
+	s.NotNil(nic, assertMessageNICIsNil)
+	s.NoError(err, assertMessageNICErrorOccurred)
+	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
 }
 
-func (n *nicSuite) TestReconcileNICConfigIPIsSet() {
-	n.mockGetServer(testServerID).Return(n.defaultServer(testDHCPIP, endpointIP), nil).Once()
-	n.mockGetLatestNICPatchRequest(testServerID, testNICID).Return([]sdk.Request{}, nil).Once()
-	nic, err := n.service.reconcileNICConfig(endpointIP)
+func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
+	s.mockGetServer(testServerID).Return(s.defaultServer(testDHCPIP, exampleIP), nil).Once()
+	s.mockGetLatestNICPatchRequest(testServerID, testNICID).Return([]sdk.Request{}, nil).Once()
+	nic, err := s.service.reconcileNICConfig(exampleIP)
 
-	n.NotNil(nic, assertMessageNICIsNil)
-	n.NoError(err, assertMessageNICErrorOccurred)
-	n.Nil(n.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
+	s.NotNil(nic, assertMessageNICIsNil)
+	s.NoError(err, assertMessageNICErrorOccurred)
+	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
 }
 
-func (n *nicSuite) TestReconcileNICConfigPatchRequestPending() {
-	n.mockGetServer(testServerID).Return(n.defaultServer(testDHCPIP), nil).Once()
+func (s *nicSuite) TestReconcileNICConfigPatchRequestPending() {
+	s.mockGetServer(testServerID).Return(s.defaultServer(testDHCPIP), nil).Once()
 
-	patchRequest := n.examplePatchRequest(sdk.RequestStatusQueued, testServerID, testNICID)
+	patchRequest := s.examplePatchRequest(sdk.RequestStatusQueued, testServerID, testNICID)
 
-	n.mockGetLatestNICPatchRequest(testServerID, testNICID).Return(
+	s.mockGetLatestNICPatchRequest(testServerID, testNICID).Return(
 		[]sdk.Request{patchRequest},
 		nil).Once()
 
 	// expect request to be successful
-	n.mockWaitForRequest(*patchRequest.Metadata.RequestStatus.Href).Return(nil).Once()
+	s.mockWaitForRequest(*patchRequest.Metadata.RequestStatus.Href).Return(nil).Once()
 
-	nic, err := n.service.reconcileNICConfig(endpointIP)
-	n.NotNil(nic, assertMessageNICIsNil)
-	n.NoError(err, assertMessageNICErrorOccurred)
-	n.Nil(n.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
+	nic, err := s.service.reconcileNICConfig(exampleIP)
+	s.NotNil(nic, assertMessageNICIsNil)
+	s.NoError(err, assertMessageNICErrorOccurred)
+	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
 }
 
-func (n *nicSuite) mockGetServer(serverID string) *clienttest.MockClient_GetServer_Call {
-	return n.ionosClient.EXPECT().GetServer(n.ctx, n.service.datacenterID(), serverID)
+func (s *nicSuite) mockGetServer(serverID string) *clienttest.MockClient_GetServer_Call {
+	return s.ionosClient.EXPECT().GetServer(s.ctx, s.service.datacenterID(), serverID)
 }
 
-func (n *nicSuite) mockPatchNIC(serverID, nicID string, props sdk.NicProperties) *clienttest.MockClient_PatchNIC_Call {
-	return n.ionosClient.EXPECT().PatchNIC(n.ctx, n.service.datacenterID(), serverID, nicID, props)
+func (s *nicSuite) mockPatchNIC(serverID, nicID string, props sdk.NicProperties) *clienttest.MockClient_PatchNIC_Call {
+	return s.ionosClient.EXPECT().PatchNIC(s.ctx, s.service.datacenterID(), serverID, nicID, props)
 }
 
-func (n *nicSuite) mockGetLatestNICPatchRequest(serverID, nicID string) *clienttest.MockClient_GetRequests_Call {
-	return n.ionosClient.EXPECT().GetRequests(n.ctx, http.MethodPatch, n.service.nicURL(serverID, nicID))
+func (s *nicSuite) mockGetLatestNICPatchRequest(serverID, nicID string) *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPatch, s.service.nicURL(serverID, nicID))
 }
 
-func (n *nicSuite) mockWaitForRequest(location string) *clienttest.MockClient_WaitForRequest_Call {
-	return n.ionosClient.EXPECT().WaitForRequest(n.ctx, location)
+func (s *nicSuite) mockWaitForRequest(location string) *clienttest.MockClient_WaitForRequest_Call {
+	return s.ionosClient.EXPECT().WaitForRequest(s.ctx, location)
 }
 
-func (n *nicSuite) examplePatchRequest(status, serverID, nicID string) sdk.Request {
+func (s *nicSuite) examplePatchRequest(status, serverID, nicID string) sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
-		method:     http.MethodDelete,
-		url:        n.service.nicURL(serverID, nicID),
+		method:     http.MethodPatch,
+		url:        s.service.nicURL(serverID, nicID),
 		href:       path.Join(reqPath, nicID),
-		targetID:   testNICID,
+		targetID:   nicID,
 		targetType: sdk.NIC,
 	}
-	return n.exampleRequest(opts)
+	return s.exampleRequest(opts)
 }
 
-func (n *nicSuite) defaultServer(ips ...string) *sdk.Server {
+func (s *nicSuite) defaultServer(ips ...string) *sdk.Server {
 	return &sdk.Server{
 		Id: ptr.To(testServerID),
 		Entities: &sdk.ServerEntities{
 			Nics: &sdk.Nics{
 				Items: &[]sdk.Nic{{
-					Entities: nil,
-					Id:       ptr.To(testNICID),
+					Id: ptr.To(testNICID),
 					Properties: &sdk.NicProperties{
 						Dhcp: ptr.To(true),
-						Name: ptr.To(n.service.serverName()),
+						Name: ptr.To(s.service.serverName()),
 						Ips:  &ips,
 					},
 				}},

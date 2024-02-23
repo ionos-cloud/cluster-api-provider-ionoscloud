@@ -314,7 +314,7 @@ func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bo
 		}
 
 		// Make sure the NIC is in the failover group with the correct IP address.
-		log.V(4).Info("Found NIC in failover group", "nicUUID", nicUUID)
+		log.V(4).Info("Found NIC in failover group", "nicID", nicID)
 		if ip == endpointIP {
 			log.V(4).Info("NIC is already in the failover group with the correct IP address")
 			return false, nil
@@ -363,7 +363,7 @@ func (s *Service) removeNICFromFailoverGroup(nicID string) (requeue bool, err er
 	}
 
 	// found the NIC, remove it from the failover group
-	log.V(4).Info("Found NIC in failover group", "nicUUID", nicID)
+	log.V(4).Info("Found NIC in failover group", "nicID", nicID)
 	ipFailoverConfig = append(ipFailoverConfig[:index], ipFailoverConfig[index+1:]...)
 	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
 

@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	endpointIP   = "198.51.100.10"
+	exampleIP    = "1.2.3.4"
 	testServerID = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
 )
 
