@@ -219,6 +219,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_UserSetIP() {
 	s.False(requeue)
 	s.NoError(err)
 	s.Equal(s.clusterScope.GetControlPlaneEndpoint().Host, exampleIP)
+	s.Equal(s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID, fmt.Sprintf("ionos://%s", exampleID))
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_PendingRequest() {
