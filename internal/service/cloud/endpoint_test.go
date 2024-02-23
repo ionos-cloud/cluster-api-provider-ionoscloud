@@ -25,7 +25,6 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/suite"
 
-	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
@@ -149,9 +148,11 @@ func (s *EndpointTestSuite) TestReserveIPBlock_RequestSuccess() {
 	s.mockReserveIPBlockCall().Return(requestPath, nil).Once()
 	err := s.service.reserveIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
-	s.NotNil(s.clusterScope.IonosCluster.Status.CurrentClusterRequest)
-	req := infrav1.NewQueuedRequest(http.MethodPost, requestPath)
-	s.Equal(req, *s.clusterScope.IonosCluster.Status.CurrentClusterRequest)
+	req := s.clusterScope.IonosCluster.Status.CurrentClusterRequest
+	s.NotNil(req)
+	s.Equal(http.MethodPost, req.Method)
+	s.Equal(sdk.RequestStatusQueued, req.State)
+	s.Equal(requestPath, req.RequestPath)
 }
 
 func (s *EndpointTestSuite) TestDeleteIPBlock_RequestSuccess() {
@@ -159,9 +160,11 @@ func (s *EndpointTestSuite) TestDeleteIPBlock_RequestSuccess() {
 	s.mockDeleteIPBlockCall().Return(requestPath, nil).Once()
 	err := s.service.deleteIPBlock(s.ctx, s.clusterScope, exampleID)
 	s.NoError(err)
-	s.NotNil(s.clusterScope.IonosCluster.Status.CurrentClusterRequest)
-	req := infrav1.NewQueuedRequest(http.MethodDelete, requestPath)
-	s.Equal(req, *s.clusterScope.IonosCluster.Status.CurrentClusterRequest)
+	req := s.clusterScope.IonosCluster.Status.CurrentClusterRequest
+	s.NotNil(req)
+	s.Equal(http.MethodDelete, req.Method)
+	s.Equal(sdk.RequestStatusQueued, req.State)
+	s.Equal(requestPath, req.RequestPath)
 }
 
 func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequest_NoRequest() {

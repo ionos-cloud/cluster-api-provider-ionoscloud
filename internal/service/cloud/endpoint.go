@@ -26,7 +26,6 @@ import (
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
-	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -194,7 +193,7 @@ func (s *Service) reserveIPBlock(ctx context.Context, cs *scope.ClusterScope) er
 		return fmt.Errorf("failed to request the cloud for IP block reservation: %w", err)
 	}
 
-	cs.IonosCluster.Status.CurrentClusterRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPost, requestPath))
+	cs.IonosCluster.SetCurrentClusterRequest(http.MethodPost, sdk.RequestStatusQueued, requestPath)
 	log.Info("Successfully requested for IP block reservation", "requestPath", requestPath)
 	return nil
 }
@@ -207,7 +206,7 @@ func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.ClusterScope, id 
 	if err != nil {
 		return fmt.Errorf("failed to requestPath IP block deletion: %w", err)
 	}
-	cs.IonosCluster.Status.CurrentClusterRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodDelete, requestPath))
+	cs.IonosCluster.SetCurrentClusterRequest(http.MethodDelete, sdk.RequestStatusQueued, requestPath)
 	log.Info("Successfully requested for IP block deletion", "requestPath", requestPath)
 	return nil
 }
