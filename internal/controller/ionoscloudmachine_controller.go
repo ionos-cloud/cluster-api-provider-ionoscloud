@@ -208,23 +208,13 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 	}
 
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
-	reconcileSequence := []serviceReconcileStep{
-		{
-			name: "ReconcileLAN",
-			reconcileFunc: func() (requeue bool, err error) {
-				return cloudService.ReconcileLAN(ctx, clusterScope, machineScope)
-			},
-		},
-		{
-			name: "ReconcileServer",
-			reconcileFunc: func() (requeue bool, err error) {
-				return cloudService.ReconcileServer(ctx, clusterScope, machineScope)
-			},
-		},
+	reconcileSequence := []serviceReconcileStep[machineReconcileFunc]{
+		{name: "ReconcileLAN", reconcileFunc: cloudService.ReconcileLAN},
+		{name: "ReconcileServer", reconcileFunc: cloudService.ReconcileServer},
 	}
 
 	for _, step := range reconcileSequence {
-		if requeue, err := step.reconcileFunc(); err != nil || requeue {
+		if requeue, err := step.reconcileFunc(ctx, clusterScope, machineScope); err != nil || requeue {
 			if err != nil {
 				err = fmt.Errorf("error in step %s: %w", step.name, err)
 			}

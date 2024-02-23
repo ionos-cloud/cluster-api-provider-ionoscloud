@@ -139,16 +139,11 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(ctx context.Context, clust
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	reconcileSequence := []serviceReconcileStep{
-		{
-			"ReconcileControlPlaneEndpoint",
-			func() (bool, error) {
-				return cloudService.ReconcileControlPlaneEndpoint(ctx, clusterScope)
-			},
-		},
+	reconcileSequence := []serviceReconcileStep[clusterReconcileFunc]{
+		{"ReconcileControlPlaneEndpoint", cloudService.ReconcileControlPlaneEndpoint},
 	}
 	for _, step := range reconcileSequence {
-		if requeue, err := step.reconcileFunc(); err != nil || requeue {
+		if requeue, err := step.reconcileFunc(ctx, clusterScope); err != nil || requeue {
 			if err != nil {
 				err = fmt.Errorf("error in step %s: %w", step.name, err)
 			}
@@ -188,16 +183,11 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 	// TODO(lubedacht): check if there are any more machine CRs existing.
 	// If there are requeue with an offset.
 
-	reconcileSequence := []serviceReconcileStep{
-		{
-			"ReconcileControlPlaneEndpointDeletion",
-			func() (bool, error) {
-				return cloudService.ReconcileControlPlaneEndpointDeletion(ctx, clusterScope)
-			},
-		},
+	reconcileSequence := []serviceReconcileStep[clusterReconcileFunc]{
+		{"ReconcileControlPlaneEndpointDeletion", cloudService.ReconcileControlPlaneEndpointDeletion},
 	}
 	for _, step := range reconcileSequence {
-		if requeue, err := step.reconcileFunc(); err != nil || requeue {
+		if requeue, err := step.reconcileFunc(ctx, clusterScope); err != nil || requeue {
 			if err != nil {
 				err = fmt.Errorf("error in step %s: %w", step.name, err)
 			}
@@ -205,6 +195,7 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 		}
 	}
+
 	controllerutil.RemoveFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
 	return ctrl.Result{}, nil
 }
