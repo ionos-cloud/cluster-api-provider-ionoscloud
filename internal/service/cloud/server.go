@@ -29,7 +29,6 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -145,7 +144,6 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 
 func (s *Service) FinalizeMachineProvisioning() (bool, error) {
 	s.scope.IonosMachine.Status.Ready = true
-	conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
 	conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil
 }
