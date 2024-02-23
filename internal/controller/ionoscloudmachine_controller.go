@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
@@ -85,8 +84,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	logger = logger.WithValues("machine", klog.KObj(machine))
-
 	// Fetch the Cluster.
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
@@ -100,8 +97,9 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	logger = logger.WithValues("cluster", klog.KObj(cluster))
+	ctx = ctrl.LoggerInto(ctx, logger)
 
-	clusterScope, err := r.getClusterScope(ctx, &logger, cluster, ionosCloudMachine)
+	clusterScope, err := r.getClusterScope(ctx, cluster, ionosCloudMachine)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error getting infra provider cluster or control plane object: %w", err)
 	}
@@ -114,9 +112,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 		Client:       r.Client,
 		Machine:      machine,
-		ClusterScope: clusterScope,
 		IonosMachine: ionosCloudMachine,
-		Logger:       &logger,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
@@ -139,10 +135,12 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.reconcileNormal(ctx, clusterScope, machineScope, cloudService)
 }
 
-func (r *IonosCloudMachineReconciler) isInfrastructureReady(cs *scope.ClusterScope, ms *scope.MachineScope) bool {
+func (r *IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) bool {
+	log := ctrl.LoggerFrom(ctx)
+
 	// Make sure the infrastructure is ready.
 	if !cs.Cluster.Status.InfrastructureReady {
-		ms.Info("Cluster infrastructure is not ready yet")
+		log.Info("Cluster infrastructure is not ready yet")
 		conditions.MarkFalse(
 			ms.IonosMachine,
 			infrav1.MachineProvisionedCondition,
@@ -154,7 +152,7 @@ func (r *IonosCloudMachineReconciler) isInfrastructureReady(cs *scope.ClusterSco
 
 	// Make sure to wait until the data secret was created
 	if ms.Machine.Spec.Bootstrap.DataSecretName == nil {
-		ms.Info("Bootstrap data secret is not available yet")
+		log.Info("Bootstrap data secret is not available yet")
 		conditions.MarkFalse(
 			ms.IonosMachine,
 			infrav1.MachineProvisionedCondition,
@@ -174,20 +172,22 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 	machineScope *scope.MachineScope,
 	cloudService *cloud.Service,
 ) (ctrl.Result, error) {
-	machineScope.V(4).Info("Reconciling IonosCloudMachine")
+	log := ctrl.LoggerFrom(ctx)
+
+	log.V(4).Info("Reconciling IonosCloudMachine")
 
 	if machineScope.HasFailed() {
-		machineScope.Info("Error state detected, skipping reconciliation")
+		log.Info("Error state detected, skipping reconciliation")
 		return ctrl.Result{}, nil
 	}
 
-	if !r.isInfrastructureReady(clusterScope, machineScope) {
+	if !r.isInfrastructureReady(ctx, clusterScope, machineScope) {
 		return ctrl.Result{}, nil
 	}
 
 	if controllerutil.AddFinalizer(machineScope.IonosMachine, infrav1.MachineFinalizer) {
 		if err := machineScope.PatchObject(); err != nil {
-			machineScope.Error(err, "unable to update finalizer on object")
+			log.Error(err, "unable to update finalizer on object")
 			return ctrl.Result{}, err
 		}
 	}
@@ -199,11 +199,11 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		// proceed with the reconciliation and are stuck in a loop.
 		//
 		// In any case we log the error.
-		machineScope.Error(err, "Error when trying to determine inflight request states")
+		log.Error(err, "Error when trying to determine inflight request states")
 	}
 
 	if requeue {
-		machineScope.Info("Request is still in progress")
+		log.Info("Request is still in progress")
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
@@ -249,6 +249,8 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 	machineScope *scope.MachineScope,
 	cloudService *cloud.Service,
 ) (requeue bool, retErr error) {
+	log := ctrl.LoggerFrom(ctx)
+
 	// check cluster wide request
 	ionosCluster := clusterScope.IonosCluster
 	if req, exists := ionosCluster.Status.CurrentRequestByDatacenter[machineScope.DatacenterID()]; exists {
@@ -256,7 +258,7 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 		if err != nil {
 			retErr = fmt.Errorf("could not get request status: %w", err)
 		} else {
-			requeue, retErr = withStatus(status, message, machineScope.Logger,
+			requeue, retErr = withStatus(status, message, &log,
 				func() error {
 					// remove the request from the status and patch the cluster
 					ionosCluster.DeleteCurrentRequestByDatacenter(machineScope.DatacenterID())
@@ -272,11 +274,11 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 		if err != nil {
 			retErr = errors.Join(retErr, fmt.Errorf("could not get request status: %w", err))
 		} else {
-			requeue, _ = withStatus(status, message, machineScope.Logger,
+			requeue, _ = withStatus(status, message, &log,
 				func() error {
 					// no need to patch the machine here as it will be patched
 					// after the machine reconciliation is done.
-					machineScope.V(4).Info("Request is done, clearing it from the status")
+					log.V(4).Info("Request is done, clearing it from the status")
 					machineScope.IonosMachine.Status.CurrentRequest = nil
 					return nil
 				},
@@ -290,6 +292,8 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 func (r *IonosCloudMachineReconciler) reconcileDelete(
 	ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope, cloudService *cloud.Service,
 ) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
+
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
 	//  Moreover, should only be attempted if it's the last machine using that LAN. We should check that our machines
 	//  at least, but need to accept that users added their own infrastructure into our LAN (in that case a LAN deletion
@@ -301,11 +305,11 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		// proceed with the reconciliation and are stuck in a loop.
 		//
 		// In any case we log the error.
-		ms.Error(err, "Error when trying to determine inflight request states")
+		log.Error(err, "Error when trying to determine inflight request states")
 	}
 
 	if requeue {
-		ms.Info("Deletion request is still in progress")
+		log.Info("Deletion request is still in progress")
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
@@ -338,7 +342,7 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *IonosCloudMachineReconciler) getClusterScope(
-	ctx context.Context, logger *logr.Logger, cluster *clusterv1.Cluster, ionosCloudMachine *infrav1.IonosCloudMachine,
+	ctx context.Context, cluster *clusterv1.Cluster, ionosCloudMachine *infrav1.IonosCloudMachine,
 ) (*scope.ClusterScope, error) {
 	var clusterScope *scope.ClusterScope
 	var err error
@@ -363,7 +367,6 @@ func (r *IonosCloudMachineReconciler) getClusterScope(
 	// Create the cluster scope
 	clusterScope, err = scope.NewClusterScope(scope.ClusterScopeParams{
 		Client:       r.Client,
-		Logger:       logger,
 		Cluster:      cluster,
 		IonosCluster: ionosCloudCluster,
 	})

@@ -136,7 +136,6 @@ func (s *ServiceTestSuite) SetupTest() {
 
 	s.clusterScope, err = scope.NewClusterScope(scope.ClusterScopeParams{
 		Client:       s.k8sClient,
-		Logger:       &s.log,
 		Cluster:      s.capiCluster,
 		IonosCluster: s.infraCluster,
 	})
@@ -144,9 +143,7 @@ func (s *ServiceTestSuite) SetupTest() {
 
 	s.machineScope, err = scope.NewMachineScope(scope.MachineScopeParams{
 		Client:       s.k8sClient,
-		Logger:       &s.log,
 		Machine:      s.capiMachine,
-		ClusterScope: s.clusterScope,
 		IonosMachine: s.infraMachine,
 	})
 	s.NoError(err, "failed to create machine scope")

@@ -48,7 +48,7 @@ func (s *Service) lansURL(ms *scope.MachineScope) string {
 
 // ReconcileLAN ensures the cluster LAN exist, creating one if it doesn't.
 func (s *Service) ReconcileLAN(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) (requeue bool, err error) {
-	log := s.scope.Logger.WithName("ReconcileLAN")
+	log := s.logger.WithName("ReconcileLAN")
 
 	lan, request, err := findResource(ctx, s.getLAN(cs, ms), s.getLatestLANCreationRequest(cs, ms))
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *Service) ReconcileLAN(ctx context.Context, cs *scope.ClusterScope, ms *
 // ReconcileLANDeletion ensures there's no cluster LAN available, requesting for deletion (if no other resource
 // uses it) otherwise.
 func (s *Service) ReconcileLANDeletion(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) (requeue bool, err error) {
-	log := s.scope.Logger.WithName("ReconcileLANDeletion")
+	log := s.logger.WithName("ReconcileLANDeletion")
 
 	// Try to retrieve the cluster LAN or even check if it's currently still being created.
 	lan, request, err := findResource(ctx, s.getLAN(cs, ms), s.getLatestLANCreationRequest(cs, ms))
@@ -154,7 +154,7 @@ func (s *Service) getLAN(cs *scope.ClusterScope, ms *scope.MachineScope) listAnd
 }
 
 func (s *Service) createLAN(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope) error {
-	log := s.scope.Logger.WithName("createLAN")
+	log := s.logger.WithName("createLAN")
 
 	requestPath, err := s.cloud.CreateLAN(ctx, s.datacenterID(ms), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.lanName(cs)),
@@ -180,7 +180,7 @@ func (s *Service) createLAN(ctx context.Context, cs *scope.ClusterScope, ms *sco
 }
 
 func (s *Service) deleteLAN(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope, lanID string) error {
-	log := s.scope.Logger.WithName("deleteLAN")
+	log := s.logger.WithName("deleteLAN")
 
 	requestPath, err := s.cloud.DeleteLAN(ctx, s.datacenterID(ms), lanID)
 	if err != nil {
@@ -238,7 +238,7 @@ func (s *Service) removeLANPendingRequestFromCluster(cs *scope.ClusterScope, ms 
 //
 // If we want to support private clusters in the future, this will require some adjustments.
 func (s *Service) checkPrimaryNIC(ctx context.Context, cs *scope.ClusterScope, ms *scope.MachineScope, server *sdk.Server) (requeue bool, err error) {
-	log := s.scope.Logger.WithName("checkPrimaryNIC")
+	log := s.logger.WithName("checkPrimaryNIC")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
 		log.V(4).Info("Machine is a worker node and doesn't need a second IP address")
@@ -276,7 +276,7 @@ func (s *Service) checkPrimaryNIC(ctx context.Context, cs *scope.ClusterScope, m
 }
 
 func (s *Service) patchNIC(ctx context.Context, _ *scope.MachineScope, serverID string, nic sdk.Nic, props sdk.NicProperties) error {
-	log := s.scope.Logger.WithName("patchNIC")
+	log := s.logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)
