@@ -36,6 +36,7 @@ const (
 const (
 	assertMessageNICIsNil         = "reconcileNICConfig() should return a NIC"
 	assertMessageNICErrorOccurred = "reconcileNICConfig() should not return an error"
+	assertCurrentRequestIsNil     = "reconcileNICConfig() should not store a pending request"
 )
 
 type nicSuite struct {
@@ -62,7 +63,7 @@ func (s *nicSuite) TestReconcileNICConfig() {
 
 	s.NotNil(nic, assertMessageNICIsNil)
 	s.NoError(err, assertMessageNICErrorOccurred)
-	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
+	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, assertCurrentRequestIsNil)
 }
 
 func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
@@ -72,7 +73,7 @@ func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
 
 	s.NotNil(nic, assertMessageNICIsNil)
 	s.NoError(err, assertMessageNICErrorOccurred)
-	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
+	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, assertCurrentRequestIsNil)
 }
 
 func (s *nicSuite) TestReconcileNICConfigPatchRequestPending() {
@@ -90,7 +91,7 @@ func (s *nicSuite) TestReconcileNICConfigPatchRequestPending() {
 	nic, err := s.service.reconcileNICConfig(exampleIP)
 	s.NotNil(nic, assertMessageNICIsNil)
 	s.NoError(err, assertMessageNICErrorOccurred)
-	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, "currentRequest should be nil")
+	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, assertCurrentRequestIsNil)
 }
 
 func (s *nicSuite) mockGetServer(serverID string) *clienttest.MockClient_GetServer_Call {
