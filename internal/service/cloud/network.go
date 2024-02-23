@@ -303,7 +303,6 @@ func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bo
 
 	for index, entry := range ipFailoverConfig {
 		nicUUID := ptr.Deref(entry.GetNicUuid(), "undefined")
-		// we need one nic to be in the failover? I think???
 		ip := ptr.Deref(entry.GetIp(), "undefined")
 		if ip == endpointIP && nicUUID != nicID {
 			log.V(4).Info("Another NIC is already defined in this failover group. Skipping further actions")
@@ -374,6 +373,13 @@ func (s *Service) removeNICFromFailoverGroup(nicID string) (requeue bool, err er
 
 func (s *Service) retrieveLANFailoverConfig(lan *sdk.Lan, failoverConfig *[]sdk.IPFailover) (requeue bool, err error) {
 	log := s.scope.Logger.WithName("retrieveLANFailoverConfig")
+
+	gotLAN, err := s.getLAN()
+	if err != nil {
+		return true, err
+	}
+	*lan = ptr.Deref(gotLAN, sdk.Lan{})
+
 	lanID := ptr.Deref(lan.GetId(), "")
 	if pending, err := s.isLANPatchPending(lanID); pending || err != nil {
 		return pending, err
