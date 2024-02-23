@@ -149,7 +149,7 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) listAndFilterFunc[sdk.IpBlo
 				foundBlock = ptr.To(block)
 			} else if cpeHost := cs.GetControlPlaneEndpoint().Host; cpeHost != "" {
 				// NOTE: this is for when customers set IPs for the control plane endpoint themselves.
-				for _, ip := range *props.GetIps() {
+				for _, ip := range ptr.Deref(props.GetIps(), nil) {
 					if ip == cpeHost {
 						// IPs are unique, so we can already return the block in this case.
 						return ptr.To(block), nil
