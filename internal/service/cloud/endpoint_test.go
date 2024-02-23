@@ -279,7 +279,6 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_NoBlockLef
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_DeletionPendingRequest() {
-	s.clusterScope.IonosCluster.SetCurrentClusterRequest(http.MethodDelete, sdk.RequestStatusQueued, exampleRequestPath)
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{
 		{
 			Id: ptr.To(exampleID),
