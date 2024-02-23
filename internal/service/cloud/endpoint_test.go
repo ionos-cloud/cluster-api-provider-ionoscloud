@@ -215,8 +215,9 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_UserSetIP() {
 			},
 		},
 	}, nil).Once()
-	requeue, _ := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
+	requeue, err := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
 	s.False(requeue)
+	s.NoError(err)
 	s.Equal(s.clusterScope.GetControlPlaneEndpoint().Host, exampleIP)
 }
 
@@ -225,8 +226,9 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_PendingRequest() {
 	s.mockGetRequestsCallPost().Return([]sdk.Request{
 		s.buildRequest(sdk.RequestStatusRunning, http.MethodPost, ""),
 	}, nil).Once()
-	requeue, _ := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
+	requeue, err := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
 	s.True(requeue)
+	s.NoError(err)
 	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath, exampleRequestPath)
 	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.State, sdk.RequestStatusRunning)
 	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method, http.MethodPost)
@@ -236,8 +238,9 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_RequestNewIPBlock(
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{}, nil).Once()
 	s.mockGetRequestsCallPost().Return([]sdk.Request{}, nil).Once()
 	s.mockReserveIPBlockCall().Return(exampleRequestPath, nil).Once()
-	requeue, _ := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
+	requeue, err := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
 	s.True(requeue)
+	s.NoError(err)
 	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath, exampleRequestPath)
 }
 
@@ -246,8 +249,9 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_CreationPe
 	s.mockGetRequestsCallPost().Return([]sdk.Request{
 		s.buildRequest(sdk.RequestStatusRunning, http.MethodPost, ""),
 	}, nil).Once()
-	requeue, _ := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
+	requeue, err := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
 	s.True(requeue)
+	s.NoError(err)
 	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath, exampleRequestPath)
 	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.State, sdk.RequestStatusRunning)
 	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method, http.MethodPost)
