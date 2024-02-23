@@ -30,8 +30,6 @@ import (
 )
 
 const (
-	defaultDepth = 2 // for LISTing resources containing their sub entities
-
 	locationHeaderKey = "Location"
 )
 
@@ -53,8 +51,7 @@ func NewClient(username, password, token, apiURL string) (*IonosCloudClient, err
 	cfg := sdk.NewConfiguration(username, password, token, apiURL)
 	apiClient := sdk.NewAPIClient(cfg)
 	return &IonosCloudClient{
-		API:          apiClient,
-		requestDepth: defaultDepth,
+		API: apiClient,
 	}, nil
 }
 
@@ -348,8 +345,14 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 
 	const lookbackTime = 24 * time.Hour
 	lookback := time.Now().Add(-lookbackTime).Format(time.DateTime)
+
+	depth := c.requestDepth
+	if depth == 0 {
+		depth = 2 // for LISTing requests and their metadata status metadata
+	}
+
 	reqs, _, err := c.API.RequestsApi.RequestsGet(ctx).
-		Depth(c.requestDepth).
+		Depth(depth).
 		FilterMethod(method).
 		FilterUrl(path).
 		FilterCreatedAfter(lookback).

@@ -179,7 +179,8 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 			return nil, fmt.Errorf("invalid server ID %s: %w", serverID, err)
 		}
 
-		server, err := s.api().GetServer(s.ctx, s.datacenterID(), serverID)
+		depth := int32(2) // for getting the server and its NICs' properties
+		server, err := s.apiWithDepth(depth).GetServer(s.ctx, s.datacenterID(), serverID)
 		// if the server was not found, we will continue, as the request might not
 		// have been completed yet
 		if err != nil && !isNotFound(err) {

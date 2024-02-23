@@ -124,7 +124,8 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 // getLAN tries to retrieve the cluster-related LAN in the data center.
 func (s *Service) getLAN() (*sdk.Lan, error) {
 	// check if the LAN exists
-	lans, err := s.api().ListLANs(s.ctx, s.datacenterID())
+	depth := int32(2) // for listing the LANs with their number of NICs
+	lans, err := s.apiWithDepth(depth).ListLANs(s.ctx, s.datacenterID())
 	if err != nil {
 		return nil, fmt.Errorf("could not list LANs in data center %s: %w", s.datacenterID(), err)
 	}
