@@ -232,7 +232,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_PendingRequest() {
 	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method, http.MethodPost)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_RequestNewIpBlock() {
+func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_RequestNewIPBlock() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{}, nil).Once()
 	s.mockGetRequestsCallPost().Return([]sdk.Request{}, nil).Once()
 	s.mockReserveIPBlockCall().Return(exampleRequestPath, nil).Once()
