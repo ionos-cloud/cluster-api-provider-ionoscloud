@@ -221,8 +221,8 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_UserSetIP() {
 	requeue, err := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
 	s.False(requeue)
 	s.NoError(err)
-	s.Equal(s.clusterScope.GetControlPlaneEndpoint().Host, exampleIP)
-	s.Equal(s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID, fmt.Sprintf("ionos://%s", exampleID))
+	s.Equal(exampleIP, s.clusterScope.GetControlPlaneEndpoint().Host)
+	s.Equal(fmt.Sprintf("ionos://%s", exampleID), s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID)
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_PendingRequest() {
@@ -233,9 +233,9 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_PendingRequest() {
 	requeue, err := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
 	s.True(requeue)
 	s.NoError(err)
-	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath, exampleRequestPath)
-	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.State, sdk.RequestStatusRunning)
-	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method, http.MethodPost)
+	s.Equal(exampleRequestPath, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath)
+	s.Equal(sdk.RequestStatusRunning, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.State)
+	s.Equal(http.MethodPost, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method)
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_RequestNewIPBlock() {
@@ -245,7 +245,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpoint_RequestNewIPBlock(
 	requeue, err := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
 	s.True(requeue)
 	s.NoError(err)
-	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath, exampleRequestPath)
+	s.Equal(exampleRequestPath, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath)
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_CreationPendingRequest() {
@@ -256,9 +256,9 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_CreationPe
 	requeue, err := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
 	s.True(requeue)
 	s.NoError(err)
-	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath, exampleRequestPath)
-	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.State, sdk.RequestStatusRunning)
-	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method, http.MethodPost)
+	s.Equal(exampleRequestPath, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath)
+	s.Equal(sdk.RequestStatusRunning, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.State)
+	s.Equal(http.MethodPost, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method)
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_UserSetIP() {
@@ -297,7 +297,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_DeletionPe
 	requeue, err := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
 	s.True(requeue)
 	s.NoError(err)
-	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.State, sdk.RequestStatusRunning)
+	s.Equal(sdk.RequestStatusRunning, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.State)
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_RequestNewDeletion() {
@@ -315,7 +315,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_RequestNew
 	requeue, err := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
 	s.True(requeue)
 	s.NoError(err)
-	s.Equal(s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath, exampleRequestPath)
+	s.Equal(exampleRequestPath, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath)
 }
 
 func (s *EndpointTestSuite) mockReserveIPBlockCall() *clienttest.MockClient_ReserveIPBlock_Call {
