@@ -176,7 +176,6 @@ type Volume struct {
 }
 
 // ImageSpec defines the image to use for the VM.
-// +optional.
 type ImageSpec struct {
 	// ID is the ID of the image to use for the VM.
 	//+optional
