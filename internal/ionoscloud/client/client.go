@@ -197,21 +197,6 @@ func (c *IonosCloudClient) ListLANs(ctx context.Context, datacenterID string) (*
 	return &lans, nil
 }
 
-// GetLAN returns the LAN that matches lanID in the specified data center.
-func (c *IonosCloudClient) GetLAN(ctx context.Context, datacenterID, lanID string) (*sdk.Lan, error) {
-	if datacenterID == "" {
-		return nil, errDatacenterIDIsEmpty
-	}
-	if lanID == "" {
-		return nil, errLANIDIsEmpty
-	}
-	lan, _, err := c.API.LANsApi.DatacentersLansFindById(ctx, datacenterID, lanID).Execute()
-	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
-	}
-	return &lan, nil
-}
-
 // DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
 func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error) {
 	if datacenterID == "" {

@@ -41,8 +41,6 @@ type Client interface {
 		*sdk.Nic, error)
 	// ListLANs returns a list of LANs in the specified data center.
 	ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error)
-	// GetLAN returns the LAN that matches lanID in the specified data center.
-	GetLAN(ctx context.Context, datacenterID, lanID string) (*sdk.Lan, error)
 	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
 	DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error)
 	// ListVolumes returns a list of volumes in a specified data center.
