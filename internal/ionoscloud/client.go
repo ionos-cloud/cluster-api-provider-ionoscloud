@@ -43,8 +43,6 @@ type Client interface {
 	ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error)
 	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
 	DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error)
-	// GetVolume returns the volume that matches volumeID in the specified data center.
-	GetVolume(ctx context.Context, datacenterID, volumeID string) (*sdk.Volume, error)
 	// CheckRequestStatus checks the status of a provided request identified by requestID
 	CheckRequestStatus(ctx context.Context, requestID string) (*sdk.RequestStatus, error)
 	// WaitForRequest waits for the completion of the provided request.

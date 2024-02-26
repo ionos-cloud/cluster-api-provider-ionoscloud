@@ -215,22 +215,6 @@ func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID st
 	return "", errLocationHeaderEmpty
 }
 
-// GetVolume returns the volume that matches volumeID in the specified data center.
-func (c *IonosCloudClient) GetVolume(ctx context.Context, datacenterID, volumeID string,
-) (*sdk.Volume, error) {
-	if datacenterID == "" {
-		return nil, errDatacenterIDIsEmpty
-	}
-	if volumeID == "" {
-		return nil, errVolumeIDIsEmpty
-	}
-	volume, _, err := c.API.VolumesApi.DatacentersVolumesFindById(ctx, datacenterID, volumeID).Execute()
-	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
-	}
-	return &volume, nil
-}
-
 // CheckRequestStatus returns the status of a request and an error if checking for it fails.
 func (c *IonosCloudClient) CheckRequestStatus(ctx context.Context, requestURL string) (*sdk.RequestStatus, error) {
 	if requestURL == "" {

@@ -544,62 +544,6 @@ func (_c *MockClient_GetServer_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
-// GetVolume provides a mock function with given fields: ctx, datacenterID, volumeID
-func (_m *MockClient) GetVolume(ctx context.Context, datacenterID string, volumeID string) (*ionoscloud.Volume, error) {
-	ret := _m.Called(ctx, datacenterID, volumeID)
-
-	var r0 *ionoscloud.Volume
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*ionoscloud.Volume, error)); ok {
-		return rf(ctx, datacenterID, volumeID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *ionoscloud.Volume); ok {
-		r0 = rf(ctx, datacenterID, volumeID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ionoscloud.Volume)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, datacenterID, volumeID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockClient_GetVolume_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetVolume'
-type MockClient_GetVolume_Call struct {
-	*mock.Call
-}
-
-// GetVolume is a helper method to define mock.On call
-//   - ctx context.Context
-//   - datacenterID string
-//   - volumeID string
-func (_e *MockClient_Expecter) GetVolume(ctx interface{}, datacenterID interface{}, volumeID interface{}) *MockClient_GetVolume_Call {
-	return &MockClient_GetVolume_Call{Call: _e.mock.On("GetVolume", ctx, datacenterID, volumeID)}
-}
-
-func (_c *MockClient_GetVolume_Call) Run(run func(ctx context.Context, datacenterID string, volumeID string)) *MockClient_GetVolume_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
-	})
-	return _c
-}
-
-func (_c *MockClient_GetVolume_Call) Return(_a0 *ionoscloud.Volume, _a1 error) *MockClient_GetVolume_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockClient_GetVolume_Call) RunAndReturn(run func(context.Context, string, string) (*ionoscloud.Volume, error)) *MockClient_GetVolume_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // ListLANs provides a mock function with given fields: ctx, datacenterID
 func (_m *MockClient) ListLANs(ctx context.Context, datacenterID string) (*ionoscloud.Lans, error) {
 	ret := _m.Called(ctx, datacenterID)
