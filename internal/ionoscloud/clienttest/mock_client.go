@@ -323,61 +323,6 @@ func (_c *MockClient_DeleteLAN_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
-// DeleteNIC provides a mock function with given fields: ctx, datacenterID, serverID, nicID
-func (_m *MockClient) DeleteNIC(ctx context.Context, datacenterID string, serverID string, nicID string) (string, error) {
-	ret := _m.Called(ctx, datacenterID, serverID, nicID)
-
-	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) (string, error)); ok {
-		return rf(ctx, datacenterID, serverID, nicID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) string); ok {
-		r0 = rf(ctx, datacenterID, serverID, nicID)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
-		r1 = rf(ctx, datacenterID, serverID, nicID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockClient_DeleteNIC_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteNIC'
-type MockClient_DeleteNIC_Call struct {
-	*mock.Call
-}
-
-// DeleteNIC is a helper method to define mock.On call
-//   - ctx context.Context
-//   - datacenterID string
-//   - serverID string
-//   - nicID string
-func (_e *MockClient_Expecter) DeleteNIC(ctx interface{}, datacenterID interface{}, serverID interface{}, nicID interface{}) *MockClient_DeleteNIC_Call {
-	return &MockClient_DeleteNIC_Call{Call: _e.mock.On("DeleteNIC", ctx, datacenterID, serverID, nicID)}
-}
-
-func (_c *MockClient_DeleteNIC_Call) Run(run func(ctx context.Context, datacenterID string, serverID string, nicID string)) *MockClient_DeleteNIC_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string))
-	})
-	return _c
-}
-
-func (_c *MockClient_DeleteNIC_Call) Return(_a0 string, _a1 error) *MockClient_DeleteNIC_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockClient_DeleteNIC_Call) RunAndReturn(run func(context.Context, string, string, string) (string, error)) *MockClient_DeleteNIC_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // DeleteServer provides a mock function with given fields: ctx, datacenterID, serverID
 func (_m *MockClient) DeleteServer(ctx context.Context, datacenterID string, serverID string) (string, error) {
 	ret := _m.Called(ctx, datacenterID, serverID)

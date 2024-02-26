@@ -51,6 +51,4 @@ type Client interface {
 	GetRequests(ctx context.Context, method, path string) ([]sdk.Request, error)
 	// PatchNIC updates the NIC identified by nicID with the provided properties, returning the request location.
 	PatchNIC(ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties) (string, error)
-	// DeleteNIC deletes the NIC identified by nicID, returning the request location.
-	DeleteNIC(ctx context.Context, datacenterID, serverID, nicID string) (string, error)
 }

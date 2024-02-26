@@ -294,26 +294,6 @@ func (c *IonosCloudClient) PatchNIC(ctx context.Context, datacenterID, serverID,
 	return "", errLocationHeaderEmpty
 }
 
-// DeleteNIC deletes the NIC identified by nicID, returning the request location.
-func (c *IonosCloudClient) DeleteNIC(ctx context.Context, datacenterID, serverID, nicID string) (string, error) {
-	if err := validateNICParameters(datacenterID, serverID, nicID); err != nil {
-		return "", err
-	}
-
-	res, err := c.API.NetworkInterfacesApi.
-		DatacentersServersNicsDelete(ctx, datacenterID, serverID, nicID).
-		Execute()
-	if err != nil {
-		return "", fmt.Errorf(apiCallErrWrapper, err)
-	}
-
-	if location := res.Header.Get(locationHeaderKey); location != "" {
-		return location, nil
-	}
-
-	return "", errLocationHeaderEmpty
-}
-
 // validateNICParameters validates the parameters for the PatchNIC and DeleteNIC methods.
 func validateNICParameters(datacenterID, serverID, nicID string) (err error) {
 	if datacenterID == "" {
