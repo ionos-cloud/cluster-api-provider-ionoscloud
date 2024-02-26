@@ -710,61 +710,6 @@ func (_c *MockClient_ListServers_Call) RunAndReturn(run func(context.Context, st
 	return _c
 }
 
-// ListVolumes provides a mock function with given fields: ctx, datacenterID
-func (_m *MockClient) ListVolumes(ctx context.Context, datacenterID string) (*ionoscloud.Volumes, error) {
-	ret := _m.Called(ctx, datacenterID)
-
-	var r0 *ionoscloud.Volumes
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*ionoscloud.Volumes, error)); ok {
-		return rf(ctx, datacenterID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *ionoscloud.Volumes); ok {
-		r0 = rf(ctx, datacenterID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ionoscloud.Volumes)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, datacenterID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockClient_ListVolumes_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListVolumes'
-type MockClient_ListVolumes_Call struct {
-	*mock.Call
-}
-
-// ListVolumes is a helper method to define mock.On call
-//   - ctx context.Context
-//   - datacenterID string
-func (_e *MockClient_Expecter) ListVolumes(ctx interface{}, datacenterID interface{}) *MockClient_ListVolumes_Call {
-	return &MockClient_ListVolumes_Call{Call: _e.mock.On("ListVolumes", ctx, datacenterID)}
-}
-
-func (_c *MockClient_ListVolumes_Call) Run(run func(ctx context.Context, datacenterID string)) *MockClient_ListVolumes_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
-	})
-	return _c
-}
-
-func (_c *MockClient_ListVolumes_Call) Return(_a0 *ionoscloud.Volumes, _a1 error) *MockClient_ListVolumes_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockClient_ListVolumes_Call) RunAndReturn(run func(context.Context, string) (*ionoscloud.Volumes, error)) *MockClient_ListVolumes_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // PatchNIC provides a mock function with given fields: ctx, datacenterID, serverID, nicID, properties
 func (_m *MockClient) PatchNIC(ctx context.Context, datacenterID string, serverID string, nicID string, properties ionoscloud.NicProperties) (string, error) {
 	ret := _m.Called(ctx, datacenterID, serverID, nicID, properties)
