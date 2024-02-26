@@ -49,8 +49,6 @@ type Client interface {
 	ListVolumes(ctx context.Context, datacenterID string) (*sdk.Volumes, error)
 	// GetVolume returns the volume that matches volumeID in the specified data center.
 	GetVolume(ctx context.Context, datacenterID, volumeID string) (*sdk.Volume, error)
-	// DeleteVolume deletes the volume that matches volumeID in the specified data center.
-	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
 	// CheckRequestStatus checks the status of a provided request identified by requestID
 	CheckRequestStatus(ctx context.Context, requestID string) (*sdk.RequestStatus, error)
 	// WaitForRequest waits for the completion of the provided request.

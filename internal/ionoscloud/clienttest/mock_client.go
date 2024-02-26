@@ -432,60 +432,6 @@ func (_c *MockClient_DeleteServer_Call) RunAndReturn(run func(context.Context, s
 	return _c
 }
 
-// DeleteVolume provides a mock function with given fields: ctx, datacenterID, volumeID
-func (_m *MockClient) DeleteVolume(ctx context.Context, datacenterID string, volumeID string) (string, error) {
-	ret := _m.Called(ctx, datacenterID, volumeID)
-
-	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
-		return rf(ctx, datacenterID, volumeID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
-		r0 = rf(ctx, datacenterID, volumeID)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, datacenterID, volumeID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockClient_DeleteVolume_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteVolume'
-type MockClient_DeleteVolume_Call struct {
-	*mock.Call
-}
-
-// DeleteVolume is a helper method to define mock.On call
-//   - ctx context.Context
-//   - datacenterID string
-//   - volumeID string
-func (_e *MockClient_Expecter) DeleteVolume(ctx interface{}, datacenterID interface{}, volumeID interface{}) *MockClient_DeleteVolume_Call {
-	return &MockClient_DeleteVolume_Call{Call: _e.mock.On("DeleteVolume", ctx, datacenterID, volumeID)}
-}
-
-func (_c *MockClient_DeleteVolume_Call) Run(run func(ctx context.Context, datacenterID string, volumeID string)) *MockClient_DeleteVolume_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
-	})
-	return _c
-}
-
-func (_c *MockClient_DeleteVolume_Call) Return(_a0 string, _a1 error) *MockClient_DeleteVolume_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockClient_DeleteVolume_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DeleteVolume_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetLAN provides a mock function with given fields: ctx, datacenterID, lanID
 func (_m *MockClient) GetLAN(ctx context.Context, datacenterID string, lanID string) (*ionoscloud.Lan, error) {
 	ret := _m.Called(ctx, datacenterID, lanID)

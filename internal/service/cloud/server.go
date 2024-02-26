@@ -139,31 +139,6 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 	return err == nil, err
 }
 
-// TODO(lubedacht)check if we need to manually delete volumes
-// func (s *Service) ensureVolumeDeleted(server *sdk.Server) (bool, error) {
-//	log := s.scope.Logger.WithName("ReconcileLANDeletion")
-//	log.Info("Ensuring that server volumes will be deleted", "serverID", ptr.Deref(server.GetId(), ""))
-//
-//	volumes := ptr.Deref(server.GetEntities().GetVolumes().GetItems(), []sdk.Volume{})
-//	if len(volumes) == 0 {
-//		return false, nil
-//	}
-//
-//	for _, vol := range volumes {
-//		location, err := s.api().DeleteVolume(s.ctx, s.datacenterID(), ptr.Deref(vol.GetId(), ""))
-//		if err != nil {
-//			log.Error(err, "Unexpected error occurred during Volume deletion", "volumeID", ptr.Deref(vol.GetId(), ""))
-//			return false, fmt.Errorf("failed to request volume deletion: %w", err)
-//		}
-//
-//		if location == "" {
-//			continue
-//		}
-//	}
-//
-//	return false, nil
-//}
-
 func (s *Service) finalizeServerProvisioning() (bool, error) {
 	conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
 	conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)

@@ -149,28 +149,6 @@ func (c *IonosCloudClient) DeleteServer(ctx context.Context, datacenterID, serve
 	return "", errLocationHeaderEmpty
 }
 
-// DeleteVolume deletes the volume that matches volumeID in the specified data center.
-func (c *IonosCloudClient) DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error) {
-	if datacenterID == "" {
-		return "", errDatacenterIDIsEmpty
-	}
-
-	if volumeID == "" {
-		return "", errVolumeIDIsEmpty
-	}
-
-	res, err := c.API.VolumesApi.DatacentersVolumesDelete(ctx, datacenterID, volumeID).Execute()
-	if err != nil {
-		return "", err
-	}
-
-	if location := res.Header.Get(locationHeaderKey); location != "" {
-		return location, nil
-	}
-
-	return "", errLocationHeaderEmpty
-}
-
 // CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
 func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost,
 ) (string, error) {
