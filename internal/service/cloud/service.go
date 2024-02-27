@@ -45,8 +45,10 @@ type Service struct {
 // NewService returns a new Service.
 func NewService(ctx context.Context, s *scope.MachineScope) (*Service, error) {
 	return &Service{
-		scope: s,
-		ctx:   ctx,
+		scope:  s,
+		ctx:    ctx,
+		logger: s.ClusterScope.Logger,
+		cloud:  s.ClusterScope.IonosClient,
 	}, nil
 }
 

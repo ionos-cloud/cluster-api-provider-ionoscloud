@@ -110,7 +110,9 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}()
 
-	cloudService, err := cloud.NewService(ctx, nil)
+	cloudService, err := cloud.NewService(ctx, &scope.MachineScope{
+		ClusterScope: clusterScope,
+	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create cloud service: %w", err)
 	}

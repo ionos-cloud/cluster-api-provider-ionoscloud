@@ -36,7 +36,7 @@ const (
 // IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
 type IonosCloudClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
-	//+kubebuilder:validation:XValidation:rule="self == oldSelf || oldSelf.host == '' && oldSelf.port == 0",message="control plane endpoint cannot be updated"
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf || oldSelf.host == ''",message="control plane endpoint cannot be updated"
 	//+optional
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 

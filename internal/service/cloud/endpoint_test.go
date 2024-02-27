@@ -261,10 +261,34 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_CreationPe
 	s.Equal(http.MethodPost, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_UserSetIP() {
+func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID = exampleID
 	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
 		Id: ptr.To(exampleID),
+	}, nil).Once()
+	requeue, err := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
+	s.False(requeue)
+	s.NoError(err)
+}
+
+func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion_UserSetIP_WithoutProviderID() {
+	s.clusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleIP
+	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
+		Items: &[]sdk.IpBlock{
+			{
+				Id: ptr.To(exampleID),
+				Metadata: &sdk.DatacenterElementMetadata{
+					State: ptr.To(sdk.Available),
+				},
+				Properties: &sdk.IpBlockProperties{
+					Location: ptr.To(exampleLocation),
+					Ips: &[]string{
+						"another IP",
+						exampleIP,
+					},
+				},
+			},
+		},
 	}, nil).Once()
 	requeue, err := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
 	s.False(requeue)
