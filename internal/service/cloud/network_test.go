@@ -31,8 +31,9 @@ import (
 )
 
 const (
-	reqPath = "this/is/a/path"
-	lanID   = "1"
+	reqPath      = "this/is/a/path"
+	lanID        = "1"
+	arbitraryNIC = "f3b3f8e3-1f3d-11ec-82a8-0242ac130003"
 )
 
 type lanSuite struct {
@@ -249,7 +250,6 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 	testServer := defaultServer(s.service.serverName(), testDHCPIP, endpointIP)
 	testLAN := s.exampleLAN()
 
-	arbitraryNIC := "f3b3f8e3-1f3d-11ec-82a8-0242ac130003"
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
 		// we expect that the first entry will also be included in the Patch request.
 		Ip:      ptr.To(testArbitraryIP),
@@ -296,7 +296,7 @@ func (s *lanSuite) TestReconcileIPFailoverAnotherNICInFailoverGroup() {
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
 		Ip:      ptr.To(testInvalidIP),
-		NicUuid: ptr.To("f3b3f8e3-1f3d-11ec-82a8-0242ac130003"),
+		NicUuid: ptr.To(arbitraryNIC),
 	}, {
 		Ip: ptr.To(endpointIP),
 		// arbitrary NIC ID with the correct endpoint IP
@@ -330,7 +330,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletion() {
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
 		Ip:      ptr.To(testInvalidIP),
-		NicUuid: ptr.To("f3b3f8e3-1f3d-11ec-82a8-0242ac130003"),
+		NicUuid: ptr.To(arbitraryNIC),
 	}, {
 		Ip:      ptr.To(endpointIP),
 		NicUuid: ptr.To(testNICID),
@@ -343,7 +343,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletion() {
 	props := sdk.LanProperties{
 		IpFailover: &[]sdk.IPFailover{{
 			Ip:      ptr.To(testInvalidIP),
-			NicUuid: ptr.To("f3b3f8e3-1f3d-11ec-82a8-0242ac130003"),
+			NicUuid: ptr.To(arbitraryNIC),
 		}},
 	}
 
@@ -366,7 +366,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionServerNotFound() {
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
 		Ip:      ptr.To(testInvalidIP),
-		NicUuid: ptr.To("f3b3f8e3-1f3d-11ec-82a8-0242ac130003"),
+		NicUuid: ptr.To(arbitraryNIC),
 	}, {
 		Ip:      ptr.To(endpointIP),
 		NicUuid: ptr.To(testNICID),
