@@ -200,6 +200,24 @@ func (s *serverSuite) TestReconcileServerDeletion() {
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, reqLocation)
 }
 
+func (s *serverSuite) TestReconcileServerDeletionServerNotFound() {
+	s.mockGetServer(testServerID).Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404))
+	s.mockListSevers().Return(&sdk.Servers{}, nil)
+
+	res, err := s.service.ReconcileServerDeletion()
+	s.NoError(err)
+	s.False(res)
+}
+
+func (s *serverSuite) TestReconcileServerDeletionUnexpectedError() {
+	s.mockGetServer(testServerID).Return(nil, sdk.NewGenericOpenAPIError("unexpected error returned", nil, nil, 500))
+	s.mockListSevers().Return(&sdk.Servers{}, nil)
+
+	res, err := s.service.ReconcileServerDeletion()
+	s.Error(err)
+	s.False(res)
+}
+
 func (s *serverSuite) TestReconcileServerDeletionCreateRequestPending() {
 	s.mockGetServer(testServerID).Return(nil, nil)
 	s.mockListSevers().Return(&sdk.Servers{}, nil)

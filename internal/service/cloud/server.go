@@ -97,7 +97,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		s.getServer,
 		s.getLatestServerCreationRequest,
 	)
-	if err != nil {
+	if ignoreNotFound(err) != nil {
 		return false, err
 	}
 
