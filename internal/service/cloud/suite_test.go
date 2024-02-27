@@ -65,7 +65,7 @@ func TestServiceTestSuite(t *testing.T) {
 
 func (s *ServiceTestSuite) SetupTest() {
 	var err error
-	s.ionosClient = &clienttest.MockClient{}
+	s.ionosClient = clienttest.NewMockClient(s.T())
 
 	s.capiCluster = &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -113,7 +113,6 @@ func (s *ServiceTestSuite) SetupTest() {
 				DiskType:         infrav1.VolumeDiskTypeHDD,
 				SizeGB:           20,
 				AvailabilityZone: infrav1.AvailabilityZoneAuto,
-				SSHKeys:          []string{"ssh-rsa AAAAB3Nz"},
 				Image: &infrav1.ImageSpec{
 					ID: ptr.To("3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
 				},

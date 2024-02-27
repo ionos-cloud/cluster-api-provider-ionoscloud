@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
-	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -82,7 +82,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 
 	// NOTE: this check covers the case where customers have set the control plane endpoint IP themselves.
 	// If this is the case we don't request for the deletion of the IP block.
-	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), UnknownValue) != s.ipBlockName(cs) {
+	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), unknownValue) != s.ipBlockName(cs) {
 		log.Info("Control Plane Endpoint was created externally by the user. Skipping deletion")
 		return false, nil
 	}
@@ -106,7 +106,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 
 	if request != nil && request.isPending() {
 		// We want to requeue and check again after some time
-		cs.IonosCluster.Status.CurrentClusterRequest.State = request.status
+		cs.IonosCluster.SetCurrentClusterRequest(http.MethodDelete, request.status, request.location)
 		log.Info("Deletion request is pending", "location", request.location)
 		return true, nil
 	}
@@ -140,21 +140,16 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) listAndFilterFunc[sdk.IpBlo
 		)
 		for _, block := range ptr.Deref(blocks.GetItems(), nil) {
 			props := block.GetProperties()
-			if ptr.Deref(props.GetLocation(), "") != expectedLocation {
+			switch {
+			case ptr.Deref(props.GetLocation(), "") != expectedLocation:
 				continue
-			}
-			if ptr.Deref(props.GetName(), "") == expectedName {
+			case ptr.Deref(props.GetName(), "") == expectedName:
 				count++
 				// NOTE(gfariasalves): Change this to &block after we move to go1.22
 				foundBlock = ptr.To(block)
-			} else if cpeHost := cs.GetControlPlaneEndpoint().Host; cpeHost != "" {
+			case s.checkIfUserSetBlock(cs, props):
 				// NOTE: this is for when customers set IPs for the control plane endpoint themselves.
-				for _, ip := range *props.GetIps() {
-					if ip == cpeHost {
-						// IPs are unique, so we can already return the block in this case.
-						return ptr.To(block), nil
-					}
-				}
+				return ptr.To(block), nil
 			}
 			if count > 1 {
 				return nil, fmt.Errorf(
@@ -162,8 +157,17 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) listAndFilterFunc[sdk.IpBlo
 					expectedName)
 			}
 		}
+		if count == 0 && cs.GetControlPlaneEndpoint().Host != "" {
+			return nil, fmt.Errorf("could not find any IP block for the already set control plane endpoint")
+		}
 		return foundBlock, nil
 	}
+}
+
+func (s *Service) checkIfUserSetBlock(cs *scope.ClusterScope, props *sdk.IpBlockProperties) bool {
+	ip := cs.GetControlPlaneEndpoint().Host
+	ips := ptr.Deref(props.GetIps(), nil)
+	return ip != "" && slices.Contains(ips, ip)
 }
 
 func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.ClusterScope) (*sdk.IpBlock, error) {
@@ -189,7 +193,7 @@ func (s *Service) reserveIPBlock(ctx context.Context, cs *scope.ClusterScope) er
 		return fmt.Errorf("failed to request the cloud for IP block reservation: %w", err)
 	}
 
-	cs.IonosCluster.Status.CurrentClusterRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPost, requestPath))
+	cs.IonosCluster.SetCurrentClusterRequest(http.MethodPost, sdk.RequestStatusQueued, requestPath)
 	log.Info("Successfully requested for IP block reservation", "requestPath", requestPath)
 	return nil
 }
@@ -202,7 +206,7 @@ func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.ClusterScope, id 
 	if err != nil {
 		return fmt.Errorf("failed to requestPath IP block deletion: %w", err)
 	}
-	cs.IonosCluster.Status.CurrentClusterRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodDelete, requestPath))
+	cs.IonosCluster.SetCurrentClusterRequest(http.MethodDelete, sdk.RequestStatusQueued, requestPath)
 	log.Info("Successfully requested for IP block deletion", "requestPath", requestPath)
 	return nil
 }
@@ -217,7 +221,7 @@ func (s *Service) getLatestIPBlockCreationRequest(cs *scope.ClusterScope) checkQ
 			ipBlocksPath,
 			matchByName[*sdk.IpBlock, *sdk.IpBlockProperties](s.ipBlockName(cs)),
 			func(r *sdk.IpBlock, _ sdk.Request) bool {
-				return ptr.Deref(r.GetProperties().GetLocation(), UnknownValue) == cs.Location()
+				return ptr.Deref(r.GetProperties().GetLocation(), unknownValue) == cs.Location()
 			},
 		)
 	}
@@ -231,8 +235,6 @@ func (s *Service) getLatestIPBlockDeletionRequest(ctx context.Context, ipBlockID
 // removeIPBlockLeftovers removes the current cluster request, and deletes the host from the spec.
 func (s *Service) removeIPBlockLeftovers(cs *scope.ClusterScope) {
 	cs.IonosCluster.Status.CurrentClusterRequest = nil
-	cs.IonosCluster.Spec.ControlPlaneEndpoint.Host = ""
-	cs.IonosCluster.Status.ControlPlaneEndpointProviderID = ""
 }
 
 // ipBlockName returns the name that should be used for cluster context resources.

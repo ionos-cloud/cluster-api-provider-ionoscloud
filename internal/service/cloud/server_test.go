@@ -221,9 +221,10 @@ func (s *serverSuite) TestGetServer_WithoutProviderID_FoundInList() {
 	s.NotNil(server)
 }
 
-func (s *serverSuite) TestGetServer() {
-	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil)
-}
+// TODO: Implement this method
+// func (s *serverSuite) TestGetServer() {
+//	s.mockListSevers().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil)
+//}
 
 //nolint:unused
 func (s *serverSuite) exampleServer() sdk.Server {
