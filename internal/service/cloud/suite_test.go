@@ -38,8 +38,17 @@ import (
 )
 
 const (
-	exampleIP    = "1.2.3.4"
-	testServerID = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
+	// NOTE(lubedacht): Choice of IP addresses for unit tests
+	// https://datatracker.ietf.org/doc/rfc5737/
+	// 3.  Documentation Address Blocks
+	//
+	//   The blocks 192.0.2.0/24 (TEST-NET-1), 198.51.100.0/24 (TEST-NET-2),
+	//   and 203.0.113.0/24 (TEST-NET-3) are provided for use in
+	//   documentation.
+	endpointIP      = "203.0.113.1"
+	testInvalidIP   = "203.0.113.10"
+	testArbitraryIP = "203.0.113.11"
+	testServerID    = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
 )
 
 type ServiceTestSuite struct {
