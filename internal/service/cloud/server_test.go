@@ -286,7 +286,7 @@ func (s *serverSuite) TestGetServerWithProviderIDNotFound() {
 	}}, nil)
 
 	server, err := s.service.getServer()
-	s.NoError(err)
+	s.ErrorAs(err, &sdk.GenericOpenAPIError{})
 	s.Nil(server)
 }
 

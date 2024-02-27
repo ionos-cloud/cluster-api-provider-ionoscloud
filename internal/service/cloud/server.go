@@ -181,7 +181,7 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 		server, err := s.apiWithDepth(depth).GetServer(s.ctx, s.datacenterID(), serverID)
 		// if the server was not found, we will continue, as the request might not
 		// have been completed yet
-		if err != nil && !isNotFound(err) {
+		if err != nil {
 			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, s.datacenterID(), err)
 		}
 
@@ -198,7 +198,8 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 // getServer looks for the server in the data center.
 func (s *Service) getServer() (*sdk.Server, error) {
 	server, err := s.getServerByProviderID()
-	if server != nil || err != nil {
+	// if the server was not found, we try to find it by listing all servers.
+	if server != nil || ignoreNotFound(err) != nil {
 		return server, err
 	}
 
@@ -207,8 +208,8 @@ func (s *Service) getServer() (*sdk.Server, error) {
 	const listDepth = 3
 	// without provider ID, we need to list all servers and see if
 	// there is one with the expected name.
-	serverList, err := s.apiWithDepth(listDepth).ListServers(s.ctx, s.datacenterID())
-	if err != nil {
+	serverList, listErr := s.apiWithDepth(listDepth).ListServers(s.ctx, s.datacenterID())
+	if listErr != nil {
 		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(), err)
 	}
 
@@ -222,7 +223,8 @@ func (s *Service) getServer() (*sdk.Server, error) {
 		}
 	}
 
-	return nil, nil
+	// if we still can't find a server we return the initial not found error.
+	return nil, err
 }
 
 func (s *Service) deleteServer(serverID string) error {

@@ -205,3 +205,21 @@ func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request 
 
 	return req
 }
+
+func defaultServer(serverName string, ips ...string) *sdk.Server {
+	return &sdk.Server{
+		Id: ptr.To(testServerID),
+		Entities: &sdk.ServerEntities{
+			Nics: &sdk.Nics{
+				Items: &[]sdk.Nic{{
+					Id: ptr.To(testNICID),
+					Properties: &sdk.NicProperties{
+						Dhcp: ptr.To(true),
+						Name: ptr.To(serverName),
+						Ips:  &ips,
+					},
+				}},
+			},
+		},
+	}
+}

@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 const (
@@ -48,7 +47,7 @@ func TestNICSuite(t *testing.T) {
 }
 
 func (s *nicSuite) TestReconcileNICConfig() {
-	s.mockGetServer(testServerID).Return(s.defaultServer(testDHCPIP), nil).Once()
+	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(), testDHCPIP), nil).Once()
 
 	// no patch request
 	s.mockGetLatestNICPatchRequest(testServerID, testNICID).Return([]sdk.Request{}, nil).Once()
@@ -67,7 +66,7 @@ func (s *nicSuite) TestReconcileNICConfig() {
 }
 
 func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
-	s.mockGetServer(testServerID).Return(s.defaultServer(testDHCPIP, exampleIP), nil).Once()
+	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(), testDHCPIP, exampleIP), nil).Once()
 	s.mockGetLatestNICPatchRequest(testServerID, testNICID).Return([]sdk.Request{}, nil).Once()
 	nic, err := s.service.reconcileNICConfig(exampleIP)
 
@@ -77,7 +76,7 @@ func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
 }
 
 func (s *nicSuite) TestReconcileNICConfigPatchRequestPending() {
-	s.mockGetServer(testServerID).Return(s.defaultServer(testDHCPIP), nil).Once()
+	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(), testDHCPIP), nil).Once()
 
 	patchRequest := s.examplePatchRequest(sdk.RequestStatusQueued, testServerID, testNICID)
 
@@ -120,22 +119,4 @@ func (s *nicSuite) examplePatchRequest(status, serverID, nicID string) sdk.Reque
 		targetType: sdk.NIC,
 	}
 	return s.exampleRequest(opts)
-}
-
-func (s *nicSuite) defaultServer(ips ...string) *sdk.Server {
-	return &sdk.Server{
-		Id: ptr.To(testServerID),
-		Entities: &sdk.ServerEntities{
-			Nics: &sdk.Nics{
-				Items: &[]sdk.Nic{{
-					Id: ptr.To(testNICID),
-					Properties: &sdk.NicProperties{
-						Dhcp: ptr.To(true),
-						Name: ptr.To(s.service.serverName()),
-						Ips:  &ips,
-					},
-				}},
-			},
-		},
-	}
 }
