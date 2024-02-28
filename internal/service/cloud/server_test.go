@@ -57,25 +57,7 @@ func (s *serverSuite) TestReconcileServerNoBootstrapSecret() {
 }
 
 func (s *serverSuite) TestReconcileServerRequestPending() {
-	bootstrapSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: metav1.NamespaceDefault,
-		},
-		Data: map[string][]byte{
-			"value": []byte("test"),
-		},
-	}
-
-	s.NoError(s.k8sClient.Create(s.ctx, bootstrapSecret))
-
-	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
-	s.machineScope.IonosMachine.Spec.ProviderID = nil
-	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{
-		{
-			Properties: nil,
-		},
-	}}, nil)
+	s.prepareReconcileServerRequestTest()
 
 	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusQueued)}, nil)
 	requeue, err := s.service.ReconcileServer()
@@ -84,21 +66,7 @@ func (s *serverSuite) TestReconcileServerRequestPending() {
 }
 
 func (s *serverSuite) TestReconcileServerRequestDoneStateBusy() {
-	bootstrapSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: metav1.NamespaceDefault,
-		},
-		Data: map[string][]byte{
-			"value": []byte("test"),
-		},
-	}
-
-	s.NoError(s.k8sClient.Create(s.ctx, bootstrapSecret))
-
-	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
-	s.machineScope.IonosMachine.Spec.ProviderID = nil
-	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
+	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
 	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
@@ -117,21 +85,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateBusy() {
 }
 
 func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
-	bootstrapSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: metav1.NamespaceDefault,
-		},
-		Data: map[string][]byte{
-			"value": []byte("test"),
-		},
-	}
-
-	s.NoError(s.k8sClient.Create(s.ctx, bootstrapSecret))
-
-	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
-	s.machineScope.IonosMachine.Spec.ProviderID = nil
-	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
+	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
 	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
@@ -151,6 +105,24 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 }
 
 func (s *serverSuite) TestReconcileServerNoRequest() {
+	s.prepareReconcileServerRequestTest()
+	s.mockGetServerCreationRequest().Return([]sdk.Request{}, nil)
+	s.mockCreateServer().Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/sever", nil)
+	s.mockListLANs().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+		Id: ptr.To("1"),
+		Properties: &sdk.LanProperties{
+			Name:   ptr.To(s.service.lanName()),
+			Public: ptr.To(true),
+		},
+	}}}, nil)
+
+	requeue, err := s.service.ReconcileServer()
+	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
+	s.NoError(err)
+	s.True(requeue)
+}
+
+func (s *serverSuite) prepareReconcileServerRequestTest() {
 	bootstrapSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
@@ -166,20 +138,6 @@ func (s *serverSuite) TestReconcileServerNoRequest() {
 	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
 	s.machineScope.IonosMachine.Spec.ProviderID = nil
 	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
-	s.mockGetServerCreationRequest().Return([]sdk.Request{}, nil)
-	s.mockCreateServer().Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/sever", nil)
-	s.mockListLANs().Return(&sdk.Lans{Items: &[]sdk.Lan{{
-		Id: ptr.To("1"),
-		Properties: &sdk.LanProperties{
-			Name:   ptr.To(s.service.lanName()),
-			Public: ptr.To(true),
-		},
-	}}}, nil)
-
-	requeue, err := s.service.ReconcileServer()
-	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
-	s.NoError(err)
-	s.True(requeue)
 }
 
 func (s *serverSuite) TestReconcileServerDeletion() {

@@ -212,14 +212,14 @@ func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 	}
 
 	s.mockPatchLANCall(props).Return(reqPath, nil).Once()
-
 	requeue, err := s.service.ReconcileIPFailover()
-
-	s.NoError(err)
-	s.True(requeue)
-	s.Equal(reqPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
-	s.Equal(http.MethodPatch, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
-	s.Equal(infrav1.RequestStatusQueued, s.machineScope.IonosMachine.Status.CurrentRequest.State)
+	s.checkSuccessfulFailoverGroupPatch(expectedPatchResult{
+		err:           err,
+		requeue:       requeue,
+		requestPath:   reqPath,
+		requestMethod: http.MethodPatch,
+		requestState:  infrav1.RequestStatusQueued,
+	})
 }
 
 func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
@@ -276,15 +276,31 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 	}
 
 	s.mockPatchLANCall(props).Return(reqPath, nil).Once()
-
 	requeue, err := s.service.ReconcileIPFailover()
 
-	s.NoError(err)
-	s.True(requeue)
+	s.checkSuccessfulFailoverGroupPatch(expectedPatchResult{
+		err:           err,
+		requeue:       requeue,
+		requestPath:   reqPath,
+		requestMethod: http.MethodPatch,
+		requestState:  infrav1.RequestStatusQueued,
+	})
+}
 
-	s.Equal(reqPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
-	s.Equal(http.MethodPatch, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
-	s.Equal(infrav1.RequestStatusQueued, s.machineScope.IonosMachine.Status.CurrentRequest.State)
+type expectedPatchResult struct {
+	err           error
+	requeue       bool
+	requestPath   string
+	requestMethod string
+	requestState  infrav1.RequestStatus
+}
+
+func (s *lanSuite) checkSuccessfulFailoverGroupPatch(result expectedPatchResult) {
+	s.NoError(result.err)
+	s.True(result.requeue)
+	s.Equal(result.requestPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
+	s.Equal(result.requestMethod, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
+	s.Equal(result.requestState, s.machineScope.IonosMachine.Status.CurrentRequest.State)
 }
 
 func (s *lanSuite) TestReconcileIPFailoverAnotherNICInFailoverGroup() {
