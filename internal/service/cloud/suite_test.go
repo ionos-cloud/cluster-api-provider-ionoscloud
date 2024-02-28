@@ -37,19 +37,24 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
+// NOTE(lubedacht): Choice of IP addresses for unit tests
+// https://datatracker.ietf.org/doc/rfc5737/
+// 3.  Documentation Address Blocks
+//
+//	The blocks 192.0.2.0/24 (TEST-NET-1), 198.51.100.0/24 (TEST-NET-2),
+//	and 203.0.113.0/24 (TEST-NET-3) are provided for use in
+//	documentation.
 const (
-	// NOTE(lubedacht): Choice of IP addresses for unit tests
-	// https://datatracker.ietf.org/doc/rfc5737/
-	// 3.  Documentation Address Blocks
-	//
-	//   The blocks 192.0.2.0/24 (TEST-NET-1), 198.51.100.0/24 (TEST-NET-2),
-	//   and 203.0.113.0/24 (TEST-NET-3) are provided for use in
-	//   documentation.
-	endpointIP      = "203.0.113.1"
-	testInvalidIP   = "203.0.113.10"
+	// The expected endpoint IP.
+	testEndpointIP = "203.0.113.1"
+	// Used when we actually expect the endpoint IP but receive this instead.
+	testUnexpectedIP = "203.0.113.10"
+	// Used to test cases where a LAN already contains configurations with other IP addresses
+	// to ensure that the service does not overwrite them.
 	testArbitraryIP = "203.0.113.11"
-	testServerID    = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
 )
+
+const testServerID = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
 
 type ServiceTestSuite struct {
 	*require.Assertions

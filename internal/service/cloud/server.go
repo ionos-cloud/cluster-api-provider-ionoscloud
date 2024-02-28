@@ -97,7 +97,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		s.getServer,
 		s.getLatestServerCreationRequest,
 	)
-	if ignoreNotFound(err) != nil {
+	if err != nil {
 		return false, err
 	}
 
@@ -179,8 +179,6 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 
 		depth := int32(2) // for getting the server and its NICs' properties
 		server, err := s.apiWithDepth(depth).GetServer(s.ctx, s.datacenterID(), serverID)
-		// if the server was not found, we will continue, as the request might not
-		// have been completed yet
 		if err != nil {
 			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, s.datacenterID(), err)
 		}
@@ -210,7 +208,7 @@ func (s *Service) getServer() (*sdk.Server, error) {
 	// there is one with the expected name.
 	serverList, listErr := s.apiWithDepth(listDepth).ListServers(s.ctx, s.datacenterID())
 	if listErr != nil {
-		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(), err)
+		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(), listErr)
 	}
 
 	items := ptr.Deref(serverList.Items, []sdk.Server{})
@@ -223,7 +221,8 @@ func (s *Service) getServer() (*sdk.Server, error) {
 		}
 	}
 
-	// if we still can't find a server we return the initial not found error.
+	// if we still can't find a server we return the potential
+	// initial not found error.
 	return nil, err
 }
 

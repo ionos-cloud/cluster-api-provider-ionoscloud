@@ -31,9 +31,9 @@ import (
 )
 
 const (
-	reqPath      = "this/is/a/path"
-	lanID        = "1"
-	arbitraryNIC = "f3b3f8e3-1f3d-11ec-82a8-0242ac130003"
+	reqPath        = "this/is/a/path"
+	lanID          = "1"
+	arbitraryNICID = "f3b3f8e3-1f3d-11ec-82a8-0242ac130003"
 )
 
 type lanSuite struct {
@@ -196,9 +196,9 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANDoesNotExist() {
 
 func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
-	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = endpointIP
+	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = testEndpointIP
 
-	testServer := defaultServer(s.service.serverName(), testDHCPIP, endpointIP)
+	testServer := defaultServer(s.service.serverName(), testDHCPIP, testEndpointIP)
 
 	s.mockGetServerCall(testServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
@@ -206,7 +206,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 
 	props := sdk.LanProperties{
 		IpFailover: &[]sdk.IPFailover{{
-			Ip:      ptr.To(endpointIP),
+			Ip:      ptr.To(testEndpointIP),
 			NicUuid: ptr.To(testNICID),
 		}},
 	}
@@ -224,12 +224,12 @@ func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 
 func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
-	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = endpointIP
+	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = testEndpointIP
 
-	testServer := defaultServer(s.service.serverName(), testDHCPIP, endpointIP)
+	testServer := defaultServer(s.service.serverName(), testDHCPIP, testEndpointIP)
 	testLAN := s.exampleLAN()
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(endpointIP),
+		Ip:      ptr.To(testEndpointIP),
 		NicUuid: ptr.To(testNICID),
 	}}
 
@@ -245,18 +245,18 @@ func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
 
 func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
-	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = endpointIP
+	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = testEndpointIP
 
-	testServer := defaultServer(s.service.serverName(), testDHCPIP, endpointIP)
+	testServer := defaultServer(s.service.serverName(), testDHCPIP, testEndpointIP)
 	testLAN := s.exampleLAN()
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
 		// we expect that the first entry will also be included in the Patch request.
 		Ip:      ptr.To(testArbitraryIP),
-		NicUuid: ptr.To(arbitraryNIC),
+		NicUuid: ptr.To(arbitraryNICID),
 	}, {
 		// LAN contains the NIC but has an incorrect IP
-		Ip:      ptr.To(testInvalidIP),
+		Ip:      ptr.To(testUnexpectedIP),
 		NicUuid: ptr.To(testNICID),
 	}}
 
@@ -268,9 +268,9 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 	props := sdk.LanProperties{
 		IpFailover: &[]sdk.IPFailover{{
 			Ip:      ptr.To(testArbitraryIP),
-			NicUuid: ptr.To(arbitraryNIC),
+			NicUuid: ptr.To(arbitraryNICID),
 		}, {
-			Ip:      ptr.To(endpointIP),
+			Ip:      ptr.To(testEndpointIP),
 			NicUuid: ptr.To(testNICID),
 		}},
 	}
@@ -289,16 +289,16 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 
 func (s *lanSuite) TestReconcileIPFailoverAnotherNICInFailoverGroup() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
-	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = endpointIP
+	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = testEndpointIP
 
-	testServer := defaultServer(s.service.serverName(), testDHCPIP, endpointIP)
+	testServer := defaultServer(s.service.serverName(), testDHCPIP, testEndpointIP)
 	testLAN := s.exampleLAN()
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(testInvalidIP),
-		NicUuid: ptr.To(arbitraryNIC),
+		Ip:      ptr.To(testArbitraryIP),
+		NicUuid: ptr.To(arbitraryNICID),
 	}, {
-		Ip: ptr.To(endpointIP),
+		Ip: ptr.To(testEndpointIP),
 		// arbitrary NIC ID with the correct endpoint IP
 		NicUuid: ptr.To("f3b3f8e4-1f3d-11ec-82a8-0242ac130003"),
 	}}
@@ -323,16 +323,16 @@ func (s *lanSuite) TestReconcileIPFailoverOnWorkerNode() {
 
 func (s *lanSuite) TestReconcileIPFailoverDeletion() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
-	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = endpointIP
+	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = testEndpointIP
 
-	testServer := defaultServer(s.service.serverName(), testDHCPIP, endpointIP)
+	testServer := defaultServer(s.service.serverName(), testDHCPIP, testEndpointIP)
 	testLAN := s.exampleLAN()
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(testInvalidIP),
-		NicUuid: ptr.To(arbitraryNIC),
+		Ip:      ptr.To(testArbitraryIP),
+		NicUuid: ptr.To(arbitraryNICID),
 	}, {
-		Ip:      ptr.To(endpointIP),
+		Ip:      ptr.To(testEndpointIP),
 		NicUuid: ptr.To(testNICID),
 	}}
 
@@ -342,8 +342,8 @@ func (s *lanSuite) TestReconcileIPFailoverDeletion() {
 
 	props := sdk.LanProperties{
 		IpFailover: &[]sdk.IPFailover{{
-			Ip:      ptr.To(testInvalidIP),
-			NicUuid: ptr.To(arbitraryNIC),
+			Ip:      ptr.To(testArbitraryIP),
+			NicUuid: ptr.To(arbitraryNICID),
 		}},
 	}
 
@@ -360,17 +360,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletion() {
 
 func (s *lanSuite) TestReconcileIPFailoverDeletionServerNotFound() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
-	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = endpointIP
-
-	testLAN := s.exampleLAN()
-
-	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(testInvalidIP),
-		NicUuid: ptr.To(arbitraryNIC),
-	}, {
-		Ip:      ptr.To(endpointIP),
-		NicUuid: ptr.To(testNICID),
-	}}
+	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = testEndpointIP
 
 	s.mockGetServerCall(testServerID).Return(nil, sdk.NewGenericOpenAPIError("server not found", nil, nil, 404)).Once()
 	s.mockListServerCall().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
@@ -383,7 +373,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionServerNotFound() {
 
 func (s *lanSuite) TestReconcileIPFailoverDeletionPrimaryNICNotFound() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
-	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = endpointIP
+	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = testEndpointIP
 
 	testServer := &sdk.Server{
 		Id: ptr.To(testServerID),
