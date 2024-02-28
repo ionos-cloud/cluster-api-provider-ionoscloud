@@ -138,8 +138,6 @@ spec:
       - swapoff -a
       - sed -i '/ swap / s/^/#/' /etc/fstab
       - sysctl --system
-      - # TODO(lubedacht) remove this when using KubeVIP
-      - ip addr add dev ens6 ${CONTROL_PLANE_ENDPOINT_IP}/32
     postKubeadmCommands:
       - >
         systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer

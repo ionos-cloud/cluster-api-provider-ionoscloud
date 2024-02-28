@@ -267,9 +267,10 @@ func (s *Service) ReconcileIPFailoverDeletion() (requeue bool, err error) {
 	server, err := s.getServer()
 	if err != nil {
 		if isNotFound(err) {
-			log.Error(err, "Server not found. Cannot determine NIC to remove from failover group.")
+			log.Info("Server was not found or already deleted.")
 			return false, nil
 		}
+		log.Error(err, "Unable to retrieve server")
 		return false, err
 	}
 

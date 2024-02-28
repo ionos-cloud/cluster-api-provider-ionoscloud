@@ -217,7 +217,7 @@ func findResource[T any](
 	err error,
 ) {
 	resource, err = listAndFilter()
-	if err != nil {
+	if ignoreNotFound(err) != nil {
 		return nil, nil, err // Found multiple resources or another error occurred.
 	}
 	if resource != nil {
