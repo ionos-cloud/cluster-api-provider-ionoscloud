@@ -59,3 +59,6 @@ ionosctl img update --image-id <image-id> --cloudinit V1 --licence-type LINUX
 ```
 
 Now, you can copy the ID of your image and set it as the `IONOSCLOUD_MACHINE_IMAGE_ID` environment variable. Your custom image will then be used.
+
+> [!IMPORTANT]  
+> Please ensure to update the Kubernetes version in your environment file (envfile) if it changes, including `KUBERNETES_VERSION` and `KUBERNETES_VERSION_SHORT`.
