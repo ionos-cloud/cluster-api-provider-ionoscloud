@@ -25,6 +25,7 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -50,13 +51,18 @@ func (s *Service) api() ionoscloud.Client {
 	return s.scope.ClusterScope.IonosClient
 }
 
+// apiWithDepth is a shortcut for the IONOS Cloud Client with a specific depth.
+// It will create a copy of the client with the depth set to the provided value.
+func (s *Service) apiWithDepth(depth int32) ionoscloud.Client {
+	return client.WithDepth(s.api(), depth)
+}
+
 // datacenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
 func (s *Service) datacenterID() string {
 	return s.scope.IonosMachine.Spec.DatacenterID
 }
 
 // isNotFound is a shortcut for checking if an error is a not found error.
-// TODO(lubedacht) Implement unit tests.
 func isNotFound(err error) bool {
 	if err == nil {
 		return false
@@ -68,4 +74,12 @@ func isNotFound(err error) bool {
 	}
 
 	return false
+}
+
+// ignoreNotFound is a shortcut for ignoring not found errors.
+func ignoreNotFound(err error) error {
+	if isNotFound(err) {
+		return nil
+	}
+	return err
 }

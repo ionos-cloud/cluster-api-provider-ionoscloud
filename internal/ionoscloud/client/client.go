@@ -30,16 +30,14 @@ import (
 )
 
 const (
-	depthRequestsMetadataStatusMetadata = 2 // for LISTing requests and their metadata status metadata
-	defaultListDepth                    = 2 // for LISTing resources containing their sub entities
-
 	locationHeaderKey = "Location"
 )
 
 // IonosCloudClient is a concrete implementation of the Client interface defined in the internal client package that
 // communicates with Cloud API using its SDK.
 type IonosCloudClient struct {
-	API *sdk.APIClient
+	API          *sdk.APIClient
+	requestDepth int32
 }
 
 var _ ionoscloud.Client = &IonosCloudClient{}
@@ -55,6 +53,24 @@ func NewClient(username, password, token, apiURL string) (*IonosCloudClient, err
 	return &IonosCloudClient{
 		API: apiClient,
 	}, nil
+}
+
+// WithDepth creates a temporary copy of the client, where a custom depth can be set.
+func WithDepth(client ionoscloud.Client, depth int32) ionoscloud.Client {
+	if t, ok := client.(*IonosCloudClient); ok {
+		c := clone(t)
+		c.requestDepth = depth
+		return c
+	}
+
+	return client
+}
+
+func clone(client *IonosCloudClient) *IonosCloudClient {
+	return &IonosCloudClient{
+		API:          client.API,
+		requestDepth: client.requestDepth,
+	}
 }
 
 func validate(username, password, token string) error {
@@ -102,7 +118,10 @@ func (c *IonosCloudClient) ListServers(ctx context.Context, datacenterID string)
 	if datacenterID == "" {
 		return nil, errDatacenterIDIsEmpty
 	}
-	servers, _, err := c.API.ServersApi.DatacentersServersGet(ctx, datacenterID).Execute()
+	servers, _, err := c.API.ServersApi.
+		DatacentersServersGet(ctx, datacenterID).
+		Depth(c.requestDepth).
+		Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -119,7 +138,7 @@ func (c *IonosCloudClient) GetServer(ctx context.Context, datacenterID, serverID
 	}
 	server, _, err := c.API.ServersApi.
 		DatacentersServersFindById(ctx, datacenterID, serverID).
-		Depth(defaultListDepth).
+		Depth(c.requestDepth).
 		Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
@@ -207,12 +226,34 @@ func (c *IonosCloudClient) AttachToLAN(ctx context.Context, datacenterID, lanID 
 	return &n, nil
 }
 
+// PatchLAN patches the LAN that matches lanID in the specified data center with the provided properties, returning the request location.
+func (c *IonosCloudClient) PatchLAN(ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+
+	if lanID == "" {
+		return "", errLANIDIsEmpty
+	}
+
+	_, res, err := c.API.LANsApi.DatacentersLansPatch(ctx, datacenterID, lanID).Lan(properties).Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	if location := res.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
+}
+
 // ListLANs returns a list of LANs in the specified data center.
 func (c *IonosCloudClient) ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error) {
 	if datacenterID == "" {
 		return nil, errDatacenterIDIsEmpty
 	}
-	lans, _, err := c.API.LANsApi.DatacentersLansGet(ctx, datacenterID).Depth(defaultListDepth).Execute()
+	lans, _, err := c.API.LANsApi.DatacentersLansGet(ctx, datacenterID).Depth(c.requestDepth).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -304,8 +345,14 @@ func (c *IonosCloudClient) GetRequests(ctx context.Context, method, path string)
 
 	const lookbackTime = 24 * time.Hour
 	lookback := time.Now().Add(-lookbackTime).Format(time.DateTime)
+
+	depth := c.requestDepth
+	if depth == 0 {
+		depth = 2 // for LISTing requests and their metadata status metadata
+	}
+
 	reqs, _, err := c.API.RequestsApi.RequestsGet(ctx).
-		Depth(depthRequestsMetadataStatusMetadata).
+		Depth(depth).
 		FilterMethod(method).
 		FilterUrl(path).
 		FilterCreatedAfter(lookback).

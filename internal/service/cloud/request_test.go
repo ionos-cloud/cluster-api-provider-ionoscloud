@@ -260,6 +260,41 @@ func (s *findResourceSuite) TestFoundOnSecondListing() {
 	s.Equal(42, *resource)
 }
 
+func (s *findResourceSuite) TestIgnoreNotFound() {
+	tests := []struct {
+		name          string
+		inputStatus   string
+		expectedCount int
+	}{{
+		name:          "Ignore not found on first lookup",
+		inputStatus:   sdk.RequestStatusRunning,
+		expectedCount: 1,
+	}, {
+		name:          "Ignore not found on first and second lookup",
+		inputStatus:   sdk.RequestStatusDone,
+		expectedCount: 2,
+	}}
+
+	for _, tt := range tests {
+		tt := tt
+		s.Run(tt.name, func() {
+			listCalls := 0
+			resource, gotRequest, err := findResource(
+				func() (*int, error) {
+					listCalls++
+					return nil, sdk.NewGenericOpenAPIError("", nil, nil, http.StatusNotFound)
+				},
+				func() (*requestInfo, error) { return &requestInfo{status: tt.inputStatus}, nil },
+			)
+
+			s.Equal(tt.expectedCount, listCalls)
+			s.NoError(err)
+			s.NotNil(gotRequest)
+			s.Nil(resource)
+		})
+	}
+}
+
 func TestRequestInfo(t *testing.T) {
 	req := requestInfo{status: sdk.RequestStatusFailed}
 	require.False(t, req.isPending())
