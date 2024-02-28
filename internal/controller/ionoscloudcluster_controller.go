@@ -132,12 +132,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(ctx context.Context, clust
 
 	requeue, err := r.checkRequestStatus(ctx, clusterScope, cloudService)
 	if err != nil {
-		// In case the request state cannot be determined, we want to continue with the
-		// reconciliation loop. This is to avoid getting stuck in a state where we cannot
-		// proceed with the reconciliation and are stuck in a loop.
-		//
-		// In any case we log the error.
-		clusterScope.Error(err, "Error when trying to determine in-flight request states")
+		return ctrl.Result{}, fmt.Errorf("error when trying to determine in-flight request states: %w", err)
 	}
 	if requeue {
 		clusterScope.Info("Request is still in progress")
@@ -174,12 +169,7 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(ctx context.Context, clust
 
 	requeue, err := r.checkRequestStatus(ctx, clusterScope, cloudService)
 	if err != nil {
-		// In case the request state cannot be determined, we want to continue with the
-		// reconciliation loop. This is to avoid getting stuck in a state where we cannot
-		// proceed with the reconciliation and are stuck in a loop.
-		//
-		// In any case we log the error.
-		clusterScope.Error(err, "Error when trying to determine in-flight request states")
+		return ctrl.Result{}, fmt.Errorf("error when trying to determine in-flight request states: %w", err)
 	}
 	if requeue {
 		clusterScope.Info("Request is still in progress")
