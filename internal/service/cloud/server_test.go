@@ -107,7 +107,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 func (s *serverSuite) TestReconcileServerNoRequest() {
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequest().Return([]sdk.Request{}, nil)
-	s.mockCreateServer().Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/sever", nil)
+	s.mockCreateServer().Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
 	s.mockListLANs().Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To("1"),
 		Properties: &sdk.LanProperties{
