@@ -108,7 +108,7 @@ func (s *IonosCloudClientTestSuite) TearDownTest() {
 	httpmock.Reset()
 }
 
-func (s *IonosCloudClientTestSuite) TestReserveIPBlock_Success() {
+func (s *IonosCloudClientTestSuite) TestReserveIPBlockSuccess() {
 	header := http.Header{}
 	header.Add(locationHeaderKey, examplePath)
 	responder := httpmock.NewJsonResponderOrPanic(http.StatusAccepted, map[string]any{}).HeaderSet(header)
@@ -122,7 +122,7 @@ func (s *IonosCloudClientTestSuite) TestReserveIPBlock_Success() {
 	s.Equal(examplePath, requestLocation)
 }
 
-func (s *IonosCloudClientTestSuite) TestReserveIPBlock_Failure() {
+func (s *IonosCloudClientTestSuite) TestReserveIPBlockFailure() {
 	tcs := []struct {
 		testName string
 		name     string
@@ -144,7 +144,7 @@ func (s *IonosCloudClientTestSuite) TestReserveIPBlock_Failure() {
 	}
 }
 
-func (s *IonosCloudClientTestSuite) TestGetIPBlock_Success() {
+func (s *IonosCloudClientTestSuite) TestGetIPBlockSuccess() {
 	httpmock.RegisterResponder(
 		http.MethodGet,
 		catchAllMockURL,
@@ -155,13 +155,13 @@ func (s *IonosCloudClientTestSuite) TestGetIPBlock_Success() {
 	s.NotNil(ipBlock)
 }
 
-func (s *IonosCloudClientTestSuite) TestGetIPBlock_Failure_EmptyID() {
+func (s *IonosCloudClientTestSuite) TestGetIPBlockFailureEmptyID() {
 	ipBlock, err := s.client.GetIPBlock(s.ctx, "")
 	s.Error(err)
 	s.Nil(ipBlock)
 }
 
-func (s *IonosCloudClientTestSuite) TestListIPBlocks_Success() {
+func (s *IonosCloudClientTestSuite) TestListIPBlocksSuccess() {
 	httpmock.RegisterResponder(
 		http.MethodGet,
 		catchAllMockURL,
@@ -172,7 +172,7 @@ func (s *IonosCloudClientTestSuite) TestListIPBlocks_Success() {
 	s.NotNil(ipBlocks)
 }
 
-func (s *IonosCloudClientTestSuite) TestDeleteIPBlock_Success() {
+func (s *IonosCloudClientTestSuite) TestDeleteIPBlockSuccess() {
 	header := http.Header{}
 	header.Set(locationHeaderKey, examplePath)
 	responder := httpmock.NewJsonResponderOrPanic(http.StatusAccepted, map[string]any{}).HeaderSet(header)
@@ -182,7 +182,7 @@ func (s *IonosCloudClientTestSuite) TestDeleteIPBlock_Success() {
 	s.Equal(examplePath, requestLocation)
 }
 
-func (s *IonosCloudClientTestSuite) TestDeleteIPBlock_Failure_EmptyID() {
+func (s *IonosCloudClientTestSuite) TestDeleteIPBlockFailureEmptyID() {
 	requestLocation, err := s.client.DeleteIPBlock(s.ctx, "")
 	s.Error(err)
 	s.Empty(requestLocation)
