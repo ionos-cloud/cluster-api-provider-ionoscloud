@@ -127,7 +127,7 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) tryLookupResourceFunc[sdk.I
 			return ipBlock, nil
 		}
 		s.logger.Info("IP block not found by ID, trying to find by listing IP blocks instead")
-		blocks, err := s.cloud.ListIPBlocks(ctx)
+		blocks, err := s.apiWithDepth(1).ListIPBlocks(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list IP blocks: %w", err)
 		}
