@@ -120,16 +120,14 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 func (s *Service) getIPBlock(cs *scope.ClusterScope) tryLookupResourceFunc[sdk.IpBlock] {
 	return func(ctx context.Context) (*sdk.IpBlock, error) {
 		ipBlock, err := s.getIPBlockByID(ctx, cs)
-		if err != nil {
-			s.logger.Error(err, "failed to get IP block by ID, trying to list IP blocks instead")
+		if ipBlock != nil || ignoreNotFound(err) != nil {
+			return ipBlock, err
 		}
-		if ipBlock != nil {
-			return ipBlock, nil
-		}
+
 		s.logger.Info("IP block not found by ID, trying to find by listing IP blocks instead")
-		blocks, err := s.apiWithDepth(1).ListIPBlocks(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list IP blocks: %w", err)
+		blocks, listErr := s.apiWithDepth(1).ListIPBlocks(ctx)
+		if listErr != nil {
+			return nil, fmt.Errorf("failed to list IP blocks: %w", listErr)
 		}
 
 		var (
@@ -160,7 +158,12 @@ func (s *Service) getIPBlock(cs *scope.ClusterScope) tryLookupResourceFunc[sdk.I
 		if count == 0 && cs.GetControlPlaneEndpoint().Host != "" {
 			return nil, fmt.Errorf("could not find any IP block for the already set control plane endpoint")
 		}
-		return foundBlock, nil
+		if foundBlock != nil {
+			return foundBlock, nil
+		}
+		// if we still can't find a server we return the potential
+		// initial not found error.
+		return nil, err
 	}
 }
 

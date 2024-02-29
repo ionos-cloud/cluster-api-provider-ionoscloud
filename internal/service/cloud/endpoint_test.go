@@ -122,9 +122,21 @@ func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetID() {
 	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
 		Id: ptr.To(exampleID),
 	}, nil).Once()
+
 	block, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
 	s.NoError(err)
 	s.Equal(exampleID, *block.Id)
+}
+
+func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetIDNotFound() {
+	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID = exampleID
+	s.mockGetIPBlockByIDCall().Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404)).Once()
+	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
+		Items: &[]sdk.IpBlock{},
+	}, nil).Once()
+	block, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
+	s.ErrorAs(err, &sdk.GenericOpenAPIError{})
+	s.Nil(block)
 }
 
 func (s *EndpointTestSuite) TestGetIPBlockNoMatch() {
