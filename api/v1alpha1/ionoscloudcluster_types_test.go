@@ -91,7 +91,7 @@ var _ = Describe("IonosCloudCluster", func() {
 		})
 
 		When("trying to update the control plane endpoint", func() {
-			It("should fail if the  host is already set", func() {
+			It("should fail if the host is already set", func() {
 				cluster := defaultCluster()
 				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
 
