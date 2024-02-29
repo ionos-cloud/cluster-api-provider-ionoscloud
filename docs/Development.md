@@ -22,7 +22,7 @@ kubebuilder init \
 
 ### Create API types
 
-We create an infrastructure provider. Therefore we need to follow the naming conventions.
+We create an infrastructure provider. Therefore, we need to follow the naming conventions.
 
 [Resource Naming](https://cluster-api.sigs.k8s.io/developer/providers/implementers-guide/naming.html?highlight=cluster.x-k8s.io#resource-naming)
 

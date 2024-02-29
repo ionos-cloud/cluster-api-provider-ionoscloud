@@ -5,7 +5,7 @@ We are using k8s [image-builder](https://github.com/kubernetes-sigs/image-builde
 ### Prerequisites
 
 If you take a look at the [book](https://image-builder.sigs.k8s.io/capi/providers/raw), you can see following commands for building raw `qcow2` images:   
-[Preqrequisites](https://image-builder.sigs.k8s.io/capi/capi#prerequisites):
+[Prerequisites](https://image-builder.sigs.k8s.io/capi/capi#prerequisites):
 - Packer version >= 1.6.0
 - Goss plugin for Packer version >= 1.2.0
 - Ansible version >= 2.10.0
