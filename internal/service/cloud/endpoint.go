@@ -95,7 +95,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 	}
 
 	if ipBlock == nil {
-		s.removeIPBlockLeftovers(cs)
+		cs.IonosCluster.DeleteCurrentClusterRequest()
 		return false, nil
 	}
 
@@ -233,9 +233,6 @@ func (s *Service) getLatestIPBlockDeletionRequest(ctx context.Context, ipBlockID
 }
 
 // removeIPBlockLeftovers removes the current cluster request, and deletes the host from the spec.
-func (s *Service) removeIPBlockLeftovers(cs *scope.ClusterScope) {
-	cs.IonosCluster.Status.CurrentClusterRequest = nil
-}
 
 // ipBlockName returns the name that should be used for cluster context resources.
 func (s *Service) ipBlockName(cs *scope.ClusterScope) string {
