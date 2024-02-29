@@ -39,6 +39,8 @@ type Client interface {
 	// AttachToLAN attaches a provided NIC to a provided LAN in a specified data center.
 	AttachToLAN(ctx context.Context, datacenterID, lanID string, nic sdk.Nic) (
 		*sdk.Nic, error)
+	// PatchLAN patches the LAN that matches lanID in the specified data center with the provided properties, returning the request location.
+	PatchLAN(ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties) (string, error)
 	// ListLANs returns a list of LANs in the specified data center.
 	ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error)
 	// GetLAN returns the LAN that matches lanID in the specified data center.

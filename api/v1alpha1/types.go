@@ -22,9 +22,6 @@ const (
 	ManagedLANAnnotation = "cloud.ionos.com/managed-lan"
 )
 
-// RequestStatus shows the status of the current request.
-type RequestStatus string
-
 // ProvisioningRequest is a definition of a provisioning request
 // in the IONOS Cloud.
 type ProvisioningRequest struct {
@@ -50,5 +47,14 @@ func NewQueuedRequest(method, path string) ProvisioningRequest {
 		Method:      method,
 		RequestPath: path,
 		State:       sdk.RequestStatusQueued,
+	}
+}
+
+// NewRequestWithState creates a new provisioning request with the given status.
+func NewRequestWithState(method, path, state string) ProvisioningRequest {
+	return ProvisioningRequest{
+		Method:      method,
+		RequestPath: path,
+		State:       state,
 	}
 }

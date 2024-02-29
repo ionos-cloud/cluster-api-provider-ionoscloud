@@ -187,3 +187,26 @@ func (s *IonosCloudClientTestSuite) TestDeleteIPBlockFailureEmptyID() {
 	s.Error(err)
 	s.Empty(requestLocation)
 }
+
+func TestWithDepth(t *testing.T) {
+	tests := []struct {
+		depth int32
+	}{
+		{1},
+		{2},
+		{3},
+		{4},
+		{5},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(fmt.Sprintf("depth=%d", tt.depth), func(t *testing.T) {
+			t.Parallel()
+			c := &IonosCloudClient{}
+			n := WithDepth(c, tt.depth).(*IonosCloudClient)
+
+			require.Equal(t, tt.depth, n.requestDepth, "depth didn't match")
+			require.NotEqualf(t, c, n, "WithDepth returned the same client")
+		})
+	}
+}
