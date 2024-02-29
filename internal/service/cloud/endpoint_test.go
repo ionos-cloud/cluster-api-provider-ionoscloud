@@ -261,7 +261,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionCreationPen
 	s.Equal(http.MethodPost, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletion() {
+func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithProviderID() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID = exampleID
 	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
 		Id: ptr.To(exampleID),
