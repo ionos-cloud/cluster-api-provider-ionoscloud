@@ -222,7 +222,8 @@ func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request 
 }
 
 const (
-	exampleID          = "42"
+	exampleLANID       = "42"
+	exampleIPBlockID   = "f882d597-4ee2-4b89-b01a-cbecd0f513d8"
 	exampleRequestPath = "/test"
 	exampleLocation    = "de/txl"
 	exampleIP          = "203.0.113.22"
