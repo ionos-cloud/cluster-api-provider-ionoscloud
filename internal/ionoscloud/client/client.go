@@ -342,7 +342,7 @@ func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, location st
 			Location: &location,
 		},
 	}
-	_, req, err := c.API.IPBlocksApi.IpblocksPost(ctx).Ipblock(ipBlock).Execute()
+	_, req, err := c.API.IPBlocksApi.IpblocksPost(ctx).Depth(c.requestDepth).Ipblock(ipBlock).Execute()
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -357,7 +357,7 @@ func (c *IonosCloudClient) GetIPBlock(ctx context.Context, ipBlockID string) (*s
 	if ipBlockID == "" {
 		return nil, errIPBlockIDIsEmpty
 	}
-	ipBlock, _, err := c.API.IPBlocksApi.IpblocksFindById(ctx, ipBlockID).Execute()
+	ipBlock, _, err := c.API.IPBlocksApi.IpblocksFindById(ctx, ipBlockID).Depth(c.requestDepth).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -369,7 +369,7 @@ func (c *IonosCloudClient) DeleteIPBlock(ctx context.Context, ipBlockID string) 
 	if ipBlockID == "" {
 		return "", errIPBlockIDIsEmpty
 	}
-	req, err := c.API.IPBlocksApi.IpblocksDelete(ctx, ipBlockID).Execute()
+	req, err := c.API.IPBlocksApi.IpblocksDelete(ctx, ipBlockID).Depth(c.requestDepth).Execute()
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
@@ -381,7 +381,7 @@ func (c *IonosCloudClient) DeleteIPBlock(ctx context.Context, ipBlockID string) 
 
 // ListIPBlocks returns a list of IP blocks.
 func (c *IonosCloudClient) ListIPBlocks(ctx context.Context) (*sdk.IpBlocks, error) {
-	blocks, _, err := c.API.IPBlocksApi.IpblocksGet(ctx).Execute()
+	blocks, _, err := c.API.IPBlocksApi.IpblocksGet(ctx).Depth(c.requestDepth).Execute()
 	if err != nil {
 		return nil, fmt.Errorf(apiCallErrWrapper, err)
 	}
