@@ -72,7 +72,7 @@ type IonosCloudClusterStatus struct {
 
 	// ControlPlaneEndpointIPBlockID is the IONOS Cloud UUID for the control plane endpoint IP block.
 	//+optional
-	ControlPlaneEndpointIPBlockID string `json:"controlPlaneEndpointProviderID,omitempty"`
+	ControlPlaneEndpointIPBlockID string `json:"controlPlaneEndpointIPBlockID,omitempty"`
 }
 
 //+kubebuilder:object:root=true

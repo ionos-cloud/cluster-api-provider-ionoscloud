@@ -117,7 +117,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 	return err == nil, err
 }
 
-// getIPBlockFunc returns a listAndFilterFunc that finds the IP block that matches the expected name and location. An
+// getIPBlockFunc returns a tryLookupResourceFunc that finds the IP block that matches the expected name and location. An
 // error is returned if there are multiple IP blocks that match both the name and location.
 func (s *Service) getIPBlockFunc(cs *scope.ClusterScope) tryLookupResourceFunc[sdk.IpBlock] {
 	return func(ctx context.Context) (*sdk.IpBlock, error) {

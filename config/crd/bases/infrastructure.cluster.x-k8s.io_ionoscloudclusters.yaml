@@ -133,7 +133,7 @@ spec:
                   - type
                   type: object
                 type: array
-              controlPlaneEndpointProviderID:
+              controlPlaneEndpointIPBlockID:
                 description: ControlPlaneEndpointIPBlockID is the IONOS Cloud UUID
                   for the control plane endpoint IP block.
                 type: string

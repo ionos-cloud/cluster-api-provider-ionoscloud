@@ -202,9 +202,6 @@ type (
 	checkQueueFunc               func(context.Context) (*requestInfo, error)
 )
 
-// findResource is a helper function intended for finding a single resource based on certain filtering constraints,
-// such as a unique name. It lists and filters the existing resources and checks the request queue for matching
-// creations.
 // findResource is a helper function intended for finding a single resource.
 // It performs a lookup for cloud resources and checks the request queue for matching entries.
 // A lookup can consist of GET and LIST operations, including filtering by name or other constraints
