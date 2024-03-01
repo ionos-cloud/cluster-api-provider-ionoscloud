@@ -225,7 +225,7 @@ const (
 	exampleID          = "42"
 	exampleRequestPath = "/test"
 	exampleLocation    = "de/txl"
-	exampleIP          = "1.2.3.4"
+	exampleIP          = "203.0.113.22"
 )
 
 func defaultServer(serverName string, ips ...string) *sdk.Server {
