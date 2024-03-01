@@ -58,7 +58,7 @@ func (s *EndpointTestSuite) TestGetIPBlockMultipleMatches() {
 			},
 		},
 	}, nil).Once()
-	blocks, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
+	blocks, err := s.service.getIPBlockFunc(s.clusterScope)(s.ctx)
 	s.Error(err)
 	s.Nil(blocks)
 }
@@ -82,7 +82,7 @@ func (s *EndpointTestSuite) TestGetIPBlockSingleMatch() {
 			},
 		},
 	}, nil).Once()
-	block, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
+	block, err := s.service.getIPBlockFunc(s.clusterScope)(s.ctx)
 	s.NoError(err)
 	s.NotNil(block)
 	s.Equal(name, block.Properties.Name, "IP block name does not match")
@@ -112,7 +112,7 @@ func (s *EndpointTestSuite) TestGetIPBlockUserSetIP() {
 			},
 		},
 	}, nil).Once()
-	block, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
+	block, err := s.service.getIPBlockFunc(s.clusterScope)(s.ctx)
 	s.NoError(err)
 	s.Contains(*block.GetProperties().GetIps(), exampleIP)
 }
@@ -123,7 +123,7 @@ func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetID() {
 		Id: ptr.To(exampleID),
 	}, nil).Once()
 
-	block, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
+	block, err := s.service.getIPBlockFunc(s.clusterScope)(s.ctx)
 	s.NoError(err)
 	s.Equal(exampleID, *block.Id)
 }
@@ -134,7 +134,7 @@ func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetIDNotFound() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{},
 	}, nil).Once()
-	block, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
+	block, err := s.service.getIPBlockFunc(s.clusterScope)(s.ctx)
 	s.ErrorAs(err, &sdk.GenericOpenAPIError{})
 	s.Nil(block)
 }
@@ -150,7 +150,7 @@ func (s *EndpointTestSuite) TestGetIPBlockNoMatch() {
 			},
 		},
 	}, nil).Once()
-	block, err := s.service.getIPBlock(s.clusterScope)(s.ctx)
+	block, err := s.service.getIPBlockFunc(s.clusterScope)(s.ctx)
 	s.NoError(err)
 	s.Nil(block)
 }
@@ -181,7 +181,7 @@ func (s *EndpointTestSuite) TestDeleteIPBlockRequestSuccess() {
 
 func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequestNoRequest() {
 	s.mockGetRequestsCallPost().Return(make([]sdk.Request, 0), nil).Once()
-	req, err := s.service.getLatestIPBlockCreationRequest(s.clusterScope)(s.ctx)
+	req, err := s.service.getLatestIPBlockCreationRequestFunc(s.clusterScope)(s.ctx)
 	s.NoError(err)
 	s.Nil(req)
 }
@@ -190,7 +190,7 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequestRequest() {
 	req := s.buildRequest(sdk.RequestStatusQueued, http.MethodPost, "")
 	reqs := []sdk.Request{req}
 	s.mockGetRequestsCallPost().Return(reqs, nil).Once()
-	info, err := s.service.getLatestIPBlockCreationRequest(s.clusterScope)(s.ctx)
+	info, err := s.service.getLatestIPBlockCreationRequestFunc(s.clusterScope)(s.ctx)
 	s.NoError(err)
 	s.NotNil(info)
 }

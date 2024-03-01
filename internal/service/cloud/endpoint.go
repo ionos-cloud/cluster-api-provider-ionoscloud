@@ -37,7 +37,7 @@ const (
 func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.ClusterScope) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileControlPlaneEndpoint")
 
-	ipBlock, request, err := findResource(ctx, s.getIPBlock(cs), s.getLatestIPBlockCreationRequest(cs))
+	ipBlock, request, err := findResource(ctx, s.getIPBlockFunc(cs), s.getLatestIPBlockCreationRequestFunc(cs))
 	if err != nil {
 		return false, err
 	}
@@ -74,7 +74,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 	log := s.logger.WithName("ReconcileControlPlaneEndpointDeletion")
 
 	// Try to retrieve the cluster IP Block or even check if it's currently still being created.
-	ipBlock, request, err := findResource(ctx, s.getIPBlock(cs), s.getLatestIPBlockCreationRequest(cs))
+	ipBlock, request, err := findResource(ctx, s.getIPBlockFunc(cs), s.getLatestIPBlockCreationRequestFunc(cs))
 	if err != nil {
 		return false, err
 	}
@@ -114,9 +114,9 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 	return err == nil, err
 }
 
-// getIPBlock returns a listAndFilterFunc that finds the IP block that matches the expected name and location. An
+// getIPBlockFunc returns a listAndFilterFunc that finds the IP block that matches the expected name and location. An
 // error is returned if there are multiple IP blocks that match both the name and location.
-func (s *Service) getIPBlock(cs *scope.ClusterScope) tryLookupResourceFunc[sdk.IpBlock] {
+func (s *Service) getIPBlockFunc(cs *scope.ClusterScope) tryLookupResourceFunc[sdk.IpBlock] {
 	return func(ctx context.Context) (*sdk.IpBlock, error) {
 		ipBlock, err := s.getIPBlockByID(ctx, cs)
 		if ipBlock != nil || ignoreNotFound(err) != nil {
@@ -213,8 +213,8 @@ func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.ClusterScope, id 
 	return nil
 }
 
-// getLatestIPBlockCreationRequest returns the latest IP block creation request.
-func (s *Service) getLatestIPBlockCreationRequest(cs *scope.ClusterScope) checkQueueFunc {
+// getLatestIPBlockCreationRequestFunc returns the latest IP block creation request finder func.
+func (s *Service) getLatestIPBlockCreationRequestFunc(cs *scope.ClusterScope) checkQueueFunc {
 	return func(ctx context.Context) (*requestInfo, error) {
 		return getMatchingRequest(
 			ctx,
