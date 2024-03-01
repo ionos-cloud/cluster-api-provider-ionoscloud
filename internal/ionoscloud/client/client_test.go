@@ -127,7 +127,7 @@ func (s *IonosCloudClientTestSuite) TestReserveIPBlockFailure() {
 		testName string
 		name     string
 		location string
-		size     int
+		size     int32
 	}{
 		{"empty name", "", exampleLocation, 1},
 		{"empty location", "test", "", 1},

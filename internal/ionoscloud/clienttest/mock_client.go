@@ -1149,21 +1149,21 @@ func (_c *MockClient_PatchNIC_Call) RunAndReturn(run func(context.Context, strin
 }
 
 // ReserveIPBlock provides a mock function with given fields: ctx, name, location, size
-func (_m *MockClient) ReserveIPBlock(ctx context.Context, name string, location string, size int) (string, error) {
+func (_m *MockClient) ReserveIPBlock(ctx context.Context, name string, location string, size int32) (string, error) {
 	ret := _m.Called(ctx, name, location, size)
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, int) (string, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, int32) (string, error)); ok {
 		return rf(ctx, name, location, size)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, int) string); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, int32) string); ok {
 		r0 = rf(ctx, name, location, size)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, int) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, int32) error); ok {
 		r1 = rf(ctx, name, location, size)
 	} else {
 		r1 = ret.Error(1)
@@ -1181,14 +1181,14 @@ type MockClient_ReserveIPBlock_Call struct {
 //   - ctx context.Context
 //   - name string
 //   - location string
-//   - size int
+//   - size int32
 func (_e *MockClient_Expecter) ReserveIPBlock(ctx interface{}, name interface{}, location interface{}, size interface{}) *MockClient_ReserveIPBlock_Call {
 	return &MockClient_ReserveIPBlock_Call{Call: _e.mock.On("ReserveIPBlock", ctx, name, location, size)}
 }
 
-func (_c *MockClient_ReserveIPBlock_Call) Run(run func(ctx context.Context, name string, location string, size int)) *MockClient_ReserveIPBlock_Call {
+func (_c *MockClient_ReserveIPBlock_Call) Run(run func(ctx context.Context, name string, location string, size int32)) *MockClient_ReserveIPBlock_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(int))
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(int32))
 	})
 	return _c
 }
@@ -1198,7 +1198,7 @@ func (_c *MockClient_ReserveIPBlock_Call) Return(requestPath string, err error) 
 	return _c
 }
 
-func (_c *MockClient_ReserveIPBlock_Call) RunAndReturn(run func(context.Context, string, string, int) (string, error)) *MockClient_ReserveIPBlock_Call {
+func (_c *MockClient_ReserveIPBlock_Call) RunAndReturn(run func(context.Context, string, string, int32) (string, error)) *MockClient_ReserveIPBlock_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -357,7 +357,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionRequestNewD
 func (s *EndpointTestSuite) mockReserveIPBlockCall() *clienttest.MockClient_ReserveIPBlock_Call {
 	return s.ionosClient.
 		EXPECT().
-		ReserveIPBlock(s.ctx, s.service.ipBlockName(s.clusterScope), s.clusterScope.Location(), 1)
+		ReserveIPBlock(s.ctx, s.service.ipBlockName(s.clusterScope), s.clusterScope.Location(), int32(1))
 }
 
 func (s *EndpointTestSuite) mockGetIPBlockByIDCall() *clienttest.MockClient_GetIPBlock_Call {

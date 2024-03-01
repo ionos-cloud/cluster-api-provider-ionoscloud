@@ -27,7 +27,6 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 const (
@@ -325,7 +324,7 @@ func (c *IonosCloudClient) GetVolume(ctx context.Context, datacenterID, volumeID
 
 // ReserveIPBlock reserves an IP block with the provided properties in the specified location, returning the request
 // path.
-func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, location string, size int) (requestPath string, err error) {
+func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, location string, size int32) (requestPath string, err error) {
 	if location == "" {
 		return "", errors.New("location must be set")
 	}
@@ -338,7 +337,7 @@ func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, location st
 	ipBlock := sdk.IpBlock{
 		Properties: &sdk.IpBlockProperties{
 			Name:     &name,
-			Size:     ptr.To(int32(size)),
+			Size:     &size,
 			Location: &location,
 		},
 	}
