@@ -18,6 +18,7 @@ package cloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"path"
@@ -35,6 +36,8 @@ const (
 	// listIPBlocksDepth is the depth needed for getting properties of each IP block.
 	listIPBlocksDepth = 1
 )
+
+var errUserSetIPNotFound = errors.New("could not find any IP block for the already set control plane endpoint")
 
 // ReconcileControlPlaneEndpoint ensures the control plane endpoint IP block exists.
 func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.ClusterScope) (requeue bool, err error) {
@@ -78,7 +81,18 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 
 	// Try to retrieve the cluster IP Block or even check if it's currently still being created.
 	ipBlock, request, err := findResource(ctx, s.getIPBlockFunc(cs), s.getLatestIPBlockCreationRequestFunc(cs))
-	if err != nil {
+	// NOTE(gfariasalves): we ignore the error if it is a "user set IP not found" error, because it doesn't matter here.
+	// This error is only relevant when we are trying to create a new IP block. If it shows up here, it means that:
+	// a) this IP block was created by the user, and they have deleted it, or,
+	// b) the IP block was created by the controller, we have already requested its deletion, this is the second
+	//    part of the reconciliation loop, and the resource is now gone.
+	// For both cases this means success, so we can return early with no error.
+	if errors.Is(err, errUserSetIPNotFound) || ipBlock == nil && request == nil {
+		cs.IonosCluster.DeleteCurrentClusterRequest()
+		return false, nil
+	}
+
+	if ignoreErrUserSetIPNotFound(ignoreNotFound(err)) != nil {
 		return false, err
 	}
 
@@ -94,11 +108,6 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 		cs.IonosCluster.SetCurrentClusterRequest(http.MethodPost, request.status, request.location)
 		log.Info("Creation request is pending", "location", request.location)
 		return true, nil
-	}
-
-	if ipBlock == nil {
-		cs.IonosCluster.DeleteCurrentClusterRequest()
-		return false, nil
 	}
 
 	request, err = s.getLatestIPBlockDeletionRequest(ctx, *ipBlock.Id)
@@ -164,7 +173,7 @@ func (s *Service) getIPBlockFunc(cs *scope.ClusterScope) tryLookupResourceFunc[s
 			}
 		}
 		if count == 0 && cs.GetControlPlaneEndpoint().Host != "" {
-			return nil, fmt.Errorf("could not find any IP block for the already set control plane endpoint")
+			return nil, errUserSetIPNotFound
 		}
 		if foundBlock != nil {
 			return foundBlock, nil
@@ -255,9 +264,14 @@ func (s *Service) getLatestIPBlockDeletionRequest(ctx context.Context, ipBlockID
 	return getMatchingRequest[*sdk.IpBlock](ctx, s, http.MethodDelete, path.Join(ipBlocksPath, ipBlockID))
 }
 
-// removeIPBlockLeftovers removes the current cluster request, and deletes the host from the spec.
-
 // ipBlockName returns the name that should be used for cluster context resources.
 func (s *Service) ipBlockName(cs *scope.ClusterScope) string {
 	return fmt.Sprintf("k8s-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
+}
+
+func ignoreErrUserSetIPNotFound(err error) error {
+	if errors.Is(err, errUserSetIPNotFound) {
+		return nil
+	}
+	return err
 }

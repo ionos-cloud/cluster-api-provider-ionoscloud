@@ -358,9 +358,9 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWi
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionNoBlockLeft() {
-	s.clusterScope.IonosCluster.SetCurrentClusterRequest(http.MethodPost, sdk.RequestStatusRunning, exampleRequestPath)
+	s.infraCluster.Spec.ControlPlaneEndpoint.Host = exampleIP
+	s.infraCluster.SetCurrentClusterRequest(http.MethodPost, sdk.RequestStatusRunning, exampleRequestPath)
 	s.mockListIPBlockCall().Return(nil, nil).Once()
-	s.mockGetRequestsCallPost().Return(nil, nil).Once()
 	requeue, err := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
 	s.False(requeue)
 	s.NoError(err)
