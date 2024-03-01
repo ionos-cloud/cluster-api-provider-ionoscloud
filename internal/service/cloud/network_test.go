@@ -31,8 +31,6 @@ import (
 )
 
 const (
-	reqPath        = "this/is/a/path"
-	lanID          = "1"
 	arbitraryNICID = "f3b3f8e3-1f3d-11ec-82a8-0242ac130003"
 )
 
@@ -211,12 +209,12 @@ func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 		}},
 	}
 
-	s.mockPatchLANCall(props).Return(reqPath, nil).Once()
+	s.mockPatchLANCall(props).Return(exampleRequestPath, nil).Once()
 	requeue, err := s.service.ReconcileIPFailover()
 	s.checkSuccessfulFailoverGroupPatch(expectedPatchResult{
 		err:           err,
 		requeue:       requeue,
-		requestPath:   reqPath,
+		requestPath:   exampleRequestPath,
 		requestMethod: http.MethodPatch,
 		requestState:  sdk.RequestStatusQueued,
 	})
@@ -275,13 +273,13 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 		}},
 	}
 
-	s.mockPatchLANCall(props).Return(reqPath, nil).Once()
+	s.mockPatchLANCall(props).Return(exampleRequestPath, nil).Once()
 	requeue, err := s.service.ReconcileIPFailover()
 
 	s.checkSuccessfulFailoverGroupPatch(expectedPatchResult{
 		err:           err,
 		requeue:       requeue,
-		requestPath:   reqPath,
+		requestPath:   exampleRequestPath,
 		requestMethod: http.MethodPatch,
 		requestState:  sdk.RequestStatusQueued,
 	})
@@ -363,13 +361,13 @@ func (s *lanSuite) TestReconcileIPFailoverDeletion() {
 		}},
 	}
 
-	s.mockPatchLANCall(props).Return(reqPath, nil).Once()
+	s.mockPatchLANCall(props).Return(exampleRequestPath, nil).Once()
 
 	requeue, err := s.service.ReconcileIPFailoverDeletion()
 
 	s.NoError(err)
 	s.True(requeue)
-	s.Equal(reqPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
+	s.Equal(exampleRequestPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
 	s.Equal(http.MethodPatch, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
 	s.Equal(sdk.RequestStatusQueued, s.machineScope.IonosMachine.Status.CurrentRequest.State)
 }
@@ -457,7 +455,7 @@ func (s *lanSuite) examplePatchRequest(status string) sdk.Request {
 		status:     status,
 		method:     http.MethodPatch,
 		url:        s.service.lanURL(exampleLANID),
-		href:       reqPath,
+		href:       exampleRequestPath,
 		targetID:   exampleLANID,
 		targetType: sdk.LAN,
 	}
