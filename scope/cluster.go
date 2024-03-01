@@ -103,7 +103,7 @@ func (c *ClusterScope) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
 }
 
 func (c *ClusterScope) SetControlPlaneEndpointProviderID(id string) {
-	c.IonosCluster.Status.ControlPlaneEndpointProviderID = fmt.Sprintf("ionos://%s", id)
+	c.IonosCluster.Status.ControlPlaneEndpointIPBlockID = id
 }
 
 // Location is a shortcut for getting the location used by the IONOS Cloud cluster IP block.

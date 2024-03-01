@@ -134,9 +134,8 @@ spec:
                   type: object
                 type: array
               controlPlaneEndpointProviderID:
-                description: ControlPlaneEndpointProviderID is the IONOS Cloud provider
-                  ID for the control plane endpoint IP block. It will be in the format
-                  "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+                description: ControlPlaneEndpointIPBlockID is the IONOS Cloud UUID
+                  for the control plane endpoint IP block.
                 type: string
               currentClusterRequest:
                 description: CurrentClusterRequest is the current pending request

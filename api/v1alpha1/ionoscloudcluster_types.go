@@ -70,10 +70,9 @@ type IonosCloudClusterStatus struct {
 	//+optional
 	CurrentClusterRequest *ProvisioningRequest `json:"currentClusterRequest,omitempty"`
 
-	// ControlPlaneEndpointProviderID is the IONOS Cloud provider ID for the control plane endpoint IP block.
-	// It will be in the format "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+	// ControlPlaneEndpointIPBlockID is the IONOS Cloud UUID for the control plane endpoint IP block.
 	//+optional
-	ControlPlaneEndpointProviderID string `json:"controlPlaneEndpointProviderID,omitempty"`
+	ControlPlaneEndpointIPBlockID string `json:"controlPlaneEndpointProviderID,omitempty"`
 }
 
 //+kubebuilder:object:root=true

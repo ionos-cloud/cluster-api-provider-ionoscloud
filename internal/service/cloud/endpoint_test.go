@@ -118,7 +118,7 @@ func (s *EndpointTestSuite) TestGetIPBlockUserSetIP() {
 }
 
 func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetID() {
-	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID = exampleID
+	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleID
 	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
 		Id: ptr.To(exampleID),
 	}, nil).Once()
@@ -129,7 +129,7 @@ func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetID() {
 }
 
 func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetIDNotFound() {
-	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID = exampleID
+	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleID
 	s.mockGetIPBlockByIDCall().Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404)).Once()
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{},
@@ -234,7 +234,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointUserSetIP() {
 	s.False(requeue)
 	s.NoError(err)
 	s.Equal(exampleIP, s.clusterScope.GetControlPlaneEndpoint().Host)
-	s.Equal(fmt.Sprintf("ionos://%s", exampleID), s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID)
+	s.Equal(exampleID, s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID)
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointPendingRequest() {
@@ -274,7 +274,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionCreationPen
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithProviderID() {
-	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointProviderID = exampleID
+	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleID
 	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
 		Id: ptr.To(exampleID),
 	}, nil).Once()

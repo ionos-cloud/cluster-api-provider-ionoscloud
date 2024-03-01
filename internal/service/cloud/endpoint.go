@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"path"
 	"slices"
-	"strings"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
@@ -174,7 +173,7 @@ func (s *Service) checkIfUserSetBlock(cs *scope.ClusterScope, props *sdk.IpBlock
 }
 
 func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.ClusterScope) (*sdk.IpBlock, error) {
-	id := strings.TrimPrefix(cs.IonosCluster.Status.ControlPlaneEndpointProviderID, "ionos://")
+	id := cs.IonosCluster.Status.ControlPlaneEndpointIPBlockID
 	if id == "" {
 		s.logger.Info("Could not find any IP block by ID as the provider ID is not set.")
 		return nil, nil
