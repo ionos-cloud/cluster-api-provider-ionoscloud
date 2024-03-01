@@ -32,7 +32,7 @@ import (
 
 const (
 	// unknownValue is a placeholder string, used as defaults when we deref string pointers.
-	unknownValue = "107df78c-cee8-4902-963a-655cc6ea9865"
+	unknownValue = "UNKNOWN"
 )
 
 // Service offers infra resources services for IONOS Cloud machine reconciliation.
