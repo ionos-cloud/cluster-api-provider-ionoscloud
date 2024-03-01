@@ -113,7 +113,7 @@ func (s *nicSuite) examplePatchRequest(status, serverID, nicID string) sdk.Reque
 		status:     status,
 		method:     http.MethodPatch,
 		url:        s.service.nicURL(serverID, nicID),
-		href:       path.Join(reqPath, nicID),
+		href:       path.Join(exampleRequestPath, nicID),
 		targetID:   nicID,
 		targetType: sdk.NIC,
 	}

@@ -54,7 +54,7 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 			ip := (*ipBlock.Properties.Ips)[0]
 			cs.IonosCluster.Spec.ControlPlaneEndpoint.Host = ip
 		}
-		cs.SetControlPlaneEndpointProviderID(*ipBlock.Id)
+		cs.SetControlPlaneEndpointIPBlockID(*ipBlock.Id)
 		return false, nil
 	}
 

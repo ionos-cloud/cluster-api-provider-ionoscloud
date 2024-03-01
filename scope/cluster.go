@@ -102,7 +102,8 @@ func (c *ClusterScope) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
 	return c.IonosCluster.Spec.ControlPlaneEndpoint
 }
 
-func (c *ClusterScope) SetControlPlaneEndpointProviderID(id string) {
+// SetControlPlaneEndpointIPBlockID sets the IP block ID in the IonosCloudCluster status.
+func (c *ClusterScope) SetControlPlaneEndpointIPBlockID(id string) {
 	c.IonosCluster.Status.ControlPlaneEndpointIPBlockID = id
 }
 

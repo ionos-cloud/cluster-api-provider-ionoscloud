@@ -338,7 +338,7 @@ func (s *serverSuite) exampleDeleteRequest(status, serverID string) sdk.Request 
 		status:     status,
 		method:     http.MethodDelete,
 		url:        path.Join(s.service.serversURL(), serverID),
-		href:       path.Join(reqPath, testServerID),
+		href:       path.Join(exampleRequestPath, testServerID),
 		targetID:   testServerID,
 		targetType: sdk.SERVER,
 	}
