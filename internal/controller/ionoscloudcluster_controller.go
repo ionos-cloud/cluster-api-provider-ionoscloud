@@ -30,7 +30,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -126,8 +125,9 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 func (r *IonosCloudClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ClusterScope, cloudService *cloud.Service) (ctrl.Result, error) {
 	controllerutil.AddFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
-	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
-	clusterScope.IonosCluster.Status.Ready = true
+	// TODO: set the cluster as ready when it is indeed ready.
+	// conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
+	// clusterScope.IonosCluster.Status.Ready = true
 	clusterScope.Logger.V(4).Info("Reconciling IonosCloudCluster")
 
 	requeue, err := r.checkRequestStatus(ctx, clusterScope, cloudService)
