@@ -160,7 +160,7 @@ func (s *Service) getIPBlockFunc(cs *scope.ClusterScope) tryLookupResourceFunc[s
 		if foundBlock != nil {
 			return foundBlock, nil
 		}
-		// if we still can't find a server we return the potential
+		// if we still can't find an IP block we return the potential
 		// initial not found error.
 		return nil, err
 	}
