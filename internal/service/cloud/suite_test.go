@@ -56,6 +56,15 @@ const (
 
 const testServerID = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
 
+// TODO(gfariasalves): Make all constant names used for tests follow a common prefix.
+const (
+	exampleLANID       = "42"
+	exampleIPBlockID   = "f882d597-4ee2-4b89-b01a-cbecd0f513d8"
+	exampleRequestPath = "/test"
+	exampleLocation    = "de/txl"
+	exampleIP          = "203.0.113.22"
+)
+
 type ServiceTestSuite struct {
 	*require.Assertions
 	suite.Suite
@@ -220,14 +229,6 @@ func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request 
 
 	return req
 }
-
-const (
-	exampleLANID       = "42"
-	exampleIPBlockID   = "f882d597-4ee2-4b89-b01a-cbecd0f513d8"
-	exampleRequestPath = "/test"
-	exampleLocation    = "de/txl"
-	exampleIP          = "203.0.113.22"
-)
 
 func defaultServer(serverName string, ips ...string) *sdk.Server {
 	return &sdk.Server{
