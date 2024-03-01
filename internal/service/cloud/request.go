@@ -289,7 +289,7 @@ type metadataHolder interface {
 }
 
 func getState(resource metadataHolder) string {
-	return ptr.Deref(resource.GetMetadata().GetState(), "")
+	return ptr.Deref(resource.GetMetadata().GetState(), unknownValue)
 }
 
 func getVMState(resource propertiesHolder[*sdk.ServerProperties]) string {

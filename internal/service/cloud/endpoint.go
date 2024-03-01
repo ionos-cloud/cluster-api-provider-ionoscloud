@@ -31,6 +31,9 @@ import (
 
 const (
 	ipBlocksPath = "ipblocks"
+
+	// listIPBlocksDepth is the depth needed for getting properties of each IP block.
+	listIPBlocksDepth = 1
 )
 
 // ReconcileControlPlaneEndpoint ensures the control plane endpoint IP block exists.
@@ -124,7 +127,7 @@ func (s *Service) getIPBlockFunc(cs *scope.ClusterScope) tryLookupResourceFunc[s
 		}
 
 		s.logger.Info("IP block not found by ID, trying to find by listing IP blocks instead")
-		blocks, listErr := s.apiWithDepth(1).ListIPBlocks(ctx)
+		blocks, listErr := s.apiWithDepth(listIPBlocksDepth).ListIPBlocks(ctx)
 		if listErr != nil {
 			return nil, fmt.Errorf("failed to list IP blocks: %w", listErr)
 		}
@@ -142,11 +145,17 @@ func (s *Service) getIPBlockFunc(cs *scope.ClusterScope) tryLookupResourceFunc[s
 				continue
 			case ptr.Deref(props.GetName(), "") == expectedName:
 				count++
-				// NOTE(gfariasalves): Change this to &block after we move to go1.22
-				foundBlock = ptr.To(block)
+				foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block) //nolint:gosec
+				if err != nil {
+					return nil, err
+				}
 			case s.checkIfUserSetBlock(cs, props):
 				// NOTE: this is for when customers set IPs for the control plane endpoint themselves.
-				return ptr.To(block), nil
+				foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block) //nolint:gosec
+				if err != nil {
+					return nil, err
+				}
+				return foundBlock, nil
 			}
 			if count > 1 {
 				return nil, fmt.Errorf(
@@ -170,6 +179,18 @@ func (s *Service) checkIfUserSetBlock(cs *scope.ClusterScope, props *sdk.IpBlock
 	ip := cs.GetControlPlaneEndpoint().Host
 	ips := ptr.Deref(props.GetIps(), nil)
 	return ip != "" && slices.Contains(ips, ip)
+}
+
+// cloudAPIStateInconsistencyWorkaround is a workaround for a bug where the API returns different statuses for the same
+// IP Block when using the ListIPBlocks method and the GetIPBlock method. This workaround uses the GetIPBlock method as
+// the source of truth to get the correct status of the IP block.
+// TODO(gfariasalves): remove this method once the bug is fixed.
+func (s *Service) cloudAPIStateInconsistencyWorkaround(ctx context.Context, block *sdk.IpBlock) (*sdk.IpBlock, error) {
+	block, err := s.cloud.GetIPBlock(ctx, ptr.Deref(block.GetId(), unknownValue))
+	if err != nil {
+		return nil, fmt.Errorf("could not confirm if found IP block is available: %w", err)
+	}
+	return block, nil
 }
 
 func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.ClusterScope) (*sdk.IpBlock, error) {
