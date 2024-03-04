@@ -151,7 +151,8 @@ spec:
     initConfiguration:
       nodeRegistration:
         kubeletExtraArgs:
-          cloud-provider: external
+          # use cloud-provider: external when using a CCM
+          cloud-provider: ""
     joinConfiguration:
       nodeRegistration:
         criSocket: unix:///run/containerd/containerd.sock
@@ -279,5 +280,6 @@ spec:
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
-            cloud-provider: external
+            # use cloud-provider: external when using a CCM
+            cloud-provider: ""
           criSocket: unix:///run/containerd/containerd.sock
