@@ -70,8 +70,10 @@ spec:
                 - port
                 type: object
                 x-kubernetes-validations:
-                - message: control plane endpoint cannot be updated
-                  rule: self == oldSelf || oldSelf.host == ''
+                - message: control plane endpoint host cannot be updated
+                  rule: self.host == oldSelf.host || oldSelf.host == ''
+                - message: control plane endpoint port cannot be updated
+                  rule: self.port == oldSelf.port || oldSelf.port == 0
               location:
                 description: Location is the location where the data centers should
                   be located.

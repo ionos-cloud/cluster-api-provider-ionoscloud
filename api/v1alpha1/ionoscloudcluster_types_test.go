@@ -100,10 +100,25 @@ var _ = Describe("IonosCloudCluster", func() {
 			})
 			It("should work if the endpoint host is not set", func() {
 				cluster := defaultCluster()
-				cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{}
+				cluster.Spec.ControlPlaneEndpoint.Host = ""
 				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
 
 				cluster.Spec.ControlPlaneEndpoint.Host = newValueStr
+				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
+			})
+			It("should fail if the port is already set", func() {
+				cluster := defaultCluster()
+				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+				cluster.Spec.ControlPlaneEndpoint.Port = 1234
+				Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
+			})
+			It("should work if the endpoint host is not set", func() {
+				cluster := defaultCluster()
+				cluster.Spec.ControlPlaneEndpoint.Port = 0
+				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+				cluster.Spec.ControlPlaneEndpoint.Port = 4657
 				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
 			})
 		})

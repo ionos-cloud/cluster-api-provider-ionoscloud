@@ -35,6 +35,8 @@ const (
 
 	// listIPBlocksDepth is the depth needed for getting properties of each IP block.
 	listIPBlocksDepth = 1
+
+	defaultControlPlaneEndpointPort int32 = 6443
 )
 
 var errUserSetIPNotFound = errors.New("could not find any IP block for the already set control plane endpoint")
@@ -57,6 +59,9 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 			ip := (*ipBlock.Properties.Ips)[0]
 			cs.IonosCluster.Spec.ControlPlaneEndpoint.Host = ip
 		}
+		if cs.IonosCluster.Spec.ControlPlaneEndpoint.Port == 0 {
+			cs.IonosCluster.Spec.ControlPlaneEndpoint.Port = defaultControlPlaneEndpointPort
+		}
 		cs.SetControlPlaneEndpointIPBlockID(*ipBlock.Id)
 		return false, nil
 	}
@@ -76,7 +81,9 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 }
 
 // ReconcileControlPlaneEndpointDeletion ensures the control plane endpoint IP block is deleted.
-func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs *scope.ClusterScope) (requeue bool, err error) {
+func (s *Service) ReconcileControlPlaneEndpointDeletion(
+	ctx context.Context, cs *scope.ClusterScope,
+) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileControlPlaneEndpointDeletion")
 
 	// Try to retrieve the cluster IP Block or even check if it's currently still being created.
@@ -85,7 +92,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(ctx context.Context, cs 
 	// This error is only relevant when we are trying to create a new IP block. If it shows up here, it means that:
 	// a) this IP block was created by the user, and they have deleted it, or,
 	// b) the IP block was created by the controller, we have already requested its deletion, this is the second
-	//    part of the reconciliation loop, and the resource is now gone.
+	// part of the reconciliation loop, and the resource is now gone.
 	// For both cases this means success, so we can return early with no error.
 	if errors.Is(err, errUserSetIPNotFound) || ipBlock == nil && request == nil {
 		cs.IonosCluster.DeleteCurrentClusterRequest()
@@ -190,16 +197,16 @@ func (s *Service) checkIfUserSetBlock(cs *scope.ClusterScope, props *sdk.IpBlock
 	return ip != "" && slices.Contains(ips, ip)
 }
 
-// cloudAPIStateInconsistencyWorkaround is a workaround for a bug where the API returns different statuses for the same
+// cloudAPIStateInconsistencyWorkaround is a workaround for a bug where the API returns different states for the same
 // IP Block when using the ListIPBlocks method and the GetIPBlock method. This workaround uses the GetIPBlock method as
 // the source of truth to get the correct status of the IP block.
 // TODO(gfariasalves): remove this method once the bug is fixed.
 func (s *Service) cloudAPIStateInconsistencyWorkaround(ctx context.Context, block *sdk.IpBlock) (*sdk.IpBlock, error) {
-	block, err := s.cloud.GetIPBlock(ctx, ptr.Deref(block.GetId(), unknownValue))
+	trueBlock, err := s.cloud.GetIPBlock(ctx, ptr.Deref(block.GetId(), unknownValue))
 	if err != nil {
 		return nil, fmt.Errorf("could not confirm if found IP block is available: %w", err)
 	}
-	return block, nil
+	return trueBlock, nil
 }
 
 func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.ClusterScope) (*sdk.IpBlock, error) {
