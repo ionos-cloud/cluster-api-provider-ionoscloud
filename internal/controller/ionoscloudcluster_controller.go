@@ -110,6 +110,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}()
 
+	// TODO(gfariasalves): Remove MachineScope from the service and directly use clusterScope instead.
 	cloudService, err := cloud.NewService(ctx, &scope.MachineScope{
 		ClusterScope: clusterScope,
 	})

@@ -42,6 +42,7 @@ type ProvisioningRequest struct {
 }
 
 // NewQueuedRequest creates a new provisioning request with the status set to queued.
+// TODO(gfariasalves): Remove this in the refactor (and then get rid of the sdk import here).
 func NewQueuedRequest(method, path string) ProvisioningRequest {
 	return ProvisioningRequest{
 		Method:      method,
@@ -50,7 +51,7 @@ func NewQueuedRequest(method, path string) ProvisioningRequest {
 	}
 }
 
-// NewRequestWithState creates a new provisioning request with the given status.
+// NewRequestWithState creates a new provisioning request with the given state.
 func NewRequestWithState(method, path, state string) ProvisioningRequest {
 	return ProvisioningRequest{
 		Method:      method,
