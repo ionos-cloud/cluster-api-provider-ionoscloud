@@ -38,6 +38,9 @@ type IonosCloudClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	//+kubebuilder:validation:XValidation:rule="self.host == oldSelf.host || oldSelf.host == ''",message="control plane endpoint host cannot be updated"
 	//+kubebuilder:validation:XValidation:rule="self.port == oldSelf.port || oldSelf.port == 0",message="control plane endpoint port cannot be updated"
+	//
+	// TODO(gfariasalves): as of now, IP must be provided by the user as we still don't insert the
+	// provider-provided block IP into the kube-vip manifest.
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 
 	// Contract number is the contract number of the IONOS Cloud account.

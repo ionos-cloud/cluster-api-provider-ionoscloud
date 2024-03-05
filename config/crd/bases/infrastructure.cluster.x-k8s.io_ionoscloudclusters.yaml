@@ -55,8 +55,10 @@ spec:
                 - message: contractNumber is immutable
                   rule: self == oldSelf
               controlPlaneEndpoint:
-                description: ControlPlaneEndpoint represents the endpoint used to
-                  communicate with the control plane.
+                description: "ControlPlaneEndpoint represents the endpoint used to
+                  communicate with the control plane. \n TODO(gfariasalves): as of
+                  now, IP must be provided by the user as we still don't insert the
+                  provider-provided block IP into the kube-vip manifest."
                 properties:
                   host:
                     description: The hostname on which the API server is serving.
