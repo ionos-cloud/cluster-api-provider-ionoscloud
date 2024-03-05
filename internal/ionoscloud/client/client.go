@@ -168,23 +168,6 @@ func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, p
 	return "", errLocationHeaderEmpty
 }
 
-// AttachToLAN attaches a provided NIC to a provided LAN in the specified data center.
-func (c *IonosCloudClient) AttachToLAN(ctx context.Context, datacenterID, lanID string, nic sdk.Nic,
-) (*sdk.Nic, error) {
-	if datacenterID == "" {
-		return nil, errDatacenterIDIsEmpty
-	}
-	if lanID == "" {
-		return nil, errLANIDIsEmpty
-	}
-	n, _, err := c.API.LANsApi.DatacentersLansNicsPost(ctx, datacenterID, lanID).Nic(nic).Execute()
-	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
-	}
-
-	return &n, nil
-}
-
 // ListLANs returns a list of LANs in the specified data center.
 func (c *IonosCloudClient) ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error) {
 	if datacenterID == "" {

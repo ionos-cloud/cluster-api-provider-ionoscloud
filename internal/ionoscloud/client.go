@@ -36,9 +36,6 @@ type Client interface {
 	DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error)
 	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
 	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost) (string, error)
-	// AttachToLAN attaches a provided NIC to a provided LAN in a specified data center.
-	AttachToLAN(ctx context.Context, datacenterID, lanID string, nic sdk.Nic) (
-		*sdk.Nic, error)
 	// ListLANs returns a list of LANs in the specified data center.
 	ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error)
 	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
