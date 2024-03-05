@@ -42,7 +42,7 @@ func Test_PtrDeref(t *testing.T) {
 	require.Equal(t, Deref[testType](nil, testType{}), testType{})
 }
 
-func Test_IsNilOrZero(t *testing.T) {
+func TestIsNilOrZero(t *testing.T) {
 	// Test for a custom type
 	type testType struct {
 		value string
