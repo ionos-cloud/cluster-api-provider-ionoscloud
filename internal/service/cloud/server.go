@@ -116,11 +116,6 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		return false, nil
 	}
 
-	// TODO(lubedacht) add handling for volume deletion
-	// if requeue, err := s.ensureVolumeDeleted(server); requeue || err != nil {
-	//	return requeue, err
-	//}
-
 	request, err = s.getLatestServerDeletionRequest(*server.Id)
 	if err != nil {
 		return false, err
@@ -132,9 +127,6 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		return true, nil
 	}
 
-	// TODO(lubedacht) Delete Volume before server deletion
-	// 	if the bool flag in the API doesn't work
-	// err = s.ensureVolumeDeleted(*server.Id)
 	err = s.deleteServer(*server.Id)
 	return err == nil, err
 }
