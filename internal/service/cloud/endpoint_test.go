@@ -20,17 +20,23 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strconv"
 	"testing"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
+	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 
 	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 type EndpointTestSuite struct {
 	ServiceTestSuite
+	kubeadmControlPlane *controlplanev1.KubeadmControlPlane
 }
 
 func TestEndpointTestSuite(t *testing.T) {
@@ -40,6 +46,38 @@ func TestEndpointTestSuite(t *testing.T) {
 const (
 	exampleName = "k8s-default-test-cluster"
 )
+
+func (s *EndpointTestSuite) SetupTest() {
+	var err error
+	s.ServiceTestSuite.SetupTest()
+	s.kubeadmControlPlane = &controlplanev1.KubeadmControlPlane{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-control-plane", s.capiCluster.Name),
+			Namespace: metav1.NamespaceDefault,
+		},
+		Spec: controlplanev1.KubeadmControlPlaneSpec{
+			KubeadmConfigSpec: bootstrapv1.KubeadmConfigSpec{
+				Files: []bootstrapv1.File{
+					{
+						Path:    kubeVIPManifestPath,
+						Content: fmt.Sprintf("host: %s\nport:%s\n", kubeVIPPlaceholderForIP, kubeVIPPlaceholderForPort),
+					},
+				},
+			},
+		},
+	}
+	s.NoError(controlplanev1.AddToScheme(s.k8sClient.Scheme()))
+	s.NoError(s.k8sClient.Create(s.ctx, s.kubeadmControlPlane))
+	s.clusterScope, err = scope.NewClusterScope(scope.ClusterScopeParams{
+		Client:              s.k8sClient,
+		Logger:              &s.log,
+		Cluster:             s.capiCluster,
+		IonosCluster:        s.infraCluster,
+		IonosClient:         s.ionosClient,
+		KubeadmControlPlane: s.kubeadmControlPlane,
+	})
+	s.NoError(err)
+}
 
 func (s *EndpointTestSuite) TestGetIPBlockFuncMultipleMatches() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
@@ -70,7 +108,7 @@ func (s *EndpointTestSuite) TestGetIPBlockFuncSingleMatch() {
 	block, err := s.service.getIPBlockFunc(s.clusterScope)(s.ctx)
 	s.NoError(err)
 	s.NotNil(block)
-	s.EqualValues(exampleName, *block.Properties.Name, "IP block name does not match")
+	s.Equal(exampleName, *block.Properties.Name, "IP block name does not match")
 	s.Equal(exampleLocation, *block.Properties.Location, "IP block location does not match")
 	s.Equal(sdk.Available, *block.Metadata.State, "IP block state does not match")
 }
@@ -210,6 +248,37 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequestRequest() {
 	s.NotNil(info)
 }
 
+func (s *EndpointTestSuite) TestPatchKubeAdmControlPlaneConfigOK() {
+	cpe := &s.infraCluster.Spec.ControlPlaneEndpoint
+	cpe.Host = exampleIP
+	cpe.Port = defaultControlPlaneEndpointPort
+	files := s.kubeadmControlPlane.Spec.KubeadmConfigSpec.Files
+	s.Contains(files[0].Content, kubeVIPPlaceholderForIP)
+	s.Contains(files[0].Content, kubeVIPPlaceholderForPort)
+	err := s.service.patchKubeAdmControlPlaneConfig(s.clusterScope)
+	s.NoError(err)
+	s.Contains(files[0].Content, cpe.Host)
+	s.Contains(files[0].Content, strconv.FormatInt(int64(cpe.Port), 10))
+	s.NotContains(files[0].Content, kubeVIPPlaceholderForIP)
+	s.NotContains(files[0].Content, kubeVIPPlaceholderForPort)
+}
+
+func (s *EndpointTestSuite) TestPatchKubeAdmControlPlaneConfigFileNotFound() {
+	cpe := &s.infraCluster.Spec.ControlPlaneEndpoint
+	cpe.Host = exampleIP
+	cpe.Port = defaultControlPlaneEndpointPort
+	files := s.kubeadmControlPlane.Spec.KubeadmConfigSpec.Files
+	files[0].Path = "/not/what/we/want"
+	s.Contains(files[0].Content, kubeVIPPlaceholderForIP)
+	s.Contains(files[0].Content, kubeVIPPlaceholderForPort)
+	err := s.service.patchKubeAdmControlPlaneConfig(s.clusterScope)
+	s.Error(err)
+	s.NotContains(files[0].Content, cpe.Host)
+	s.NotContains(files[0].Content, strconv.FormatInt(int64(cpe.Port), 10))
+	s.Contains(files[0].Content, kubeVIPPlaceholderForIP)
+	s.Contains(files[0].Content, kubeVIPPlaceholderForPort)
+}
+
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointUserSetIP() {
 	block := exampleIPBlock()
 	block.Properties.Name = ptr.To("asdf")
@@ -229,6 +298,9 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointUserSetIP() {
 	s.Equal(exampleIP, s.clusterScope.GetControlPlaneEndpoint().Host)
 	s.Equal(defaultControlPlaneEndpointPort, s.clusterScope.GetControlPlaneEndpoint().Port)
 	s.Equal(exampleIPBlockID, s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID)
+	s.Contains(s.kubeadmControlPlane.Spec.KubeadmConfigSpec.Files[0].Content, exampleIP)
+	s.Contains(s.kubeadmControlPlane.Spec.KubeadmConfigSpec.Files[0].Content,
+		strconv.FormatInt(int64(defaultControlPlaneEndpointPort), 10))
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointUserSetPort() {
@@ -243,6 +315,9 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointUserSetPort() {
 	s.Equal(exampleIP, s.clusterScope.GetControlPlaneEndpoint().Host)
 	s.Equal(port, s.clusterScope.GetControlPlaneEndpoint().Port)
 	s.Equal(exampleIPBlockID, s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID)
+	s.Contains(s.kubeadmControlPlane.Spec.KubeadmConfigSpec.Files[0].Content, exampleIP)
+	s.Contains(s.kubeadmControlPlane.Spec.KubeadmConfigSpec.Files[0].Content,
+		strconv.FormatInt(int64(port), 10))
 }
 
 func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointPendingRequest() {
@@ -281,7 +356,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionCreationPen
 	s.Equal(http.MethodPost, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithIpBlockID() {
+func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithIPBlockID() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleIPBlockID
 	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
 		Id: ptr.To(exampleIPBlockID),
@@ -291,7 +366,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWi
 	s.NoError(err)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithoutIpBlockID() {
+func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithoutIPBlockID() {
 	block := exampleIPBlock()
 	block.Properties.Name = ptr.To("aaaa")
 	block.Properties.Ips = &[]string{

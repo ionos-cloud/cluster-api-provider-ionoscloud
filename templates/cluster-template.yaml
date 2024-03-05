@@ -22,9 +22,10 @@ metadata:
   name: "${CLUSTER_NAME}"
 spec:
   controlPlaneEndpoint:
-    host: ${CONTROL_PLANE_ENDPOINT_IP}
-    port: 6443
+    host: ${CONTROL_PLANE_ENDPOINT_IP:-""}
+    port: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
   contractNumber: "${IONOSCLOUD_CONTRACT_NUMBER}"
+  location: "${IONOSCLOUD_LOCATION:-de/txl}"
 ---
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -93,9 +94,9 @@ spec:
               - name: vip_interface
                 value: ${VIP_NETWORK_INTERFACE=""}
               - name: address
-                value: ${CONTROL_PLANE_ENDPOINT_IP}
+                value: /+/CPE_IP/+/
               - name: port
-                value: "6443"
+                value: "/+/CPE_PORT/+/"
               - name: vip_arp
                 value: "true"
               - name: vip_leaderelection

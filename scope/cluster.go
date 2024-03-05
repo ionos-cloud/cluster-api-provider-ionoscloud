@@ -26,6 +26,7 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,19 +43,21 @@ type ClusterScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	Cluster      *clusterv1.Cluster
-	IonosCluster *infrav1.IonosCloudCluster
-
-	IonosClient ionoscloud.Client // Deprecated
+	Cluster                        *clusterv1.Cluster
+	IonosCluster                   *infrav1.IonosCloudCluster
+	KubeadmControlPlane            *controlplanev1.KubeadmControlPlane
+	kubeadmControlPlanePatchHelper *patch.Helper
+	IonosClient                    ionoscloud.Client // Deprecated
 }
 
 // ClusterScopeParams are the parameters, which are used to create a cluster scope.
 type ClusterScopeParams struct {
-	Client       client.Client
-	Logger       *logr.Logger
-	Cluster      *clusterv1.Cluster
-	IonosCluster *infrav1.IonosCloudCluster
-	IonosClient  ionoscloud.Client
+	Client              client.Client
+	Logger              *logr.Logger
+	Cluster             *clusterv1.Cluster
+	IonosCluster        *infrav1.IonosCloudCluster
+	IonosClient         ionoscloud.Client
+	KubeadmControlPlane *controlplanev1.KubeadmControlPlane
 }
 
 // NewClusterScope creates a new scope for the supplied parameters.
@@ -94,6 +97,15 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		patchHelper:  helper,
 	}
 
+	if params.KubeadmControlPlane != nil {
+		kcpHelper, err := patch.NewHelper(params.KubeadmControlPlane, params.Client)
+		if err != nil {
+			return nil, fmt.Errorf("failed to init kubeadm control plane patch kcpHelper: %w", err)
+		}
+		clusterScope.KubeadmControlPlane = params.KubeadmControlPlane
+		clusterScope.kubeadmControlPlanePatchHelper = kcpHelper
+	}
+
 	return clusterScope, nil
 }
 
@@ -130,6 +142,16 @@ func (c *ClusterScope) PatchObject() error {
 			clusterv1.ReadyCondition,
 		},
 	})
+}
+
+// PatchKubeadmControlPlane will apply all changes from the KubeadmControlPlane.
+func (c *ClusterScope) PatchKubeadmControlPlane() error {
+	if c.kubeadmControlPlanePatchHelper == nil {
+		return errors.New("kubeadmControlPlanePatchHelper is not initialized")
+	}
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	return c.kubeadmControlPlanePatchHelper.Patch(timeoutCtx, c.KubeadmControlPlane)
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudCluster.

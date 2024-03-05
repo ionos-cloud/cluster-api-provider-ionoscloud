@@ -23,6 +23,8 @@ import (
 	"net/http"
 	"path"
 	"slices"
+	"strconv"
+	"strings"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
@@ -37,6 +39,16 @@ const (
 	listIPBlocksDepth = 1
 
 	defaultControlPlaneEndpointPort int32 = 6443
+
+	// kubeVIPPlaceholderForIP is a placeholder for the IP address in the kubeadm control plane config. This value
+	// will be used replaced in the kube vip configuration for the control plane endpoint.
+	kubeVIPPlaceholderForIP = "/+/CPE_IP/+/"
+
+	// kubeVIPPlaceholderForPort is a placeholder for the port in the kubeadm control plane config. This value
+	// will be used replaced in the kube vip configuration for the control plane endpoint.
+	kubeVIPPlaceholderForPort = "/+/CPE_PORT/+/"
+
+	kubeVIPManifestPath = "/etc/kubernetes/manifests/kube-vip.yaml"
 )
 
 var errUserSetIPNotFound = errors.New("could not find any IP block for the already set control plane endpoint")
@@ -63,6 +75,9 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 			cs.IonosCluster.Spec.ControlPlaneEndpoint.Port = defaultControlPlaneEndpointPort
 		}
 		cs.SetControlPlaneEndpointIPBlockID(*ipBlock.Id)
+		if err := s.patchKubeAdmControlPlaneConfig(cs); err != nil {
+			return false, fmt.Errorf("failed to patch the kubeadm control plane config: %w", err)
+		}
 		return false, nil
 	}
 
@@ -78,6 +93,30 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 		return false, err
 	}
 	return true, nil
+}
+
+// patcheKubeAdmControlPlaneConfig patches the kubeadm control plane configuration, inserting the IP and port to be
+// used by kube-vip.
+func (s *Service) patchKubeAdmControlPlaneConfig(cs *scope.ClusterScope) error {
+	s.logger.Info("Patching kubeadm control plane configuration")
+	if cs.KubeadmControlPlane == nil {
+		return errors.New("kubeadm control plane config was not set")
+	}
+
+	files := cs.KubeadmControlPlane.Spec.KubeadmConfigSpec.Files
+	for i, file := range files {
+		if file.Path != kubeVIPManifestPath {
+			continue
+		}
+		s.logger.Info("Patching kube-vip configuration")
+		cpe := cs.GetControlPlaneEndpoint()
+		file.Content = strings.ReplaceAll(file.Content, kubeVIPPlaceholderForIP, cpe.Host)
+		file.Content = strings.ReplaceAll(file.Content, kubeVIPPlaceholderForPort, strconv.FormatInt(int64(cpe.Port), 10))
+		files[i] = file
+		return cs.PatchKubeadmControlPlane()
+	}
+
+	return errors.New("unable to find kube-vip configuration")
 }
 
 // ReconcileControlPlaneEndpointDeletion ensures the control plane endpoint IP block is deleted.

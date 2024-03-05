@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -54,6 +55,8 @@ type IonosCloudClusterReconciler struct {
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudclusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudclusters/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudclusters/finalizers,verbs=update
+
+//+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=kubeadmcontrolplanes,verbs=get;list;patch;watch
 
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 
@@ -92,12 +95,26 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	logger = logger.WithValues("cluster", klog.KObj(cluster))
 
+	kubeadmControlPlane := &controlplanev1.KubeadmControlPlane{}
+	kubeadmControlPlaneNamespacedName := client.ObjectKey{
+		Namespace: cluster.Namespace,
+		Name:      fmt.Sprintf("%s-control-plane", cluster.Name),
+	}
+	if err := r.Get(ctx, kubeadmControlPlaneNamespacedName, kubeadmControlPlane); err != nil {
+		if apierrors.IsNotFound(err) {
+			return ctrl.Result{}, nil
+		}
+
+		return ctrl.Result{}, err
+	}
+
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-		Client:       r.Client,
-		Logger:       &logger,
-		Cluster:      cluster,
-		IonosCluster: ionosCloudCluster,
-		IonosClient:  r.IonosCloudClient,
+		Client:              r.Client,
+		Logger:              &logger,
+		Cluster:             cluster,
+		IonosCluster:        ionosCloudCluster,
+		IonosClient:         r.IonosCloudClient,
+		KubeadmControlPlane: kubeadmControlPlane,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to create scope %w", err)
