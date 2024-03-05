@@ -40,6 +40,7 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -84,13 +85,12 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	logger = logger.WithValues("cluster", klog.KObj(cluster))
-	ctx = ctrl.LoggerInto(ctx, logger)
-
 	if annotations.IsPaused(cluster, ionosCloudCluster) {
 		logger.Info("Either IonosCloudCluster or owner cluster is marked as paused. Reconciliation is skipped")
 		return ctrl.Result{}, nil
 	}
+
+	logger = logger.WithValues("cluster", klog.KObj(cluster))
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		Client:       r.Client,
@@ -110,37 +110,115 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}()
 
-	if !ionosCloudCluster.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, clusterScope)
+	// TODO(gfariasalves): Remove MachineScope from the service and directly use clusterScope instead.
+	cloudService, err := cloud.NewService(ctx, &scope.MachineScope{
+		ClusterScope: clusterScope,
+	})
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to create cloud service: %w", err)
 	}
 
-	return r.reconcileNormal(ctx, clusterScope)
+	if !ionosCloudCluster.DeletionTimestamp.IsZero() {
+		return r.reconcileDelete(ctx, clusterScope, cloudService)
+	}
+
+	return r.reconcileNormal(ctx, clusterScope, cloudService)
 }
 
-//nolint:unparam
-func (r *IonosCloudClusterReconciler) reconcileNormal(_ context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
+func (r *IonosCloudClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ClusterScope, cloudService *cloud.Service) (ctrl.Result, error) {
 	controllerutil.AddFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
+	clusterScope.Logger.V(4).Info("Reconciling IonosCloudCluster")
+
+	requeue, err := r.checkRequestStatus(ctx, clusterScope, cloudService)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error when trying to determine in-flight request states: %w", err)
+	}
+	if requeue {
+		clusterScope.Info("Request is still in progress")
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
+	}
+
+	reconcileSequence := []serviceReconcileStep{
+		{
+			"ReconcileControlPlaneEndpoint",
+			func() (bool, error) {
+				return cloudService.ReconcileControlPlaneEndpoint(ctx, clusterScope)
+			},
+		},
+	}
+	for _, step := range reconcileSequence {
+		if requeue, err := step.reconcileFunc(); err != nil || requeue {
+			if err != nil {
+				err = fmt.Errorf("error in step %s: %w", step.name, err)
+			}
+
+			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
+		}
+	}
+
 	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
 	clusterScope.IonosCluster.Status.Ready = true
-
 	return ctrl.Result{}, nil
 }
 
-//nolint:unparam
-func (r *IonosCloudClusterReconciler) reconcileDelete(_ context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
+func (r *IonosCloudClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ClusterScope, cloudService *cloud.Service) (ctrl.Result, error) {
 	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
 		clusterScope.Error(errors.New("deletion was requested but owning cluster wasn't deleted"), "unable to delete IonosCloudCluster")
 		// No need to reconcile again until the owning cluster was deleted.
 		return ctrl.Result{}, nil
 	}
 
+	requeue, err := r.checkRequestStatus(ctx, clusterScope, cloudService)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error when trying to determine in-flight request states: %w", err)
+	}
+	if requeue {
+		clusterScope.Info("Request is still in progress")
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
+	}
+
 	// TODO(lubedacht): check if there are any more machine CRs existing.
 	// If there are requeue with an offset.
 
-	// TODO(lubedacht): delete remaining cloud resources.
+	reconcileSequence := []serviceReconcileStep{
+		{
+			"ReconcileControlPlaneEndpointDeletion",
+			func() (bool, error) {
+				return cloudService.ReconcileControlPlaneEndpointDeletion(ctx, clusterScope)
+			},
+		},
+	}
+	for _, step := range reconcileSequence {
+		if requeue, err := step.reconcileFunc(); err != nil || requeue {
+			if err != nil {
+				err = fmt.Errorf("error in step %s: %w", step.name, err)
+			}
 
+			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
+		}
+	}
 	controllerutil.RemoveFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
 	return ctrl.Result{}, nil
+}
+
+func (r *IonosCloudClusterReconciler) checkRequestStatus(
+	ctx context.Context, clusterScope *scope.ClusterScope, cloudService *cloud.Service,
+) (requeue bool, retErr error) {
+	ionosCluster := clusterScope.IonosCluster
+	if req := ionosCluster.Status.CurrentClusterRequest; req != nil {
+		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
+		if err != nil {
+			retErr = fmt.Errorf("could not get request status: %w", err)
+		} else {
+			requeue, retErr = withStatus(status, message, clusterScope.Logger,
+				func() error {
+					ionosCluster.Status.CurrentClusterRequest = nil
+					return nil
+				},
+			)
+		}
+	}
+	return requeue, retErr
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -17,6 +17,7 @@ limitations under the License.
 package cloud
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -53,6 +54,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 	}
 
 	server, request, err := findResource(
+		s.ctx,
 		s.getServer,
 		s.getLatestServerCreationRequest,
 	)
@@ -94,6 +96,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLANDeletion")
 
 	server, request, err := findResource(
+		s.ctx,
 		s.getServer,
 		s.getLatestServerCreationRequest,
 	)
@@ -104,7 +107,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 	if request != nil && request.isPending() {
 		s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewRequestWithState(
 			http.MethodPost, request.location,
-			infrav1.RequestStatus(request.status)),
+			request.status),
 		)
 		log.Info("Creation request is pending", "location", request.location)
 		return true, nil
@@ -115,7 +118,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		return false, nil
 	}
 
-	request, err = s.getLatestServerDeletionRequest(*server.Id)
+	request, err = s.getLatestServerDeletionRequest(s.ctx, *server.Id)
 	if err != nil {
 		return false, err
 	}
@@ -124,7 +127,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		if request.isPending() {
 			s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewRequestWithState(
 				http.MethodDelete, request.location,
-				infrav1.RequestStatus(request.status)),
+				request.status),
 			)
 
 			// We want to requeue and check again after some time
@@ -194,7 +197,7 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 }
 
 // getServer looks for the server in the data center.
-func (s *Service) getServer() (*sdk.Server, error) {
+func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
 	server, err := s.getServerByProviderID()
 	// if the server was not found, we try to find it by listing all servers.
 	if server != nil || ignoreNotFound(err) != nil {
@@ -242,8 +245,9 @@ func (s *Service) deleteServer(serverID string) error {
 	return nil
 }
 
-func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
+func (s *Service) getLatestServerCreationRequest(_ context.Context) (*requestInfo, error) {
 	return getMatchingRequest(
+		s.ctx,
 		s,
 		http.MethodPost,
 		path.Join("datacenters", s.datacenterID(), "servers"),
@@ -251,8 +255,9 @@ func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
 	)
 }
 
-func (s *Service) getLatestServerDeletionRequest(serverID string) (*requestInfo, error) {
+func (s *Service) getLatestServerDeletionRequest(_ context.Context, serverID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Server](
+		s.ctx,
 		s,
 		http.MethodDelete,
 		path.Join("datacenters", s.datacenterID(), "servers", serverID),
@@ -267,7 +272,7 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	lan, err := s.getLAN()
+	lan, err := s.getLAN(s.ctx)
 	if err != nil {
 		return err
 	}

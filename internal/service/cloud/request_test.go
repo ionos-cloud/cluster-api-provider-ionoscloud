@@ -17,6 +17,7 @@ limitations under the License.
 package cloud
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -140,6 +141,7 @@ func (s *getMatchingRequestSuite) examplePostRequest(href, status string) sdk.Re
 
 func (s *getMatchingRequestSuite) TestUnsupportedResourceType() {
 	request, err := getMatchingRequest[int](
+		s.ctx,
 		s.service,
 		http.MethodPost,
 		"/path",
@@ -172,6 +174,7 @@ func (s *getMatchingRequestSuite) TestMatching() {
 		Return([]sdk.Request{req1, req2, req3, req4, req5}, nil)
 
 	request, err := getMatchingRequest(
+		s.ctx,
 		s.service,
 		http.MethodPost,
 		"path?foo=bar&baz=qux",
@@ -219,8 +222,9 @@ func TestFindResourceTestSuite(t *testing.T) {
 
 func (s *findResourceSuite) TestListingIsEnough() {
 	resource, request, err := findResource(
-		func() (*int, error) { return ptr.To(42), nil },
-		func() (*requestInfo, error) { panic("don't call me") },
+		s.ctx,
+		func(_ context.Context) (*int, error) { return ptr.To(42), nil },
+		func(_ context.Context) (*requestInfo, error) { panic("don't call me") },
 	)
 	s.NoError(err)
 	s.Nil(request)
@@ -232,8 +236,9 @@ func (s *findResourceSuite) TestFoundRequest() {
 	wantedRequest := &requestInfo{status: sdk.RequestStatusQueued}
 
 	resource, gotRequest, err := findResource(
-		func() (*int, error) { return nil, nil },
-		func() (*requestInfo, error) { return wantedRequest, nil },
+		s.ctx,
+		func(_ context.Context) (*int, error) { return nil, nil },
+		func(_ context.Context) (*requestInfo, error) { return wantedRequest, nil },
 	)
 	s.NoError(err)
 	s.Nil(resource)
@@ -244,14 +249,15 @@ func (s *findResourceSuite) TestFoundRequest() {
 func (s *findResourceSuite) TestFoundOnSecondListing() {
 	listCalls := 0
 	resource, gotRequest, err := findResource(
-		func() (*int, error) {
+		s.ctx,
+		func(_ context.Context) (*int, error) {
 			listCalls++
 			if listCalls == 1 {
 				return nil, nil
 			}
 			return ptr.To(42), nil
 		},
-		func() (*requestInfo, error) { return &requestInfo{status: sdk.RequestStatusDone}, nil },
+		func(_ context.Context) (*requestInfo, error) { return &requestInfo{status: sdk.RequestStatusDone}, nil },
 	)
 	s.Equal(2, listCalls)
 	s.NoError(err)
@@ -280,11 +286,12 @@ func (s *findResourceSuite) TestIgnoreNotFound() {
 		s.Run(tt.name, func() {
 			listCalls := 0
 			resource, gotRequest, err := findResource(
-				func() (*int, error) {
+				s.ctx,
+				func(_ context.Context) (*int, error) {
 					listCalls++
 					return nil, sdk.NewGenericOpenAPIError("", nil, nil, http.StatusNotFound)
 				},
-				func() (*requestInfo, error) { return &requestInfo{status: tt.inputStatus}, nil },
+				func(_ context.Context) (*requestInfo, error) { return &requestInfo{status: tt.inputStatus}, nil },
 			)
 
 			s.Equal(tt.expectedCount, listCalls)

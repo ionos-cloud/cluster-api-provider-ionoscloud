@@ -7,6 +7,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/ionos-cloud/sdk-go/v6 v6.1.11
+	github.com/jarcoal/httpmock v1.3.1
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
 	github.com/spf13/pflag v1.0.5

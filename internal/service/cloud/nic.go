@@ -38,7 +38,7 @@ func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 
 	log.V(4).Info("Reconciling NIC config")
 	// Get current state of the server
-	server, err := s.getServer()
+	server, err := s.getServer(s.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +121,7 @@ func (s *Service) patchNIC(serverID string, nic *sdk.Nic, props sdk.NicPropertie
 
 func (s *Service) getLatestNICPatchRequest(serverID, nicID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Nic](
+		s.ctx,
 		s,
 		http.MethodPatch,
 		s.nicURL(serverID, nicID),

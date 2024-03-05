@@ -22,6 +22,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
@@ -29,24 +30,31 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
+const (
+	// unknownValue is a placeholder string, used as defaults when we deref string pointers.
+	unknownValue = "UNKNOWN"
+)
+
 // Service offers infra resources services for IONOS Cloud machine reconciliation.
 type Service struct {
-	scope *scope.MachineScope
-	ctx   context.Context
+	scope  *scope.MachineScope // Deprecated: pass machine scope explicitly to each method.
+	ctx    context.Context     // Deprecated: pass context explicitly to each method.
+	logger *logr.Logger
+	cloud  ionoscloud.Client
 }
 
 // NewService returns a new Service.
 func NewService(ctx context.Context, s *scope.MachineScope) (*Service, error) {
-	if s == nil {
-		return nil, errors.New("cloud service cannot use a nil machine scope")
-	}
 	return &Service{
-		scope: s,
-		ctx:   ctx,
+		scope:  s,
+		ctx:    ctx,
+		logger: s.ClusterScope.Logger,
+		cloud:  s.ClusterScope.IonosClient,
 	}, nil
 }
 
 // api is a shortcut for the IONOS Cloud Client.
+// Deprecated: use Service.cloud instead.
 func (s *Service) api() ionoscloud.Client {
 	return s.scope.ClusterScope.IonosClient
 }

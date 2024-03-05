@@ -23,7 +23,8 @@ metadata:
 spec:
   controlPlaneEndpoint:
     host: ${CONTROL_PLANE_ENDPOINT_IP}
-    port: 6443
+    port: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
+  location: ${CONTROL_PLANE_ENDPOINT_LOCATION}
   contractNumber: "${IONOSCLOUD_CONTRACT_NUMBER}"
 ---
 kind: KubeadmControlPlane
@@ -95,7 +96,7 @@ spec:
               - name: address
                 value: ${CONTROL_PLANE_ENDPOINT_IP}
               - name: port
-                value: "6443"
+                value: "${CONTROL_PLANE_ENDPOINT_PORT:-6443}"
               - name: vip_arp
                 value: "true"
               - name: vip_leaderelection
@@ -149,6 +150,8 @@ spec:
         patch node $(hostname)
         --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
     initConfiguration:
+      localAPIEndpoint:
+        bindPort: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
       nodeRegistration:
         kubeletExtraArgs:
           # use cloud-provider: external when using a CCM

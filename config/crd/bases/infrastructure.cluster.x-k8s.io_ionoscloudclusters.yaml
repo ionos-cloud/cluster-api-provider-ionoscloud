@@ -55,8 +55,10 @@ spec:
                 - message: contractNumber is immutable
                   rule: self == oldSelf
               controlPlaneEndpoint:
-                description: ControlPlaneEndpoint represents the endpoint used to
-                  communicate with the control plane.
+                description: "ControlPlaneEndpoint represents the endpoint used to
+                  communicate with the control plane. \n TODO(gfariasalves): as of
+                  now, IP must be provided by the user as we still don't insert the
+                  provider-provided block IP into the kube-vip manifest."
                 properties:
                   host:
                     description: The hostname on which the API server is serving.
@@ -69,8 +71,23 @@ spec:
                 - host
                 - port
                 type: object
+                x-kubernetes-validations:
+                - message: control plane endpoint host cannot be updated
+                  rule: self.host == oldSelf.host || oldSelf.host == ''
+                - message: control plane endpoint port cannot be updated
+                  rule: self.port == oldSelf.port || oldSelf.port == 0
+              location:
+                description: Location is the location where the data centers should
+                  be located.
+                example: de/txl
+                minLength: 1
+                type: string
+                x-kubernetes-validations:
+                - message: location is immutable
+                  rule: self == oldSelf
             required:
             - contractNumber
+            - location
             type: object
           status:
             description: IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
@@ -120,6 +137,37 @@ spec:
                   - type
                   type: object
                 type: array
+              controlPlaneEndpointIPBlockID:
+                description: ControlPlaneEndpointIPBlockID is the IONOS Cloud UUID
+                  for the control plane endpoint IP block.
+                type: string
+              currentClusterRequest:
+                description: CurrentClusterRequest is the current pending request
+                  made during reconciliation for the whole cluster.
+                properties:
+                  message:
+                    description: Message is the request message, which can also contain
+                      error information.
+                    type: string
+                  method:
+                    description: Method is the request method
+                    type: string
+                  requestPath:
+                    description: RequestPath is the sub path for the request URL
+                    type: string
+                  state:
+                    description: RequestStatus is the status of the request in the
+                      queue.
+                    enum:
+                    - QUEUED
+                    - RUNNING
+                    - DONE
+                    - FAILED
+                    type: string
+                required:
+                - method
+                - requestPath
+                type: object
               currentRequest:
                 additionalProperties:
                   description: ProvisioningRequest is a definition of a provisioning

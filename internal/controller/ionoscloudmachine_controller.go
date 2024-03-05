@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	sdk "github.com/ionos-cloud/sdk-go/v6"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
@@ -52,9 +51,9 @@ type IonosCloudMachineReconciler struct {
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines/finalizers,verbs=update
 
-// +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
+//+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -139,11 +138,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	return r.reconcileNormal(ctx, machineScope, cloudService)
-}
-
-type serviceReconcileStep struct {
-	name          string
-	reconcileFunc func() (bool, error)
 }
 
 func (r *IonosCloudMachineReconciler) reconcileNormal(
@@ -267,10 +261,10 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 		if err != nil {
 			retErr = fmt.Errorf("could not get request status: %w", err)
 		} else {
-			requeue, retErr = r.withStatus(status, message, machineScope.Logger,
+			requeue, retErr = withStatus(status, message, machineScope.Logger,
 				func() error {
 					// remove the request from the status and patch the cluster
-					ionosCluster.DeleteCurrentRequest(machineScope.DatacenterID())
+					ionosCluster.DeleteCurrentRequestByDatacenter(machineScope.DatacenterID())
 					return machineScope.ClusterScope.PatchObject()
 				},
 			)
@@ -283,7 +277,7 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 		if err != nil {
 			retErr = errors.Join(retErr, fmt.Errorf("could not get request status: %w", err))
 		} else {
-			requeue, _ = r.withStatus(status, message, machineScope.Logger,
+			requeue, _ = withStatus(status, message, machineScope.Logger,
 				func() error {
 					// no need to patch the machine here as it will be patched
 					// after the machine reconciliation is done.
@@ -296,29 +290,6 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 	}
 
 	return requeue, retErr
-}
-
-// withStatus is a helper function to handle the different request states
-// and provides a callback function to execute when the request is done or failed.
-func (r *IonosCloudMachineReconciler) withStatus(
-	status string,
-	message string,
-	log *logr.Logger,
-	doneCallback func() error,
-) (bool, error) {
-	switch status {
-	case sdk.RequestStatusQueued, sdk.RequestStatusRunning:
-		return true, nil
-	case sdk.RequestStatusFailed:
-		// log the error message
-		log.Error(nil, "Request status indicates a failure", "message", message)
-		fallthrough // we run the same logic as for status done
-	case sdk.RequestStatusDone:
-		// we don't requeue
-		return false, doneCallback()
-	}
-
-	return false, fmt.Errorf("unknown request status %s", status)
 }
 
 func (r *IonosCloudMachineReconciler) isInfrastructureReady(machineScope *scope.MachineScope) bool {

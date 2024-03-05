@@ -67,7 +67,6 @@ func (s *nicSuite) TestReconcileNICConfig() {
 
 func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
 	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(), testDHCPIP, testEndpointIP), nil).Once()
-	s.mockGetLatestNICPatchRequest(testServerID, testNICID).Return([]sdk.Request{}, nil).Once()
 	nic, err := s.service.reconcileNICConfig(testEndpointIP)
 
 	s.NotNil(nic, assertMessageNICIsNil)
@@ -114,7 +113,7 @@ func (s *nicSuite) examplePatchRequest(status, serverID, nicID string) sdk.Reque
 		status:     status,
 		method:     http.MethodPatch,
 		url:        s.service.nicURL(serverID, nicID),
-		href:       path.Join(reqPath, nicID),
+		href:       path.Join(exampleRequestPath, nicID),
 		targetID:   nicID,
 		targetType: sdk.NIC,
 	}

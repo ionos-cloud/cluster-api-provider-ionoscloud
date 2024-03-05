@@ -34,7 +34,7 @@ type Client interface {
 	GetServer(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error)
 	// DeleteServer deletes the server that matches the provided serverID in the specified data center.
 	DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error)
-	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
+	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request path.
 	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost) (string, error)
 	// AttachToLAN attaches a provided NIC to a provided LAN in a specified data center.
 	AttachToLAN(ctx context.Context, datacenterID, lanID string, nic sdk.Nic) (
@@ -45,7 +45,7 @@ type Client interface {
 	ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error)
 	// GetLAN returns the LAN that matches lanID in the specified data center.
 	GetLAN(ctx context.Context, datacenterID, lanID string) (*sdk.Lan, error)
-	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
+	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request path.
 	DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error)
 	// ListVolumes returns a list of volumes in a specified data center.
 	ListVolumes(ctx context.Context, datacenterID string) (*sdk.Volumes, error)
@@ -53,6 +53,14 @@ type Client interface {
 	GetVolume(ctx context.Context, datacenterID, volumeID string) (*sdk.Volume, error)
 	// DeleteVolume deletes the volume that matches volumeID in the specified data center.
 	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
+	// ReserveIPBlock reserves an IP block with the provided properties in the specified location.
+	ReserveIPBlock(ctx context.Context, name, location string, size int32) (requestPath string, err error)
+	// GetIPBlock returns the IP block that matches the provided ipBlockID.
+	GetIPBlock(ctx context.Context, ipBlockID string) (*sdk.IpBlock, error)
+	// ListIPBlocks returns a list of IP blocks.
+	ListIPBlocks(ctx context.Context) (*sdk.IpBlocks, error)
+	// DeleteIPBlock deletes the IP block that matches the provided ipBlockID.
+	DeleteIPBlock(ctx context.Context, ipBlockID string) (requestPath string, err error)
 	// CheckRequestStatus checks the status of a provided request identified by requestID
 	CheckRequestStatus(ctx context.Context, requestID string) (*sdk.RequestStatus, error)
 	// WaitForRequest waits for the completion of the provided request.

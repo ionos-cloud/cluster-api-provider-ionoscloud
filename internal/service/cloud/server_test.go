@@ -170,8 +170,6 @@ func (s *serverSuite) TestReconcileServerDeletionServerNotFound() {
 
 func (s *serverSuite) TestReconcileServerDeletionUnexpectedError() {
 	s.mockGetServer(testServerID).Return(nil, sdk.NewGenericOpenAPIError("unexpected error returned", nil, nil, 500))
-	s.mockListServers().Return(&sdk.Servers{}, nil)
-
 	res, err := s.service.ReconcileServerDeletion()
 	s.Error(err)
 	s.False(res)
@@ -248,7 +246,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
 func (s *serverSuite) TestGetServerWithProviderID() {
 	serverID := testServerID
 	s.mockGetServer(serverID).Return(&sdk.Server{}, nil)
-	server, err := s.service.getServer()
+	server, err := s.service.getServer(s.ctx)
 	s.NoError(err)
 	s.NotNil(server)
 }
@@ -262,7 +260,7 @@ func (s *serverSuite) TestGetServerWithProviderIDNotFound() {
 		},
 	}}, nil)
 
-	server, err := s.service.getServer()
+	server, err := s.service.getServer(s.ctx)
 	s.ErrorAs(err, &sdk.GenericOpenAPIError{})
 	s.Nil(server)
 }
@@ -278,13 +276,9 @@ func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
 		},
 	}}, nil)
 
-	server, err := s.service.getServer()
+	server, err := s.service.getServer(s.ctx)
 	s.NoError(err)
 	s.NotNil(server)
-}
-
-func (s *serverSuite) TestGetServer() {
-	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil)
 }
 
 //nolint:unused
@@ -344,7 +338,7 @@ func (s *serverSuite) exampleDeleteRequest(status, serverID string) sdk.Request 
 		status:     status,
 		method:     http.MethodDelete,
 		url:        path.Join(s.service.serversURL(), serverID),
-		href:       path.Join(reqPath, testServerID),
+		href:       path.Join(exampleRequestPath, testServerID),
 		targetID:   testServerID,
 		targetType: sdk.SERVER,
 	}
@@ -357,7 +351,7 @@ func (s *serverSuite) examplePostRequest(status string) sdk.Request {
 		method:     http.MethodPost,
 		url:        s.service.serversURL(),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName()),
-		href:       reqPath,
+		href:       exampleRequestPath,
 		targetID:   testServerID,
 		targetType: sdk.SERVER,
 	}

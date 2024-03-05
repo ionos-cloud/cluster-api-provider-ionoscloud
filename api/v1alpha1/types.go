@@ -16,25 +16,10 @@ limitations under the License.
 
 package v1alpha1
 
+import sdk "github.com/ionos-cloud/sdk-go/v6"
+
 const (
 	ManagedLANAnnotation = "cloud.ionos.com/managed-lan"
-)
-
-// RequestStatus shows the status of the current request.
-type RequestStatus string
-
-const (
-	// RequestStatusQueued indicates that the request is queued and not yet being processed.
-	RequestStatusQueued RequestStatus = "QUEUED"
-
-	// RequestStatusRunning indicates that the request is currently being processed.
-	RequestStatusRunning RequestStatus = "RUNNING"
-
-	// RequestStatusDone indicates that the request has been successfully processed.
-	RequestStatusDone RequestStatus = "DONE"
-
-	// RequestStatusFailed indicates that the request has failed.
-	RequestStatusFailed RequestStatus = "FAILED"
 )
 
 // ProvisioningRequest is a definition of a provisioning request
@@ -47,26 +32,27 @@ type ProvisioningRequest struct {
 	RequestPath string `json:"requestPath"`
 
 	// RequestStatus is the status of the request in the queue.
-	// +kubebuilder:validation:Enum=QUEUED;RUNNING;DONE;FAILED
-	// +optional
-	State RequestStatus `json:"state,omitempty"`
+	//+kubebuilder:validation:Enum=QUEUED;RUNNING;DONE;FAILED
+	//+optional
+	State string `json:"state,omitempty"`
 
 	// Message is the request message, which can also contain error information.
-	// +optional
+	//+optional
 	Message *string `json:"message,omitempty"`
 }
 
 // NewQueuedRequest creates a new provisioning request with the status set to queued.
+// TODO(gfariasalves): Remove this in the refactor (and then get rid of the sdk import here).
 func NewQueuedRequest(method, path string) ProvisioningRequest {
 	return ProvisioningRequest{
 		Method:      method,
 		RequestPath: path,
-		State:       RequestStatusQueued,
+		State:       sdk.RequestStatusQueued,
 	}
 }
 
-// NewRequestWithState creates a new provisioning request with the given status.
-func NewRequestWithState(method, path string, state RequestStatus) ProvisioningRequest {
+// NewRequestWithState creates a new provisioning request with the given state.
+func NewRequestWithState(method, path, state string) ProvisioningRequest {
 	return ProvisioningRequest{
 		Method:      method,
 		RequestPath: path,

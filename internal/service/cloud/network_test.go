@@ -31,8 +31,6 @@ import (
 )
 
 const (
-	reqPath        = "this/is/a/path"
-	lanID          = "1"
 	arbitraryNICID = "f3b3f8e3-1f3d-11ec-82a8-0242ac130003"
 )
 
@@ -57,29 +55,29 @@ func (s *lanSuite) TestLANURLs() {
 }
 
 func (s *lanSuite) TestNetworkCreateLANSuccessful() {
-	s.mockCreateLANCall().Return(reqPath, nil).Once()
+	s.mockCreateLANCall().Return(exampleRequestPath, nil).Once()
 	s.NoError(s.service.createLAN())
 	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID(), "request should be stored in status")
 	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.datacenterID()]
-	s.Equal(reqPath, req.RequestPath, "request path should be stored in status")
+	s.Equal(exampleRequestPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodPost, req.Method, "request method should be stored in status")
-	s.Equal(infrav1.RequestStatusQueued, req.State, "request status should be stored in status")
+	s.Equal(sdk.RequestStatusQueued, req.State, "request status should be stored in status")
 }
 
 func (s *lanSuite) TestNetworkDeleteLANSuccessful() {
-	s.mockDeleteLANCall(lanID).Return(reqPath, nil).Once()
-	s.NoError(s.service.deleteLAN(lanID))
+	s.mockDeleteLANCall(exampleLANID).Return(exampleRequestPath, nil).Once()
+	s.NoError(s.service.deleteLAN(exampleLANID))
 	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.service.datacenterID(), "request should be stored in status")
 	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.service.datacenterID()]
-	s.Equal(reqPath, req.RequestPath, "request path should be stored in status")
+	s.Equal(exampleRequestPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodDelete, req.Method, "request method should be stored in status")
-	s.Equal(infrav1.RequestStatusQueued, req.State, "request status should be stored in status")
+	s.Equal(sdk.RequestStatusQueued, req.State, "request status should be stored in status")
 }
 
 func (s *lanSuite) TestNetworkGetLANSuccessful() {
 	lan := s.exampleLAN()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
-	foundLAN, err := s.service.getLAN()
+	foundLAN, err := s.service.getLAN(s.ctx)
 	s.NoError(err)
 	s.NotNil(foundLAN)
 	s.Equal(lan, *foundLAN)
@@ -87,14 +85,14 @@ func (s *lanSuite) TestNetworkGetLANSuccessful() {
 
 func (s *lanSuite) TestNetworkGetLANNotFound() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-	lan, err := s.service.getLAN()
+	lan, err := s.service.getLAN(s.ctx)
 	s.NoError(err)
 	s.Nil(lan)
 }
 
 func (s *lanSuite) TestNetworkGetLANErrorNotUnique() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN(), s.exampleLAN()}}, nil).Once()
-	lan, err := s.service.getLAN()
+	lan, err := s.service.getLAN(s.ctx)
 	s.Error(err)
 	s.Nil(lan)
 }
@@ -102,7 +100,7 @@ func (s *lanSuite) TestNetworkGetLANErrorNotUnique() {
 func (s *lanSuite) TestNetworkRemoveLANPendingRequestFromClusterSuccessful() {
 	s.infraCluster.Status.CurrentRequestByDatacenter = map[string]infrav1.ProvisioningRequest{
 		s.service.datacenterID(): {
-			RequestPath: reqPath,
+			RequestPath: exampleRequestPath,
 			Method:      http.MethodDelete,
 			State:       sdk.RequestStatusQueued,
 		},
@@ -118,7 +116,7 @@ func (s *lanSuite) TestNetworkRemoveLANPendingRequestFromClusterNoRequest() {
 func (s *lanSuite) TestNetworkReconcileLANNoExistingLANNoRequestCreate() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	s.mockGetLANCreationRequestsCall().Return([]sdk.Request{}, nil).Once()
-	s.mockCreateLANCall().Return(reqPath, nil).Once()
+	s.mockCreateLANCall().Return(exampleRequestPath, nil).Once()
 	requeue, err := s.service.ReconcileLAN()
 	s.NoError(err)
 	s.True(requeue)
@@ -151,7 +149,7 @@ func (s *lanSuite) TestNetworkReconcileLANExistingLANUnavailable() {
 func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsNoOtherUsersDelete() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 	s.mockGetLANDeletionRequestsCall().Return([]sdk.Request{}, nil).Once()
-	s.mockDeleteLANCall(lanID).Return(reqPath, nil).Once()
+	s.mockDeleteLANCall(exampleLANID).Return(exampleRequestPath, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion()
 	s.NoError(err)
 	s.True(requeue)
@@ -211,14 +209,14 @@ func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 		}},
 	}
 
-	s.mockPatchLANCall(props).Return(reqPath, nil).Once()
+	s.mockPatchLANCall(props).Return(exampleRequestPath, nil).Once()
 	requeue, err := s.service.ReconcileIPFailover()
 	s.checkSuccessfulFailoverGroupPatch(expectedPatchResult{
 		err:           err,
 		requeue:       requeue,
-		requestPath:   reqPath,
+		requestPath:   exampleRequestPath,
 		requestMethod: http.MethodPatch,
-		requestState:  infrav1.RequestStatusQueued,
+		requestState:  sdk.RequestStatusQueued,
 	})
 }
 
@@ -275,15 +273,15 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 		}},
 	}
 
-	s.mockPatchLANCall(props).Return(reqPath, nil).Once()
+	s.mockPatchLANCall(props).Return(exampleRequestPath, nil).Once()
 	requeue, err := s.service.ReconcileIPFailover()
 
 	s.checkSuccessfulFailoverGroupPatch(expectedPatchResult{
 		err:           err,
 		requeue:       requeue,
-		requestPath:   reqPath,
+		requestPath:   exampleRequestPath,
 		requestMethod: http.MethodPatch,
-		requestState:  infrav1.RequestStatusQueued,
+		requestState:  sdk.RequestStatusQueued,
 	})
 }
 
@@ -292,7 +290,7 @@ type expectedPatchResult struct {
 	requeue       bool
 	requestPath   string
 	requestMethod string
-	requestState  infrav1.RequestStatus
+	requestState  string
 }
 
 func (s *lanSuite) checkSuccessfulFailoverGroupPatch(result expectedPatchResult) {
@@ -363,15 +361,15 @@ func (s *lanSuite) TestReconcileIPFailoverDeletion() {
 		}},
 	}
 
-	s.mockPatchLANCall(props).Return(reqPath, nil).Once()
+	s.mockPatchLANCall(props).Return(exampleRequestPath, nil).Once()
 
 	requeue, err := s.service.ReconcileIPFailoverDeletion()
 
 	s.NoError(err)
 	s.True(requeue)
-	s.Equal(reqPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
+	s.Equal(exampleRequestPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
 	s.Equal(http.MethodPatch, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
-	s.Equal(infrav1.RequestStatusQueued, s.machineScope.IonosMachine.Status.CurrentRequest.State)
+	s.Equal(sdk.RequestStatusQueued, s.machineScope.IonosMachine.Status.CurrentRequest.State)
 }
 
 func (s *lanSuite) TestReconcileIPFailoverDeletionServerNotFound() {
@@ -412,7 +410,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionOnWorker() {
 
 func (s *lanSuite) exampleLAN() sdk.Lan {
 	return sdk.Lan{
-		Id: ptr.To(lanID),
+		Id: ptr.To(exampleLANID),
 		Properties: &sdk.LanProperties{
 			Name: ptr.To(s.service.lanName()),
 		},
@@ -433,8 +431,8 @@ func (s *lanSuite) examplePostRequest(status string) []sdk.Request {
 		method:     http.MethodPost,
 		url:        s.service.lansURL(),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName()),
-		href:       reqPath,
-		targetID:   lanID,
+		href:       exampleRequestPath,
+		targetID:   exampleLANID,
 		targetType: sdk.LAN,
 	}
 	return []sdk.Request{s.exampleRequest(opts)}
@@ -444,9 +442,9 @@ func (s *lanSuite) exampleDeleteRequest(status string) []sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodDelete,
-		url:        s.service.lanURL(lanID),
-		href:       reqPath,
-		targetID:   lanID,
+		url:        s.service.lanURL(exampleLANID),
+		href:       exampleRequestPath,
+		targetID:   exampleLANID,
 		targetType: sdk.LAN,
 	}
 	return []sdk.Request{s.exampleRequest(opts)}
@@ -456,9 +454,9 @@ func (s *lanSuite) examplePatchRequest(status string) sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPatch,
-		url:        s.service.lanURL(lanID),
-		href:       reqPath,
-		targetID:   lanID,
+		url:        s.service.lanURL(exampleLANID),
+		href:       exampleRequestPath,
+		targetID:   exampleLANID,
 		targetType: sdk.LAN,
 	}
 	return s.exampleRequest(opts)
@@ -480,7 +478,7 @@ func (s *lanSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
 }
 
 func (s *lanSuite) mockPatchLANCall(props sdk.LanProperties) *clienttest.MockClient_PatchLAN_Call {
-	return s.ionosClient.EXPECT().PatchLAN(s.ctx, s.service.datacenterID(), lanID, props)
+	return s.ionosClient.EXPECT().PatchLAN(s.ctx, s.service.datacenterID(), exampleLANID, props)
 }
 
 func (s *lanSuite) mockGetLANCreationRequestsCall() *clienttest.MockClient_GetRequests_Call {
@@ -488,11 +486,11 @@ func (s *lanSuite) mockGetLANCreationRequestsCall() *clienttest.MockClient_GetRe
 }
 
 func (s *lanSuite) mockGetLANPatchRequestCall() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPatch, s.service.lanURL(lanID))
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPatch, s.service.lanURL(exampleLANID))
 }
 
 func (s *lanSuite) mockGetLANDeletionRequestsCall() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, s.service.lanURL(lanID))
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, s.service.lanURL(exampleLANID))
 }
 
 func (s *lanSuite) mockGetServerCall(serverID string) *clienttest.MockClient_GetServer_Call {
