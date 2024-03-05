@@ -95,7 +95,7 @@ func matchByName[T propertiesHolder[U], U nameHolder](name string) matcherFunc[T
 // such as HTTP method and URL.
 // Requests only containing the given URL, but not ending with it, will be ignored. Note that query parameters are
 // stripped before the comparison.
-// The function is generic, but only supports types that are present in resourceTypeMap.
+// The function is generic, but only supports types that are present in mapResourceType.
 // Moreover, it optionally allows to specify additional matcher functions for the found resource and the request it was
 // found in. If multiple matchers are given, all need to match.
 // If no matching request is found, nil is returned.
