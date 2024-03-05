@@ -70,7 +70,7 @@ func (s *EndpointTestSuite) TestGetIPBlockFuncSingleMatch() {
 	block, err := s.service.getIPBlockFunc(s.clusterScope)(s.ctx)
 	s.NoError(err)
 	s.NotNil(block)
-	s.EqualValues(exampleName, *block.Properties.Name, "IP block name does not match")
+	s.Equal(exampleName, *block.Properties.Name, "IP block name does not match")
 	s.Equal(exampleLocation, *block.Properties.Location, "IP block location does not match")
 	s.Equal(sdk.Available, *block.Metadata.State, "IP block state does not match")
 }
@@ -281,7 +281,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionCreationPen
 	s.Equal(http.MethodPost, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithIpBlockID() {
+func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithIPBlockID() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleIPBlockID
 	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
 		Id: ptr.To(exampleIPBlockID),
@@ -291,7 +291,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWi
 	s.NoError(err)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithoutIpBlockID() {
+func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithoutIPBlockID() {
 	block := exampleIPBlock()
 	block.Properties.Name = ptr.To("aaaa")
 	block.Properties.Ips = &[]string{

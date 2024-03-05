@@ -113,7 +113,7 @@ var _ = Describe("IonosCloudCluster", func() {
 				cluster.Spec.ControlPlaneEndpoint.Port = 1234
 				Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
 			})
-			It("should work if the endpoint host is not set", func() {
+			It("should work if the endpoint port is not set", func() {
 				cluster := defaultCluster()
 				cluster.Spec.ControlPlaneEndpoint.Port = 0
 				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
