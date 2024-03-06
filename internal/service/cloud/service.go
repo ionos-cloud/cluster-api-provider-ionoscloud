@@ -22,32 +22,47 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
+)
+
+const (
+	// unknownValue is a placeholder string, used as defaults when we deref string pointers.
+	unknownValue = "UNKNOWN"
 )
 
 // Service offers infra resources services for IONOS Cloud machine reconciliation.
 type Service struct {
-	scope *scope.MachineScope
-	ctx   context.Context
+	scope  *scope.MachineScope // Deprecated: pass machine scope explicitly to each method.
+	ctx    context.Context     // Deprecated: pass context explicitly to each method.
+	logger *logr.Logger
+	cloud  ionoscloud.Client
 }
 
 // NewService returns a new Service.
 func NewService(ctx context.Context, s *scope.MachineScope) (*Service, error) {
-	if s == nil {
-		return nil, errors.New("cloud service cannot use a nil machine scope")
-	}
 	return &Service{
-		scope: s,
-		ctx:   ctx,
+		scope:  s,
+		ctx:    ctx,
+		logger: s.ClusterScope.Logger,
+		cloud:  s.ClusterScope.IonosClient,
 	}, nil
 }
 
 // api is a shortcut for the IONOS Cloud Client.
+// Deprecated: use Service.cloud instead.
 func (s *Service) api() ionoscloud.Client {
 	return s.scope.ClusterScope.IonosClient
+}
+
+// apiWithDepth is a shortcut for the IONOS Cloud Client with a specific depth.
+// It will create a copy of the client with the depth set to the provided value.
+func (s *Service) apiWithDepth(depth int32) ionoscloud.Client {
+	return client.WithDepth(s.api(), depth)
 }
 
 // datacenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
@@ -56,7 +71,6 @@ func (s *Service) datacenterID() string {
 }
 
 // isNotFound is a shortcut for checking if an error is a not found error.
-// TODO(lubedacht) Implement unit tests.
 func isNotFound(err error) bool {
 	if err == nil {
 		return false
@@ -68,4 +82,12 @@ func isNotFound(err error) bool {
 	}
 
 	return false
+}
+
+// ignoreNotFound is a shortcut for ignoring not found errors.
+func ignoreNotFound(err error) error {
+	if isNotFound(err) {
+		return nil
+	}
+	return err
 }

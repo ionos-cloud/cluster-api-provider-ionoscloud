@@ -37,6 +37,34 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
+// NOTE(lubedacht): Choice of IP addresses for unit tests
+// https://datatracker.ietf.org/doc/rfc5737/
+// 3.  Documentation Address Blocks
+//
+//	The blocks 192.0.2.0/24 (TEST-NET-1), 198.51.100.0/24 (TEST-NET-2),
+//	and 203.0.113.0/24 (TEST-NET-3) are provided for use in
+//	documentation.
+const (
+	// The expected endpoint IP.
+	testEndpointIP = "203.0.113.1"
+	// Used when we actually expect the endpoint IP but receive this instead.
+	testUnexpectedIP = "203.0.113.10"
+	// Used to test cases where a LAN already contains configurations with other IP addresses
+	// to ensure that the service does not overwrite them.
+	testArbitraryIP = "203.0.113.11"
+)
+
+const testServerID = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
+
+// TODO(gfariasalves): Make all constant names used for tests follow a common prefix.
+const (
+	exampleLANID       = "42"
+	exampleIPBlockID   = "f882d597-4ee2-4b89-b01a-cbecd0f513d8"
+	exampleRequestPath = "/test"
+	exampleLocation    = "de/txl"
+	exampleIP          = "203.0.113.22"
+)
+
 type ServiceTestSuite struct {
 	*require.Assertions
 	suite.Suite
@@ -65,16 +93,14 @@ func TestServiceTestSuite(t *testing.T) {
 
 func (s *ServiceTestSuite) SetupTest() {
 	var err error
-	s.ionosClient = &clienttest.MockClient{}
+	s.ionosClient = clienttest.NewMockClient(s.T())
 
 	s.capiCluster = &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: metav1.NamespaceDefault,
 			Name:      "test-cluster",
 		},
-		Spec: clusterv1.ClusterSpec{
-			Paused: false,
-		},
+		Spec: clusterv1.ClusterSpec{},
 	}
 	s.infraCluster = &infrav1.IonosCloudCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -83,6 +109,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		},
 		Spec: infrav1.IonosCloudClusterSpec{
 			ContractNumber: "12345678",
+			Location:       "de/txl",
 		},
 		Status: infrav1.IonosCloudClusterStatus{},
 	}
@@ -154,6 +181,8 @@ func (s *ServiceTestSuite) SetupTest() {
 	s.NoError(err, "failed to create machine scope")
 
 	s.service, err = NewService(s.ctx, s.machineScope)
+	s.service.cloud = s.ionosClient
+	s.service.logger = &s.log
 	s.NoError(err, "failed to create service")
 }
 
@@ -199,4 +228,22 @@ func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request 
 	}
 
 	return req
+}
+
+func defaultServer(serverName string, ips ...string) *sdk.Server {
+	return &sdk.Server{
+		Id: ptr.To(testServerID),
+		Entities: &sdk.ServerEntities{
+			Nics: &sdk.Nics{
+				Items: &[]sdk.Nic{{
+					Id: ptr.To(testNICID),
+					Properties: &sdk.NicProperties{
+						Dhcp: ptr.To(true),
+						Name: ptr.To(serverName),
+						Ips:  &ips,
+					},
+				}},
+			},
+		},
+	}
 }

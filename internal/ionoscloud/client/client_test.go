@@ -17,10 +17,24 @@ limitations under the License.
 package client
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"testing"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+)
+
+const (
+	exampleID       = "814fcf5c-41dd-45e1-b9dc-1192844848a7"
+	examplePath     = "/a/b/c/d/e"
+	exampleLocation = "de/fkb"
+
+	// catchAllMockURL is a regex that matches all URLs, so no one needs to write
+	// the proper path for each test that uses httpmock.
+	catchAllMockURL = "=~^.*$"
 )
 
 func TestNewClient(t *testing.T) {
@@ -59,6 +73,140 @@ func TestNewClient(t *testing.T) {
 				require.Nil(t, c, "NewClient returned a non-nil client")
 				require.Error(t, err, "NewClient did not return an error")
 			}
+		})
+	}
+}
+
+type IonosCloudClientTestSuite struct {
+	*require.Assertions
+	suite.Suite
+
+	ctx    context.Context
+	client *IonosCloudClient
+}
+
+func TestIonosCloudClientTestSuite(t *testing.T) {
+	suite.Run(t, new(IonosCloudClientTestSuite))
+}
+
+func (s *IonosCloudClientTestSuite) SetupSuite() {
+	s.Assertions = s.Require()
+	s.ctx = context.Background()
+
+	var err error
+	s.client, err = NewClient("username", "password", "", "localhost")
+	s.NoError(err)
+
+	httpmock.Activate()
+}
+
+func (s *IonosCloudClientTestSuite) TearDownSuite() {
+	httpmock.Deactivate()
+}
+
+func (s *IonosCloudClientTestSuite) TearDownTest() {
+	httpmock.Reset()
+}
+
+func (s *IonosCloudClientTestSuite) TestReserveIPBlockSuccess() {
+	header := http.Header{}
+	header.Add(locationHeaderKey, examplePath)
+	responder := httpmock.NewJsonResponderOrPanic(http.StatusAccepted, map[string]any{}).HeaderSet(header)
+	httpmock.RegisterResponder(
+		http.MethodPost,
+		catchAllMockURL,
+		responder,
+	)
+	requestLocation, err := s.client.ReserveIPBlock(s.ctx, "test", "de/fkb", 1)
+	s.NoError(err)
+	s.Equal(examplePath, requestLocation)
+}
+
+func (s *IonosCloudClientTestSuite) TestReserveIPBlockFailure() {
+	tcs := []struct {
+		testName string
+		name     string
+		location string
+		size     int32
+	}{
+		{"empty name", "", exampleLocation, 1},
+		{"empty location", "test", "", 1},
+		{"invalid size (zero)", "test", exampleLocation, 0},
+		{"invalid size (negative)", "test", "exampleLocation", -1},
+	}
+
+	for _, test := range tcs {
+		s.Run(test.testName, func() {
+			requestLocation, err := s.client.ReserveIPBlock(s.ctx, test.name, test.location, test.size)
+			s.Error(err)
+			s.Empty(requestLocation)
+		})
+	}
+}
+
+func (s *IonosCloudClientTestSuite) TestGetIPBlockSuccess() {
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		catchAllMockURL,
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{}),
+	)
+	ipBlock, err := s.client.GetIPBlock(s.ctx, exampleID)
+	s.NoError(err)
+	s.NotNil(ipBlock)
+}
+
+func (s *IonosCloudClientTestSuite) TestGetIPBlockFailureEmptyID() {
+	ipBlock, err := s.client.GetIPBlock(s.ctx, "")
+	s.Error(err)
+	s.Nil(ipBlock)
+}
+
+func (s *IonosCloudClientTestSuite) TestListIPBlocksSuccess() {
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		catchAllMockURL,
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{}),
+	)
+	ipBlocks, err := s.client.ListIPBlocks(s.ctx)
+	s.NoError(err)
+	s.NotNil(ipBlocks)
+}
+
+func (s *IonosCloudClientTestSuite) TestDeleteIPBlockSuccess() {
+	header := http.Header{}
+	header.Set(locationHeaderKey, examplePath)
+	responder := httpmock.NewJsonResponderOrPanic(http.StatusAccepted, map[string]any{}).HeaderSet(header)
+	httpmock.RegisterResponder(http.MethodDelete, catchAllMockURL, responder)
+	requestLocation, err := s.client.DeleteIPBlock(s.ctx, exampleID)
+	s.NoError(err)
+	s.Equal(examplePath, requestLocation)
+}
+
+func (s *IonosCloudClientTestSuite) TestDeleteIPBlockFailureEmptyID() {
+	requestLocation, err := s.client.DeleteIPBlock(s.ctx, "")
+	s.Error(err)
+	s.Empty(requestLocation)
+}
+
+func TestWithDepth(t *testing.T) {
+	tests := []struct {
+		depth int32
+	}{
+		{1},
+		{2},
+		{3},
+		{4},
+		{5},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(fmt.Sprintf("depth=%d", tt.depth), func(t *testing.T) {
+			t.Parallel()
+			c := &IonosCloudClient{}
+			n := WithDepth(c, tt.depth).(*IonosCloudClient)
+
+			require.Equal(t, tt.depth, n.requestDepth, "depth didn't match")
+			require.NotEqualf(t, c, n, "WithDepth returned the same client")
 		})
 	}
 }

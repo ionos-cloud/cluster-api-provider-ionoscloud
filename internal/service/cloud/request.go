@@ -53,10 +53,14 @@ func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (requ
 // Each type mapping for usage in getMatchingRequest() needs to be present here.
 func mapResourceType(cloudResource any) sdk.Type {
 	switch cloudResource.(type) {
+	case sdk.Nic, *sdk.Nic:
+		return sdk.NIC
 	case sdk.Lan, *sdk.Lan:
 		return sdk.LAN
 	case sdk.Server, *sdk.Server:
 		return sdk.SERVER
+	case sdk.IpBlock, *sdk.IpBlock:
+		return sdk.IPBLOCK
 	default:
 		return ""
 	}
@@ -100,6 +104,7 @@ func matchByName[T propertiesHolder[U], U nameHolder](name string) matcherFunc[T
 // found in. If multiple matchers are given, all need to match.
 // If no matching request is found, nil is returned.
 func getMatchingRequest[T any](
+	ctx context.Context,
 	s *Service,
 	method string,
 	url string,
@@ -114,7 +119,7 @@ func getMatchingRequest[T any](
 	// As we later on ignore query parameters in found requests, we need to do the same here for consistency.
 	urlWithoutQueryParams := strings.Split(url, "?")[0]
 
-	requests, err := s.api().GetRequests(s.ctx, method, urlWithoutQueryParams)
+	requests, err := s.api().GetRequests(ctx, method, urlWithoutQueryParams)
 	if err != nil {
 		return nil, fmt.Errorf("could not get requests: %w", err)
 	}
@@ -192,37 +197,48 @@ func hasRequestTargetType(req sdk.Request, typeName sdk.Type) bool {
 	return false
 }
 
-// findResource is a helper function intended for finding a single resource based on certain filtering constraints,
-// such as a unique name. It lists and filters the existing resources and checks the request queue for matching
-// creations.
+type (
+	tryLookupResourceFunc[T any] func(context.Context) (*T, error)
+	checkQueueFunc               func(context.Context) (*requestInfo, error)
+)
+
+// findResource is a helper function intended for finding a single resource.
+// It performs a lookup for cloud resources and checks the request queue for matching entries.
+// A lookup can consist of GET and LIST operations, including filtering by name or other constraints
+// to match exactly one entry.
+//
 // The function expects two callbacks:
-//   - A function listing and looking for a single resource, returning its pointer if found. If errors occur or multiple
-//     resources match the constraints, it returns an error. If no resource it found, it returns nil.
+//   - A function looking for a single resource, returning its pointer if found. If errors occur or multiple
+//     resources match the constraints, it returns an error. If no resource it found, it returns NotFound or nil.
 //   - A function checking the request queue for a matching resource creation and returning information about the
 //     request if found. If no request is found, nil is returned. If errors occur, they are returned.
 //
-// As request queue lookups are rather expensive, we list and filter first. If no resource is found, we check the
+// As request queue lookups are rather expensive, we perform the lookup first. If no resource is found, we check the
 // request queue. If a request is found and if it is reported as DONE, we assume a possible race condition:
-// When initially listing the resources, the request was possibly not DONE yet. Not it is, so we list and filter again
-// to see if the resource was created in the meantime.
+//
+// When initially performing the lookup, the request was possibly not DONE yet.
+// However, it might be completed right before we checked the request queue.
+// In this case, we perform the lookup again, to see if the resource was created in the meantime.
+//
 // As this process is similar independent of the resource type, this generic function helps to reduce boilerplate.
 func findResource[T any](
-	listAndFilter func() (*T, error),
-	checkQueue func() (*requestInfo, error),
+	ctx context.Context,
+	tryLookupResource tryLookupResourceFunc[T],
+	checkQueue checkQueueFunc,
 ) (
 	resource *T,
 	request *requestInfo,
 	err error,
 ) {
-	resource, err = listAndFilter()
-	if err != nil {
+	resource, err = tryLookupResource(ctx)
+	if ignoreNotFound(err) != nil {
 		return nil, nil, err // Found multiple resources or another error occurred.
 	}
 	if resource != nil {
 		return resource, nil, nil // Something was found, great. No need to look any further.
 	}
 
-	request, err = checkQueue()
+	request, err = checkQueue(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -236,8 +252,8 @@ func findResource[T any](
 		// initially.
 		// Note that it can happen that even now we don't find a resource. This can happen if we found an old creation
 		// request, but the resource was already deleted later on.
-		resource, err = listAndFilter()
-		if err != nil {
+		resource, err = tryLookupResource(ctx)
+		if ignoreNotFound(err) != nil {
 			return nil, nil, err // Found multiple resources or another error occurred.
 		}
 		if resource != nil {
@@ -270,7 +286,7 @@ type metadataHolder interface {
 }
 
 func getState(resource metadataHolder) string {
-	return ptr.Deref(resource.GetMetadata().GetState(), "")
+	return ptr.Deref(resource.GetMetadata().GetState(), unknownValue)
 }
 
 func getVMState(resource propertiesHolder[*sdk.ServerProperties]) string {

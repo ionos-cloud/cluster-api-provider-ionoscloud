@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -28,6 +29,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+)
+
+const (
+	// newValueStr is a string that represents a changed value.
+	newValueStr = "changed"
 )
 
 func TestIonosCloudCluster_Conditions(t *testing.T) {
@@ -50,6 +56,7 @@ func defaultCluster() *IonosCloudCluster {
 				Port: 5678,
 			},
 			ContractNumber: "12345678",
+			Location:       "de/txl",
 		},
 	}
 }
@@ -71,8 +78,49 @@ var _ = Describe("IonosCloudCluster", func() {
 			cluster := defaultCluster()
 			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
 
-			cluster.Spec.ContractNumber = "changed"
+			cluster.Spec.ContractNumber = newValueStr
 			Expect(k8sClient.Update(context.Background(), cluster)).Should(MatchError(ContainSubstring("contractNumber is immutable")))
+		})
+
+		It("should not allow changing the location", func() {
+			cluster := defaultCluster()
+			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+			cluster.Spec.Location = newValueStr
+			Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
+		})
+
+		When("trying to update the control plane endpoint", func() {
+			It("should fail if the host is already set", func() {
+				cluster := defaultCluster()
+				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+				cluster.Spec.ControlPlaneEndpoint.Host = newValueStr
+				Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
+			})
+			It("should work if the endpoint host is not set", func() {
+				cluster := defaultCluster()
+				cluster.Spec.ControlPlaneEndpoint.Host = ""
+				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+				cluster.Spec.ControlPlaneEndpoint.Host = newValueStr
+				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
+			})
+			It("should fail if the port is already set", func() {
+				cluster := defaultCluster()
+				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+				cluster.Spec.ControlPlaneEndpoint.Port = 1234
+				Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
+			})
+			It("should work if the endpoint port is not set", func() {
+				cluster := defaultCluster()
+				cluster.Spec.ControlPlaneEndpoint.Port = 0
+				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+				cluster.Spec.ControlPlaneEndpoint.Port = 4657
+				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
+			})
 		})
 	})
 	Context("Status", func() {
@@ -94,9 +142,9 @@ var _ = Describe("IonosCloudCluster", func() {
 			wantProvisionRequest := ProvisioningRequest{
 				Method:      "POST",
 				RequestPath: "/path/to/resource",
-				State:       RequestStatusQueued,
+				State:       sdk.RequestStatusQueued,
 			}
-			fetched.SetCurrentRequest("123", wantProvisionRequest)
+			fetched.SetCurrentRequestByDatacenter("123", wantProvisionRequest)
 			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
 
 			By("updating the cluster status")
@@ -110,7 +158,7 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(conditions.IsTrue(fetched, clusterv1.ReadyCondition)).To(BeTrue())
 
 			By("Removing the entry from the status again")
-			fetched.DeleteCurrentRequest("123")
+			fetched.DeleteCurrentRequestByDatacenter("123")
 			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
 
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())

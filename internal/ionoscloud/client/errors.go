@@ -23,6 +23,7 @@ var (
 	errServerIDIsEmpty     = errors.New("error parsing server ID: value cannot be empty")
 	errLANIDIsEmpty        = errors.New("error parsing LAN ID: value cannot be empty")
 	errNICIDIsEmpty        = errors.New("error parsing NIC ID: value cannot be empty")
+	errIPBlockIDIsEmpty    = errors.New("error parsing IP block ID: value cannot be empty")
 	errRequestURLIsEmpty   = errors.New("a request URL is necessary for the operation")
 	errLocationHeaderEmpty = errors.New(apiNoLocationErrMessage)
 )

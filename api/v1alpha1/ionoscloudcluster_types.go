@@ -36,27 +36,45 @@ const (
 // IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
 type IonosCloudClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
-	// +optional
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+	//+kubebuilder:validation:XValidation:rule="self.host == oldSelf.host || oldSelf.host == ''",message="control plane endpoint host cannot be updated"
+	//+kubebuilder:validation:XValidation:rule="self.port == oldSelf.port || oldSelf.port == 0",message="control plane endpoint port cannot be updated"
+	//
+	// TODO(gfariasalves): as of now, IP must be provided by the user as we still don't insert the
+	// provider-provided block IP into the kube-vip manifest.
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 
 	// Contract number is the contract number of the IONOS Cloud account.
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
 	ContractNumber string `json:"contractNumber"`
+
+	// Location is the location where the data centers should be located.
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
+	//+kubebuilder:example=de/txl
+	//+kubebuilder:validation:MinLength=1
+	Location string `json:"location"`
 }
 
 // IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
 type IonosCloudClusterStatus struct {
 	// Ready indicates that the cluster is ready.
-	// +optional
-	Ready bool `json:"ready"`
+	//+optional
+	Ready bool `json:"ready,omitempty"`
 
 	// Conditions defines current service state of the IonosCloudCluster.
-	// +optional
+	//+optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
 	// CurrentRequestByDatacenter maps data center IDs to a pending provisioning request made during reconciliation.
-	// +optional
+	//+optional
 	CurrentRequestByDatacenter map[string]ProvisioningRequest `json:"currentRequest,omitempty"`
+
+	// CurrentClusterRequest is the current pending request made during reconciliation for the whole cluster.
+	//+optional
+	CurrentClusterRequest *ProvisioningRequest `json:"currentClusterRequest,omitempty"`
+
+	// ControlPlaneEndpointIPBlockID is the IONOS Cloud UUID for the control plane endpoint IP block.
+	//+optional
+	ControlPlaneEndpointIPBlockID string `json:"controlPlaneEndpointIPBlockID,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -97,16 +115,31 @@ func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
 	i.Status.Conditions = conditions
 }
 
-// SetCurrentRequest sets the current provisioning request for the given data center.
+// SetCurrentRequestByDatacenter sets the current provisioning request for the given data center.
 // This function makes sure that the map is initialized before setting the request.
-func (i *IonosCloudCluster) SetCurrentRequest(datacenterID string, request ProvisioningRequest) {
+func (i *IonosCloudCluster) SetCurrentRequestByDatacenter(datacenterID string, request ProvisioningRequest) {
 	if i.Status.CurrentRequestByDatacenter == nil {
 		i.Status.CurrentRequestByDatacenter = map[string]ProvisioningRequest{}
 	}
 	i.Status.CurrentRequestByDatacenter[datacenterID] = request
 }
 
-// DeleteCurrentRequest deletes the current provisioning request for the given data center.
-func (i *IonosCloudCluster) DeleteCurrentRequest(datacenterID string) {
+// DeleteCurrentRequestByDatacenter deletes the current provisioning request for the given data center.
+func (i *IonosCloudCluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
 	delete(i.Status.CurrentRequestByDatacenter, datacenterID)
+}
+
+// SetCurrentClusterRequest sets the current provisioning request for the cluster.
+func (i *IonosCloudCluster) SetCurrentClusterRequest(method, status, requestPath string) {
+	i.Status.CurrentClusterRequest = &ProvisioningRequest{
+		Method:      method,
+		RequestPath: requestPath,
+		State:       status,
+		Message:     nil,
+	}
+}
+
+// DeleteCurrentClusterRequest deletes the current provisioning request for the cluster.
+func (i *IonosCloudCluster) DeleteCurrentClusterRequest() {
+	i.Status.CurrentClusterRequest = nil
 }

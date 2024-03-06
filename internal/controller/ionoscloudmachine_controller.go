@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	sdk "github.com/ionos-cloud/sdk-go/v6"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
@@ -52,9 +51,9 @@ type IonosCloudMachineReconciler struct {
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines/finalizers,verbs=update
 
-// +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
+//+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -141,40 +140,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.reconcileNormal(ctx, machineScope, cloudService)
 }
 
-func (r *IonosCloudMachineReconciler) isInfrastructureReady(machineScope *scope.MachineScope) bool {
-	// Make sure the infrastructure is ready.
-	if !machineScope.Cluster.Status.InfrastructureReady {
-		machineScope.Info("Cluster infrastructure is not ready yet")
-		conditions.MarkFalse(
-			machineScope.IonosMachine,
-			infrav1.MachineProvisionedCondition,
-			infrav1.WaitingForClusterInfrastructureReason,
-			clusterv1.ConditionSeverityInfo, "")
-
-		return false
-	}
-
-	// Make sure to wait until the data secret was created
-	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
-		machineScope.Info("Bootstrap data secret is not available yet")
-		conditions.MarkFalse(
-			machineScope.IonosMachine,
-			infrav1.MachineProvisionedCondition,
-			infrav1.WaitingForBootstrapDataReason,
-			clusterv1.ConditionSeverityInfo, "",
-		)
-
-		return false
-	}
-
-	return true
-}
-
-type serviceReconcileStep struct {
-	name          string
-	reconcileFunc func() (bool, error)
-}
-
 func (r *IonosCloudMachineReconciler) reconcileNormal(
 	ctx context.Context,
 	machineScope *scope.MachineScope,
@@ -217,6 +182,8 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 	reconcileSequence := []serviceReconcileStep{
 		{name: "ReconcileLAN", reconcileFunc: cloudService.ReconcileLAN},
 		{name: "ReconcileServer", reconcileFunc: cloudService.ReconcileServer},
+		{name: "ReconcileIPFailover", reconcileFunc: cloudService.ReconcileIPFailover},
+		{name: "FinalizeMachineProvisioning", reconcileFunc: cloudService.FinalizeMachineProvisioning},
 	}
 
 	for _, step := range reconcileSequence {
@@ -230,79 +197,6 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 	}
 
 	return ctrl.Result{}, nil
-}
-
-// Before starting with the reconciliation loop,
-// we want to check if there is any pending request in the IONOS cluster or machine spec.
-// If there is any pending request, we need to check the status of the request and act accordingly.
-// Status:
-//   - Queued, Running => Requeue the current request
-//   - Failed => Log the error and continue also apply the same logic as in Done.
-//   - Done => Clear request from the status and continue reconciliation.
-func (r *IonosCloudMachineReconciler) checkRequestStates(
-	ctx context.Context,
-	machineScope *scope.MachineScope,
-	cloudService *cloud.Service,
-) (requeue bool, retErr error) {
-	// check cluster wide request
-	ionosCluster := machineScope.ClusterScope.IonosCluster
-	if req, exists := ionosCluster.Status.CurrentRequestByDatacenter[machineScope.DatacenterID()]; exists {
-		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
-		if err != nil {
-			retErr = fmt.Errorf("could not get request status: %w", err)
-		} else {
-			requeue, retErr = r.withStatus(status, message, machineScope.Logger,
-				func() error {
-					// remove the request from the status and patch the cluster
-					ionosCluster.DeleteCurrentRequest(machineScope.DatacenterID())
-					return machineScope.ClusterScope.PatchObject()
-				},
-			)
-		}
-	}
-
-	// check machine related request
-	if req := machineScope.IonosMachine.Status.CurrentRequest; req != nil {
-		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
-		if err != nil {
-			retErr = errors.Join(retErr, fmt.Errorf("could not get request status: %w", err))
-		} else {
-			requeue, _ = r.withStatus(status, message, machineScope.Logger,
-				func() error {
-					// no need to patch the machine here as it will be patched
-					// after the machine reconciliation is done.
-					machineScope.V(4).Info("Request is done, clearing it from the status")
-					machineScope.IonosMachine.Status.CurrentRequest = nil
-					return nil
-				},
-			)
-		}
-	}
-
-	return requeue, retErr
-}
-
-// withStatus is a helper function to handle the different request states
-// and provides a callback function to execute when the request is done or failed.
-func (r *IonosCloudMachineReconciler) withStatus(
-	status string,
-	message string,
-	log *logr.Logger,
-	doneCallback func() error,
-) (bool, error) {
-	switch status {
-	case sdk.RequestStatusQueued, sdk.RequestStatusRunning:
-		return true, nil
-	case sdk.RequestStatusFailed:
-		// log the error message
-		log.Error(nil, "Request status indicates a failure", "message", message)
-		fallthrough // we run the same logic as for status done
-	case sdk.RequestStatusDone:
-		// we don't requeue
-		return false, doneCallback()
-	}
-
-	return false, fmt.Errorf("unknown request status %s", status)
 }
 
 func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, cloudService *cloud.Service) (ctrl.Result, error) {
@@ -325,22 +219,106 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machi
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	if requeue, err := cloudService.ReconcileServerDeletion(); requeue || err != nil {
-		if err != nil {
-			err = fmt.Errorf("could not reconcile server deletion: %w", err)
-		}
-		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
+	reconcileSequence := []serviceReconcileStep{
+		// NOTE(avorima): NICs, which are configured in an IP failover configuration, cannot be deleted
+		// by a request to delete the server. Therefore, during deletion, we need to remove the NIC from
+		// the IP failover configuration.
+		{name: "ReconcileIPFailoverDeletion", reconcileFunc: cloudService.ReconcileIPFailoverDeletion},
+		{name: "ReconcileServerDeletion", reconcileFunc: cloudService.ReconcileServerDeletion},
+		{name: "ReconcileLANDeletion", reconcileFunc: cloudService.ReconcileLANDeletion},
 	}
 
-	if requeue, err := cloudService.ReconcileLANDeletion(); requeue || err != nil {
-		if err != nil {
-			err = fmt.Errorf("could not reconcile LAN deletion: %w", err)
+	for _, step := range reconcileSequence {
+		if requeue, err := step.reconcileFunc(); err != nil || requeue {
+			if err != nil {
+				err = fmt.Errorf("error in step %s: %w", step.name, err)
+			}
+
+			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 		}
-		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 	}
 
 	controllerutil.RemoveFinalizer(machineScope.IonosMachine, infrav1.MachineFinalizer)
 	return ctrl.Result{}, nil
+}
+
+// Before starting with the reconciliation loop,
+// we want to check if there is any pending request in the IONOS cluster or machine spec.
+// If there is any pending request, we need to check the status of the request and act accordingly.
+// Status:
+//   - Queued, Running => Requeue the current request
+//   - Failed => Log the error and continue also apply the same logic as in Done.
+//   - Done => Clear request from the status and continue reconciliation.
+func (r *IonosCloudMachineReconciler) checkRequestStates(
+	ctx context.Context,
+	machineScope *scope.MachineScope,
+	cloudService *cloud.Service,
+) (requeue bool, retErr error) {
+	// check cluster wide request
+	ionosCluster := machineScope.ClusterScope.IonosCluster
+	if req, exists := ionosCluster.Status.CurrentRequestByDatacenter[machineScope.DatacenterID()]; exists {
+		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
+		if err != nil {
+			retErr = fmt.Errorf("could not get request status: %w", err)
+		} else {
+			requeue, retErr = withStatus(status, message, machineScope.Logger,
+				func() error {
+					// remove the request from the status and patch the cluster
+					ionosCluster.DeleteCurrentRequestByDatacenter(machineScope.DatacenterID())
+					return machineScope.ClusterScope.PatchObject()
+				},
+			)
+		}
+	}
+
+	// check machine related request
+	if req := machineScope.IonosMachine.Status.CurrentRequest; req != nil {
+		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
+		if err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("could not get request status: %w", err))
+		} else {
+			requeue, _ = withStatus(status, message, machineScope.Logger,
+				func() error {
+					// no need to patch the machine here as it will be patched
+					// after the machine reconciliation is done.
+					machineScope.V(4).Info("Request is done, clearing it from the status")
+					machineScope.IonosMachine.Status.CurrentRequest = nil
+					return nil
+				},
+			)
+		}
+	}
+
+	return requeue, retErr
+}
+
+func (r *IonosCloudMachineReconciler) isInfrastructureReady(machineScope *scope.MachineScope) bool {
+	// Make sure the infrastructure is ready.
+	if !machineScope.Cluster.Status.InfrastructureReady {
+		machineScope.Info("Cluster infrastructure is not ready yet")
+		conditions.MarkFalse(
+			machineScope.IonosMachine,
+			infrav1.MachineProvisionedCondition,
+			infrav1.WaitingForClusterInfrastructureReason,
+			clusterv1.ConditionSeverityInfo, "")
+
+		return false
+	}
+
+	// Make sure to wait until the data secret was created
+	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
+		machineScope.Info("Bootstrap data secret is not available yet")
+		conditions.MarkFalse(
+			machineScope.IonosMachine,
+			infrav1.MachineProvisionedCondition,
+			infrav1.WaitingForBootstrapDataReason,
+			clusterv1.ConditionSeverityInfo, "",
+		)
+
+		return false
+	}
+
+	return true
 }
 
 // SetupWithManager sets up the controller with the Manager.

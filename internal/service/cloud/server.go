@@ -17,6 +17,7 @@ limitations under the License.
 package cloud
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -29,7 +30,6 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -54,6 +54,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 	}
 
 	server, request, err := findResource(
+		s.ctx,
 		s.getServer,
 		s.getLatestServerCreationRequest,
 	)
@@ -66,11 +67,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 	}
 
 	if server != nil {
-		// we have to make sure that after the NIC was created, the endpoint IP must be added
-		// as a secondary IP address
-		if shouldRequeue, err := s.checkPrimaryNIC(server); shouldRequeue || err != nil {
-			return shouldRequeue, err
-		}
+		// Server is available
 
 		if !s.isServerAvailable(server) {
 			// server is still provisioning, checking again later
@@ -79,7 +76,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 
 		log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
 		// server exists and is available.
-		return s.finalizeServerProvisioning()
+		return false, nil
 	}
 
 	// server does not exist yet, create it
@@ -99,6 +96,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 	log := s.scope.Logger.WithName("ReconcileLANDeletion")
 
 	server, request, err := findResource(
+		s.ctx,
 		s.getServer,
 		s.getLatestServerCreationRequest,
 	)
@@ -107,6 +105,10 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 	}
 
 	if request != nil && request.isPending() {
+		s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewRequestWithState(
+			http.MethodPost, request.location,
+			request.status),
+		)
 		log.Info("Creation request is pending", "location", request.location)
 		return true, nil
 	}
@@ -116,23 +118,35 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		return false, nil
 	}
 
-	request, err = s.getLatestServerDeletionRequest(*server.Id)
+	request, err = s.getLatestServerDeletionRequest(s.ctx, *server.Id)
 	if err != nil {
 		return false, err
 	}
 
-	if request != nil && request.isPending() {
-		// We want to requeue and check again after some time
-		log.Info("Deletion request is pending", "location", request.location)
-		return true, nil
+	if request != nil {
+		if request.isPending() {
+			s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewRequestWithState(
+				http.MethodDelete, request.location,
+				request.status),
+			)
+
+			// We want to requeue and check again after some time
+			log.Info("Deletion request is pending", "location", request.location)
+			return true, nil
+		}
+
+		if request.isDone() {
+			s.scope.IonosMachine.Status.CurrentRequest = nil
+			return false, nil
+		}
 	}
 
 	err = s.deleteServer(*server.Id)
 	return err == nil, err
 }
 
-func (s *Service) finalizeServerProvisioning() (bool, error) {
-	conditions.MarkTrue(s.scope.IonosMachine, clusterv1.ReadyCondition)
+func (s *Service) FinalizeMachineProvisioning() (bool, error) {
+	s.scope.IonosMachine.Status.Ready = true
 	conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil
 }
@@ -166,10 +180,9 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 			return nil, fmt.Errorf("invalid server ID %s: %w", serverID, err)
 		}
 
-		server, err := s.api().GetServer(s.ctx, s.datacenterID(), serverID)
-		// if the server was not found, we will continue, as the request might not
-		// have been completed yet
-		if err != nil && !isNotFound(err) {
+		depth := int32(2) // for getting the server and its NICs' properties
+		server, err := s.apiWithDepth(depth).GetServer(s.ctx, s.datacenterID(), serverID)
+		if err != nil {
 			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, s.datacenterID(), err)
 		}
 
@@ -184,17 +197,21 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 }
 
 // getServer looks for the server in the data center.
-func (s *Service) getServer() (*sdk.Server, error) {
+func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
 	server, err := s.getServerByProviderID()
-	if server != nil || err != nil {
+	// if the server was not found, we try to find it by listing all servers.
+	if server != nil || ignoreNotFound(err) != nil {
 		return server, err
 	}
 
+	// listing requires one more level of depth to for instance
+	// retrieving the NIC properties.
+	const listDepth = 3
 	// without provider ID, we need to list all servers and see if
 	// there is one with the expected name.
-	serverList, err := s.api().ListServers(s.ctx, s.datacenterID())
-	if err != nil {
-		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(), err)
+	serverList, listErr := s.apiWithDepth(listDepth).ListServers(s.ctx, s.datacenterID())
+	if listErr != nil {
+		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(), listErr)
 	}
 
 	items := ptr.Deref(serverList.Items, []sdk.Server{})
@@ -207,7 +224,9 @@ func (s *Service) getServer() (*sdk.Server, error) {
 		}
 	}
 
-	return nil, nil
+	// if we still can't find a server we return the potential
+	// initial not found error.
+	return nil, err
 }
 
 func (s *Service) deleteServer(serverID string) error {
@@ -226,8 +245,9 @@ func (s *Service) deleteServer(serverID string) error {
 	return nil
 }
 
-func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
+func (s *Service) getLatestServerCreationRequest(_ context.Context) (*requestInfo, error) {
 	return getMatchingRequest(
+		s.ctx,
 		s,
 		http.MethodPost,
 		path.Join("datacenters", s.datacenterID(), "servers"),
@@ -235,12 +255,12 @@ func (s *Service) getLatestServerCreationRequest() (*requestInfo, error) {
 	)
 }
 
-func (s *Service) getLatestServerDeletionRequest(serverID string) (*requestInfo, error) {
-	return getMatchingRequest(
+func (s *Service) getLatestServerDeletionRequest(_ context.Context, serverID string) (*requestInfo, error) {
+	return getMatchingRequest[sdk.Server](
+		s.ctx,
 		s,
 		http.MethodDelete,
 		path.Join("datacenters", s.datacenterID(), "servers", serverID),
-		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName()),
 	)
 }
 
@@ -252,7 +272,7 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	lan, err := s.getLAN()
+	lan, err := s.getLAN(s.ctx)
 	if err != nil {
 		return err
 	}

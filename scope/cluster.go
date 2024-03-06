@@ -37,7 +37,7 @@ import (
 
 // ClusterScope defines the basic context for an actuator to operate upon.
 type ClusterScope struct {
-	*logr.Logger
+	*logr.Logger // Deprecated
 
 	client      client.Client
 	patchHelper *patch.Helper
@@ -45,7 +45,7 @@ type ClusterScope struct {
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
 
-	IonosClient ionoscloud.Client
+	IonosClient ionoscloud.Client // Deprecated
 }
 
 // ClusterScopeParams are the parameters, which are used to create a cluster scope.
@@ -100,6 +100,16 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 // GetControlPlaneEndpoint returns the endpoint for the IonosCloudCluster.
 func (c *ClusterScope) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
 	return c.IonosCluster.Spec.ControlPlaneEndpoint
+}
+
+// SetControlPlaneEndpointIPBlockID sets the IP block ID in the IonosCloudCluster status.
+func (c *ClusterScope) SetControlPlaneEndpointIPBlockID(id string) {
+	c.IonosCluster.Status.ControlPlaneEndpointIPBlockID = id
+}
+
+// Location is a shortcut for getting the location used by the IONOS Cloud cluster IP block.
+func (c *ClusterScope) Location() string {
+	return c.IonosCluster.Spec.Location
 }
 
 // PatchObject will apply all changes from the IonosCloudCluster.
