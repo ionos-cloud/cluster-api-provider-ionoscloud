@@ -173,7 +173,7 @@ func (s *Service) isServerAvailable(server *sdk.Server) bool {
 // query for the server in the cloud.
 func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 	// first we check if the provider ID is set
-	if !ptr.IsNullOrDefault(s.scope.IonosMachine.Spec.ProviderID) {
+	if !ptr.IsNilOrZero(s.scope.IonosMachine.Spec.ProviderID) {
 		serverID := s.scope.IonosMachine.ExtractServerID()
 		// we expect the server ID to be a valid UUID
 		if err := uuid.Validate(serverID); err != nil {

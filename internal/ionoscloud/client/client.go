@@ -168,28 +168,6 @@ func (c *IonosCloudClient) DeleteServer(ctx context.Context, datacenterID, serve
 	return "", errLocationHeaderEmpty
 }
 
-// DeleteVolume deletes the volume that matches volumeID in the specified data center.
-func (c *IonosCloudClient) DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error) {
-	if datacenterID == "" {
-		return "", errDatacenterIDIsEmpty
-	}
-
-	if volumeID == "" {
-		return "", errVolumeIDIsEmpty
-	}
-
-	res, err := c.API.VolumesApi.DatacentersVolumesDelete(ctx, datacenterID, volumeID).Execute()
-	if err != nil {
-		return "", err
-	}
-
-	if location := res.Header.Get(locationHeaderKey); location != "" {
-		return location, nil
-	}
-
-	return "", errLocationHeaderEmpty
-}
-
 // CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
 func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost,
 ) (string, error) {
@@ -207,23 +185,6 @@ func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, p
 		return location, nil
 	}
 	return "", errLocationHeaderEmpty
-}
-
-// AttachToLAN attaches a provided NIC to a provided LAN in the specified data center.
-func (c *IonosCloudClient) AttachToLAN(ctx context.Context, datacenterID, lanID string, nic sdk.Nic,
-) (*sdk.Nic, error) {
-	if datacenterID == "" {
-		return nil, errDatacenterIDIsEmpty
-	}
-	if lanID == "" {
-		return nil, errLANIDIsEmpty
-	}
-	n, _, err := c.API.LANsApi.DatacentersLansNicsPost(ctx, datacenterID, lanID).Nic(nic).Execute()
-	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
-	}
-
-	return &n, nil
 }
 
 // PatchLAN patches the LAN that matches lanID in the specified data center with the provided properties, returning the request location.
@@ -260,21 +221,6 @@ func (c *IonosCloudClient) ListLANs(ctx context.Context, datacenterID string) (*
 	return &lans, nil
 }
 
-// GetLAN returns the LAN that matches lanID in the specified data center.
-func (c *IonosCloudClient) GetLAN(ctx context.Context, datacenterID, lanID string) (*sdk.Lan, error) {
-	if datacenterID == "" {
-		return nil, errDatacenterIDIsEmpty
-	}
-	if lanID == "" {
-		return nil, errLANIDIsEmpty
-	}
-	lan, _, err := c.API.LANsApi.DatacentersLansFindById(ctx, datacenterID, lanID).Execute()
-	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
-	}
-	return &lan, nil
-}
-
 // DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
 func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error) {
 	if datacenterID == "" {
@@ -291,35 +237,6 @@ func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID st
 		return location, nil
 	}
 	return "", errLocationHeaderEmpty
-}
-
-// ListVolumes returns a list of volumes in the specified data center.
-func (c *IonosCloudClient) ListVolumes(ctx context.Context, datacenterID string,
-) (*sdk.Volumes, error) {
-	if datacenterID == "" {
-		return nil, errDatacenterIDIsEmpty
-	}
-	volumes, _, err := c.API.VolumesApi.DatacentersVolumesGet(ctx, datacenterID).Execute()
-	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
-	}
-	return &volumes, nil
-}
-
-// GetVolume returns the volume that matches volumeID in the specified data center.
-func (c *IonosCloudClient) GetVolume(ctx context.Context, datacenterID, volumeID string,
-) (*sdk.Volume, error) {
-	if datacenterID == "" {
-		return nil, errDatacenterIDIsEmpty
-	}
-	if volumeID == "" {
-		return nil, errVolumeIDIsEmpty
-	}
-	volume, _, err := c.API.VolumesApi.DatacentersVolumesFindById(ctx, datacenterID, volumeID).Execute()
-	if err != nil {
-		return nil, fmt.Errorf(apiCallErrWrapper, err)
-	}
-	return &volume, nil
 }
 
 // ReserveIPBlock reserves an IP block with the provided properties in the specified location, returning the request
@@ -460,26 +377,6 @@ func (c *IonosCloudClient) PatchNIC(ctx context.Context, datacenterID, serverID,
 	_, res, err := c.API.NetworkInterfacesApi.
 		DatacentersServersNicsPatch(ctx, datacenterID, serverID, nicID).
 		Nic(properties).
-		Execute()
-	if err != nil {
-		return "", fmt.Errorf(apiCallErrWrapper, err)
-	}
-
-	if location := res.Header.Get(locationHeaderKey); location != "" {
-		return location, nil
-	}
-
-	return "", errLocationHeaderEmpty
-}
-
-// DeleteNIC deletes the NIC identified by nicID, returning the request location.
-func (c *IonosCloudClient) DeleteNIC(ctx context.Context, datacenterID, serverID, nicID string) (string, error) {
-	if err := validateNICParameters(datacenterID, serverID, nicID); err != nil {
-		return "", err
-	}
-
-	res, err := c.API.NetworkInterfacesApi.
-		DatacentersServersNicsDelete(ctx, datacenterID, serverID, nicID).
 		Execute()
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)

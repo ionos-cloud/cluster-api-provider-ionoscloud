@@ -5,7 +5,7 @@ We are using k8s [image-builder](https://github.com/kubernetes-sigs/image-builde
 ### Prerequisites
 
 If you take a look at the [book](https://image-builder.sigs.k8s.io/capi/providers/raw), you can see following commands for building raw `qcow2` images:   
-[Preqrequisites](https://image-builder.sigs.k8s.io/capi/capi#prerequisites):
+[Prerequisites](https://image-builder.sigs.k8s.io/capi/capi#prerequisites):
 - Packer version >= 1.6.0
 - Goss plugin for Packer version >= 1.2.0
 - Ansible version >= 2.10.0
@@ -59,3 +59,6 @@ ionosctl img update --image-id <image-id> --cloudinit V1 --licence-type LINUX
 ```
 
 Now, you can copy the ID of your image and set it as the `IONOSCLOUD_MACHINE_IMAGE_ID` environment variable. Your custom image will then be used.
+
+> [!IMPORTANT]  
+> Please ensure to update the Kubernetes version in your environment file (envfile) if it changes, including `KUBERNETES_VERSION` and `KUBERNETES_VERSION_SHORT`.

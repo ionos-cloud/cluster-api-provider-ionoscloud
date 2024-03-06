@@ -200,7 +200,6 @@ spec:
                   pending provisioning request made during reconciliation.
                 type: object
               ready:
-                default: false
                 description: Ready indicates that the cluster is ready.
                 type: boolean
             type: object

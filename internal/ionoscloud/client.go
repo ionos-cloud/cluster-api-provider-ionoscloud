@@ -36,23 +36,12 @@ type Client interface {
 	DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error)
 	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request path.
 	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost) (string, error)
-	// AttachToLAN attaches a provided NIC to a provided LAN in a specified data center.
-	AttachToLAN(ctx context.Context, datacenterID, lanID string, nic sdk.Nic) (
-		*sdk.Nic, error)
 	// PatchLAN patches the LAN that matches lanID in the specified data center with the provided properties, returning the request location.
 	PatchLAN(ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties) (string, error)
 	// ListLANs returns a list of LANs in the specified data center.
 	ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error)
-	// GetLAN returns the LAN that matches lanID in the specified data center.
-	GetLAN(ctx context.Context, datacenterID, lanID string) (*sdk.Lan, error)
 	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request path.
 	DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error)
-	// ListVolumes returns a list of volumes in a specified data center.
-	ListVolumes(ctx context.Context, datacenterID string) (*sdk.Volumes, error)
-	// GetVolume returns the volume that matches volumeID in the specified data center.
-	GetVolume(ctx context.Context, datacenterID, volumeID string) (*sdk.Volume, error)
-	// DeleteVolume deletes the volume that matches volumeID in the specified data center.
-	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
 	// ReserveIPBlock reserves an IP block with the provided properties in the specified location.
 	ReserveIPBlock(ctx context.Context, name, location string, size int32) (requestPath string, err error)
 	// GetIPBlock returns the IP block that matches the provided ipBlockID.
@@ -69,6 +58,4 @@ type Client interface {
 	GetRequests(ctx context.Context, method, path string) ([]sdk.Request, error)
 	// PatchNIC updates the NIC identified by nicID with the provided properties, returning the request location.
 	PatchNIC(ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties) (string, error)
-	// DeleteNIC deletes the NIC identified by nicID, returning the request location.
-	DeleteNIC(ctx context.Context, datacenterID, serverID, nicID string) (string, error)
 }

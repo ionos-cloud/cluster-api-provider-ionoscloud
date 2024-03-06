@@ -58,7 +58,6 @@ type IonosCloudClusterSpec struct {
 type IonosCloudClusterStatus struct {
 	// Ready indicates that the cluster is ready.
 	//+optional
-	//+kubebuilder:default=false
 	Ready bool `json:"ready,omitempty"`
 
 	// Conditions defines current service state of the IonosCloudCluster.
