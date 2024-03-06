@@ -428,7 +428,6 @@ func (_c *MockClient_GetIPBlock_Call) RunAndReturn(run func(context.Context, str
 	return _c
 }
 
-
 // GetRequests provides a mock function with given fields: ctx, method, path
 func (_m *MockClient) GetRequests(ctx context.Context, method string, path string) ([]ionoscloud.Request, error) {
 	ret := _m.Called(ctx, method, path)
