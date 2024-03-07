@@ -64,7 +64,6 @@ type IonosCloudClusterReconciler struct {
 func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, retErr error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	// TODO(user): your logic here
 	ionosCloudCluster := &infrav1.IonosCloudCluster{}
 	if err := r.Client.Get(ctx, req.NamespacedName, ionosCloudCluster); err != nil {
 		if apierrors.IsNotFound(err) {
@@ -105,7 +104,6 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}()
 
-	// TODO(gfariasalves): Remove MachineScope from the service and directly use clusterScope instead.
 	cloudService, err := cloud.NewService(r.IonosCloudClient, &logger)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create cloud service: %w", err)
