@@ -23,12 +23,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -37,8 +35,6 @@ import (
 
 // ClusterScope defines the basic context for an actuator to operate upon.
 type ClusterScope struct {
-	*logr.Logger // Deprecated
-
 	client      client.Client
 	patchHelper *patch.Helper
 
@@ -51,7 +47,6 @@ type ClusterScope struct {
 // ClusterScopeParams are the parameters, which are used to create a cluster scope.
 type ClusterScopeParams struct {
 	Client       client.Client
-	Logger       *logr.Logger
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
 	IonosClient  ionoscloud.Client
@@ -75,18 +70,12 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		return nil, errors.New("IonosClient is required when creating a ClusterScope")
 	}
 
-	if params.Logger == nil {
-		logger := ctrl.Log
-		params.Logger = &logger
-	}
-
 	helper, err := patch.NewHelper(params.IonosCluster, params.Client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init patch helper: %w", err)
 	}
 
 	clusterScope := &ClusterScope{
-		Logger:       params.Logger,
 		Cluster:      params.Cluster,
 		IonosCluster: params.IonosCluster,
 		IonosClient:  params.IonosClient,

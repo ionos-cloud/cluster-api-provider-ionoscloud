@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
@@ -101,7 +100,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	logger = logger.WithValues("cluster", klog.KObj(cluster))
 
-	clusterScope, err := r.getClusterScope(ctx, &logger, cluster, ionosCloudMachine)
+	clusterScope, err := r.getClusterScope(ctx, cluster, ionosCloudMachine)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error getting infra provider cluster or control plane object: %w", err)
 	}
@@ -332,7 +331,7 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *IonosCloudMachineReconciler) getClusterScope(
-	ctx context.Context, logger *logr.Logger, cluster *clusterv1.Cluster, ionosCloudMachine *infrav1.IonosCloudMachine,
+	ctx context.Context, cluster *clusterv1.Cluster, ionosCloudMachine *infrav1.IonosCloudMachine,
 ) (*scope.ClusterScope, error) {
 	var clusterScope *scope.ClusterScope
 	var err error
@@ -357,7 +356,6 @@ func (r *IonosCloudMachineReconciler) getClusterScope(
 	// Create the cluster scope
 	clusterScope, err = scope.NewClusterScope(scope.ClusterScopeParams{
 		Client:       r.Client,
-		Logger:       logger,
 		Cluster:      cluster,
 		IonosCluster: ionosCloudCluster,
 		IonosClient:  r.IonosCloudClient,

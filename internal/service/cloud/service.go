@@ -48,7 +48,7 @@ func NewService(ctx context.Context, s *scope.MachineScope) (*Service, error) {
 	return &Service{
 		scope:  s,
 		ctx:    ctx,
-		logger: s.ClusterScope.Logger,
+		logger: s.Logger,
 		cloud:  s.ClusterScope.IonosClient,
 	}, nil
 }

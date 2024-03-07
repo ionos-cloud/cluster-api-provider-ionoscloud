@@ -163,7 +163,6 @@ func (s *ServiceTestSuite) SetupTest() {
 
 	s.clusterScope, err = scope.NewClusterScope(scope.ClusterScopeParams{
 		Client:       s.k8sClient,
-		Logger:       &s.log,
 		Cluster:      s.capiCluster,
 		IonosCluster: s.infraCluster,
 		IonosClient:  s.ionosClient,
