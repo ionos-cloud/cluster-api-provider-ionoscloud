@@ -178,9 +178,9 @@ func (s *Service) getServerByProviderID(ctx context.Context, ms *scope.MachineSc
 		}
 
 		depth := int32(2) // for getting the server and its NICs' properties
-		server, err := s.apiWithDepth(depth).GetServer(ctx, s.datacenterID(ms), serverID)
+		server, err := s.apiWithDepth(depth).GetServer(ctx, ms.DatacenterID(), serverID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, s.datacenterID(ms), err)
+			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, ms.DatacenterID(), err)
 		}
 
 		// if the server was found, we return it
@@ -207,9 +207,9 @@ func (s *Service) getServer(ms *scope.MachineScope) func(ctx context.Context) (*
 		const listDepth = 3
 		// without provider ID, we need to list all servers and see if
 		// there is one with the expected name.
-		serverList, listErr := s.apiWithDepth(listDepth).ListServers(ctx, s.datacenterID(ms))
+		serverList, listErr := s.apiWithDepth(listDepth).ListServers(ctx, ms.DatacenterID())
 		if listErr != nil {
-			return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(ms), listErr)
+			return nil, fmt.Errorf("failed to list servers in data center %s: %w", ms.DatacenterID(), listErr)
 		}
 
 		items := ptr.Deref(serverList.Items, []sdk.Server{})
@@ -232,7 +232,7 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.MachineScope, serv
 	log := s.logger.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
-	requestLocation, err := s.cloud.DeleteServer(ctx, s.datacenterID(ms), serverID)
+	requestLocation, err := s.cloud.DeleteServer(ctx, ms.DatacenterID(), serverID)
 	if err != nil {
 		return fmt.Errorf("failed to request server deletion: %w", err)
 	}
@@ -250,7 +250,7 @@ func (s *Service) getLatestServerCreationRequest(ms *scope.MachineScope) func(co
 			ctx,
 			s,
 			http.MethodPost,
-			path.Join("datacenters", s.datacenterID(ms), "servers"),
+			path.Join("datacenters", ms.DatacenterID(), "servers"),
 			matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName(ms)),
 		)
 	}
@@ -261,7 +261,7 @@ func (s *Service) getLatestServerDeletionRequest(ctx context.Context, ms *scope.
 		ctx,
 		s,
 		http.MethodDelete,
-		path.Join("datacenters", s.datacenterID(ms), "servers", serverID),
+		path.Join("datacenters", ms.DatacenterID(), "servers", serverID),
 	)
 }
 
@@ -293,12 +293,12 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 
 	server, requestLocation, err := s.cloud.CreateServer(
 		ctx,
-		s.datacenterID(ms),
+		ms.DatacenterID(),
 		s.buildServerProperties(ms, copySpec),
 		s.buildServerEntities(ms, entityParams),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create server in data center %s: %w", s.datacenterID(ms), err)
+		return fmt.Errorf("failed to create server in data center %s: %w", ms.DatacenterID(), err)
 	}
 
 	log.Info("Successfully requested for server creation", "location", requestLocation)
@@ -401,7 +401,7 @@ func (s *Service) renderUserData(ms *scope.MachineScope, input string) string {
 }
 
 func (s *Service) serversURL(ms *scope.MachineScope) string {
-	return path.Join("datacenters", s.datacenterID(ms), "servers")
+	return path.Join("datacenters", ms.DatacenterID(), "servers")
 }
 
 // serverName returns a formatted name for the expected cloud server resource.

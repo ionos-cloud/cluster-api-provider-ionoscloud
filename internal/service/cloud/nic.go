@@ -31,7 +31,7 @@ import (
 )
 
 func (s *Service) nicURL(ms *scope.MachineScope, serverID, nicID string) string {
-	return path.Join("datacenters", s.datacenterID(ms), "servers", serverID, "nics", nicID)
+	return path.Join("datacenters", ms.DatacenterID(), "servers", serverID, "nics", nicID)
 }
 
 // reconcileNICConfig ensures that the primary NIC contains the endpoint IP address.
@@ -107,7 +107,7 @@ func (s *Service) patchNIC(ctx context.Context, ms *scope.MachineScope, serverID
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)
 
-	location, err := s.cloud.PatchNIC(ctx, s.datacenterID(ms), serverID, nicID, props)
+	location, err := s.cloud.PatchNIC(ctx, ms.DatacenterID(), serverID, nicID, props)
 	if err != nil {
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}
