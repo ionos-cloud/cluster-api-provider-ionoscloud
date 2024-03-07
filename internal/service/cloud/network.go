@@ -29,14 +29,15 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 // lanName returns the name of the cluster LAN.
-func (s *Service) lanName() string {
+func (s *Service) lanName(cs *scope.ClusterScope) string {
 	return fmt.Sprintf(
 		"k8s-%s-%s",
-		s.scope.ClusterScope.Cluster.Namespace,
-		s.scope.ClusterScope.Cluster.Name)
+		cs.Cluster.Namespace,
+		cs.Cluster.Name)
 }
 
 func (s *Service) lanURL(id string) string {
@@ -124,6 +125,7 @@ func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
 
 // getLAN tries to retrieve the cluster-related LAN in the data center.
 func (s *Service) getLAN(_ context.Context) (*sdk.Lan, error) {
+	cs := s.scope.ClusterScope
 	// check if the LAN exists
 	depth := int32(2) // for listing the LANs with their number of NICs
 	lans, err := s.apiWithDepth(depth).ListLANs(s.ctx, s.datacenterID(s.scope))
@@ -132,7 +134,7 @@ func (s *Service) getLAN(_ context.Context) (*sdk.Lan, error) {
 	}
 
 	var (
-		expectedName = s.lanName()
+		expectedName = s.lanName(cs)
 		lanCount     = 0
 		foundLAN     *sdk.Lan
 	)
@@ -155,10 +157,11 @@ func (s *Service) getLAN(_ context.Context) (*sdk.Lan, error) {
 }
 
 func (s *Service) createLAN() error {
+	cs := s.scope.ClusterScope
 	log := s.logger.WithName("createLAN")
 
 	requestPath, err := s.cloud.CreateLAN(s.ctx, s.datacenterID(s.scope), sdk.LanPropertiesPost{
-		Name:   ptr.To(s.lanName()),
+		Name:   ptr.To(s.lanName(cs)),
 		Public: ptr.To(true),
 	})
 	if err != nil {
@@ -216,7 +219,8 @@ func (s *Service) getLatestLANRequestByMethod(method, url string, matchers ...ma
 }
 
 func (s *Service) getLatestLANCreationRequest(_ context.Context) (*requestInfo, error) {
-	return s.getLatestLANRequestByMethod(http.MethodPost, s.lansURL(), matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName()))
+	cs := s.scope.ClusterScope
+	return s.getLatestLANRequestByMethod(http.MethodPost, s.lansURL(), matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName(cs)))
 }
 
 func (s *Service) getLatestLANDeletionRequest(lanID string) (*requestInfo, error) {
