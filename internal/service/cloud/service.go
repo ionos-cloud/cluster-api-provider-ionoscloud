@@ -60,8 +60,8 @@ func (s *Service) apiWithDepth(depth int32) ionoscloud.Client {
 }
 
 // datacenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
-func (s *Service) datacenterID() string {
-	return s.scope.IonosMachine.Spec.DatacenterID
+func (s *Service) datacenterID(ms *scope.MachineScope) string {
+	return ms.IonosMachine.Spec.DatacenterID
 }
 
 // isNotFound is a shortcut for checking if an error is a not found error.

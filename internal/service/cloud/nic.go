@@ -29,7 +29,7 @@ import (
 )
 
 func (s *Service) nicURL(serverID, nicID string) string {
-	return path.Join("datacenters", s.datacenterID(), "servers", serverID, "nics", nicID)
+	return path.Join("datacenters", s.datacenterID(s.scope), "servers", serverID, "nics", nicID)
 }
 
 // reconcileNICConfig ensures that the primary NIC contains the endpoint IP address.
@@ -105,7 +105,7 @@ func (s *Service) patchNIC(serverID string, nic *sdk.Nic, props sdk.NicPropertie
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)
 
-	location, err := s.cloud.PatchNIC(s.ctx, s.datacenterID(), serverID, nicID, props)
+	location, err := s.cloud.PatchNIC(s.ctx, s.datacenterID(s.scope), serverID, nicID, props)
 	if err != nil {
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}

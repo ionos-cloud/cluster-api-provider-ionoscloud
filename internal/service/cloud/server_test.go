@@ -301,15 +301,15 @@ func (s *serverSuite) exampleServer() sdk.Server {
 }
 
 func (s *serverSuite) mockListServers() *clienttest.MockClient_ListServers_Call {
-	return s.ionosClient.EXPECT().ListServers(s.ctx, s.service.datacenterID())
+	return s.ionosClient.EXPECT().ListServers(s.ctx, s.service.datacenterID(s.machineScope))
 }
 
 func (s *serverSuite) mockGetServer(serverID string) *clienttest.MockClient_GetServer_Call {
-	return s.ionosClient.EXPECT().GetServer(s.ctx, s.service.datacenterID(), serverID)
+	return s.ionosClient.EXPECT().GetServer(s.ctx, s.service.datacenterID(s.machineScope), serverID)
 }
 
 func (s *serverSuite) mockDeleteServer(serverID string) *clienttest.MockClient_DeleteServer_Call {
-	return s.ionosClient.EXPECT().DeleteServer(s.ctx, s.service.datacenterID(), serverID)
+	return s.ionosClient.EXPECT().DeleteServer(s.ctx, s.service.datacenterID(s.machineScope), serverID)
 }
 
 func (s *serverSuite) mockGetServerCreationRequest() *clienttest.MockClient_GetRequests_Call {
@@ -323,14 +323,14 @@ func (s *serverSuite) mockGetServerDeletionRequest(serverID string) *clienttest.
 func (s *serverSuite) mockCreateServer() *clienttest.MockClient_CreateServer_Call {
 	return s.ionosClient.EXPECT().CreateServer(
 		s.ctx,
-		s.service.datacenterID(),
+		s.service.datacenterID(s.machineScope),
 		mock.Anything,
 		mock.Anything,
 	)
 }
 
 func (s *serverSuite) mockListLANs() *clienttest.MockClient_ListLANs_Call {
-	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.service.datacenterID())
+	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.service.datacenterID(s.machineScope))
 }
 
 func (s *serverSuite) exampleDeleteRequest(status, serverID string) sdk.Request {

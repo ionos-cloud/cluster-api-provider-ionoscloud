@@ -93,11 +93,11 @@ func (s *nicSuite) TestReconcileNICConfigPatchRequestPending() {
 }
 
 func (s *nicSuite) mockGetServer(serverID string) *clienttest.MockClient_GetServer_Call {
-	return s.ionosClient.EXPECT().GetServer(s.ctx, s.service.datacenterID(), serverID)
+	return s.ionosClient.EXPECT().GetServer(s.ctx, s.service.datacenterID(s.machineScope), serverID)
 }
 
 func (s *nicSuite) mockPatchNIC(serverID, nicID string, props sdk.NicProperties) *clienttest.MockClient_PatchNIC_Call {
-	return s.ionosClient.EXPECT().PatchNIC(s.ctx, s.service.datacenterID(), serverID, nicID, props)
+	return s.ionosClient.EXPECT().PatchNIC(s.ctx, s.service.datacenterID(s.machineScope), serverID, nicID, props)
 }
 
 func (s *nicSuite) mockGetLatestNICPatchRequest(serverID, nicID string) *clienttest.MockClient_GetRequests_Call {
