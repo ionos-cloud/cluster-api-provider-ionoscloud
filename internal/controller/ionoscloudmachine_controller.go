@@ -112,7 +112,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Create the machine scope
 	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 		Client:       r.Client,
-		Cluster:      cluster,
 		Machine:      machine,
 		ClusterScope: clusterScope,
 		IonosMachine: ionosCloudMachine,
@@ -135,13 +134,14 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return r.reconcileDelete(ctx, machineScope, cloudService)
 	}
 
-	return r.reconcileNormal(ctx, machineScope, cloudService)
+	return r.reconcileNormal(ctx, cloudService, clusterScope, machineScope)
 }
 
 func (r *IonosCloudMachineReconciler) reconcileNormal(
 	ctx context.Context,
-	machineScope *scope.MachineScope,
 	cloudService *cloud.Service,
+	clusterScope *scope.ClusterScope,
+	machineScope *scope.MachineScope,
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(4).Info("Reconciling IonosCloudMachine")
@@ -151,7 +151,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		return ctrl.Result{}, nil
 	}
 
-	if !r.isInfrastructureReady(ctx, machineScope) {
+	if !r.isInfrastructureReady(ctx, clusterScope, machineScope) {
 		return ctrl.Result{}, nil
 	}
 
@@ -294,10 +294,12 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 	return requeue, retErr
 }
 
-func (r *IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, machineScope *scope.MachineScope) bool {
+func (r *IonosCloudMachineReconciler) isInfrastructureReady(
+	ctx context.Context, clusterScope *scope.ClusterScope, machineScope *scope.MachineScope,
+) bool {
 	log := ctrl.LoggerFrom(ctx)
 	// Make sure the infrastructure is ready.
-	if !machineScope.Cluster.Status.InfrastructureReady {
+	if !clusterScope.Cluster.Status.InfrastructureReady {
 		log.Info("Cluster infrastructure is not ready yet")
 		conditions.MarkFalse(
 			machineScope.IonosMachine,

@@ -35,7 +35,6 @@ func exampleParams(t *testing.T) MachineScopeParams {
 	}
 	return MachineScopeParams{
 		Client:       fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
-		Cluster:      &clusterv1.Cluster{},
 		Machine:      &clusterv1.Machine{},
 		ClusterScope: &ClusterScope{},
 		IonosMachine: &infrav1.IonosCloudMachine{},
@@ -52,14 +51,6 @@ func TestNewMachineScope_OK(t *testing.T) {
 func TestMachineScopeParams_NilClientShouldFail(t *testing.T) {
 	params := exampleParams(t)
 	params.Client = nil
-	scope, err := NewMachineScope(params)
-	require.Nil(t, scope, "returned machine scope should be nil")
-	require.Error(t, err)
-}
-
-func TestMachineScopeParams_NilClusterShouldFail(t *testing.T) {
-	params := exampleParams(t)
-	params.Cluster = nil
 	scope, err := NewMachineScope(params)
 	require.Nil(t, scope, "returned machine scope should be nil")
 	require.Error(t, err)
