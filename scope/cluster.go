@@ -34,9 +34,7 @@ import (
 
 // ClusterScope defines the basic context for an actuator to operate upon.
 type ClusterScope struct {
-	client      client.Client
-	patchHelper *patch.Helper
-
+	patchHelper  *patch.Helper
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
 }
@@ -71,7 +69,6 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	clusterScope := &ClusterScope{
 		Cluster:      params.Cluster,
 		IonosCluster: params.IonosCluster,
-		client:       params.Client,
 		patchHelper:  helper,
 	}
 
