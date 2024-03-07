@@ -41,7 +41,7 @@ linters-settings:
       - name: "var-naming"
         arguments:
         - [] # first list is an allow list. All initialisms placed here will be ignored
-        - ["LAN"] # second list is a deny list. These rules will be enforced
+        - ["LAN", "IP"] # second list is a deny list. These rules will be enforced
         severity: error
   gci:
     sections:
