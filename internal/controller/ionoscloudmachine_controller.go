@@ -178,23 +178,15 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 	}
 
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
-	reconcileSequence := []serviceReconcileStep{
-		{name: "ReconcileLAN", reconcileFunc: func() (bool, error) {
-			return cloudService.ReconcileLAN(ctx, machineScope)
-		}},
-		{name: "ReconcileServer", reconcileFunc: func() (bool, error) {
-			return cloudService.ReconcileServer(ctx, machineScope)
-		}},
-		{name: "ReconcileIPFailover", reconcileFunc: func() (bool, error) {
-			return cloudService.ReconcileIPFailover(ctx, machineScope)
-		}},
-		{name: "FinalizeMachineProvisioning", reconcileFunc: func() (requeue bool, err error) {
-			return cloudService.FinalizeMachineProvisioning(machineScope)
-		}},
+	reconcileSequence := []serviceReconcileStep[scope.MachineScope]{
+		{"ReconcileLAN", cloudService.ReconcileLAN},
+		{"ReconcileServer", cloudService.ReconcileServer},
+		{"ReconcileIPFailover", cloudService.ReconcileIPFailover},
+		{"FinalizeMachineProvisioning", cloudService.FinalizeMachineProvisioning},
 	}
 
 	for _, step := range reconcileSequence {
-		if requeue, err := step.reconcileFunc(); err != nil || requeue {
+		if requeue, err := step.fn(ctx, machineScope); err != nil || requeue {
 			if err != nil {
 				err = fmt.Errorf("error in step %s: %w", step.name, err)
 			}
@@ -228,23 +220,17 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machi
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	reconcileSequence := []serviceReconcileStep{
+	reconcileSequence := []serviceReconcileStep[scope.MachineScope]{
 		// NOTE(avorima): NICs, which are configured in an IP failover configuration, cannot be deleted
 		// by a request to delete the server. Therefore, during deletion, we need to remove the NIC from
 		// the IP failover configuration.
-		{name: "ReconcileIPFailoverDeletion", reconcileFunc: func() (bool, error) {
-			return cloudService.ReconcileIPFailoverDeletion(ctx, machineScope)
-		}},
-		{name: "ReconcileServerDeletion", reconcileFunc: func() (bool, error) {
-			return cloudService.ReconcileServerDeletion(ctx, machineScope)
-		}},
-		{name: "ReconcileLANDeletion", reconcileFunc: func() (bool, error) {
-			return cloudService.ReconcileLANDeletion(ctx, machineScope)
-		}},
+		{"ReconcileIPFailoverDeletion", cloudService.ReconcileIPFailoverDeletion},
+		{"ReconcileServerDeletion", cloudService.ReconcileServerDeletion},
+		{"ReconcileLANDeletion", cloudService.ReconcileLANDeletion},
 	}
 
 	for _, step := range reconcileSequence {
-		if requeue, err := step.reconcileFunc(); err != nil || requeue {
+		if requeue, err := step.fn(ctx, machineScope); err != nil || requeue {
 			if err != nil {
 				err = fmt.Errorf("error in step %s: %w", step.name, err)
 			}

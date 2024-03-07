@@ -142,7 +142,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 	return err == nil, err
 }
 
-func (s *Service) FinalizeMachineProvisioning(ms *scope.MachineScope) (bool, error) {
+func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.MachineScope) (bool, error) {
 	ms.IonosMachine.Status.Ready = true
 	conditions.MarkTrue(ms.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil
