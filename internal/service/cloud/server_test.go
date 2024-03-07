@@ -46,12 +46,12 @@ func (s *serverSuite) TestServerName() {
 }
 
 func (s *serverSuite) TestReconcileServerNoBootstrapSecret() {
-	requeue, err := s.service.ReconcileServer()
+	requeue, err := s.service.ReconcileServer(s.ctx)
 	s.True(requeue)
 	s.Error(err)
 
 	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
-	requeue, err = s.service.ReconcileServer()
+	requeue, err = s.service.ReconcileServer(s.ctx)
 	s.False(requeue)
 	s.NoError(err)
 }
@@ -60,7 +60,7 @@ func (s *serverSuite) TestReconcileServerRequestPending() {
 	s.prepareReconcileServerRequestTest()
 
 	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusQueued)}, nil)
-	requeue, err := s.service.ReconcileServer()
+	requeue, err := s.service.ReconcileServer(s.ctx)
 	s.NoError(err)
 	s.True(requeue)
 }
@@ -79,7 +79,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateBusy() {
 		},
 	}}, nil).Once()
 
-	requeue, err := s.service.ReconcileServer()
+	requeue, err := s.service.ReconcileServer(s.ctx)
 	s.NoError(err)
 	s.True(requeue)
 }
@@ -99,7 +99,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 		},
 	}}, nil).Once()
 
-	requeue, err := s.service.ReconcileServer()
+	requeue, err := s.service.ReconcileServer(s.ctx)
 	s.NoError(err)
 	s.False(requeue)
 }
@@ -116,7 +116,7 @@ func (s *serverSuite) TestReconcileServerNoRequest() {
 		},
 	}}}, nil)
 
-	requeue, err := s.service.ReconcileServer()
+	requeue, err := s.service.ReconcileServer(s.ctx)
 	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
 	s.NoError(err)
 	s.True(requeue)
@@ -150,7 +150,7 @@ func (s *serverSuite) TestReconcileServerDeletion() {
 	s.mockGetServerDeletionRequest(testServerID).Return(nil, nil)
 	s.mockDeleteServer(testServerID).Return(reqLocation, nil)
 
-	res, err := s.service.ReconcileServerDeletion()
+	res, err := s.service.ReconcileServerDeletion(s.ctx)
 	s.NoError(err)
 	s.True(res)
 	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
@@ -163,14 +163,14 @@ func (s *serverSuite) TestReconcileServerDeletionServerNotFound() {
 	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
 	s.mockListServers().Return(&sdk.Servers{}, nil)
 
-	res, err := s.service.ReconcileServerDeletion()
+	res, err := s.service.ReconcileServerDeletion(s.ctx)
 	s.NoError(err)
 	s.False(res)
 }
 
 func (s *serverSuite) TestReconcileServerDeletionUnexpectedError() {
 	s.mockGetServer(testServerID).Return(nil, sdk.NewGenericOpenAPIError("unexpected error returned", nil, nil, 500))
-	res, err := s.service.ReconcileServerDeletion()
+	res, err := s.service.ReconcileServerDeletion(s.ctx)
 	s.Error(err)
 	s.False(res)
 }
@@ -181,7 +181,7 @@ func (s *serverSuite) TestReconcileServerDeletionCreateRequestPending() {
 	exampleRequest := s.examplePostRequest(sdk.RequestStatusQueued)
 	s.mockGetServerCreationRequest().Return([]sdk.Request{exampleRequest}, nil)
 
-	res, err := s.service.ReconcileServerDeletion()
+	res, err := s.service.ReconcileServerDeletion(s.ctx)
 	s.NoError(err)
 	s.True(res)
 
@@ -199,7 +199,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestPending() {
 
 	s.mockGetServerDeletionRequest(testServerID).Return([]sdk.Request{exampleRequest}, nil)
 
-	res, err := s.service.ReconcileServerDeletion()
+	res, err := s.service.ReconcileServerDeletion(s.ctx)
 	s.NoError(err)
 	s.True(res)
 
@@ -217,7 +217,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestDone() {
 
 	s.mockGetServerDeletionRequest(testServerID).Return([]sdk.Request{exampleRequest}, nil)
 
-	res, err := s.service.ReconcileServerDeletion()
+	res, err := s.service.ReconcileServerDeletion(s.ctx)
 	s.NoError(err)
 	s.False(res)
 
@@ -234,7 +234,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
 	s.mockGetServerDeletionRequest(testServerID).Return([]sdk.Request{exampleRequest}, nil)
 	s.mockDeleteServer(testServerID).Return("delete/triggered", nil)
 
-	res, err := s.service.ReconcileServerDeletion()
+	res, err := s.service.ReconcileServerDeletion(s.ctx)
 	s.NoError(err)
 	s.True(res)
 

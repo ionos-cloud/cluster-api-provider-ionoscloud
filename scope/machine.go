@@ -38,10 +38,11 @@ import (
 type MachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
-	Machine     *clusterv1.Machine
+
+	Machine      *clusterv1.Machine
+	IonosMachine *infrav1.IonosCloudMachine
 
 	ClusterScope *ClusterScope
-	IonosMachine *infrav1.IonosCloudMachine
 }
 
 // MachineScopeParams is a struct that contains the params used to create a new MachineScope through NewMachineScope.

@@ -126,7 +126,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}()
 
-	cloudService, err := cloud.NewService(ctx, machineScope, r.IonosCloudClient, &logger)
+	cloudService, err := cloud.NewService(machineScope, r.IonosCloudClient, &logger)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("could not create machine service")
 	}
@@ -179,9 +179,15 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
 	reconcileSequence := []serviceReconcileStep{
-		{name: "ReconcileLAN", reconcileFunc: cloudService.ReconcileLAN},
-		{name: "ReconcileServer", reconcileFunc: cloudService.ReconcileServer},
-		{name: "ReconcileIPFailover", reconcileFunc: cloudService.ReconcileIPFailover},
+		{name: "ReconcileLAN", reconcileFunc: func() (bool, error) {
+			return cloudService.ReconcileLAN(ctx)
+		}},
+		{name: "ReconcileServer", reconcileFunc: func() (bool, error) {
+			return cloudService.ReconcileServer(ctx)
+		}},
+		{name: "ReconcileIPFailover", reconcileFunc: func() (bool, error) {
+			return cloudService.ReconcileIPFailover(ctx)
+		}},
 		{name: "FinalizeMachineProvisioning", reconcileFunc: cloudService.FinalizeMachineProvisioning},
 	}
 
@@ -224,9 +230,15 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machi
 		// NOTE(avorima): NICs, which are configured in an IP failover configuration, cannot be deleted
 		// by a request to delete the server. Therefore, during deletion, we need to remove the NIC from
 		// the IP failover configuration.
-		{name: "ReconcileIPFailoverDeletion", reconcileFunc: cloudService.ReconcileIPFailoverDeletion},
-		{name: "ReconcileServerDeletion", reconcileFunc: cloudService.ReconcileServerDeletion},
-		{name: "ReconcileLANDeletion", reconcileFunc: cloudService.ReconcileLANDeletion},
+		{name: "ReconcileIPFailoverDeletion", reconcileFunc: func() (bool, error) {
+			return cloudService.ReconcileIPFailoverDeletion(ctx)
+		}},
+		{name: "ReconcileServerDeletion", reconcileFunc: func() (bool, error) {
+			return cloudService.ReconcileServerDeletion(ctx)
+		}},
+		{name: "ReconcileLANDeletion", reconcileFunc: func() (bool, error) {
+			return cloudService.ReconcileLANDeletion(ctx)
+		}},
 	}
 
 	for _, step := range reconcileSequence {

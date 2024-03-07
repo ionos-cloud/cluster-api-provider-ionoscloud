@@ -37,12 +37,12 @@ import (
 )
 
 // ReconcileServer ensures the cluster server exist, creating one if it doesn't.
-func (s *Service) ReconcileServer() (requeue bool, retErr error) {
+func (s *Service) ReconcileServer(ctx context.Context) (requeue bool, retErr error) {
 	log := s.logger.WithName("ReconcileServer")
 
 	log.V(4).Info("Reconciling server")
 
-	secret, err := s.scope.GetBootstrapDataSecret(s.ctx, s.logger)
+	secret, err := s.scope.GetBootstrapDataSecret(ctx, s.logger)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// secret not available yet
@@ -54,7 +54,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 	}
 
 	server, request, err := findResource(
-		s.ctx,
+		ctx,
 		s.getServer,
 		s.getLatestServerCreationRequest,
 	)
@@ -81,7 +81,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 
 	// server does not exist yet, create it
 	log.V(4).Info("No server was found. Creating new server")
-	if err := s.createServer(secret); err != nil {
+	if err := s.createServer(secret, ctx); err != nil {
 		return false, err
 	}
 
@@ -92,11 +92,11 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 }
 
 // ReconcileServerDeletion ensures the server is deleted.
-func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
+func (s *Service) ReconcileServerDeletion(ctx context.Context) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileLANDeletion")
 
 	server, request, err := findResource(
-		s.ctx,
+		ctx,
 		s.getServer,
 		s.getLatestServerCreationRequest,
 	)
@@ -118,7 +118,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		return false, nil
 	}
 
-	request, err = s.getLatestServerDeletionRequest(s.ctx, *server.Id)
+	request, err = s.getLatestServerDeletionRequest(ctx, *server.Id)
 	if err != nil {
 		return false, err
 	}
@@ -141,7 +141,7 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		}
 	}
 
-	err = s.deleteServer(*server.Id)
+	err = s.deleteServer(ctx, *server.Id)
 	return err == nil, err
 }
 
@@ -171,7 +171,7 @@ func (s *Service) isServerAvailable(server *sdk.Server) bool {
 // getServerByProviderID checks if the IonosCloudMachine has a provider ID set.
 // If it does, it will attempt to extract the server ID from the provider ID and
 // query for the server in the cloud.
-func (s *Service) getServerByProviderID() (*sdk.Server, error) {
+func (s *Service) getServerByProviderID(ctx context.Context) (*sdk.Server, error) {
 	// first we check if the provider ID is set
 	if !ptr.IsNilOrZero(s.scope.IonosMachine.Spec.ProviderID) {
 		serverID := s.scope.IonosMachine.ExtractServerID()
@@ -181,7 +181,7 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 		}
 
 		depth := int32(2) // for getting the server and its NICs' properties
-		server, err := s.apiWithDepth(depth).GetServer(s.ctx, s.datacenterID(s.scope), serverID)
+		server, err := s.apiWithDepth(depth).GetServer(ctx, s.datacenterID(s.scope), serverID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, s.datacenterID(s.scope), err)
 		}
@@ -197,8 +197,8 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 }
 
 // getServer looks for the server in the data center.
-func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
-	server, err := s.getServerByProviderID()
+func (s *Service) getServer(ctx context.Context) (*sdk.Server, error) {
+	server, err := s.getServerByProviderID(ctx)
 	// if the server was not found, we try to find it by listing all servers.
 	if server != nil || ignoreNotFound(err) != nil {
 		return server, err
@@ -209,7 +209,7 @@ func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
 	const listDepth = 3
 	// without provider ID, we need to list all servers and see if
 	// there is one with the expected name.
-	serverList, listErr := s.apiWithDepth(listDepth).ListServers(s.ctx, s.datacenterID(s.scope))
+	serverList, listErr := s.apiWithDepth(listDepth).ListServers(ctx, s.datacenterID(s.scope))
 	if listErr != nil {
 		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(s.scope), listErr)
 	}
@@ -229,11 +229,11 @@ func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
 	return nil, err
 }
 
-func (s *Service) deleteServer(serverID string) error {
+func (s *Service) deleteServer(ctx context.Context, serverID string) error {
 	log := s.logger.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
-	requestLocation, err := s.cloud.DeleteServer(s.ctx, s.datacenterID(s.scope), serverID)
+	requestLocation, err := s.cloud.DeleteServer(ctx, s.datacenterID(s.scope), serverID)
 	if err != nil {
 		return fmt.Errorf("failed to request server deletion: %w", err)
 	}
@@ -245,9 +245,9 @@ func (s *Service) deleteServer(serverID string) error {
 	return nil
 }
 
-func (s *Service) getLatestServerCreationRequest(_ context.Context) (*requestInfo, error) {
+func (s *Service) getLatestServerCreationRequest(ctx context.Context) (*requestInfo, error) {
 	return getMatchingRequest(
-		s.ctx,
+		ctx,
 		s,
 		http.MethodPost,
 		path.Join("datacenters", s.datacenterID(s.scope), "servers"),
@@ -255,16 +255,16 @@ func (s *Service) getLatestServerCreationRequest(_ context.Context) (*requestInf
 	)
 }
 
-func (s *Service) getLatestServerDeletionRequest(_ context.Context, serverID string) (*requestInfo, error) {
+func (s *Service) getLatestServerDeletionRequest(ctx context.Context, serverID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Server](
-		s.ctx,
+		ctx,
 		s,
 		http.MethodDelete,
 		path.Join("datacenters", s.datacenterID(s.scope), "servers", serverID),
 	)
 }
 
-func (s *Service) createServer(secret *corev1.Secret) error {
+func (s *Service) createServer(secret *corev1.Secret, ctx context.Context) error {
 	log := s.logger.WithName("createServer")
 
 	bootstrapData, exists := secret.Data["value"]
@@ -272,7 +272,7 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	lan, err := s.getLAN(s.ctx)
+	lan, err := s.getLAN(ctx)
 	if err != nil {
 		return err
 	}
@@ -291,7 +291,7 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 	}
 
 	server, requestLocation, err := s.cloud.CreateServer(
-		s.ctx,
+		ctx,
 		s.datacenterID(s.scope),
 		s.buildServerProperties(copySpec),
 		s.buildServerEntities(entityParams),

@@ -17,6 +17,7 @@ limitations under the License.
 package cloud
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"path"
@@ -33,12 +34,12 @@ func (s *Service) nicURL(serverID, nicID string) string {
 }
 
 // reconcileNICConfig ensures that the primary NIC contains the endpoint IP address.
-func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
+func (s *Service) reconcileNICConfig(ctx context.Context, endpointIP string) (*sdk.Nic, error) {
 	log := s.logger.WithName("reconcileNICConfig")
 
 	log.V(4).Info("Reconciling NIC config")
 	// Get current state of the server
-	server, err := s.getServer(s.ctx)
+	server, err := s.getServer(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +59,7 @@ func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 	serverID := ptr.Deref(server.GetId(), "")
 	nicID := ptr.Deref(nic.GetId(), "")
 	// check if there is a pending patch request for the NIC
-	ri, err := s.getLatestNICPatchRequest(serverID, nicID)
+	ri, err := s.getLatestNICPatchRequest(ctx, serverID, nicID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to check for pending NIC patch request: %w", err)
 	}
@@ -66,7 +67,7 @@ func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 	if ri != nil && ri.isPending() {
 		log.Info("Found pending NIC request. Waiting for it to be finished")
 
-		if err := s.cloud.WaitForRequest(s.ctx, ri.location); err != nil {
+		if err := s.cloud.WaitForRequest(ctx, ri.location); err != nil {
 			return nil, fmt.Errorf("failed to wait for pending NIC request: %w", err)
 		}
 
@@ -77,7 +78,7 @@ func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 	nicIPs := ptr.Deref(nic.GetProperties().GetIps(), []string{})
 	nicIPs = append(nicIPs, endpointIP)
 
-	if err := s.patchNIC(serverID, nic, sdk.NicProperties{Ips: &nicIPs}); err != nil {
+	if err := s.patchNIC(ctx, serverID, nic, sdk.NicProperties{Ips: &nicIPs}); err != nil {
 		return nil, err
 	}
 
@@ -99,13 +100,13 @@ func (s *Service) findPrimaryNIC(server *sdk.Server) (*sdk.Nic, error) {
 	return nil, fmt.Errorf("could not find primary NIC with name %s", s.serverName())
 }
 
-func (s *Service) patchNIC(serverID string, nic *sdk.Nic, props sdk.NicProperties) error {
+func (s *Service) patchNIC(ctx context.Context, serverID string, nic *sdk.Nic, props sdk.NicProperties) error {
 	log := s.logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)
 
-	location, err := s.cloud.PatchNIC(s.ctx, s.datacenterID(s.scope), serverID, nicID, props)
+	location, err := s.cloud.PatchNIC(ctx, s.datacenterID(s.scope), serverID, nicID, props)
 	if err != nil {
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}
@@ -116,12 +117,12 @@ func (s *Service) patchNIC(serverID string, nic *sdk.Nic, props sdk.NicPropertie
 	log.V(4).Info("Successfully patched NIC", "location", location)
 	// In this case, we want to wait for the request to be finished as we need to configure the
 	// failover group
-	return s.cloud.WaitForRequest(s.ctx, location)
+	return s.cloud.WaitForRequest(ctx, location)
 }
 
-func (s *Service) getLatestNICPatchRequest(serverID, nicID string) (*requestInfo, error) {
+func (s *Service) getLatestNICPatchRequest(ctx context.Context, serverID string, nicID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Nic](
-		s.ctx,
+		ctx,
 		s,
 		http.MethodPatch,
 		s.nicURL(serverID, nicID),

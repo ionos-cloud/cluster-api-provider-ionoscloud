@@ -18,7 +18,6 @@ limitations under the License.
 package cloud
 
 import (
-	"context"
 	"errors"
 	"net/http"
 
@@ -38,16 +37,14 @@ const (
 // Service offers infra resources services for IONOS Cloud machine reconciliation.
 type Service struct {
 	scope  *scope.MachineScope // Deprecated: pass machine scope explicitly to each method.
-	ctx    context.Context     // Deprecated: pass context explicitly to each method.
 	logger *logr.Logger
 	cloud  ionoscloud.Client
 }
 
 // NewService returns a new Service.
-func NewService(ctx context.Context, s *scope.MachineScope, cloud ionoscloud.Client, logger *logr.Logger) (*Service, error) {
+func NewService(s *scope.MachineScope, cloud ionoscloud.Client, logger *logr.Logger) (*Service, error) {
 	return &Service{
 		scope:  s,
-		ctx:    ctx,
 		logger: logger,
 		cloud:  cloud,
 	}, nil
