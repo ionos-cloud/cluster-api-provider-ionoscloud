@@ -233,7 +233,7 @@ func (s *Service) deleteServer(serverID string) error {
 	log := s.scope.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
-	requestLocation, err := s.api().DeleteServer(s.ctx, s.datacenterID(), serverID)
+	requestLocation, err := s.cloud.DeleteServer(s.ctx, s.datacenterID(), serverID)
 	if err != nil {
 		return fmt.Errorf("failed to request server deletion: %w", err)
 	}
@@ -290,7 +290,7 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 		lanID:        int32(lanID),
 	}
 
-	server, requestLocation, err := s.api().CreateServer(
+	server, requestLocation, err := s.cloud.CreateServer(
 		s.ctx,
 		s.datacenterID(),
 		s.buildServerProperties(copySpec),

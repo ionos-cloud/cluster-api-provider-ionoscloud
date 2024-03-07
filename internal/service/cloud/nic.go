@@ -66,7 +66,7 @@ func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
 	if ri != nil && ri.isPending() {
 		log.Info("Found pending NIC request. Waiting for it to be finished")
 
-		if err := s.api().WaitForRequest(s.ctx, ri.location); err != nil {
+		if err := s.cloud.WaitForRequest(s.ctx, ri.location); err != nil {
 			return nil, fmt.Errorf("failed to wait for pending NIC request: %w", err)
 		}
 
@@ -105,7 +105,7 @@ func (s *Service) patchNIC(serverID string, nic *sdk.Nic, props sdk.NicPropertie
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)
 
-	location, err := s.api().PatchNIC(s.ctx, s.datacenterID(), serverID, nicID, props)
+	location, err := s.cloud.PatchNIC(s.ctx, s.datacenterID(), serverID, nicID, props)
 	if err != nil {
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}
@@ -116,7 +116,7 @@ func (s *Service) patchNIC(serverID string, nic *sdk.Nic, props sdk.NicPropertie
 	log.V(4).Info("Successfully patched NIC", "location", location)
 	// In this case, we want to wait for the request to be finished as we need to configure the
 	// failover group
-	return s.api().WaitForRequest(s.ctx, location)
+	return s.cloud.WaitForRequest(s.ctx, location)
 }
 
 func (s *Service) getLatestNICPatchRequest(serverID, nicID string) (*requestInfo, error) {

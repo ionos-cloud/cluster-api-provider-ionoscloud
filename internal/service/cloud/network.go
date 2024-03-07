@@ -157,7 +157,7 @@ func (s *Service) getLAN(_ context.Context) (*sdk.Lan, error) {
 func (s *Service) createLAN() error {
 	log := s.scope.Logger.WithName("createLAN")
 
-	requestPath, err := s.api().CreateLAN(s.ctx, s.datacenterID(), sdk.LanPropertiesPost{
+	requestPath, err := s.cloud.CreateLAN(s.ctx, s.datacenterID(), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.lanName()),
 		Public: ptr.To(true),
 	})
@@ -183,7 +183,7 @@ func (s *Service) createLAN() error {
 func (s *Service) deleteLAN(lanID string) error {
 	log := s.scope.Logger.WithName("deleteLAN")
 
-	requestPath, err := s.api().DeleteLAN(s.ctx, s.datacenterID(), lanID)
+	requestPath, err := s.cloud.DeleteLAN(s.ctx, s.datacenterID(), lanID)
 	if err != nil {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
@@ -406,7 +406,7 @@ func (s *Service) patchLAN(lanID string, properties sdk.LanProperties) error {
 	log := s.scope.Logger.WithName("patchLAN")
 	log.Info("Patching LAN", "id", lanID)
 
-	location, err := s.api().PatchLAN(s.ctx, s.datacenterID(), lanID, properties)
+	location, err := s.cloud.PatchLAN(s.ctx, s.datacenterID(), lanID, properties)
 	if err != nil {
 		return fmt.Errorf("failed to patch LAN %s: %w", lanID, err)
 	}
