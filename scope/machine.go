@@ -28,7 +28,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -37,8 +36,6 @@ import (
 
 // MachineScope defines a basic context for primary use in IonosCloudMachineReconciler.
 type MachineScope struct {
-	*logr.Logger
-
 	client      client.Client
 	patchHelper *patch.Helper
 	Cluster     *clusterv1.Cluster
@@ -51,7 +48,6 @@ type MachineScope struct {
 // MachineScopeParams is a struct that contains the params used to create a new MachineScope through NewMachineScope.
 type MachineScopeParams struct {
 	Client       client.Client
-	Logger       *logr.Logger
 	Cluster      *clusterv1.Cluster
 	Machine      *clusterv1.Machine
 	ClusterScope *ClusterScope
@@ -75,16 +71,12 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	if params.ClusterScope == nil {
 		return nil, errors.New("machine scope params need a IONOS Cloud cluster scope")
 	}
-	if params.Logger == nil {
-		logger := ctrl.Log
-		params.Logger = &logger
-	}
+
 	helper, err := patch.NewHelper(params.IonosMachine, params.Client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init patch helper: %w", err)
 	}
 	return &MachineScope{
-		Logger:       params.Logger,
 		client:       params.Client,
 		patchHelper:  helper,
 		Cluster:      params.Cluster,
@@ -96,7 +88,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 
 // GetBootstrapDataSecret returns the bootstrap data secret, which has been created by the
 // Kubeadm provider.
-func (m *MachineScope) GetBootstrapDataSecret(ctx context.Context) (*corev1.Secret, error) {
+func (m *MachineScope) GetBootstrapDataSecret(ctx context.Context, log *logr.Logger) (*corev1.Secret, error) {
 	name := ptr.Deref(m.Machine.Spec.Bootstrap.DataSecretName, "")
 	if name == "" {
 		return nil, errors.New("machine has no bootstrap data yet")
@@ -106,7 +98,7 @@ func (m *MachineScope) GetBootstrapDataSecret(ctx context.Context) (*corev1.Secr
 		Namespace: m.IonosMachine.Namespace,
 	}
 
-	m.WithName("GetBoostrapDataSecret").
+	log.WithName("GetBoostrapDataSecret").
 		V(4).
 		Info("searching for bootstrap data", "secret", key.String())
 

@@ -49,7 +49,7 @@ func (s *Service) lansURL() string {
 
 // ReconcileLAN ensures the cluster LAN exist, creating one if it doesn't.
 func (s *Service) ReconcileLAN() (requeue bool, err error) {
-	log := s.scope.Logger.WithName("ReconcileLAN")
+	log := s.logger.WithName("ReconcileLAN")
 
 	lan, request, err := findResource(s.ctx, s.getLAN, s.getLatestLANCreationRequest)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *Service) ReconcileLAN() (requeue bool, err error) {
 // ReconcileLANDeletion ensures there's no cluster LAN available, requesting for deletion (if no other resource
 // uses it) otherwise.
 func (s *Service) ReconcileLANDeletion() (requeue bool, err error) {
-	log := s.scope.Logger.WithName("ReconcileLANDeletion")
+	log := s.logger.WithName("ReconcileLANDeletion")
 
 	// Try to retrieve the cluster LAN or even check if it's currently still being created.
 	lan, request, err := findResource(s.ctx, s.getLAN, s.getLatestLANCreationRequest)
@@ -155,7 +155,7 @@ func (s *Service) getLAN(_ context.Context) (*sdk.Lan, error) {
 }
 
 func (s *Service) createLAN() error {
-	log := s.scope.Logger.WithName("createLAN")
+	log := s.logger.WithName("createLAN")
 
 	requestPath, err := s.cloud.CreateLAN(s.ctx, s.datacenterID(s.scope), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.lanName()),
@@ -181,7 +181,7 @@ func (s *Service) createLAN() error {
 }
 
 func (s *Service) deleteLAN(lanID string) error {
-	log := s.scope.Logger.WithName("deleteLAN")
+	log := s.logger.WithName("deleteLAN")
 
 	requestPath, err := s.cloud.DeleteLAN(s.ctx, s.datacenterID(s.scope), lanID)
 	if err != nil {
@@ -241,7 +241,7 @@ func (s *Service) removeLANPendingRequestFromCluster() error {
 //
 // If we want to support private clusters in the future, this will require some adjustments.
 func (s *Service) ReconcileIPFailover() (requeue bool, err error) {
-	log := s.scope.Logger.WithName("ReconcileIPFailover")
+	log := s.logger.WithName("ReconcileIPFailover")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
 		log.V(4).Info("Failover is only applied to control plane machines.")
@@ -259,7 +259,7 @@ func (s *Service) ReconcileIPFailover() (requeue bool, err error) {
 }
 
 func (s *Service) ReconcileIPFailoverDeletion() (requeue bool, err error) {
-	log := s.scope.Logger.WithName("ReconcileIPFailoverDeletion")
+	log := s.logger.WithName("ReconcileIPFailoverDeletion")
 
 	if !util.IsControlPlaneMachine(s.scope.Machine) {
 		log.V(4).Info("Failover is only applied to control plane machines.")
@@ -289,7 +289,7 @@ func (s *Service) ReconcileIPFailoverDeletion() (requeue bool, err error) {
 // reconcileIPFailoverGroup ensures that the public LAN has a failover group with the NIC for this machine and
 // the endpoint IP address. It further ensures that NICs from additional control plane machines are also added.
 func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bool, err error) {
-	log := s.scope.Logger.WithName("reconcileIPFailoverGroup")
+	log := s.logger.WithName("reconcileIPFailoverGroup")
 	if nicID == "" {
 		return false, errors.New("nicID is empty")
 	}
@@ -346,7 +346,7 @@ func (s *Service) reconcileIPFailoverGroup(nicID, endpointIP string) (requeue bo
 }
 
 func (s *Service) removeNICFromFailoverGroup(nicID string) (requeue bool, err error) {
-	log := s.scope.Logger.WithName("removeNICFromFailoverGroup")
+	log := s.logger.WithName("removeNICFromFailoverGroup")
 
 	lan, failoverConfig := &sdk.Lan{}, &[]sdk.IPFailover{}
 	if requeue, err := s.retrieveLANFailoverConfig(lan, failoverConfig); err != nil || requeue {
@@ -375,7 +375,7 @@ func (s *Service) removeNICFromFailoverGroup(nicID string) (requeue bool, err er
 }
 
 func (s *Service) retrieveLANFailoverConfig(lan *sdk.Lan, failoverConfig *[]sdk.IPFailover) (requeue bool, err error) {
-	log := s.scope.Logger.WithName("retrieveLANFailoverConfig")
+	log := s.logger.WithName("retrieveLANFailoverConfig")
 
 	gotLAN, err := s.getLAN(s.ctx)
 	if err != nil {
@@ -403,7 +403,7 @@ func (s *Service) isLANPatchPending(lanID string) (pending bool, err error) {
 }
 
 func (s *Service) patchLAN(lanID string, properties sdk.LanProperties) error {
-	log := s.scope.Logger.WithName("patchLAN")
+	log := s.logger.WithName("patchLAN")
 	log.Info("Patching LAN", "id", lanID)
 
 	location, err := s.cloud.PatchLAN(s.ctx, s.datacenterID(s.scope), lanID, properties)

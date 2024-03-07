@@ -150,7 +150,7 @@ requestLoop:
 			// As at least 1 additional matcher function is given, reconstruct the resource from the request body.
 			var unmarshalled T
 			if err = json.Unmarshal([]byte(ptr.Deref(req.GetProperties().GetBody(), "")), &unmarshalled); err != nil {
-				s.scope.Logger.WithValues(
+				s.logger.WithValues(
 					"requestID", ptr.Deref(req.GetId(), ""),
 					"body", ptr.Deref(req.GetProperties().GetBody(), ""),
 				).Info("could not unmarshal request")
@@ -169,7 +169,7 @@ requestLoop:
 		status := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetStatus(), "")
 		if status == sdk.RequestStatusFailed {
 			message := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetMessage(), "")
-			s.scope.Logger.Error(nil,
+			s.logger.Error(nil,
 				"Last request has failed, logging it for debugging purposes",
 				"resourceType", resourceType,
 				"requestID", req.Id, "requestStatus", status,

@@ -34,7 +34,7 @@ func (s *Service) nicURL(serverID, nicID string) string {
 
 // reconcileNICConfig ensures that the primary NIC contains the endpoint IP address.
 func (s *Service) reconcileNICConfig(endpointIP string) (*sdk.Nic, error) {
-	log := s.scope.Logger.WithName("reconcileNICConfig")
+	log := s.logger.WithName("reconcileNICConfig")
 
 	log.V(4).Info("Reconciling NIC config")
 	// Get current state of the server
@@ -100,7 +100,7 @@ func (s *Service) findPrimaryNIC(server *sdk.Server) (*sdk.Nic, error) {
 }
 
 func (s *Service) patchNIC(serverID string, nic *sdk.Nic, props sdk.NicProperties) error {
-	log := s.scope.Logger.WithName("patchNIC")
+	log := s.logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)

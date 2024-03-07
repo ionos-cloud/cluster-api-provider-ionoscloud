@@ -19,7 +19,6 @@ package scope
 import (
 	"testing"
 
-	"github.com/go-logr/logr"
 	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/kubernetes/scheme"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -34,10 +33,8 @@ func exampleParams(t *testing.T) MachineScopeParams {
 	if err := infrav1.AddToScheme(scheme.Scheme); err != nil {
 		require.NoError(t, err, "could not construct params")
 	}
-	logger := logr.Discard()
 	return MachineScopeParams{
 		Client:       fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
-		Logger:       &logger,
 		Cluster:      &clusterv1.Cluster{},
 		Machine:      &clusterv1.Machine{},
 		ClusterScope: &ClusterScope{},
@@ -58,15 +55,6 @@ func TestMachineScopeParams_NilClientShouldFail(t *testing.T) {
 	scope, err := NewMachineScope(params)
 	require.Nil(t, scope, "returned machine scope should be nil")
 	require.Error(t, err)
-}
-
-func TestMachineScopeParams_NilLoggerShouldWork(t *testing.T) {
-	params := exampleParams(t)
-	params.Logger = nil
-	scope, err := NewMachineScope(params)
-	require.NotNil(t, scope, "returned machine scope shouldn't be nil")
-	require.NoError(t, err)
-	require.NotNil(t, scope.Logger, "logger should not be nil")
 }
 
 func TestMachineScopeParams_NilClusterShouldFail(t *testing.T) {

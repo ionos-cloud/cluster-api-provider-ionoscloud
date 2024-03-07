@@ -38,11 +38,11 @@ import (
 
 // ReconcileServer ensures the cluster server exist, creating one if it doesn't.
 func (s *Service) ReconcileServer() (requeue bool, retErr error) {
-	log := s.scope.Logger.WithName("ReconcileServer")
+	log := s.logger.WithName("ReconcileServer")
 
 	log.V(4).Info("Reconciling server")
 
-	secret, err := s.scope.GetBootstrapDataSecret(s.ctx)
+	secret, err := s.scope.GetBootstrapDataSecret(s.ctx, s.logger)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// secret not available yet
@@ -93,7 +93,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 
 // ReconcileServerDeletion ensures the server is deleted.
 func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
-	log := s.scope.Logger.WithName("ReconcileLANDeletion")
+	log := s.logger.WithName("ReconcileLANDeletion")
 
 	server, request, err := findResource(
 		s.ctx,
@@ -152,7 +152,7 @@ func (s *Service) FinalizeMachineProvisioning() (bool, error) {
 }
 
 func (s *Service) isServerAvailable(server *sdk.Server) bool {
-	log := s.scope.Logger.WithName("isServerAvailable")
+	log := s.logger.WithName("isServerAvailable")
 	if state := getState(server); !isAvailable(state) {
 		log.Info("Server is not available yet", "state", state)
 		return false
@@ -230,7 +230,7 @@ func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
 }
 
 func (s *Service) deleteServer(serverID string) error {
-	log := s.scope.WithName("deleteServer")
+	log := s.logger.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
 	requestLocation, err := s.cloud.DeleteServer(s.ctx, s.datacenterID(s.scope), serverID)
@@ -265,7 +265,7 @@ func (s *Service) getLatestServerDeletionRequest(_ context.Context, serverID str
 }
 
 func (s *Service) createServer(secret *corev1.Secret) error {
-	log := s.scope.WithName("createServer")
+	log := s.logger.WithName("createServer")
 
 	bootstrapData, exists := secret.Data["value"]
 	if !exists {
