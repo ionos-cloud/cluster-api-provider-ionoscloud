@@ -27,25 +27,26 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-func (s *Service) nicURL(serverID, nicID string) string {
-	return path.Join("datacenters", s.datacenterID(s.scope), "servers", serverID, "nics", nicID)
+func (s *Service) nicURL(ms *scope.MachineScope, serverID, nicID string) string {
+	return path.Join("datacenters", s.datacenterID(ms), "servers", serverID, "nics", nicID)
 }
 
 // reconcileNICConfig ensures that the primary NIC contains the endpoint IP address.
-func (s *Service) reconcileNICConfig(ctx context.Context, endpointIP string) (*sdk.Nic, error) {
+func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.MachineScope, endpointIP string) (*sdk.Nic, error) {
 	log := s.logger.WithName("reconcileNICConfig")
 
 	log.V(4).Info("Reconciling NIC config")
 	// Get current state of the server
-	server, err := s.getServer(ctx)
+	server, err := s.getServer(ms)(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// Find the primary NIC and ensure that the endpoint IP address is added to the NIC.
-	nic, err := s.findPrimaryNIC(server)
+	nic, err := s.findPrimaryNIC(ms, server)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +60,7 @@ func (s *Service) reconcileNICConfig(ctx context.Context, endpointIP string) (*s
 	serverID := ptr.Deref(server.GetId(), "")
 	nicID := ptr.Deref(nic.GetId(), "")
 	// check if there is a pending patch request for the NIC
-	ri, err := s.getLatestNICPatchRequest(ctx, serverID, nicID)
+	ri, err := s.getLatestNICPatchRequest(ctx, ms, serverID, nicID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to check for pending NIC patch request: %w", err)
 	}
@@ -78,41 +79,41 @@ func (s *Service) reconcileNICConfig(ctx context.Context, endpointIP string) (*s
 	nicIPs := ptr.Deref(nic.GetProperties().GetIps(), []string{})
 	nicIPs = append(nicIPs, endpointIP)
 
-	if err := s.patchNIC(ctx, serverID, nic, sdk.NicProperties{Ips: &nicIPs}); err != nil {
+	if err := s.patchNIC(ctx, ms, serverID, nic, sdk.NicProperties{Ips: &nicIPs}); err != nil {
 		return nil, err
 	}
 
 	log.V(4).Info("Successfully patched NIC. Finished reconciling NIC config.")
 	// As we are waiting for the request to finish this time, we can assume that the request was successful
 	// Therefore we can remove the current request
-	s.scope.IonosMachine.Status.CurrentRequest = nil
+	ms.IonosMachine.Status.CurrentRequest = nil
 
 	return nic, nil
 }
 
-func (s *Service) findPrimaryNIC(server *sdk.Server) (*sdk.Nic, error) {
+func (s *Service) findPrimaryNIC(ms *scope.MachineScope, server *sdk.Server) (*sdk.Nic, error) {
 	serverNICs := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
 	for _, nic := range serverNICs {
-		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name == s.serverName() {
+		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name == s.serverName(ms) {
 			return &nic, nil
 		}
 	}
-	return nil, fmt.Errorf("could not find primary NIC with name %s", s.serverName())
+	return nil, fmt.Errorf("could not find primary NIC with name %s", s.serverName(ms))
 }
 
-func (s *Service) patchNIC(ctx context.Context, serverID string, nic *sdk.Nic, props sdk.NicProperties) error {
+func (s *Service) patchNIC(ctx context.Context, ms *scope.MachineScope, serverID string, nic *sdk.Nic, props sdk.NicProperties) error {
 	log := s.logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)
 
-	location, err := s.cloud.PatchNIC(ctx, s.datacenterID(s.scope), serverID, nicID, props)
+	location, err := s.cloud.PatchNIC(ctx, s.datacenterID(ms), serverID, nicID, props)
 	if err != nil {
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}
 
 	// set the current request in case the WaitForRequest function fails.
-	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPatch, location))
+	ms.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPatch, location))
 
 	log.V(4).Info("Successfully patched NIC", "location", location)
 	// In this case, we want to wait for the request to be finished as we need to configure the
@@ -120,12 +121,12 @@ func (s *Service) patchNIC(ctx context.Context, serverID string, nic *sdk.Nic, p
 	return s.cloud.WaitForRequest(ctx, location)
 }
 
-func (s *Service) getLatestNICPatchRequest(ctx context.Context, serverID string, nicID string) (*requestInfo, error) {
+func (s *Service) getLatestNICPatchRequest(ctx context.Context, ms *scope.MachineScope, serverID string, nicID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Nic](
 		ctx,
 		s,
 		http.MethodPatch,
-		s.nicURL(serverID, nicID),
+		s.nicURL(ms, serverID, nicID),
 	)
 }
 

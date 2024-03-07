@@ -47,7 +47,7 @@ func TestNICSuite(t *testing.T) {
 }
 
 func (s *nicSuite) TestReconcileNICConfig() {
-	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(), testDHCPIP), nil).Once()
+	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(s.machineScope), testDHCPIP), nil).Once()
 
 	// no patch request
 	s.mockGetLatestNICPatchRequest(testServerID, testNICID).Return([]sdk.Request{}, nil).Once()
@@ -58,24 +58,24 @@ func (s *nicSuite) TestReconcileNICConfig() {
 	// expect request to be successful
 	s.mockWaitForRequest(location).Return(nil).Once()
 
-	nic, err := s.service.reconcileNICConfig(s.ctx, testEndpointIP)
+	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, testEndpointIP)
 
 	s.NotNil(nic, assertMessageNICIsNil)
 	s.NoError(err, assertMessageNICErrorOccurred)
-	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, assertCurrentRequestIsNil)
+	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest, assertCurrentRequestIsNil)
 }
 
 func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
-	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(), testDHCPIP, testEndpointIP), nil).Once()
-	nic, err := s.service.reconcileNICConfig(s.ctx, testEndpointIP)
+	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(s.machineScope), testDHCPIP, testEndpointIP), nil).Once()
+	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, testEndpointIP)
 
 	s.NotNil(nic, assertMessageNICIsNil)
 	s.NoError(err, assertMessageNICErrorOccurred)
-	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, assertCurrentRequestIsNil)
+	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest, assertCurrentRequestIsNil)
 }
 
 func (s *nicSuite) TestReconcileNICConfigPatchRequestPending() {
-	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(), testDHCPIP), nil).Once()
+	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(s.machineScope), testDHCPIP), nil).Once()
 
 	patchRequest := s.examplePatchRequest(sdk.RequestStatusQueued, testServerID, testNICID)
 
@@ -86,10 +86,10 @@ func (s *nicSuite) TestReconcileNICConfigPatchRequestPending() {
 	// expect request to be successful
 	s.mockWaitForRequest(*patchRequest.Metadata.RequestStatus.Href).Return(nil).Once()
 
-	nic, err := s.service.reconcileNICConfig(s.ctx, testEndpointIP)
+	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, testEndpointIP)
 	s.NotNil(nic, assertMessageNICIsNil)
 	s.NoError(err, assertMessageNICErrorOccurred)
-	s.Nil(s.service.scope.IonosMachine.Status.CurrentRequest, assertCurrentRequestIsNil)
+	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest, assertCurrentRequestIsNil)
 }
 
 func (s *nicSuite) mockGetServer(serverID string) *clienttest.MockClient_GetServer_Call {
@@ -101,7 +101,7 @@ func (s *nicSuite) mockPatchNIC(serverID, nicID string, props sdk.NicProperties)
 }
 
 func (s *nicSuite) mockGetLatestNICPatchRequest(serverID, nicID string) *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPatch, s.service.nicURL(serverID, nicID))
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPatch, s.service.nicURL(s.machineScope, serverID, nicID))
 }
 
 func (s *nicSuite) mockWaitForRequest(location string) *clienttest.MockClient_WaitForRequest_Call {
@@ -112,7 +112,7 @@ func (s *nicSuite) examplePatchRequest(status, serverID, nicID string) sdk.Reque
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPatch,
-		url:        s.service.nicURL(serverID, nicID),
+		url:        s.service.nicURL(s.machineScope, serverID, nicID),
 		href:       path.Join(exampleRequestPath, nicID),
 		targetID:   nicID,
 		targetType: sdk.NIC,

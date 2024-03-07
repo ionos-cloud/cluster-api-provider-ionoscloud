@@ -36,15 +36,13 @@ const (
 
 // Service offers infra resources services for IONOS Cloud machine reconciliation.
 type Service struct {
-	scope  *scope.MachineScope // Deprecated: pass machine scope explicitly to each method.
 	logger *logr.Logger
 	cloud  ionoscloud.Client
 }
 
 // NewService returns a new Service.
-func NewService(s *scope.MachineScope, cloud ionoscloud.Client, logger *logr.Logger) (*Service, error) {
+func NewService(cloud ionoscloud.Client, logger *logr.Logger) (*Service, error) {
 	return &Service{
-		scope:  s,
 		logger: logger,
 		cloud:  cloud,
 	}, nil
