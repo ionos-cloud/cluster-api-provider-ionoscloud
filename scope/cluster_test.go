@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
 )
 
 func TestNewClusterScope_MissingParams(t *testing.T) {
@@ -44,7 +43,6 @@ func TestNewClusterScope_MissingParams(t *testing.T) {
 				Client:       cl,
 				Cluster:      &clusterv1.Cluster{},
 				IonosCluster: &infrav1.IonosCloudCluster{},
-				IonosClient:  &client.IonosCloudClient{},
 			},
 			wantErr: false,
 		},
@@ -53,7 +51,6 @@ func TestNewClusterScope_MissingParams(t *testing.T) {
 			params: ClusterScopeParams{
 				Cluster:      &clusterv1.Cluster{},
 				IonosCluster: &infrav1.IonosCloudCluster{},
-				IonosClient:  &client.IonosCloudClient{},
 			},
 			wantErr: true,
 		},
@@ -62,25 +59,14 @@ func TestNewClusterScope_MissingParams(t *testing.T) {
 			params: ClusterScopeParams{
 				Client:       cl,
 				IonosCluster: &infrav1.IonosCloudCluster{},
-				IonosClient:  &client.IonosCloudClient{},
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing IONOS cluster",
 			params: ClusterScopeParams{
-				Client:      cl,
-				Cluster:     &clusterv1.Cluster{},
-				IonosClient: &client.IonosCloudClient{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "missing IONOS client",
-			params: ClusterScopeParams{
-				Client:       cl,
-				Cluster:      &clusterv1.Cluster{},
-				IonosCluster: &infrav1.IonosCloudCluster{},
+				Client:  cl,
+				Cluster: &clusterv1.Cluster{},
 			},
 			wantErr: true,
 		},

@@ -44,12 +44,12 @@ type Service struct {
 }
 
 // NewService returns a new Service.
-func NewService(ctx context.Context, s *scope.MachineScope) (*Service, error) {
+func NewService(ctx context.Context, s *scope.MachineScope, cloud ionoscloud.Client) (*Service, error) {
 	return &Service{
 		scope:  s,
 		ctx:    ctx,
 		logger: s.Logger,
-		cloud:  s.ClusterScope.IonosClient,
+		cloud:  cloud,
 	}, nil
 }
 
