@@ -48,7 +48,7 @@ type ServiceParams struct {
 // NewService returns a new Service.
 func NewService(params ServiceParams) (*Service, error) {
 	if params.IonosClient == nil {
-		return nil, errors.New("ionos cloud client is required")
+		return nil, errors.New("IONOS Cloud client is required")
 	}
 	if params.Logger == nil {
 		params.Logger = ptr.To(logr.Discard())
