@@ -126,7 +126,6 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.MachineSco
 // getLAN tries to retrieve the cluster-related LAN in the data center.
 func (s *Service) getLAN(ms *scope.MachineScope) func(context.Context) (*sdk.Lan, error) {
 	return func(ctx context.Context) (*sdk.Lan, error) {
-		cs := ms.ClusterScope
 		// check if the LAN exists
 		depth := int32(2) // for listing the LANs with their number of NICs
 		lans, err := s.apiWithDepth(depth).ListLANs(ctx, ms.DatacenterID())
@@ -135,7 +134,7 @@ func (s *Service) getLAN(ms *scope.MachineScope) func(context.Context) (*sdk.Lan
 		}
 
 		var (
-			expectedName = s.lanName(cs)
+			expectedName = s.lanName(ms.ClusterScope)
 			lanCount     = 0
 			foundLAN     *sdk.Lan
 		)
@@ -159,11 +158,10 @@ func (s *Service) getLAN(ms *scope.MachineScope) func(context.Context) (*sdk.Lan
 }
 
 func (s *Service) createLAN(ctx context.Context, ms *scope.MachineScope) error {
-	cs := ms.ClusterScope
 	log := s.logger.WithName("createLAN")
 
 	requestPath, err := s.ionosClient.CreateLAN(ctx, ms.DatacenterID(), sdk.LanPropertiesPost{
-		Name:   ptr.To(s.lanName(cs)),
+		Name:   ptr.To(s.lanName(ms.ClusterScope)),
 		Public: ptr.To(true),
 	})
 	if err != nil {

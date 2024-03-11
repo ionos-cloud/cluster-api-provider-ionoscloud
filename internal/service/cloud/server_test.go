@@ -41,7 +41,7 @@ func TestServerSuite(t *testing.T) {
 }
 
 func (s *serverSuite) TestServerName() {
-	serverName := s.service.serverName(s.machineScope)
+	serverName := s.service.serverName(s.infraMachine)
 	s.Equal("k8s-default-test-machine", serverName)
 }
 
@@ -74,7 +74,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateBusy() {
 				State: ptr.To(sdk.Busy),
 			},
 			Properties: &sdk.ServerProperties{
-				Name: ptr.To(s.service.serverName(s.machineScope)),
+				Name: ptr.To(s.service.serverName(s.infraMachine)),
 			},
 		},
 	}}, nil).Once()
@@ -93,7 +93,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 				State: ptr.To(sdk.Available),
 			},
 			Properties: &sdk.ServerProperties{
-				Name:    ptr.To(s.service.serverName(s.machineScope)),
+				Name:    ptr.To(s.service.serverName(s.infraMachine)),
 				VmState: ptr.To("RUNNING"),
 			},
 		},
@@ -266,7 +266,7 @@ func (s *serverSuite) TestGetServerWithProviderIDNotFound() {
 }
 
 func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
-	serverName := s.service.serverName(s.machineScope)
+	serverName := s.service.serverName(s.infraMachine)
 	s.machineScope.IonosMachine.Spec.ProviderID = nil
 	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
@@ -350,7 +350,7 @@ func (s *serverSuite) examplePostRequest(status string) sdk.Request {
 		status:     status,
 		method:     http.MethodPost,
 		url:        s.service.serversURL(s.machineScope),
-		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName(s.machineScope)),
+		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName(s.infraMachine)),
 		href:       exampleRequestPath,
 		targetID:   exampleServerID,
 		targetType: sdk.SERVER,

@@ -215,7 +215,7 @@ func (s *Service) getServer(ms *scope.MachineScope) func(ctx context.Context) (*
 		items := ptr.Deref(serverList.Items, []sdk.Server{})
 		// find servers with the expected name
 		for _, server := range items {
-			if server.HasProperties() && *server.Properties.Name == s.serverName(ms) {
+			if server.HasProperties() && *server.Properties.Name == s.serverName(ms.IonosMachine) {
 				// if the server was found, we set the provider ID and return it
 				ms.SetProviderID(ptr.Deref(server.Id, ""))
 				return &server, nil
@@ -251,7 +251,7 @@ func (s *Service) getLatestServerCreationRequest(ms *scope.MachineScope) func(co
 			s,
 			http.MethodPost,
 			path.Join("datacenters", ms.DatacenterID(), "servers"),
-			matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName(ms)),
+			matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName(ms.IonosMachine)),
 		)
 	}
 }
@@ -322,7 +322,7 @@ func (s *Service) buildServerProperties(ms *scope.MachineScope, machineSpec *inf
 		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
 		Cores:            &machineSpec.NumCores,
 		CpuFamily:        &machineSpec.CPUFamily,
-		Name:             ptr.To(s.serverName(ms)),
+		Name:             ptr.To(s.serverName(ms.IonosMachine)),
 		Ram:              &machineSpec.MemoryMB,
 	}
 
@@ -341,7 +341,7 @@ func (s *Service) buildServerEntities(ms *scope.MachineScope, params serverEntit
 	bootVolume := sdk.Volume{
 		Properties: &sdk.VolumeProperties{
 			AvailabilityZone: ptr.To(machineSpec.Disk.AvailabilityZone.String()),
-			Name:             ptr.To(s.serverName(ms)),
+			Name:             ptr.To(s.serverName(ms.IonosMachine)),
 			Size:             ptr.To(float32(machineSpec.Disk.SizeGB)),
 			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
 			UserData:         ptr.To(params.boostrapData),
@@ -366,7 +366,7 @@ func (s *Service) buildServerEntities(ms *scope.MachineScope, params serverEntit
 				Properties: &sdk.NicProperties{
 					Dhcp: ptr.To(true),
 					Lan:  &params.lanID,
-					Name: ptr.To(s.serverName(ms)),
+					Name: ptr.To(s.serverName(ms.IonosMachine)),
 				},
 			},
 		},
@@ -394,7 +394,7 @@ func (s *Service) renderUserData(ms *scope.MachineScope, input string) string {
   - echo %[1]s > /etc/hostname
   - hostname %[1]s
 `
-	bootCmdString := fmt.Sprintf(bootCmdFormat, s.serverName(ms))
+	bootCmdString := fmt.Sprintf(bootCmdFormat, s.serverName(ms.IonosMachine))
 	input = fmt.Sprintf("%s\n%s", input, bootCmdString)
 
 	return base64.StdEncoding.EncodeToString([]byte(input))
@@ -405,9 +405,9 @@ func (s *Service) serversURL(ms *scope.MachineScope) string {
 }
 
 // serverName returns a formatted name for the expected cloud server resource.
-func (s *Service) serverName(ms *scope.MachineScope) string {
+func (s *Service) serverName(m *infrav1.IonosCloudMachine) string {
 	return fmt.Sprintf(
 		"k8s-%s-%s",
-		ms.IonosMachine.Namespace,
-		ms.IonosMachine.Name)
+		m.Namespace,
+		m.Name)
 }

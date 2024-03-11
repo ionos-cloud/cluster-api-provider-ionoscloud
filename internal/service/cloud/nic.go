@@ -94,11 +94,11 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.MachineScope
 func (s *Service) findPrimaryNIC(ms *scope.MachineScope, server *sdk.Server) (*sdk.Nic, error) {
 	serverNICs := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
 	for _, nic := range serverNICs {
-		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name == s.serverName(ms) {
+		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name == s.serverName(ms.IonosMachine) {
 			return &nic, nil
 		}
 	}
-	return nil, fmt.Errorf("could not find primary NIC with name %s", s.serverName(ms))
+	return nil, fmt.Errorf("could not find primary NIC with name %s", s.serverName(ms.IonosMachine))
 }
 
 func (s *Service) patchNIC(ctx context.Context, ms *scope.MachineScope, serverID string, nic *sdk.Nic, props sdk.NicProperties) error {

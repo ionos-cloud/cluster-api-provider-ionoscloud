@@ -42,7 +42,7 @@ func TestNICSuite(t *testing.T) {
 }
 
 func (s *nicSuite) TestReconcileNICConfig() {
-	s.mockGetServer(exampleServerID).Return(defaultServer(s.service.serverName(s.machineScope), exampleDHCPIP), nil).Once()
+	s.mockGetServer(exampleServerID).Return(defaultServer(s.service.serverName(s.infraMachine), exampleDHCPIP), nil).Once()
 
 	// no patch request
 	s.mockGetLatestNICPatchRequest(exampleServerID, exampleNICID).Return([]sdk.Request{}, nil).Once()
@@ -61,7 +61,7 @@ func (s *nicSuite) TestReconcileNICConfig() {
 }
 
 func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
-	s.mockGetServer(exampleServerID).Return(defaultServer(s.service.serverName(s.machineScope), exampleDHCPIP, exampleEndpointIP), nil).Once()
+	s.mockGetServer(exampleServerID).Return(defaultServer(s.service.serverName(s.infraMachine), exampleDHCPIP, exampleEndpointIP), nil).Once()
 	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, exampleEndpointIP)
 
 	s.NotNil(nic, assertMessageNICIsNil)
@@ -70,7 +70,7 @@ func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
 }
 
 func (s *nicSuite) TestReconcileNICConfigPatchRequestPending() {
-	s.mockGetServer(exampleServerID).Return(defaultServer(s.service.serverName(s.machineScope), exampleDHCPIP), nil).Once()
+	s.mockGetServer(exampleServerID).Return(defaultServer(s.service.serverName(s.infraMachine), exampleDHCPIP), nil).Once()
 
 	patchRequest := s.examplePatchRequest(sdk.RequestStatusQueued, exampleServerID, exampleNICID)
 
