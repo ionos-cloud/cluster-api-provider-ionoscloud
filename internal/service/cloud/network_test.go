@@ -43,7 +43,7 @@ func TestLANSuite(t *testing.T) {
 }
 
 func (s *lanSuite) TestNetworkLANName() {
-	s.Equal("k8s-default-test-cluster", s.service.lanName(s.clusterScope))
+	s.Equal("k8s-default-test-cluster", s.service.lanName(s.clusterScope.Cluster))
 }
 
 func (s *lanSuite) TestLANURL() {
@@ -412,7 +412,7 @@ func (s *lanSuite) exampleLAN() sdk.Lan {
 	return sdk.Lan{
 		Id: ptr.To(exampleLANID),
 		Properties: &sdk.LanProperties{
-			Name: ptr.To(s.service.lanName(s.clusterScope)),
+			Name: ptr.To(s.service.lanName(s.clusterScope.Cluster)),
 		},
 		Metadata: &sdk.DatacenterElementMetadata{
 			State: ptr.To(sdk.Available),
@@ -430,7 +430,7 @@ func (s *lanSuite) examplePostRequest(status string) []sdk.Request {
 		status:     status,
 		method:     http.MethodPost,
 		url:        s.service.lansURL(s.machineScope.DatacenterID()),
-		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName(s.clusterScope)),
+		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName(s.clusterScope.Cluster)),
 		href:       exampleRequestPath,
 		targetID:   exampleLANID,
 		targetType: sdk.LAN,
@@ -464,7 +464,7 @@ func (s *lanSuite) examplePatchRequest(status string) sdk.Request {
 
 func (s *lanSuite) mockCreateLANCall() *clienttest.MockClient_CreateLAN_Call {
 	return s.ionosClient.EXPECT().CreateLAN(s.ctx, s.machineScope.DatacenterID(), sdk.LanPropertiesPost{
-		Name:   ptr.To(s.service.lanName(s.clusterScope)),
+		Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
 		Public: ptr.To(true),
 	})
 }

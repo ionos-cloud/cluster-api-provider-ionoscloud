@@ -25,6 +25,7 @@ import (
 	"slices"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -33,11 +34,11 @@ import (
 )
 
 // lanName returns the name of the cluster LAN.
-func (s *Service) lanName(cs *scope.ClusterScope) string {
+func (s *Service) lanName(c *clusterv1.Cluster) string {
 	return fmt.Sprintf(
 		"k8s-%s-%s",
-		cs.Cluster.Namespace,
-		cs.Cluster.Name)
+		c.Namespace,
+		c.Name)
 }
 
 func (s *Service) lanURL(datacenterID, id string) string {
@@ -134,7 +135,7 @@ func (s *Service) getLAN(ms *scope.MachineScope) func(context.Context) (*sdk.Lan
 		}
 
 		var (
-			expectedName = s.lanName(ms.ClusterScope)
+			expectedName = s.lanName(ms.ClusterScope.Cluster)
 			lanCount     = 0
 			foundLAN     *sdk.Lan
 		)
@@ -161,7 +162,7 @@ func (s *Service) createLAN(ctx context.Context, ms *scope.MachineScope) error {
 	log := s.logger.WithName("createLAN")
 
 	requestPath, err := s.ionosClient.CreateLAN(ctx, ms.DatacenterID(), sdk.LanPropertiesPost{
-		Name:   ptr.To(s.lanName(ms.ClusterScope)),
+		Name:   ptr.To(s.lanName(ms.ClusterScope.Cluster)),
 		Public: ptr.To(true),
 	})
 	if err != nil {
@@ -226,7 +227,7 @@ func (s *Service) getLatestLANCreationRequest(ms *scope.MachineScope) func(conte
 			ctx,
 			http.MethodPost,
 			s.lansURL(ms.DatacenterID()),
-			matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName(ms.ClusterScope)))
+			matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName(ms.ClusterScope.Cluster)))
 	}
 }
 

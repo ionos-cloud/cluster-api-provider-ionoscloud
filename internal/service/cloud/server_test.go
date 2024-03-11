@@ -111,7 +111,7 @@ func (s *serverSuite) TestReconcileServerNoRequest() {
 	s.mockListLANs().Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To("1"),
 		Properties: &sdk.LanProperties{
-			Name:   ptr.To(s.service.lanName(s.clusterScope)),
+			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
 			Public: ptr.To(true),
 		},
 	}}}, nil)
