@@ -23,7 +23,6 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -84,8 +83,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	logger = logger.WithValues("machine", klog.KObj(machine))
-
 	// Fetch the Cluster.
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
@@ -124,10 +121,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}()
 
-	cloudService, err := cloud.NewService(cloud.ServiceParams{
-		IonosClient: r.IonosCloudClient,
-		Logger:      logger,
-	})
+	cloudService, err := cloud.NewService(r.IonosCloudClient, logger)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("could not create machine service")
 	}
