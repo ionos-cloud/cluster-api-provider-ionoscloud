@@ -81,6 +81,7 @@ type ServiceTestSuite struct {
 }
 
 func (s *ServiceTestSuite) SetupSuite() {
+	s.log = logr.Discard()
 	s.ctx = context.Background()
 	s.Assertions = s.Require()
 }
