@@ -40,12 +40,12 @@ func (s *Service) lanName(cs *scope.ClusterScope) string {
 		cs.Cluster.Name)
 }
 
-func (s *Service) lanURL(ms *scope.MachineScope, id string) string {
-	return path.Join("datacenters", ms.DatacenterID(), "lans", id)
+func (s *Service) lanURL(datacenterID, id string) string {
+	return path.Join("datacenters", datacenterID, "lans", id)
 }
 
-func (s *Service) lansURL(ms *scope.MachineScope) string {
-	return path.Join("datacenters", ms.DatacenterID(), "lans")
+func (s *Service) lansURL(datacenterID string) string {
+	return path.Join("datacenters", datacenterID, "lans")
 }
 
 // ReconcileLAN ensures the cluster LAN exist, creating one if it doesn't.
@@ -225,17 +225,17 @@ func (s *Service) getLatestLANCreationRequest(ms *scope.MachineScope) func(conte
 		return s.getLatestLANRequestByMethod(
 			ctx,
 			http.MethodPost,
-			s.lansURL(ms),
+			s.lansURL(ms.DatacenterID()),
 			matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName(ms.ClusterScope)))
 	}
 }
 
 func (s *Service) getLatestLANDeletionRequest(ctx context.Context, ms *scope.MachineScope, lanID string) (*requestInfo, error) {
-	return s.getLatestLANRequestByMethod(ctx, http.MethodDelete, s.lanURL(ms, lanID))
+	return s.getLatestLANRequestByMethod(ctx, http.MethodDelete, s.lanURL(ms.DatacenterID(), lanID))
 }
 
 func (s *Service) getLatestLANPatchRequest(ctx context.Context, ms *scope.MachineScope, lanID string) (*requestInfo, error) {
-	return s.getLatestLANRequestByMethod(ctx, http.MethodPatch, s.lanURL(ms, lanID))
+	return s.getLatestLANRequestByMethod(ctx, http.MethodPatch, s.lanURL(ms.DatacenterID(), lanID))
 }
 
 func (s *Service) removeLANPendingRequestFromCluster(ms *scope.MachineScope) error {

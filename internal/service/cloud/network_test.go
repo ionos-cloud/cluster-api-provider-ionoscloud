@@ -47,11 +47,11 @@ func (s *lanSuite) TestNetworkLANName() {
 }
 
 func (s *lanSuite) TestLANURL() {
-	s.Equal("datacenters/"+s.machineScope.DatacenterID()+"/lans/1", s.service.lanURL(s.machineScope, "1"))
+	s.Equal("datacenters/"+s.machineScope.DatacenterID()+"/lans/1", s.service.lanURL(s.machineScope.DatacenterID(), "1"))
 }
 
 func (s *lanSuite) TestLANURLs() {
-	s.Equal("datacenters/"+s.machineScope.DatacenterID()+"/lans", s.service.lansURL(s.machineScope))
+	s.Equal("datacenters/"+s.machineScope.DatacenterID()+"/lans", s.service.lansURL(s.machineScope.DatacenterID()))
 }
 
 func (s *lanSuite) TestNetworkCreateLANSuccessful() {
@@ -429,7 +429,7 @@ func (s *lanSuite) examplePostRequest(status string) []sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPost,
-		url:        s.service.lansURL(s.machineScope),
+		url:        s.service.lansURL(s.machineScope.DatacenterID()),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName(s.clusterScope)),
 		href:       exampleRequestPath,
 		targetID:   exampleLANID,
@@ -442,7 +442,7 @@ func (s *lanSuite) exampleDeleteRequest(status string) []sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodDelete,
-		url:        s.service.lanURL(s.machineScope, exampleLANID),
+		url:        s.service.lanURL(s.machineScope.DatacenterID(), exampleLANID),
 		href:       exampleRequestPath,
 		targetID:   exampleLANID,
 		targetType: sdk.LAN,
@@ -454,7 +454,7 @@ func (s *lanSuite) examplePatchRequest(status string) sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPatch,
-		url:        s.service.lanURL(s.machineScope, exampleLANID),
+		url:        s.service.lanURL(s.machineScope.DatacenterID(), exampleLANID),
 		href:       exampleRequestPath,
 		targetID:   exampleLANID,
 		targetType: sdk.LAN,
@@ -482,15 +482,15 @@ func (s *lanSuite) mockPatchLANCall(props sdk.LanProperties) *clienttest.MockCli
 }
 
 func (s *lanSuite) mockGetLANCreationRequestsCall() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.lansURL(s.machineScope))
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.lansURL(s.machineScope.DatacenterID()))
 }
 
 func (s *lanSuite) mockGetLANPatchRequestCall() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPatch, s.service.lanURL(s.machineScope, exampleLANID))
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPatch, s.service.lanURL(s.machineScope.DatacenterID(), exampleLANID))
 }
 
 func (s *lanSuite) mockGetLANDeletionRequestsCall() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, s.service.lanURL(s.machineScope, exampleLANID))
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, s.service.lanURL(s.machineScope.DatacenterID(), exampleLANID))
 }
 
 func (s *lanSuite) mockGetServerCall(serverID string) *clienttest.MockClient_GetServer_Call {
