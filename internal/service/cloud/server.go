@@ -400,8 +400,8 @@ func (s *Service) renderUserData(ms *scope.MachineScope, input string) string {
 	return base64.StdEncoding.EncodeToString([]byte(input))
 }
 
-func (s *Service) serversURL(ms *scope.MachineScope) string {
-	return path.Join("datacenters", ms.DatacenterID(), "servers")
+func (s *Service) serversURL(datacenterID string) string {
+	return path.Join("datacenters", datacenterID, "servers")
 }
 
 // serverName returns a formatted name for the expected cloud server resource.

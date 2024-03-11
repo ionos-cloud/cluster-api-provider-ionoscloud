@@ -313,11 +313,12 @@ func (s *serverSuite) mockDeleteServer(serverID string) *clienttest.MockClient_D
 }
 
 func (s *serverSuite) mockGetServerCreationRequest() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.serversURL(s.machineScope))
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.serversURL(s.machineScope.DatacenterID()))
 }
 
 func (s *serverSuite) mockGetServerDeletionRequest(serverID string) *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, path.Join(s.service.serversURL(s.machineScope), serverID))
+	return s.ionosClient.EXPECT().GetRequests(s.ctx,
+		http.MethodDelete, path.Join(s.service.serversURL(s.machineScope.DatacenterID()), serverID))
 }
 
 func (s *serverSuite) mockCreateServer() *clienttest.MockClient_CreateServer_Call {
@@ -337,7 +338,7 @@ func (s *serverSuite) exampleDeleteRequest(status, serverID string) sdk.Request 
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodDelete,
-		url:        path.Join(s.service.serversURL(s.machineScope), serverID),
+		url:        path.Join(s.service.serversURL(s.machineScope.DatacenterID()), serverID),
 		href:       path.Join(exampleRequestPath, exampleServerID),
 		targetID:   exampleServerID,
 		targetType: sdk.SERVER,
@@ -349,7 +350,7 @@ func (s *serverSuite) examplePostRequest(status string) sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPost,
-		url:        s.service.serversURL(s.machineScope),
+		url:        s.service.serversURL(s.machineScope.DatacenterID()),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName(s.infraMachine)),
 		href:       exampleRequestPath,
 		targetID:   exampleServerID,
