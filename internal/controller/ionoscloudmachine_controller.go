@@ -98,8 +98,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	logger = logger.WithValues("cluster", klog.KObj(cluster))
-
 	clusterScope, err := r.getClusterScope(ctx, cluster, ionosCloudMachine)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error getting infra provider cluster or control plane object: %w", err)
