@@ -55,7 +55,6 @@ const (
 	exampleDHCPIP      = "192.0.2.2"
 )
 
-// TODO(gfariasalves): Make all constant names used for tests follow a common prefix.
 const (
 	exampleLANID       = "42"
 	exampleNICID       = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3e"
