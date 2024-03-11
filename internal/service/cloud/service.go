@@ -26,6 +26,7 @@ import (
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 const (
@@ -39,11 +40,22 @@ type Service struct {
 	cloud  ionoscloud.Client
 }
 
+type NewServiceParams struct {
+	Cloud  ionoscloud.Client
+	Logger *logr.Logger
+}
+
 // NewService returns a new Service.
-func NewService(cloud ionoscloud.Client, logger *logr.Logger) (*Service, error) {
+func NewService(params NewServiceParams) (*Service, error) {
+	if params.Cloud == nil {
+		return nil, errors.New("ionos cloud client is required")
+	}
+	if params.Logger == nil {
+		params.Logger = ptr.To(logr.Discard())
+	}
 	return &Service{
-		logger: logger,
-		cloud:  cloud,
+		logger: params.Logger,
+		cloud:  params.Cloud,
 	}, nil
 }
 

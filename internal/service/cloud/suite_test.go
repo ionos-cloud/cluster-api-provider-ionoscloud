@@ -82,7 +82,6 @@ type ServiceTestSuite struct {
 }
 
 func (s *ServiceTestSuite) SetupSuite() {
-	s.log = logr.Discard()
 	s.ctx = context.Background()
 	s.Assertions = s.Require()
 }
@@ -176,9 +175,10 @@ func (s *ServiceTestSuite) SetupTest() {
 	})
 	s.NoError(err, "failed to create machine scope")
 
-	s.service, err = NewService(s.ionosClient, &s.log)
-	s.service.cloud = s.ionosClient
-	s.service.logger = &s.log
+	s.service, err = NewService(NewServiceParams{
+		Cloud:  s.ionosClient,
+		Logger: &s.log,
+	})
 	s.NoError(err, "failed to create service")
 }
 
