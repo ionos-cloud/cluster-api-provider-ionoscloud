@@ -232,7 +232,7 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.MachineScope, serv
 	log := s.logger.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
-	requestLocation, err := s.cloud.DeleteServer(ctx, ms.DatacenterID(), serverID)
+	requestLocation, err := s.ionosClient.DeleteServer(ctx, ms.DatacenterID(), serverID)
 	if err != nil {
 		return fmt.Errorf("failed to request server deletion: %w", err)
 	}
@@ -291,7 +291,7 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 		lanID:        int32(lanID),
 	}
 
-	server, requestLocation, err := s.cloud.CreateServer(
+	server, requestLocation, err := s.ionosClient.CreateServer(
 		ctx,
 		ms.DatacenterID(),
 		s.buildServerProperties(ms, copySpec),

@@ -27,12 +27,12 @@ import (
 )
 
 func TestNewServiceValid(t *testing.T) {
-	cloud := clienttest.NewMockClient(t)
+	ionosClient := clienttest.NewMockClient(t)
 	log := ptr.To(logr.Discard())
-	svc, err := NewService(NewServiceParams{cloud, log})
+	svc, err := NewService(NewServiceParams{ionosClient, log})
 	require.NotNil(t, svc)
 	require.Nil(t, err)
-	require.Same(t, cloud, svc.cloud)
+	require.Same(t, ionosClient, svc.ionosClient)
 }
 
 func TestNewServiceNilLogger(t *testing.T) {

@@ -36,33 +36,33 @@ const (
 
 // Service offers infra resources services for IONOS Cloud machine reconciliation.
 type Service struct {
-	logger *logr.Logger
-	cloud  ionoscloud.Client
+	logger      *logr.Logger
+	ionosClient ionoscloud.Client
 }
 
 type NewServiceParams struct {
-	Cloud  ionoscloud.Client
-	Logger *logr.Logger
+	IonosClient ionoscloud.Client
+	Logger      *logr.Logger
 }
 
 // NewService returns a new Service.
 func NewService(params NewServiceParams) (*Service, error) {
-	if params.Cloud == nil {
+	if params.IonosClient == nil {
 		return nil, errors.New("ionos cloud client is required")
 	}
 	if params.Logger == nil {
 		params.Logger = ptr.To(logr.Discard())
 	}
 	return &Service{
-		logger: params.Logger,
-		cloud:  params.Cloud,
+		logger:      params.Logger,
+		ionosClient: params.IonosClient,
 	}, nil
 }
 
 // apiWithDepth is a shortcut for the IONOS Cloud Client with a specific depth.
 // It will create a copy of the client with the depth set to the provided value.
 func (s *Service) apiWithDepth(depth int32) ionoscloud.Client {
-	return client.WithDepth(s.cloud, depth)
+	return client.WithDepth(s.ionosClient, depth)
 }
 
 // isNotFound is a shortcut for checking if an error is a not found error.

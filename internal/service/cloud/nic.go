@@ -68,7 +68,7 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.MachineScope
 	if ri != nil && ri.isPending() {
 		log.Info("Found pending NIC request. Waiting for it to be finished")
 
-		if err := s.cloud.WaitForRequest(ctx, ri.location); err != nil {
+		if err := s.ionosClient.WaitForRequest(ctx, ri.location); err != nil {
 			return nil, fmt.Errorf("failed to wait for pending NIC request: %w", err)
 		}
 
@@ -107,7 +107,7 @@ func (s *Service) patchNIC(ctx context.Context, ms *scope.MachineScope, serverID
 	nicID := ptr.Deref(nic.GetId(), "")
 	log.V(4).Info("Patching NIC", "id", nicID)
 
-	location, err := s.cloud.PatchNIC(ctx, ms.DatacenterID(), serverID, nicID, props)
+	location, err := s.ionosClient.PatchNIC(ctx, ms.DatacenterID(), serverID, nicID, props)
 	if err != nil {
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}
@@ -118,7 +118,7 @@ func (s *Service) patchNIC(ctx context.Context, ms *scope.MachineScope, serverID
 	log.V(4).Info("Successfully patched NIC", "location", location)
 	// In this case, we want to wait for the request to be finished as we need to configure the
 	// failover group
-	return s.cloud.WaitForRequest(ctx, location)
+	return s.ionosClient.WaitForRequest(ctx, location)
 }
 
 func (s *Service) getLatestNICPatchRequest(ctx context.Context, ms *scope.MachineScope, serverID string, nicID string) (*requestInfo, error) {

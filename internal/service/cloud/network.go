@@ -162,7 +162,7 @@ func (s *Service) createLAN(ctx context.Context, ms *scope.MachineScope) error {
 	cs := ms.ClusterScope
 	log := s.logger.WithName("createLAN")
 
-	requestPath, err := s.cloud.CreateLAN(ctx, ms.DatacenterID(), sdk.LanPropertiesPost{
+	requestPath, err := s.ionosClient.CreateLAN(ctx, ms.DatacenterID(), sdk.LanPropertiesPost{
 		Name:   ptr.To(s.lanName(cs)),
 		Public: ptr.To(true),
 	})
@@ -188,7 +188,7 @@ func (s *Service) createLAN(ctx context.Context, ms *scope.MachineScope) error {
 func (s *Service) deleteLAN(ctx context.Context, ms *scope.MachineScope, lanID string) error {
 	log := s.logger.WithName("deleteLAN")
 
-	requestPath, err := s.cloud.DeleteLAN(ctx, ms.DatacenterID(), lanID)
+	requestPath, err := s.ionosClient.DeleteLAN(ctx, ms.DatacenterID(), lanID)
 	if err != nil {
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
@@ -423,7 +423,7 @@ func (s *Service) patchLAN(ctx context.Context, ms *scope.MachineScope, lanID st
 	log := s.logger.WithName("patchLAN")
 	log.Info("Patching LAN", "id", lanID)
 
-	location, err := s.cloud.PatchLAN(ctx, ms.DatacenterID(), lanID, properties)
+	location, err := s.ionosClient.PatchLAN(ctx, ms.DatacenterID(), lanID, properties)
 	if err != nil {
 		return fmt.Errorf("failed to patch LAN %s: %w", lanID, err)
 	}

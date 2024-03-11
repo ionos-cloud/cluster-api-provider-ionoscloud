@@ -202,7 +202,7 @@ func (s *Service) checkIfUserSetBlock(cs *scope.ClusterScope, props *sdk.IpBlock
 // the source of truth to get the correct status of the IP block.
 // TODO(gfariasalves): remove this method once the bug is fixed.
 func (s *Service) cloudAPIStateInconsistencyWorkaround(ctx context.Context, block *sdk.IpBlock) (*sdk.IpBlock, error) {
-	trueBlock, err := s.cloud.GetIPBlock(ctx, ptr.Deref(block.GetId(), unknownValue))
+	trueBlock, err := s.ionosClient.GetIPBlock(ctx, ptr.Deref(block.GetId(), unknownValue))
 	if err != nil {
 		return nil, fmt.Errorf("could not confirm if found IP block is available: %w", err)
 	}
@@ -215,7 +215,7 @@ func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.ClusterScope) (*
 		s.logger.Info("Could not find any IP block by ID as the provider ID is not set.")
 		return nil, nil
 	}
-	ipBlock, err := s.cloud.GetIPBlock(ctx, id)
+	ipBlock, err := s.ionosClient.GetIPBlock(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("could not get IP block by ID using the API: %w", err)
 	}
@@ -227,7 +227,7 @@ func (s *Service) reserveIPBlock(ctx context.Context, cs *scope.ClusterScope) er
 	var err error
 	log := s.logger.WithName("reserveIPBlock")
 
-	requestPath, err := s.cloud.ReserveIPBlock(ctx, s.ipBlockName(cs), cs.Location(), 1)
+	requestPath, err := s.ionosClient.ReserveIPBlock(ctx, s.ipBlockName(cs), cs.Location(), 1)
 	if err != nil {
 		return fmt.Errorf("failed to request the cloud for IP block reservation: %w", err)
 	}
@@ -241,7 +241,7 @@ func (s *Service) reserveIPBlock(ctx context.Context, cs *scope.ClusterScope) er
 func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.ClusterScope, id string) error {
 	log := s.logger.WithName("deleteIPBlock")
 
-	requestPath, err := s.cloud.DeleteIPBlock(ctx, id)
+	requestPath, err := s.ionosClient.DeleteIPBlock(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to requestPath IP block deletion: %w", err)
 	}
