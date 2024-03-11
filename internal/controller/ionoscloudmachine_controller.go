@@ -137,15 +137,10 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return r.reconcileDelete(ctx, machineScope, cloudService)
 	}
 
-	return r.reconcileNormal(ctx, cloudService, clusterScope, machineScope)
+	return r.reconcileNormal(ctx, cloudService, machineScope)
 }
 
-func (r *IonosCloudMachineReconciler) reconcileNormal(
-	ctx context.Context,
-	cloudService *cloud.Service,
-	clusterScope *scope.ClusterScope,
-	machineScope *scope.MachineScope,
-) (ctrl.Result, error) {
+func (r *IonosCloudMachineReconciler) reconcileNormal(ctx context.Context, cloudService *cloud.Service, machineScope *scope.MachineScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(4).Info("Reconciling IonosCloudMachine")
 
@@ -154,7 +149,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		return ctrl.Result{}, nil
 	}
 
-	if !r.isInfrastructureReady(ctx, clusterScope, machineScope) {
+	if !r.isInfrastructureReady(ctx, machineScope) {
 		return ctrl.Result{}, nil
 	}
 
@@ -297,15 +292,13 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 	return requeue, retErr
 }
 
-func (r *IonosCloudMachineReconciler) isInfrastructureReady(
-	ctx context.Context, clusterScope *scope.ClusterScope, machineScope *scope.MachineScope,
-) bool {
+func (r *IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.MachineScope) bool {
 	log := ctrl.LoggerFrom(ctx)
 	// Make sure the infrastructure is ready.
-	if !clusterScope.Cluster.Status.InfrastructureReady {
+	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
 		log.Info("Cluster infrastructure is not ready yet")
 		conditions.MarkFalse(
-			machineScope.IonosMachine,
+			ms.IonosMachine,
 			infrav1.MachineProvisionedCondition,
 			infrav1.WaitingForClusterInfrastructureReason,
 			clusterv1.ConditionSeverityInfo, "")
@@ -314,10 +307,10 @@ func (r *IonosCloudMachineReconciler) isInfrastructureReady(
 	}
 
 	// Make sure to wait until the data secret was created
-	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
+	if ms.Machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret is not available yet")
 		conditions.MarkFalse(
-			machineScope.IonosMachine,
+			ms.IonosMachine,
 			infrav1.MachineProvisionedCondition,
 			infrav1.WaitingForBootstrapDataReason,
 			clusterv1.ConditionSeverityInfo, "",
