@@ -115,7 +115,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 		return false, nil
 	}
 
-	request, err = s.getLatestServerDeletionRequest(ctx, ms, *server.Id)
+	request, err = s.getLatestServerDeletionRequest(ctx, ms.DatacenterID(), *server.Id)
 	if err != nil {
 		return false, err
 	}
@@ -256,12 +256,12 @@ func (s *Service) getLatestServerCreationRequest(ms *scope.MachineScope) func(co
 	}
 }
 
-func (s *Service) getLatestServerDeletionRequest(ctx context.Context, ms *scope.MachineScope, serverID string) (*requestInfo, error) {
+func (s *Service) getLatestServerDeletionRequest(ctx context.Context, datacenterID, serverID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Server](
 		ctx,
 		s,
 		http.MethodDelete,
-		path.Join("datacenters", ms.DatacenterID(), "servers", serverID),
+		path.Join("datacenters", datacenterID, "servers", serverID),
 	)
 }
 
