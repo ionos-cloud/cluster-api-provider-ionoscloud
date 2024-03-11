@@ -40,13 +40,13 @@ type Service struct {
 	ionosClient ionoscloud.Client
 }
 
-type NewServiceParams struct {
+type ServiceParams struct {
 	IonosClient ionoscloud.Client
 	Logger      *logr.Logger
 }
 
 // NewService returns a new Service.
-func NewService(params NewServiceParams) (*Service, error) {
+func NewService(params ServiceParams) (*Service, error) {
 	if params.IonosClient == nil {
 		return nil, errors.New("ionos cloud client is required")
 	}

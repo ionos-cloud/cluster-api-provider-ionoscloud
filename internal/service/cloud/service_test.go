@@ -29,7 +29,7 @@ import (
 func TestNewServiceValid(t *testing.T) {
 	ionosClient := clienttest.NewMockClient(t)
 	log := ptr.To(logr.Discard())
-	svc, err := NewService(NewServiceParams{ionosClient, log})
+	svc, err := NewService(ServiceParams{ionosClient, log})
 	require.NotNil(t, svc)
 	require.Nil(t, err)
 	require.Same(t, ionosClient, svc.ionosClient)
@@ -37,7 +37,7 @@ func TestNewServiceValid(t *testing.T) {
 
 func TestNewServiceNilLogger(t *testing.T) {
 	cloud := clienttest.NewMockClient(t)
-	svc, err := NewService(NewServiceParams{cloud, nil})
+	svc, err := NewService(ServiceParams{cloud, nil})
 	require.NotNil(t, svc)
 	require.Nil(t, err)
 	require.Equal(t, logr.Discard(), *svc.logger)
@@ -45,7 +45,7 @@ func TestNewServiceNilLogger(t *testing.T) {
 
 func TestNewServiceNilIONOSCloud(t *testing.T) {
 	log := ptr.To(logr.Discard())
-	svc, err := NewService(NewServiceParams{nil, log})
+	svc, err := NewService(ServiceParams{nil, log})
 	require.Nil(t, svc)
 	require.Error(t, err)
 }

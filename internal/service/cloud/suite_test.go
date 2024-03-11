@@ -175,7 +175,7 @@ func (s *ServiceTestSuite) SetupTest() {
 	})
 	s.NoError(err, "failed to create machine scope")
 
-	s.service, err = NewService(NewServiceParams{
+	s.service, err = NewService(ServiceParams{
 		IonosClient: s.ionosClient,
 		Logger:      &s.log,
 	})

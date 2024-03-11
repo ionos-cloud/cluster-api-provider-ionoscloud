@@ -104,7 +104,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}()
 
-	cloudService, err := cloud.NewService(cloud.NewServiceParams{
+	cloudService, err := cloud.NewService(cloud.ServiceParams{
 		IonosClient: r.IonosCloudClient,
 		Logger:      &logger,
 	})
