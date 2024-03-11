@@ -141,14 +141,14 @@ func (s *serverSuite) prepareReconcileServerRequestTest() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletion() {
-	s.mockGetServer(testServerID).Return(&sdk.Server{
-		Id: ptr.To(testServerID),
+	s.mockGetServer(exampleServerID).Return(&sdk.Server{
+		Id: ptr.To(exampleServerID),
 	}, nil)
 
 	reqLocation := "delete/location"
 
-	s.mockGetServerDeletionRequest(testServerID).Return(nil, nil)
-	s.mockDeleteServer(testServerID).Return(reqLocation, nil)
+	s.mockGetServerDeletionRequest(exampleServerID).Return(nil, nil)
+	s.mockDeleteServer(exampleServerID).Return(reqLocation, nil)
 
 	res, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -159,7 +159,7 @@ func (s *serverSuite) TestReconcileServerDeletion() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionServerNotFound() {
-	s.mockGetServer(testServerID).Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404))
+	s.mockGetServer(exampleServerID).Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404))
 	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
 	s.mockListServers().Return(&sdk.Servers{}, nil)
 
@@ -169,14 +169,14 @@ func (s *serverSuite) TestReconcileServerDeletionServerNotFound() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionUnexpectedError() {
-	s.mockGetServer(testServerID).Return(nil, sdk.NewGenericOpenAPIError("unexpected error returned", nil, nil, 500))
+	s.mockGetServer(exampleServerID).Return(nil, sdk.NewGenericOpenAPIError("unexpected error returned", nil, nil, 500))
 	res, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
 	s.Error(err)
 	s.False(res)
 }
 
 func (s *serverSuite) TestReconcileServerDeletionCreateRequestPending() {
-	s.mockGetServer(testServerID).Return(nil, nil)
+	s.mockGetServer(exampleServerID).Return(nil, nil)
 	s.mockListServers().Return(&sdk.Servers{}, nil)
 	exampleRequest := s.examplePostRequest(sdk.RequestStatusQueued)
 	s.mockGetServerCreationRequest().Return([]sdk.Request{exampleRequest}, nil)
@@ -191,13 +191,13 @@ func (s *serverSuite) TestReconcileServerDeletionCreateRequestPending() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionRequestPending() {
-	s.mockGetServer(testServerID).Return(&sdk.Server{
-		Id: ptr.To(testServerID),
+	s.mockGetServer(exampleServerID).Return(&sdk.Server{
+		Id: ptr.To(exampleServerID),
 	}, nil)
 
-	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusQueued, testServerID)
+	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusQueued, exampleServerID)
 
-	s.mockGetServerDeletionRequest(testServerID).Return([]sdk.Request{exampleRequest}, nil)
+	s.mockGetServerDeletionRequest(exampleServerID).Return([]sdk.Request{exampleRequest}, nil)
 
 	res, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -209,13 +209,13 @@ func (s *serverSuite) TestReconcileServerDeletionRequestPending() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionRequestDone() {
-	s.mockGetServer(testServerID).Return(&sdk.Server{
-		Id: ptr.To(testServerID),
+	s.mockGetServer(exampleServerID).Return(&sdk.Server{
+		Id: ptr.To(exampleServerID),
 	}, nil)
 
-	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusDone, testServerID)
+	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusDone, exampleServerID)
 
-	s.mockGetServerDeletionRequest(testServerID).Return([]sdk.Request{exampleRequest}, nil)
+	s.mockGetServerDeletionRequest(exampleServerID).Return([]sdk.Request{exampleRequest}, nil)
 
 	res, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -225,14 +225,14 @@ func (s *serverSuite) TestReconcileServerDeletionRequestDone() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
-	s.mockGetServer(testServerID).Return(&sdk.Server{
-		Id: ptr.To(testServerID),
+	s.mockGetServer(exampleServerID).Return(&sdk.Server{
+		Id: ptr.To(exampleServerID),
 	}, nil)
 
-	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusFailed, testServerID)
+	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusFailed, exampleServerID)
 
-	s.mockGetServerDeletionRequest(testServerID).Return([]sdk.Request{exampleRequest}, nil)
-	s.mockDeleteServer(testServerID).Return("delete/triggered", nil)
+	s.mockGetServerDeletionRequest(exampleServerID).Return([]sdk.Request{exampleRequest}, nil)
+	s.mockDeleteServer(exampleServerID).Return("delete/triggered", nil)
 
 	res, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -244,7 +244,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
 }
 
 func (s *serverSuite) TestGetServerWithProviderID() {
-	serverID := testServerID
+	serverID := exampleServerID
 	s.mockGetServer(serverID).Return(&sdk.Server{}, nil)
 	server, err := s.service.getServer(s.machineScope)(s.ctx)
 	s.NoError(err)
@@ -252,7 +252,7 @@ func (s *serverSuite) TestGetServerWithProviderID() {
 }
 
 func (s *serverSuite) TestGetServerWithProviderIDNotFound() {
-	serverID := testServerID
+	serverID := exampleServerID
 	s.mockGetServer(serverID).Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404))
 	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
@@ -338,8 +338,8 @@ func (s *serverSuite) exampleDeleteRequest(status, serverID string) sdk.Request 
 		status:     status,
 		method:     http.MethodDelete,
 		url:        path.Join(s.service.serversURL(s.machineScope), serverID),
-		href:       path.Join(exampleRequestPath, testServerID),
-		targetID:   testServerID,
+		href:       path.Join(exampleRequestPath, exampleServerID),
+		targetID:   exampleServerID,
 		targetType: sdk.SERVER,
 	}
 	return s.exampleRequest(opts)
@@ -352,7 +352,7 @@ func (s *serverSuite) examplePostRequest(status string) sdk.Request {
 		url:        s.service.serversURL(s.machineScope),
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName(s.machineScope)),
 		href:       exampleRequestPath,
-		targetID:   testServerID,
+		targetID:   exampleServerID,
 		targetType: sdk.SERVER,
 	}
 	return s.exampleRequest(opts)

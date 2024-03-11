@@ -46,23 +46,23 @@ import (
 //	documentation.
 const (
 	// The expected endpoint IP.
-	testEndpointIP = "203.0.113.1"
+	exampleEndpointIP = "203.0.113.1"
 	// Used when we actually expect the endpoint IP but receive this instead.
-	testUnexpectedIP = "203.0.113.10"
+	exampleUnexpectedIP = "203.0.113.10"
 	// Used to test cases where a LAN already contains configurations with other IP addresses
 	// to ensure that the service does not overwrite them.
-	testArbitraryIP = "203.0.113.11"
+	exampleArbitraryIP = "203.0.113.11"
+	exampleDHCPIP      = "192.0.2.2"
 )
-
-const testServerID = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
 
 // TODO(gfariasalves): Make all constant names used for tests follow a common prefix.
 const (
 	exampleLANID       = "42"
+	exampleNICID       = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3e"
 	exampleIPBlockID   = "f882d597-4ee2-4b89-b01a-cbecd0f513d8"
+	exampleServerID    = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
 	exampleRequestPath = "/test"
 	exampleLocation    = "de/txl"
-	exampleIP          = "203.0.113.22"
 )
 
 type ServiceTestSuite struct {
@@ -228,11 +228,11 @@ func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request 
 
 func defaultServer(serverName string, ips ...string) *sdk.Server {
 	return &sdk.Server{
-		Id: ptr.To(testServerID),
+		Id: ptr.To(exampleServerID),
 		Entities: &sdk.ServerEntities{
 			Nics: &sdk.Nics{
 				Items: &[]sdk.Nic{{
-					Id: ptr.To(testNICID),
+					Id: ptr.To(exampleNICID),
 					Properties: &sdk.NicProperties{
 						Dhcp: ptr.To(true),
 						Name: ptr.To(serverName),

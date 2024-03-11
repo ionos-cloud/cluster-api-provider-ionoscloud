@@ -16,10 +16,9 @@ limitations under the License.
 
 package v1alpha1
 
-import sdk "github.com/ionos-cloud/sdk-go/v6"
-
 const (
 	ManagedLANAnnotation = "cloud.ionos.com/managed-lan"
+	StatusRequestQueued  = "QUEUED"
 )
 
 // ProvisioningRequest is a definition of a provisioning request
@@ -42,12 +41,11 @@ type ProvisioningRequest struct {
 }
 
 // NewQueuedRequest creates a new provisioning request with the status set to queued.
-// TODO(gfariasalves): Remove this in the refactor (and then get rid of the sdk import here).
 func NewQueuedRequest(method, path string) ProvisioningRequest {
 	return ProvisioningRequest{
 		Method:      method,
 		RequestPath: path,
-		State:       sdk.RequestStatusQueued,
+		State:       StatusRequestQueued,
 	}
 }
 

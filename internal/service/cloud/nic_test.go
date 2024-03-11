@@ -28,11 +28,6 @@ import (
 )
 
 const (
-	testNICID  = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3e"
-	testDHCPIP = "1.2.3.1"
-)
-
-const (
 	assertMessageNICIsNil         = "reconcileNICConfig() should return a NIC"
 	assertMessageNICErrorOccurred = "reconcileNICConfig() should not return an error"
 	assertCurrentRequestIsNil     = "reconcileNICConfig() should not store a pending request"
@@ -47,18 +42,18 @@ func TestNICSuite(t *testing.T) {
 }
 
 func (s *nicSuite) TestReconcileNICConfig() {
-	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(s.machineScope), testDHCPIP), nil).Once()
+	s.mockGetServer(exampleServerID).Return(defaultServer(s.service.serverName(s.machineScope), exampleDHCPIP), nil).Once()
 
 	// no patch request
-	s.mockGetLatestNICPatchRequest(testServerID, testNICID).Return([]sdk.Request{}, nil).Once()
+	s.mockGetLatestNICPatchRequest(exampleServerID, exampleNICID).Return([]sdk.Request{}, nil).Once()
 	location := "test/nic/request/path"
 
-	expectedIPs := []string{testDHCPIP, testEndpointIP}
-	s.mockPatchNIC(testServerID, testNICID, sdk.NicProperties{Ips: &expectedIPs}).Return(location, nil).Once()
+	expectedIPs := []string{exampleDHCPIP, exampleEndpointIP}
+	s.mockPatchNIC(exampleServerID, exampleNICID, sdk.NicProperties{Ips: &expectedIPs}).Return(location, nil).Once()
 	// expect request to be successful
 	s.mockWaitForRequest(location).Return(nil).Once()
 
-	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, testEndpointIP)
+	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, exampleEndpointIP)
 
 	s.NotNil(nic, assertMessageNICIsNil)
 	s.NoError(err, assertMessageNICErrorOccurred)
@@ -66,8 +61,8 @@ func (s *nicSuite) TestReconcileNICConfig() {
 }
 
 func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
-	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(s.machineScope), testDHCPIP, testEndpointIP), nil).Once()
-	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, testEndpointIP)
+	s.mockGetServer(exampleServerID).Return(defaultServer(s.service.serverName(s.machineScope), exampleDHCPIP, exampleEndpointIP), nil).Once()
+	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, exampleEndpointIP)
 
 	s.NotNil(nic, assertMessageNICIsNil)
 	s.NoError(err, assertMessageNICErrorOccurred)
@@ -75,18 +70,18 @@ func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
 }
 
 func (s *nicSuite) TestReconcileNICConfigPatchRequestPending() {
-	s.mockGetServer(testServerID).Return(defaultServer(s.service.serverName(s.machineScope), testDHCPIP), nil).Once()
+	s.mockGetServer(exampleServerID).Return(defaultServer(s.service.serverName(s.machineScope), exampleDHCPIP), nil).Once()
 
-	patchRequest := s.examplePatchRequest(sdk.RequestStatusQueued, testServerID, testNICID)
+	patchRequest := s.examplePatchRequest(sdk.RequestStatusQueued, exampleServerID, exampleNICID)
 
-	s.mockGetLatestNICPatchRequest(testServerID, testNICID).Return(
+	s.mockGetLatestNICPatchRequest(exampleServerID, exampleNICID).Return(
 		[]sdk.Request{patchRequest},
 		nil).Once()
 
 	// expect request to be successful
 	s.mockWaitForRequest(*patchRequest.Metadata.RequestStatus.Href).Return(nil).Once()
 
-	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, testEndpointIP)
+	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, exampleEndpointIP)
 	s.NotNil(nic, assertMessageNICIsNil)
 	s.NoError(err, assertMessageNICErrorOccurred)
 	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest, assertCurrentRequestIsNil)
