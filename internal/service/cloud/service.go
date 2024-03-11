@@ -26,7 +26,6 @@ import (
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 const (
@@ -36,22 +35,19 @@ const (
 
 // Service offers infra resources services for IONOS Cloud machine reconciliation.
 type Service struct {
-	logger      *logr.Logger
+	logger      logr.Logger
 	ionosClient ionoscloud.Client
 }
 
 type ServiceParams struct {
 	IonosClient ionoscloud.Client
-	Logger      *logr.Logger
+	Logger      logr.Logger
 }
 
 // NewService returns a new Service.
 func NewService(params ServiceParams) (*Service, error) {
 	if params.IonosClient == nil {
 		return nil, errors.New("IONOS Cloud client is required")
-	}
-	if params.Logger == nil {
-		params.Logger = ptr.To(logr.Discard())
 	}
 	return &Service{
 		logger:      params.Logger,

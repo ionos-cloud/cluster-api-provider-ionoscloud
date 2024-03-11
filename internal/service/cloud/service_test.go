@@ -23,29 +23,18 @@ import (
 	"github.com/stretchr/testify/require"
 
 	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 func TestNewServiceValid(t *testing.T) {
 	ionosClient := clienttest.NewMockClient(t)
-	log := ptr.To(logr.Discard())
-	svc, err := NewService(ServiceParams{ionosClient, log})
+	svc, err := NewService(ServiceParams{ionosClient, logr.Discard()})
 	require.NotNil(t, svc)
 	require.NoError(t, err)
 	require.Same(t, ionosClient, svc.ionosClient)
 }
 
-func TestNewServiceNilLogger(t *testing.T) {
-	cloud := clienttest.NewMockClient(t)
-	svc, err := NewService(ServiceParams{cloud, nil})
-	require.NotNil(t, svc)
-	require.NoError(t, err)
-	require.Equal(t, logr.Discard(), *svc.logger)
-}
-
 func TestNewServiceNilIONOSCloud(t *testing.T) {
-	log := ptr.To(logr.Discard())
-	svc, err := NewService(ServiceParams{nil, log})
+	svc, err := NewService(ServiceParams{nil, logr.Discard()})
 	require.Nil(t, svc)
 	require.Error(t, err)
 }

@@ -128,7 +128,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	cloudService, err := cloud.NewService(cloud.ServiceParams{
 		IonosClient: r.IonosCloudClient,
-		Logger:      &logger,
+		Logger:      logger,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("could not create machine service")

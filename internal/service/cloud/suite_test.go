@@ -176,7 +176,7 @@ func (s *ServiceTestSuite) SetupTest() {
 
 	s.service, err = NewService(ServiceParams{
 		IonosClient: s.ionosClient,
-		Logger:      &s.log,
+		Logger:      s.log,
 	})
 	s.NoError(err, "failed to create service")
 }

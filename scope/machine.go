@@ -83,7 +83,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 
 // GetBootstrapDataSecret returns the bootstrap data secret, which has been created by the
 // Kubeadm provider.
-func (m *MachineScope) GetBootstrapDataSecret(ctx context.Context, log *logr.Logger) (*corev1.Secret, error) {
+func (m *MachineScope) GetBootstrapDataSecret(ctx context.Context, log logr.Logger) (*corev1.Secret, error) {
 	name := ptr.Deref(m.Machine.Spec.Bootstrap.DataSecretName, "")
 	if name == "" {
 		return nil, errors.New("machine has no bootstrap data yet")
