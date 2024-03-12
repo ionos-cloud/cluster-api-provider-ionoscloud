@@ -39,11 +39,6 @@ type Service struct {
 	ionosClient ionoscloud.Client
 }
 
-type ServiceParams struct {
-	IonosClient ionoscloud.Client
-	Logger      logr.Logger
-}
-
 // NewService returns a new Service.
 func NewService(ionosClient ionoscloud.Client, log logr.Logger) (*Service, error) {
 	if ionosClient == nil {
