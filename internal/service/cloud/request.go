@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 // GetRequestStatus returns the status of a request for a given request URL.
@@ -195,6 +196,21 @@ func hasRequestTargetType(req sdk.Request, typeName sdk.Type) bool {
 	}
 
 	return false
+}
+
+func scopedFindResource[T any, S scope.ClusterScope | scope.MachineScope](
+	ctx context.Context,
+	s *S,
+	tryLookupResource func(context.Context, *S) (*T, error),
+	checkQueue func(context.Context, *S) (*requestInfo, error),
+) (*T, *requestInfo, error) {
+	scopedLookUpFunc := func(ctx context.Context) (*T, error) {
+		return tryLookupResource(ctx, s)
+	}
+	scopedCheckQueueFunc := func(ctx context.Context) (*requestInfo, error) {
+		return checkQueue(ctx, s)
+	}
+	return findResource(ctx, scopedLookUpFunc, scopedCheckQueueFunc)
 }
 
 type (

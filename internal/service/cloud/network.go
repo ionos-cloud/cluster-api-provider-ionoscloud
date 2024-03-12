@@ -53,7 +53,7 @@ func (s *Service) lansURL(datacenterID string) string {
 func (s *Service) ReconcileLAN(ctx context.Context, ms *scope.MachineScope) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileLAN")
 
-	lan, request, err := findResource(ctx, s.getLAN(ms), s.getLatestLANCreationRequest(ms))
+	lan, request, err := scopedFindResource(ctx, ms, s.getLAN, s.getLatestLANCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -87,7 +87,7 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.MachineSco
 	log := s.logger.WithName("ReconcileLANDeletion")
 
 	// Try to retrieve the cluster LAN or even check if it's currently still being created.
-	lan, request, err := findResource(ctx, s.getLAN(ms), s.getLatestLANCreationRequest(ms))
+	lan, request, err := scopedFindResource(ctx, ms, s.getLAN, s.getLatestLANCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -125,37 +125,35 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.MachineSco
 }
 
 // getLAN tries to retrieve the cluster-related LAN in the data center.
-func (s *Service) getLAN(ms *scope.MachineScope) func(context.Context) (*sdk.Lan, error) {
-	return func(ctx context.Context) (*sdk.Lan, error) {
-		// check if the LAN exists
-		depth := int32(2) // for listing the LANs with their number of NICs
-		lans, err := s.apiWithDepth(depth).ListLANs(ctx, ms.DatacenterID())
-		if err != nil {
-			return nil, fmt.Errorf("could not list LANs in data center %s: %w", ms.DatacenterID(), err)
-		}
-
-		var (
-			expectedName = s.lanName(ms.ClusterScope.Cluster)
-			lanCount     = 0
-			foundLAN     *sdk.Lan
-		)
-
-		for _, l := range *lans.Items {
-			if l.Properties.HasName() && *l.Properties.Name == expectedName {
-				l := l
-				foundLAN = &l
-				lanCount++
-			}
-
-			// If there are multiple LANs with the same name, we should return an error.
-			// Our logic won't be able to proceed as we cannot select the correct LAN.
-			if lanCount > 1 {
-				return nil, fmt.Errorf("found multiple LANs with the name: %s", expectedName)
-			}
-		}
-
-		return foundLAN, nil
+func (s *Service) getLAN(ctx context.Context, ms *scope.MachineScope) (*sdk.Lan, error) {
+	// check if the LAN exists
+	depth := int32(2) // for listing the LANs with their number of NICs
+	lans, err := s.apiWithDepth(depth).ListLANs(ctx, ms.DatacenterID())
+	if err != nil {
+		return nil, fmt.Errorf("could not list LANs in data center %s: %w", ms.DatacenterID(), err)
 	}
+
+	var (
+		expectedName = s.lanName(ms.ClusterScope.Cluster)
+		lanCount     = 0
+		foundLAN     *sdk.Lan
+	)
+
+	for _, l := range *lans.Items {
+		if l.Properties.HasName() && *l.Properties.Name == expectedName {
+			l := l
+			foundLAN = &l
+			lanCount++
+		}
+
+		// If there are multiple LANs with the same name, we should return an error.
+		// Our logic won't be able to proceed as we cannot select the correct LAN.
+		if lanCount > 1 {
+			return nil, fmt.Errorf("found multiple LANs with the name: %s", expectedName)
+		}
+	}
+
+	return foundLAN, nil
 }
 
 func (s *Service) createLAN(ctx context.Context, ms *scope.MachineScope) error {
@@ -221,14 +219,12 @@ func (s *Service) getLatestLANRequestByMethod(
 	)
 }
 
-func (s *Service) getLatestLANCreationRequest(ms *scope.MachineScope) func(context.Context) (*requestInfo, error) {
-	return func(ctx context.Context) (*requestInfo, error) {
-		return s.getLatestLANRequestByMethod(
-			ctx,
-			http.MethodPost,
-			s.lansURL(ms.DatacenterID()),
-			matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName(ms.ClusterScope.Cluster)))
-	}
+func (s *Service) getLatestLANCreationRequest(ctx context.Context, ms *scope.MachineScope) (*requestInfo, error) {
+	return s.getLatestLANRequestByMethod(
+		ctx,
+		http.MethodPost,
+		s.lansURL(ms.DatacenterID()),
+		matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName(ms.ClusterScope.Cluster)))
 }
 
 func (s *Service) getLatestLANDeletionRequest(ctx context.Context, ms *scope.MachineScope, lanID string) (*requestInfo, error) {
@@ -278,7 +274,7 @@ func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Mac
 		return false, nil
 	}
 
-	server, err := s.getServer(ms)(ctx)
+	server, err := s.getServer(ctx, ms)
 	if err != nil {
 		if isNotFound(err) {
 			log.Info("Server was not found or already deleted.")
@@ -393,7 +389,7 @@ func (s *Service) retrieveLANFailoverConfig(
 ) (requeue bool, err error) {
 	log := s.logger.WithName("retrieveLANFailoverConfig")
 
-	gotLAN, err := s.getLAN(ms)(ctx)
+	gotLAN, err := s.getLAN(ctx, ms)
 	if err != nil {
 		return true, err
 	}

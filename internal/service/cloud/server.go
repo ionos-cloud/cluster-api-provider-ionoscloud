@@ -54,7 +54,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.MachineScope) (
 		return true, fmt.Errorf("unexpected error when trying to get bootstrap secret: %w", err)
 	}
 
-	server, request, err := findResource(ctx, s.getServer(ms), s.getLatestServerCreationRequest(ms))
+	server, request, err := scopedFindResource(ctx, ms, s.getServer, s.getLatestServerCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -92,11 +92,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.MachineScope) (
 func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.MachineScope) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileLANDeletion")
 
-	server, request, err := findResource(
-		ctx,
-		s.getServer(ms),
-		s.getLatestServerCreationRequest(ms),
-	)
+	server, request, err := scopedFindResource(ctx, ms, s.getServer, s.getLatestServerCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -193,39 +189,36 @@ func (s *Service) getServerByProviderID(ctx context.Context, ms *scope.MachineSc
 	return nil, nil
 }
 
-// getServer looks for the server in the data center.
-func (s *Service) getServer(ms *scope.MachineScope) func(ctx context.Context) (*sdk.Server, error) {
-	return func(ctx context.Context) (*sdk.Server, error) {
-		server, err := s.getServerByProviderID(ctx, ms)
-		// if the server was not found, we try to find it by listing all servers.
-		if server != nil || ignoreNotFound(err) != nil {
-			return server, err
-		}
-
-		// listing requires one more level of depth to for instance
-		// retrieving the NIC properties.
-		const listDepth = 3
-		// without provider ID, we need to list all servers and see if
-		// there is one with the expected name.
-		serverList, listErr := s.apiWithDepth(listDepth).ListServers(ctx, ms.DatacenterID())
-		if listErr != nil {
-			return nil, fmt.Errorf("failed to list servers in data center %s: %w", ms.DatacenterID(), listErr)
-		}
-
-		items := ptr.Deref(serverList.Items, []sdk.Server{})
-		// find servers with the expected name
-		for _, server := range items {
-			if server.HasProperties() && *server.Properties.Name == s.serverName(ms.IonosMachine) {
-				// if the server was found, we set the provider ID and return it
-				ms.SetProviderID(ptr.Deref(server.Id, ""))
-				return &server, nil
-			}
-		}
-
-		// if we still can't find a server we return the potential
-		// initial not found error.
-		return nil, err
+func (s *Service) getServer(ctx context.Context, ms *scope.MachineScope) (*sdk.Server, error) {
+	server, err := s.getServerByProviderID(ctx, ms)
+	// if the server was not found, we try to find it by listing all servers.
+	if server != nil || ignoreNotFound(err) != nil {
+		return server, err
 	}
+
+	// listing requires one more level of depth to for instance
+	// retrieving the NIC properties.
+	const listDepth = 3
+	// without provider ID, we need to list all servers and see if
+	// there is one with the expected name.
+	serverList, listErr := s.apiWithDepth(listDepth).ListServers(ctx, ms.DatacenterID())
+	if listErr != nil {
+		return nil, fmt.Errorf("failed to list servers in data center %s: %w", ms.DatacenterID(), listErr)
+	}
+
+	items := ptr.Deref(serverList.Items, []sdk.Server{})
+	// find servers with the expected name
+	for _, server := range items {
+		if server.HasProperties() && *server.Properties.Name == s.serverName(ms.IonosMachine) {
+			// if the server was found, we set the provider ID and return it
+			ms.SetProviderID(ptr.Deref(server.Id, ""))
+			return &server, nil
+		}
+	}
+
+	// if we still can't find a server we return the potential
+	// initial not found error.
+	return nil, err
 }
 
 func (s *Service) deleteServer(ctx context.Context, ms *scope.MachineScope, serverID string) error {
@@ -244,16 +237,14 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.MachineScope, serv
 	return nil
 }
 
-func (s *Service) getLatestServerCreationRequest(ms *scope.MachineScope) func(context.Context) (*requestInfo, error) {
-	return func(ctx context.Context) (*requestInfo, error) {
-		return getMatchingRequest(
-			ctx,
-			s,
-			http.MethodPost,
-			path.Join("datacenters", ms.DatacenterID(), "servers"),
-			matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName(ms.IonosMachine)),
-		)
-	}
+func (s *Service) getLatestServerCreationRequest(ctx context.Context, ms *scope.MachineScope) (*requestInfo, error) {
+	return getMatchingRequest(
+		ctx,
+		s,
+		http.MethodPost,
+		path.Join("datacenters", ms.DatacenterID(), "servers"),
+		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName(ms.IonosMachine)),
+	)
 }
 
 func (s *Service) getLatestServerDeletionRequest(ctx context.Context, datacenterID, serverID string) (*requestInfo, error) {
@@ -273,7 +264,7 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	lan, err := s.getLAN(ms)(ctx)
+	lan, err := s.getLAN(ctx, ms)
 	if err != nil {
 		return err
 	}

@@ -77,7 +77,7 @@ func (s *lanSuite) TestNetworkDeleteLANSuccessful() {
 func (s *lanSuite) TestNetworkGetLANSuccessful() {
 	lan := s.exampleLAN()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
-	foundLAN, err := s.service.getLAN(s.machineScope)(s.ctx)
+	foundLAN, err := s.service.getLAN(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.NotNil(foundLAN)
 	s.Equal(lan, *foundLAN)
@@ -85,14 +85,14 @@ func (s *lanSuite) TestNetworkGetLANSuccessful() {
 
 func (s *lanSuite) TestNetworkGetLANNotFound() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-	lan, err := s.service.getLAN(s.machineScope)(s.ctx)
+	lan, err := s.service.getLAN(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.Nil(lan)
 }
 
 func (s *lanSuite) TestNetworkGetLANErrorNotUnique() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN(), s.exampleLAN()}}, nil).Once()
-	lan, err := s.service.getLAN(s.machineScope)(s.ctx)
+	lan, err := s.service.getLAN(s.ctx, s.machineScope)
 	s.Error(err)
 	s.Nil(lan)
 }

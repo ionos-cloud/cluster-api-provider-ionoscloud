@@ -40,7 +40,7 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.MachineScope
 
 	log.V(4).Info("Reconciling NIC config")
 	// Get current state of the server
-	server, err := s.getServer(ms)(ctx)
+	server, err := s.getServer(ctx, ms)
 	if err != nil {
 		return nil, err
 	}

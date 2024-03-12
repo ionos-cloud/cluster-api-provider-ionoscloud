@@ -45,7 +45,7 @@ var errUserSetIPNotFound = errors.New("could not find any IP block for the alrea
 func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.ClusterScope) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileControlPlaneEndpoint")
 
-	ipBlock, request, err := findResource(ctx, s.getIPBlockFunc(cs), s.getLatestIPBlockCreationRequestFunc(cs))
+	ipBlock, request, err := scopedFindResource(ctx, cs, s.getIPBlock, s.getLatestIPBlockCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -87,7 +87,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 	log := s.logger.WithName("ReconcileControlPlaneEndpointDeletion")
 
 	// Try to retrieve the cluster IP Block or even check if it's currently still being created.
-	ipBlock, request, err := findResource(ctx, s.getIPBlockFunc(cs), s.getLatestIPBlockCreationRequestFunc(cs))
+	ipBlock, request, err := scopedFindResource(ctx, cs, s.getIPBlock, s.getLatestIPBlockCreationRequest)
 	// NOTE(gfariasalves): we ignore the error if it is a "user set IP not found" error, because it doesn't matter here.
 	// This error is only relevant when we are trying to create a new IP block. If it shows up here, it means that:
 	// a) this IP block was created by the user, and they have deleted it, or,
@@ -133,62 +133,60 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 	return err == nil, err
 }
 
-// getIPBlockFunc returns a tryLookupResourceFunc that finds the IP block that matches the expected name and location. An
+// getIPBlock finds the IP block that matches the expected name and location. An
 // error is returned if there are multiple IP blocks that match both the name and location.
-func (s *Service) getIPBlockFunc(cs *scope.ClusterScope) tryLookupResourceFunc[sdk.IpBlock] {
-	return func(ctx context.Context) (*sdk.IpBlock, error) {
-		ipBlock, err := s.getIPBlockByID(ctx, cs)
-		if ipBlock != nil || ignoreNotFound(err) != nil {
-			return ipBlock, err
-		}
+func (s *Service) getIPBlock(ctx context.Context, cs *scope.ClusterScope) (*sdk.IpBlock, error) {
+	ipBlock, err := s.getIPBlockByID(ctx, cs)
+	if ipBlock != nil || ignoreNotFound(err) != nil {
+		return ipBlock, err
+	}
 
-		s.logger.Info("IP block not found by ID, trying to find by listing IP blocks instead")
-		blocks, listErr := s.apiWithDepth(listIPBlocksDepth).ListIPBlocks(ctx)
-		if listErr != nil {
-			return nil, fmt.Errorf("failed to list IP blocks: %w", listErr)
-		}
+	s.logger.Info("IP block not found by ID, trying to find by listing IP blocks instead")
+	blocks, listErr := s.apiWithDepth(listIPBlocksDepth).ListIPBlocks(ctx)
+	if listErr != nil {
+		return nil, fmt.Errorf("failed to list IP blocks: %w", listErr)
+	}
 
-		var (
-			expectedName     = s.ipBlockName(cs)
-			expectedLocation = cs.Location()
-			count            = 0
-			foundBlock       *sdk.IpBlock
-		)
-		for _, block := range ptr.Deref(blocks.GetItems(), nil) {
-			props := block.GetProperties()
-			switch {
-			case ptr.Deref(props.GetLocation(), "") != expectedLocation:
-				continue
-			case ptr.Deref(props.GetName(), "") == expectedName:
-				count++
-				foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block) //nolint:gosec
-				if err != nil {
-					return nil, err
-				}
-			case s.checkIfUserSetBlock(cs, props):
-				// NOTE: this is for when customers set IPs for the control plane endpoint themselves.
-				foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block) //nolint:gosec
-				if err != nil {
-					return nil, err
-				}
-				return foundBlock, nil
+	var (
+		expectedName     = s.ipBlockName(cs)
+		expectedLocation = cs.Location()
+		count            = 0
+		foundBlock       *sdk.IpBlock
+	)
+	for _, block := range ptr.Deref(blocks.GetItems(), nil) {
+		props := block.GetProperties()
+		switch {
+		case ptr.Deref(props.GetLocation(), "") != expectedLocation:
+			continue
+		case ptr.Deref(props.GetName(), "") == expectedName:
+			count++
+			foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block) //nolint:gosec
+			if err != nil {
+				return nil, err
 			}
-			if count > 1 {
-				return nil, fmt.Errorf(
-					"cannot determine IP block for Control Plane Endpoint as there are multiple IP blocks with the name %s",
-					expectedName)
+		case s.checkIfUserSetBlock(cs, props):
+			// NOTE: this is for when customers set IPs for the control plane endpoint themselves.
+			foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block) //nolint:gosec
+			if err != nil {
+				return nil, err
 			}
-		}
-		if count == 0 && cs.GetControlPlaneEndpoint().Host != "" {
-			return nil, errUserSetIPNotFound
-		}
-		if foundBlock != nil {
 			return foundBlock, nil
 		}
-		// if we still can't find an IP block we return the potential
-		// initial not found error.
-		return nil, err
+		if count > 1 {
+			return nil, fmt.Errorf(
+				"cannot determine IP block for Control Plane Endpoint as there are multiple IP blocks with the name %s",
+				expectedName)
+		}
 	}
+	if count == 0 && cs.GetControlPlaneEndpoint().Host != "" {
+		return nil, errUserSetIPNotFound
+	}
+	if foundBlock != nil {
+		return foundBlock, nil
+	}
+	// if we still can't find an IP block we return the potential
+	// initial not found error.
+	return nil, err
 }
 
 func (s *Service) checkIfUserSetBlock(cs *scope.ClusterScope, props *sdk.IpBlockProperties) bool {
@@ -250,20 +248,18 @@ func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.ClusterScope, id 
 	return nil
 }
 
-// getLatestIPBlockCreationRequestFunc returns the latest IP block creation request finder func.
-func (s *Service) getLatestIPBlockCreationRequestFunc(cs *scope.ClusterScope) checkQueueFunc {
-	return func(ctx context.Context) (*requestInfo, error) {
-		return getMatchingRequest(
-			ctx,
-			s,
-			http.MethodPost,
-			ipBlocksPath,
-			matchByName[*sdk.IpBlock, *sdk.IpBlockProperties](s.ipBlockName(cs)),
-			func(r *sdk.IpBlock, _ sdk.Request) bool {
-				return ptr.Deref(r.GetProperties().GetLocation(), unknownValue) == cs.Location()
-			},
-		)
-	}
+// getLatestIPBlockCreationRequest returns the latest IP block creation request.
+func (s *Service) getLatestIPBlockCreationRequest(ctx context.Context, cs *scope.ClusterScope) (*requestInfo, error) {
+	return getMatchingRequest(
+		ctx,
+		s,
+		http.MethodPost,
+		ipBlocksPath,
+		matchByName[*sdk.IpBlock, *sdk.IpBlockProperties](s.ipBlockName(cs)),
+		func(r *sdk.IpBlock, _ sdk.Request) bool {
+			return ptr.Deref(r.GetProperties().GetLocation(), unknownValue) == cs.Location()
+		},
+	)
 }
 
 // getLatestIPBlockDeletionRequest returns the latest IP block deletion request.

@@ -246,7 +246,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
 func (s *serverSuite) TestGetServerWithProviderID() {
 	serverID := exampleServerID
 	s.mockGetServer(serverID).Return(&sdk.Server{}, nil)
-	server, err := s.service.getServer(s.machineScope)(s.ctx)
+	server, err := s.service.getServer(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.NotNil(server)
 }
@@ -260,7 +260,7 @@ func (s *serverSuite) TestGetServerWithProviderIDNotFound() {
 		},
 	}}, nil)
 
-	server, err := s.service.getServer(s.machineScope)(s.ctx)
+	server, err := s.service.getServer(s.ctx, s.machineScope)
 	s.ErrorAs(err, &sdk.GenericOpenAPIError{})
 	s.Nil(server)
 }
@@ -276,7 +276,7 @@ func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
 		},
 	}}, nil)
 
-	server, err := s.service.getServer(s.machineScope)(s.ctx)
+	server, err := s.service.getServer(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.NotNil(server)
 }
