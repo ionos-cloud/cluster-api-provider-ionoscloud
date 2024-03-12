@@ -42,7 +42,7 @@ const (
 var errUserSetIPNotFound = errors.New("could not find any IP block for the already set control plane endpoint")
 
 // ReconcileControlPlaneEndpoint ensures the control plane endpoint IP block exists.
-func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.ClusterScope) (requeue bool, err error) {
+func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.Cluster) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileControlPlaneEndpoint")
 
 	ipBlock, request, err := scopedFindResource(ctx, cs, s.getIPBlock, s.getLatestIPBlockCreationRequest)
@@ -82,7 +82,7 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 
 // ReconcileControlPlaneEndpointDeletion ensures the control plane endpoint IP block is deleted.
 func (s *Service) ReconcileControlPlaneEndpointDeletion(
-	ctx context.Context, cs *scope.ClusterScope,
+	ctx context.Context, cs *scope.Cluster,
 ) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileControlPlaneEndpointDeletion")
 
@@ -135,7 +135,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 
 // getIPBlock finds the IP block that matches the expected name and location. An
 // error is returned if there are multiple IP blocks that match both the name and location.
-func (s *Service) getIPBlock(ctx context.Context, cs *scope.ClusterScope) (*sdk.IpBlock, error) {
+func (s *Service) getIPBlock(ctx context.Context, cs *scope.Cluster) (*sdk.IpBlock, error) {
 	ipBlock, err := s.getIPBlockByID(ctx, cs)
 	if ipBlock != nil || ignoreNotFound(err) != nil {
 		return ipBlock, err
@@ -189,7 +189,7 @@ func (s *Service) getIPBlock(ctx context.Context, cs *scope.ClusterScope) (*sdk.
 	return nil, err
 }
 
-func (s *Service) checkIfUserSetBlock(cs *scope.ClusterScope, props *sdk.IpBlockProperties) bool {
+func (s *Service) checkIfUserSetBlock(cs *scope.Cluster, props *sdk.IpBlockProperties) bool {
 	ip := cs.GetControlPlaneEndpoint().Host
 	ips := ptr.Deref(props.GetIps(), nil)
 	return ip != "" && slices.Contains(ips, ip)
@@ -207,7 +207,7 @@ func (s *Service) cloudAPIStateInconsistencyWorkaround(ctx context.Context, bloc
 	return trueBlock, nil
 }
 
-func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.ClusterScope) (*sdk.IpBlock, error) {
+func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.Cluster) (*sdk.IpBlock, error) {
 	id := cs.IonosCluster.Status.ControlPlaneEndpointIPBlockID
 	if id == "" {
 		s.logger.Info("Could not find any IP block by ID as the provider ID is not set.")
@@ -221,7 +221,7 @@ func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.ClusterScope) (*
 }
 
 // reserveIPBlock requests for the reservation of an IP block.
-func (s *Service) reserveIPBlock(ctx context.Context, cs *scope.ClusterScope) error {
+func (s *Service) reserveIPBlock(ctx context.Context, cs *scope.Cluster) error {
 	var err error
 	log := s.logger.WithName("reserveIPBlock")
 
@@ -236,7 +236,7 @@ func (s *Service) reserveIPBlock(ctx context.Context, cs *scope.ClusterScope) er
 }
 
 // deleteIPBlock requests for the deletion of the IP block with the given ID.
-func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.ClusterScope, id string) error {
+func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.Cluster, id string) error {
 	log := s.logger.WithName("deleteIPBlock")
 
 	requestPath, err := s.ionosClient.DeleteIPBlock(ctx, id)
@@ -249,7 +249,7 @@ func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.ClusterScope, id 
 }
 
 // getLatestIPBlockCreationRequest returns the latest IP block creation request.
-func (s *Service) getLatestIPBlockCreationRequest(ctx context.Context, cs *scope.ClusterScope) (*requestInfo, error) {
+func (s *Service) getLatestIPBlockCreationRequest(ctx context.Context, cs *scope.Cluster) (*requestInfo, error) {
 	return getMatchingRequest(
 		ctx,
 		s,
@@ -268,7 +268,7 @@ func (s *Service) getLatestIPBlockDeletionRequest(ctx context.Context, ipBlockID
 }
 
 // ipBlockName returns the name that should be used for cluster context resources.
-func (s *Service) ipBlockName(cs *scope.ClusterScope) string {
+func (s *Service) ipBlockName(cs *scope.Cluster) string {
 	return fmt.Sprintf("k8s-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
 }
 

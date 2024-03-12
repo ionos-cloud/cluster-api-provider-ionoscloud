@@ -32,33 +32,33 @@ import (
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 )
 
-// ClusterScope defines the basic context for an actuator to operate upon.
-type ClusterScope struct {
+// Cluster defines a basic cluster context for primary use in IonosCloudClusterReconciler.
+type Cluster struct {
 	patchHelper  *patch.Helper
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
 }
 
-// ClusterScopeParams are the parameters, which are used to create a cluster scope.
-type ClusterScopeParams struct {
+// ClusterParams are the parameters, which are used to create a cluster scope.
+type ClusterParams struct {
 	Client       client.Client
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
 }
 
-// NewClusterScope creates a new scope for the supplied parameters.
+// NewCluster creates a new cluster scope with the supplied parameters.
 // This is meant to be called on each reconciliation.
-func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
+func NewCluster(params ClusterParams) (*Cluster, error) {
 	if params.Client == nil {
-		return nil, errors.New("client is required when creating a ClusterScope")
+		return nil, errors.New("client is required when creating a cluster scope")
 	}
 
 	if params.Cluster == nil {
-		return nil, errors.New("cluster is required when creating a ClusterScope")
+		return nil, errors.New("cluster is required when creating a cluster scope")
 	}
 
 	if params.IonosCluster == nil {
-		return nil, errors.New("IonosCluster is required when creating a ClusterScope")
+		return nil, errors.New("IonosCluster is required when creating a cluster scope")
 	}
 
 	helper, err := patch.NewHelper(params.IonosCluster, params.Client)
@@ -66,7 +66,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		return nil, fmt.Errorf("failed to init patch helper: %w", err)
 	}
 
-	clusterScope := &ClusterScope{
+	clusterScope := &Cluster{
 		Cluster:      params.Cluster,
 		IonosCluster: params.IonosCluster,
 		patchHelper:  helper,
@@ -76,23 +76,23 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 }
 
 // GetControlPlaneEndpoint returns the endpoint for the IonosCloudCluster.
-func (c *ClusterScope) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
+func (c *Cluster) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
 	return c.IonosCluster.Spec.ControlPlaneEndpoint
 }
 
 // SetControlPlaneEndpointIPBlockID sets the IP block ID in the IonosCloudCluster status.
-func (c *ClusterScope) SetControlPlaneEndpointIPBlockID(id string) {
+func (c *Cluster) SetControlPlaneEndpointIPBlockID(id string) {
 	c.IonosCluster.Status.ControlPlaneEndpointIPBlockID = id
 }
 
 // Location is a shortcut for getting the location used by the IONOS Cloud cluster IP block.
-func (c *ClusterScope) Location() string {
+func (c *Cluster) Location() string {
 	return c.IonosCluster.Spec.Location
 }
 
 // PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
-func (c *ClusterScope) PatchObject() error {
+func (c *Cluster) PatchObject() error {
 	// always set the ready condition
 	conditions.SetSummary(c.IonosCluster,
 		conditions.WithConditions(infrav1.IonosCloudClusterReady))
@@ -113,7 +113,7 @@ func (c *ClusterScope) PatchObject() error {
 // Finalize will make sure to apply a patch to the current IonosCloudCluster.
 // It also implements a retry mechanism to increase the chance of success
 // in case the patch operation was not successful.
-func (c *ClusterScope) Finalize() error {
+func (c *Cluster) Finalize() error {
 	// NOTE(lubedacht) retry is only a way to reduce the failure chance,
 	// but in general, the reconciliation logic must be resilient
 	// to handle an outdated resource from that API server.

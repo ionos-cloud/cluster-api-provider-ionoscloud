@@ -29,20 +29,20 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
-func exampleParams(t *testing.T) MachineScopeParams {
+func exampleParams(t *testing.T) MachineParams {
 	if err := infrav1.AddToScheme(scheme.Scheme); err != nil {
 		require.NoError(t, err, "could not construct params")
 	}
-	return MachineScopeParams{
+	return MachineParams{
 		Client:       fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
 		Machine:      &clusterv1.Machine{},
-		ClusterScope: &ClusterScope{},
+		ClusterScope: &Cluster{},
 		IonosMachine: &infrav1.IonosCloudMachine{},
 	}
 }
 
 func TestNewMachineScope_OK(t *testing.T) {
-	scope, err := NewMachineScope(exampleParams(t))
+	scope, err := NewMachine(exampleParams(t))
 	require.NotNil(t, scope, "returned machine scope should not be nil")
 	require.NoError(t, err)
 	require.NotNil(t, scope.patchHelper, "returned scope should have a non-nil patchHelper")
@@ -51,7 +51,7 @@ func TestNewMachineScope_OK(t *testing.T) {
 func TestMachineScopeParams_NilClientShouldFail(t *testing.T) {
 	params := exampleParams(t)
 	params.Client = nil
-	scope, err := NewMachineScope(params)
+	scope, err := NewMachine(params)
 	require.Nil(t, scope, "returned machine scope should be nil")
 	require.Error(t, err)
 }
@@ -59,7 +59,7 @@ func TestMachineScopeParams_NilClientShouldFail(t *testing.T) {
 func TestMachineScopeParams_NilMachineShouldFail(t *testing.T) {
 	params := exampleParams(t)
 	params.Machine = nil
-	scope, err := NewMachineScope(params)
+	scope, err := NewMachine(params)
 	require.Nil(t, scope, "returned machine scope should be nil")
 	require.Error(t, err)
 }
@@ -67,7 +67,7 @@ func TestMachineScopeParams_NilMachineShouldFail(t *testing.T) {
 func TestMachineScopeParams_NilIonosMachineShouldFail(t *testing.T) {
 	params := exampleParams(t)
 	params.IonosMachine = nil
-	scope, err := NewMachineScope(params)
+	scope, err := NewMachine(params)
 	require.Nil(t, scope, "returned machine scope should be nil")
 	require.Error(t, err)
 }
@@ -75,20 +75,20 @@ func TestMachineScopeParams_NilIonosMachineShouldFail(t *testing.T) {
 func TestMachineScopeParams_NilClusterScopeShouldFail(t *testing.T) {
 	params := exampleParams(t)
 	params.ClusterScope = nil
-	scope, err := NewMachineScope(params)
+	scope, err := NewMachine(params)
 	require.Nil(t, scope, "returned machine scope should be nil")
 	require.Error(t, err)
 }
 
 func TestMachineScope_HasFailed_FailureMessage(t *testing.T) {
-	scope, err := NewMachineScope(exampleParams(t))
+	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
 	scope.IonosMachine.Status.FailureMessage = ptr.To("¯\\_(ツ)_/¯")
 	require.True(t, scope.HasFailed())
 }
 
 func TestMachineScope_HasFailed_FailureReason(t *testing.T) {
-	scope, err := NewMachineScope(exampleParams(t))
+	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
 	scope.IonosMachine.Status.FailureReason = capierrors.MachineStatusErrorPtr("¯\\_(ツ)_/¯")
 	require.True(t, scope.HasFailed())

@@ -50,7 +50,7 @@ func (s *Service) lansURL(datacenterID string) string {
 }
 
 // ReconcileLAN ensures the cluster LAN exist, creating one if it doesn't.
-func (s *Service) ReconcileLAN(ctx context.Context, ms *scope.MachineScope) (requeue bool, err error) {
+func (s *Service) ReconcileLAN(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileLAN")
 
 	lan, request, err := scopedFindResource(ctx, ms, s.getLAN, s.getLatestLANCreationRequest)
@@ -83,7 +83,7 @@ func (s *Service) ReconcileLAN(ctx context.Context, ms *scope.MachineScope) (req
 
 // ReconcileLANDeletion ensures there's no cluster LAN available, requesting for deletion (if no other resource
 // uses it) otherwise.
-func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.MachineScope) (requeue bool, err error) {
+func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileLANDeletion")
 
 	// Try to retrieve the cluster LAN or even check if it's currently still being created.
@@ -125,7 +125,7 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.MachineSco
 }
 
 // getLAN tries to retrieve the cluster-related LAN in the data center.
-func (s *Service) getLAN(ctx context.Context, ms *scope.MachineScope) (*sdk.Lan, error) {
+func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, error) {
 	// check if the LAN exists
 	depth := int32(2) // for listing the LANs with their number of NICs
 	lans, err := s.apiWithDepth(depth).ListLANs(ctx, ms.DatacenterID())
@@ -156,7 +156,7 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.MachineScope) (*sdk.Lan,
 	return foundLAN, nil
 }
 
-func (s *Service) createLAN(ctx context.Context, ms *scope.MachineScope) error {
+func (s *Service) createLAN(ctx context.Context, ms *scope.Machine) error {
 	log := s.logger.WithName("createLAN")
 
 	requestPath, err := s.ionosClient.CreateLAN(ctx, ms.DatacenterID(), sdk.LanPropertiesPost{
@@ -167,10 +167,11 @@ func (s *Service) createLAN(ctx context.Context, ms *scope.MachineScope) error {
 		return fmt.Errorf("unable to create LAN in data center %s: %w", ms.DatacenterID(), err)
 	}
 
-	ms.ClusterScope.IonosCluster.SetCurrentRequestByDatacenter(
-		ms.DatacenterID(),
-		infrav1.NewQueuedRequest(http.MethodPost, requestPath),
-	)
+	ms.ClusterScope.IonosCluster.SetCurrentRequestByDatacenter(ms.DatacenterID(), infrav1.ProvisioningRequest{
+		Method:      http.MethodPost,
+		RequestPath: requestPath,
+		State:       sdk.RequestStatusQueued,
+	})
 
 	err = ms.ClusterScope.PatchObject()
 	if err != nil {
@@ -182,7 +183,7 @@ func (s *Service) createLAN(ctx context.Context, ms *scope.MachineScope) error {
 	return nil
 }
 
-func (s *Service) deleteLAN(ctx context.Context, ms *scope.MachineScope, lanID string) error {
+func (s *Service) deleteLAN(ctx context.Context, ms *scope.Machine, lanID string) error {
 	log := s.logger.WithName("deleteLAN")
 
 	requestPath, err := s.ionosClient.DeleteLAN(ctx, ms.DatacenterID(), lanID)
@@ -193,11 +194,12 @@ func (s *Service) deleteLAN(ctx context.Context, ms *scope.MachineScope, lanID s
 	if ms.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter == nil {
 		ms.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter = make(map[string]infrav1.ProvisioningRequest)
 	}
-	ms.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter[ms.DatacenterID()] = infrav1.ProvisioningRequest{
+
+	ms.ClusterScope.IonosCluster.SetCurrentRequestByDatacenter(ms.DatacenterID(), infrav1.ProvisioningRequest{
 		Method:      http.MethodDelete,
 		RequestPath: requestPath,
 		State:       sdk.RequestStatusQueued,
-	}
+	})
 
 	err = ms.ClusterScope.PatchObject()
 	if err != nil {
@@ -219,7 +221,7 @@ func (s *Service) getLatestLANRequestByMethod(
 	)
 }
 
-func (s *Service) getLatestLANCreationRequest(ctx context.Context, ms *scope.MachineScope) (*requestInfo, error) {
+func (s *Service) getLatestLANCreationRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
 	return s.getLatestLANRequestByMethod(
 		ctx,
 		http.MethodPost,
@@ -227,15 +229,15 @@ func (s *Service) getLatestLANCreationRequest(ctx context.Context, ms *scope.Mac
 		matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName(ms.ClusterScope.Cluster)))
 }
 
-func (s *Service) getLatestLANDeletionRequest(ctx context.Context, ms *scope.MachineScope, lanID string) (*requestInfo, error) {
+func (s *Service) getLatestLANDeletionRequest(ctx context.Context, ms *scope.Machine, lanID string) (*requestInfo, error) {
 	return s.getLatestLANRequestByMethod(ctx, http.MethodDelete, s.lanURL(ms.DatacenterID(), lanID))
 }
 
-func (s *Service) getLatestLANPatchRequest(ctx context.Context, ms *scope.MachineScope, lanID string) (*requestInfo, error) {
+func (s *Service) getLatestLANPatchRequest(ctx context.Context, ms *scope.Machine, lanID string) (*requestInfo, error) {
 	return s.getLatestLANRequestByMethod(ctx, http.MethodPatch, s.lanURL(ms.DatacenterID(), lanID))
 }
 
-func (s *Service) removeLANPendingRequestFromCluster(ms *scope.MachineScope) error {
+func (s *Service) removeLANPendingRequestFromCluster(ms *scope.Machine) error {
 	ms.ClusterScope.IonosCluster.DeleteCurrentRequestByDatacenter(ms.DatacenterID())
 	if err := ms.ClusterScope.PatchObject(); err != nil {
 		return fmt.Errorf("could not remove stale LAN pending request from cluster: %w", err)
@@ -248,7 +250,7 @@ func (s *Service) removeLANPendingRequestFromCluster(ms *scope.MachineScope) err
 // This is needed for kube-vip in order to set up HA control planes.
 //
 // If we want to support private clusters in the future, this will require some adjustments.
-func (s *Service) ReconcileIPFailover(ctx context.Context, ms *scope.MachineScope) (requeue bool, err error) {
+func (s *Service) ReconcileIPFailover(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileIPFailover")
 
 	if !util.IsControlPlaneMachine(ms.Machine) {
@@ -266,7 +268,7 @@ func (s *Service) ReconcileIPFailover(ctx context.Context, ms *scope.MachineScop
 	return s.reconcileIPFailoverGroup(ctx, ms, nicID, endpointIP)
 }
 
-func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.MachineScope) (requeue bool, err error) {
+func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileIPFailoverDeletion")
 
 	if !util.IsControlPlaneMachine(ms.Machine) {
@@ -297,7 +299,7 @@ func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Mac
 // reconcileIPFailoverGroup ensures that the public LAN has a failover group with the NIC for this machine and
 // the endpoint IP address. It further ensures that NICs from additional control plane machines are also added.
 func (s *Service) reconcileIPFailoverGroup(
-	ctx context.Context, ms *scope.MachineScope, nicID, endpointIP string,
+	ctx context.Context, ms *scope.Machine, nicID, endpointIP string,
 ) (requeue bool, err error) {
 	log := s.logger.WithName("reconcileIPFailoverGroup")
 	if nicID == "" {
@@ -355,7 +357,7 @@ func (s *Service) reconcileIPFailoverGroup(
 	return true, err
 }
 
-func (s *Service) removeNICFromFailoverGroup(ctx context.Context, ms *scope.MachineScope, nicID string) (requeue bool, err error) {
+func (s *Service) removeNICFromFailoverGroup(ctx context.Context, ms *scope.Machine, nicID string) (requeue bool, err error) {
 	log := s.logger.WithName("removeNICFromFailoverGroup")
 
 	lan, failoverConfig := &sdk.Lan{}, &[]sdk.IPFailover{}
@@ -385,7 +387,7 @@ func (s *Service) removeNICFromFailoverGroup(ctx context.Context, ms *scope.Mach
 }
 
 func (s *Service) retrieveLANFailoverConfig(
-	ctx context.Context, ms *scope.MachineScope, lan *sdk.Lan, failoverConfig *[]sdk.IPFailover,
+	ctx context.Context, ms *scope.Machine, lan *sdk.Lan, failoverConfig *[]sdk.IPFailover,
 ) (requeue bool, err error) {
 	log := s.logger.WithName("retrieveLANFailoverConfig")
 
@@ -405,7 +407,7 @@ func (s *Service) retrieveLANFailoverConfig(
 	return false, nil
 }
 
-func (s *Service) isLANPatchPending(ctx context.Context, lanID string, ms *scope.MachineScope) (pending bool, err error) {
+func (s *Service) isLANPatchPending(ctx context.Context, lanID string, ms *scope.Machine) (pending bool, err error) {
 	ri, err := s.getLatestLANPatchRequest(ctx, ms, lanID)
 	if err != nil {
 		return false, fmt.Errorf("unable to check for pending LAN patch request: %w", err)
@@ -414,7 +416,7 @@ func (s *Service) isLANPatchPending(ctx context.Context, lanID string, ms *scope
 	return ri != nil && ri.isPending(), nil
 }
 
-func (s *Service) patchLAN(ctx context.Context, ms *scope.MachineScope, lanID string, properties sdk.LanProperties) error {
+func (s *Service) patchLAN(ctx context.Context, ms *scope.Machine, lanID string, properties sdk.LanProperties) error {
 	log := s.logger.WithName("patchLAN")
 	log.Info("Patching LAN", "id", lanID)
 
@@ -422,6 +424,6 @@ func (s *Service) patchLAN(ctx context.Context, ms *scope.MachineScope, lanID st
 	if err != nil {
 		return fmt.Errorf("failed to patch LAN %s: %w", lanID, err)
 	}
-	ms.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPatch, location))
+	ms.IonosMachine.SetCurrentRequest(http.MethodPatch, sdk.RequestStatusQueued, location)
 	return nil
 }

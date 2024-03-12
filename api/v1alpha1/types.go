@@ -18,7 +18,6 @@ package v1alpha1
 
 const (
 	ManagedLANAnnotation = "cloud.ionos.com/managed-lan"
-	StatusRequestQueued  = "QUEUED"
 )
 
 // ProvisioningRequest is a definition of a provisioning request
@@ -38,22 +37,4 @@ type ProvisioningRequest struct {
 	// Message is the request message, which can also contain error information.
 	//+optional
 	Message *string `json:"message,omitempty"`
-}
-
-// NewQueuedRequest creates a new provisioning request with the status set to queued.
-func NewQueuedRequest(method, path string) ProvisioningRequest {
-	return ProvisioningRequest{
-		Method:      method,
-		RequestPath: path,
-		State:       StatusRequestQueued,
-	}
-}
-
-// NewRequestWithState creates a new provisioning request with the given state.
-func NewRequestWithState(method, path, state string) ProvisioningRequest {
-	return ProvisioningRequest{
-		Method:      method,
-		RequestPath: path,
-		State:       state,
-	}
 }

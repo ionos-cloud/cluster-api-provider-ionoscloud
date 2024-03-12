@@ -31,7 +31,7 @@ const (
 	defaultReconcileDuration = time.Second * 20
 )
 
-type serviceReconcileStep[T scope.ClusterScope | scope.MachineScope] struct {
+type serviceReconcileStep[T scope.Cluster | scope.Machine] struct {
 	name string
 	fn   func(context.Context, *T) (requeue bool, err error)
 }

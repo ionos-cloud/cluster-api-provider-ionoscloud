@@ -38,7 +38,7 @@ import (
 )
 
 // ReconcileServer ensures the cluster server exist, creating one if it doesn't.
-func (s *Service) ReconcileServer(ctx context.Context, ms *scope.MachineScope) (requeue bool, retErr error) {
+func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (requeue bool, retErr error) {
 	log := s.logger.WithName("ReconcileServer")
 
 	log.V(4).Info("Reconciling server")
@@ -89,7 +89,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.MachineScope) (
 }
 
 // ReconcileServerDeletion ensures the server is deleted.
-func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.MachineScope) (requeue bool, err error) {
+func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileLANDeletion")
 
 	server, request, err := scopedFindResource(ctx, ms, s.getServer, s.getLatestServerCreationRequest)
@@ -98,16 +98,13 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 	}
 
 	if request != nil && request.isPending() {
-		ms.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewRequestWithState(
-			http.MethodPost, request.location,
-			request.status),
-		)
+		ms.IonosMachine.SetCurrentRequest(http.MethodPost, request.status, request.location)
 		log.Info("Creation request is pending", "location", request.location)
 		return true, nil
 	}
 
 	if server == nil {
-		ms.IonosMachine.Status.CurrentRequest = nil
+		ms.IonosMachine.DeleteCurrentRequest()
 		return false, nil
 	}
 
@@ -118,10 +115,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 
 	if request != nil {
 		if request.isPending() {
-			ms.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewRequestWithState(
-				http.MethodDelete, request.location,
-				request.status),
-			)
+			ms.IonosMachine.SetCurrentRequest(http.MethodDelete, request.status, request.location)
 
 			// We want to requeue and check again after some time
 			log.Info("Deletion request is pending", "location", request.location)
@@ -129,7 +123,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 		}
 
 		if request.isDone() {
-			ms.IonosMachine.Status.CurrentRequest = nil
+			ms.IonosMachine.DeleteCurrentRequest()
 			return false, nil
 		}
 	}
@@ -138,7 +132,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 	return err == nil, err
 }
 
-func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.MachineScope) (bool, error) {
+func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
 	ms.IonosMachine.Status.Ready = true
 	conditions.MarkTrue(ms.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil
@@ -164,7 +158,7 @@ func (s *Service) isServerAvailable(server *sdk.Server) bool {
 // getServerByProviderID checks if the IonosCloudMachine has a provider ID set.
 // If it does, it will attempt to extract the server ID from the provider ID and
 // query for the server in the cloud.
-func (s *Service) getServerByProviderID(ctx context.Context, ms *scope.MachineScope) (*sdk.Server, error) {
+func (s *Service) getServerByProviderID(ctx context.Context, ms *scope.Machine) (*sdk.Server, error) {
 	// first we check if the provider ID is set
 	if !ptr.IsNilOrZero(ms.IonosMachine.Spec.ProviderID) {
 		serverID := ms.IonosMachine.ExtractServerID()
@@ -189,7 +183,7 @@ func (s *Service) getServerByProviderID(ctx context.Context, ms *scope.MachineSc
 	return nil, nil
 }
 
-func (s *Service) getServer(ctx context.Context, ms *scope.MachineScope) (*sdk.Server, error) {
+func (s *Service) getServer(ctx context.Context, ms *scope.Machine) (*sdk.Server, error) {
 	server, err := s.getServerByProviderID(ctx, ms)
 	// if the server was not found, we try to find it by listing all servers.
 	if server != nil || ignoreNotFound(err) != nil {
@@ -221,7 +215,7 @@ func (s *Service) getServer(ctx context.Context, ms *scope.MachineScope) (*sdk.S
 	return nil, err
 }
 
-func (s *Service) deleteServer(ctx context.Context, ms *scope.MachineScope, serverID string) error {
+func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, serverID string) error {
 	log := s.logger.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
@@ -231,13 +225,13 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.MachineScope, serv
 	}
 
 	log.Info("Successfully requested for server deletion", "location", requestLocation)
-	ms.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodDelete, requestLocation))
+	ms.IonosMachine.SetCurrentRequest(http.MethodDelete, sdk.RequestStatusQueued, requestLocation)
 
 	log.V(4).Info("Done deleting server")
 	return nil
 }
 
-func (s *Service) getLatestServerCreationRequest(ctx context.Context, ms *scope.MachineScope) (*requestInfo, error) {
+func (s *Service) getLatestServerCreationRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
 	return getMatchingRequest(
 		ctx,
 		s,
@@ -256,7 +250,7 @@ func (s *Service) getLatestServerDeletionRequest(ctx context.Context, datacenter
 	)
 }
 
-func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *scope.MachineScope) error {
+func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *scope.Machine) error {
 	log := s.logger.WithName("createServer")
 
 	bootstrapData, exists := secret.Data["value"]
@@ -293,7 +287,7 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 	}
 
 	log.Info("Successfully requested for server creation", "location", requestLocation)
-	ms.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPost, requestLocation))
+	ms.IonosMachine.SetCurrentRequest(http.MethodPost, sdk.RequestStatusQueued, requestLocation)
 
 	serverID := ptr.Deref(server.GetId(), "")
 	if serverID == "" {
@@ -308,7 +302,7 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 }
 
 // buildServerProperties returns the server properties for the expected cloud server resource.
-func (s *Service) buildServerProperties(ms *scope.MachineScope, machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerProperties {
+func (s *Service) buildServerProperties(ms *scope.Machine, machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerProperties {
 	props := sdk.ServerProperties{
 		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
 		Cores:            &machineSpec.NumCores,
@@ -327,7 +321,7 @@ type serverEntityParams struct {
 }
 
 // buildServerEntities returns the server entities for the expected cloud server resource.
-func (s *Service) buildServerEntities(ms *scope.MachineScope, params serverEntityParams) sdk.ServerEntities {
+func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityParams) sdk.ServerEntities {
 	machineSpec := params.machineSpec
 	bootVolume := sdk.Volume{
 		Properties: &sdk.VolumeProperties{
@@ -377,7 +371,7 @@ func (s *Service) buildServerEntities(ms *scope.MachineScope, params serverEntit
 	}
 }
 
-func (s *Service) renderUserData(ms *scope.MachineScope, input string) string {
+func (s *Service) renderUserData(ms *scope.Machine, input string) string {
 	// TODO(lubedacht) update user data to include needed information
 	// 	VNC and hostname
 

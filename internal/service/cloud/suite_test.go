@@ -69,8 +69,8 @@ type ServiceTestSuite struct {
 	suite.Suite
 	k8sClient    client.Client
 	ctx          context.Context
-	machineScope *scope.MachineScope
-	clusterScope *scope.ClusterScope
+	machineScope *scope.Machine
+	clusterScope *scope.Cluster
 	log          logr.Logger
 	service      *Service
 	capiCluster  *clusterv1.Cluster
@@ -160,14 +160,14 @@ func (s *ServiceTestSuite) SetupTest() {
 		WithStatusSubresource(initObjects...).
 		Build()
 
-	s.clusterScope, err = scope.NewClusterScope(scope.ClusterScopeParams{
+	s.clusterScope, err = scope.NewCluster(scope.ClusterParams{
 		Client:       s.k8sClient,
 		Cluster:      s.capiCluster,
 		IonosCluster: s.infraCluster,
 	})
 	s.NoError(err, "failed to create cluster scope")
 
-	s.machineScope, err = scope.NewMachineScope(scope.MachineScopeParams{
+	s.machineScope, err = scope.NewMachine(scope.MachineParams{
 		Client:       s.k8sClient,
 		Machine:      s.capiMachine,
 		ClusterScope: s.clusterScope,

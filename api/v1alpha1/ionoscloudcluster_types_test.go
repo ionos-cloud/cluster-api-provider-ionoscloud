@@ -142,7 +142,7 @@ var _ = Describe("IonosCloudCluster", func() {
 			wantProvisionRequest := ProvisioningRequest{
 				Method:      "POST",
 				RequestPath: "/path/to/resource",
-				State:       StatusRequestQueued,
+				State:       "QUEUED",
 			}
 			fetched.SetCurrentRequestByDatacenter("123", wantProvisionRequest)
 			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)

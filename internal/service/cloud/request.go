@@ -198,7 +198,7 @@ func hasRequestTargetType(req sdk.Request, typeName sdk.Type) bool {
 	return false
 }
 
-func scopedFindResource[T any, S scope.ClusterScope | scope.MachineScope](
+func scopedFindResource[T any, S scope.Cluster | scope.Machine](
 	ctx context.Context,
 	s *S,
 	tryLookupResource func(context.Context, *S) (*T, error),

@@ -25,17 +25,16 @@ import (
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
-	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-func (s *Service) nicURL(ms *scope.MachineScope, serverID, nicID string) string {
+func (s *Service) nicURL(ms *scope.Machine, serverID, nicID string) string {
 	return path.Join("datacenters", ms.DatacenterID(), "servers", serverID, "nics", nicID)
 }
 
 // reconcileNICConfig ensures that the primary NIC contains the endpoint IP address.
-func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.MachineScope, endpointIP string) (*sdk.Nic, error) {
+func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, endpointIP string) (*sdk.Nic, error) {
 	log := s.logger.WithName("reconcileNICConfig")
 
 	log.V(4).Info("Reconciling NIC config")
@@ -86,12 +85,12 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.MachineScope
 	log.V(4).Info("Successfully patched NIC. Finished reconciling NIC config.")
 	// As we are waiting for the request to finish this time, we can assume that the request was successful
 	// Therefore we can remove the current request
-	ms.IonosMachine.Status.CurrentRequest = nil
+	ms.IonosMachine.DeleteCurrentRequest()
 
 	return nic, nil
 }
 
-func (s *Service) findPrimaryNIC(ms *scope.MachineScope, server *sdk.Server) (*sdk.Nic, error) {
+func (s *Service) findPrimaryNIC(ms *scope.Machine, server *sdk.Server) (*sdk.Nic, error) {
 	serverNICs := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
 	for _, nic := range serverNICs {
 		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name == s.serverName(ms.IonosMachine) {
@@ -101,7 +100,7 @@ func (s *Service) findPrimaryNIC(ms *scope.MachineScope, server *sdk.Server) (*s
 	return nil, fmt.Errorf("could not find primary NIC with name %s", s.serverName(ms.IonosMachine))
 }
 
-func (s *Service) patchNIC(ctx context.Context, ms *scope.MachineScope, serverID string, nic *sdk.Nic, props sdk.NicProperties) error {
+func (s *Service) patchNIC(ctx context.Context, ms *scope.Machine, serverID string, nic *sdk.Nic, props sdk.NicProperties) error {
 	log := s.logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")
@@ -113,15 +112,14 @@ func (s *Service) patchNIC(ctx context.Context, ms *scope.MachineScope, serverID
 	}
 
 	// set the current request in case the WaitForRequest function fails.
-	ms.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPatch, location))
-
+	ms.IonosMachine.SetCurrentRequest(http.MethodPatch, sdk.RequestStatusQueued, location)
 	log.V(4).Info("Successfully patched NIC", "location", location)
 	// In this case, we want to wait for the request to be finished as we need to configure the
 	// failover group
 	return s.ionosClient.WaitForRequest(ctx, location)
 }
 
-func (s *Service) getLatestNICPatchRequest(ctx context.Context, ms *scope.MachineScope, serverID string, nicID string) (*requestInfo, error) {
+func (s *Service) getLatestNICPatchRequest(ctx context.Context, ms *scope.Machine, serverID string, nicID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Nic](
 		ctx,
 		s,

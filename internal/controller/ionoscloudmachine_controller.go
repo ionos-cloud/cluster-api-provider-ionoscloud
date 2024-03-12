@@ -105,7 +105,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Create the machine scope
-	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
+	machineScope, err := scope.NewMachine(scope.MachineParams{
 		Client:       r.Client,
 		Machine:      machine,
 		ClusterScope: clusterScope,
@@ -132,7 +132,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.reconcileNormal(ctx, cloudService, machineScope)
 }
 
-func (r *IonosCloudMachineReconciler) reconcileNormal(ctx context.Context, cloudService *cloud.Service, machineScope *scope.MachineScope) (ctrl.Result, error) {
+func (r *IonosCloudMachineReconciler) reconcileNormal(ctx context.Context, cloudService *cloud.Service, machineScope *scope.Machine) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(4).Info("Reconciling IonosCloudMachine")
 
@@ -168,7 +168,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(ctx context.Context, cloud
 	}
 
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
-	reconcileSequence := []serviceReconcileStep[scope.MachineScope]{
+	reconcileSequence := []serviceReconcileStep[scope.Machine]{
 		{"ReconcileLAN", cloudService.ReconcileLAN},
 		{"ReconcileServer", cloudService.ReconcileServer},
 		{"ReconcileIPFailover", cloudService.ReconcileIPFailover},
@@ -188,7 +188,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(ctx context.Context, cloud
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, cloudService *cloud.Service) (ctrl.Result, error) {
+func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.Machine, cloudService *cloud.Service) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
@@ -210,7 +210,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machi
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	reconcileSequence := []serviceReconcileStep[scope.MachineScope]{
+	reconcileSequence := []serviceReconcileStep[scope.Machine]{
 		// NOTE(avorima): NICs, which are configured in an IP failover configuration, cannot be deleted
 		// by a request to delete the server. Therefore, during deletion, we need to remove the NIC from
 		// the IP failover configuration.
@@ -242,7 +242,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machi
 //   - Done => Clear request from the status and continue reconciliation.
 func (r *IonosCloudMachineReconciler) checkRequestStates(
 	ctx context.Context,
-	machineScope *scope.MachineScope,
+	machineScope *scope.Machine,
 	cloudService *cloud.Service,
 ) (requeue bool, retErr error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -274,7 +274,7 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 					// no need to patch the machine here as it will be patched
 					// after the machine reconciliation is done.
 					log.V(4).Info("Request is done, clearing it from the status")
-					machineScope.IonosMachine.Status.CurrentRequest = nil
+					machineScope.IonosMachine.DeleteCurrentRequest()
 					return nil
 				},
 			)
@@ -284,7 +284,7 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 	return requeue, retErr
 }
 
-func (r *IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.MachineScope) bool {
+func (r *IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
 	log := ctrl.LoggerFrom(ctx)
 	// Make sure the infrastructure is ready.
 	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
@@ -326,8 +326,8 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *IonosCloudMachineReconciler) getClusterScope(
 	ctx context.Context, cluster *clusterv1.Cluster, ionosCloudMachine *infrav1.IonosCloudMachine,
-) (*scope.ClusterScope, error) {
-	var clusterScope *scope.ClusterScope
+) (*scope.Cluster, error) {
+	var clusterScope *scope.Cluster
 	var err error
 
 	ionosCloudCluster := &infrav1.IonosCloudCluster{}
@@ -348,7 +348,7 @@ func (r *IonosCloudMachineReconciler) getClusterScope(
 	}
 
 	// Create the cluster scope
-	clusterScope, err = scope.NewClusterScope(scope.ClusterScopeParams{
+	clusterScope, err = scope.NewCluster(scope.ClusterParams{
 		Client:       r.Client,
 		Cluster:      cluster,
 		IonosCluster: ionosCloudCluster,

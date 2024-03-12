@@ -34,12 +34,12 @@ func TestNewClusterScope_MissingParams(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		params  ClusterScopeParams
+		params  ClusterParams
 		wantErr bool
 	}{
 		{
 			name: "all present",
-			params: ClusterScopeParams{
+			params: ClusterParams{
 				Client:       cl,
 				Cluster:      &clusterv1.Cluster{},
 				IonosCluster: &infrav1.IonosCloudCluster{},
@@ -48,7 +48,7 @@ func TestNewClusterScope_MissingParams(t *testing.T) {
 		},
 		{
 			name: "missing client",
-			params: ClusterScopeParams{
+			params: ClusterParams{
 				Cluster:      &clusterv1.Cluster{},
 				IonosCluster: &infrav1.IonosCloudCluster{},
 			},
@@ -56,7 +56,7 @@ func TestNewClusterScope_MissingParams(t *testing.T) {
 		},
 		{
 			name: "missing cluster",
-			params: ClusterScopeParams{
+			params: ClusterParams{
 				Client:       cl,
 				IonosCluster: &infrav1.IonosCloudCluster{},
 			},
@@ -64,7 +64,7 @@ func TestNewClusterScope_MissingParams(t *testing.T) {
 		},
 		{
 			name: "missing IONOS cluster",
-			params: ClusterScopeParams{
+			params: ClusterParams{
 				Client:  cl,
 				Cluster: &clusterv1.Cluster{},
 			},
@@ -75,10 +75,10 @@ func TestNewClusterScope_MissingParams(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if test.wantErr {
-				_, err := NewClusterScope(test.params)
+				_, err := NewCluster(test.params)
 				require.Error(t, err)
 			} else {
-				params, err := NewClusterScope(test.params)
+				params, err := NewCluster(test.params)
 				require.NoError(t, err)
 				require.NotNil(t, params)
 			}

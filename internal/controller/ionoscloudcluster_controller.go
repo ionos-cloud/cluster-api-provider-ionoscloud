@@ -88,7 +88,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+	clusterScope, err := scope.NewCluster(scope.ClusterParams{
 		Client:       r.Client,
 		Cluster:      cluster,
 		IonosCluster: ionosCloudCluster,
@@ -116,7 +116,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.reconcileNormal(ctx, clusterScope, cloudService)
 }
 
-func (r *IonosCloudClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.ClusterScope, cloudService *cloud.Service) (ctrl.Result, error) {
+func (r *IonosCloudClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.Cluster, cloudService *cloud.Service) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	controllerutil.AddFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
@@ -131,7 +131,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(ctx context.Context, clust
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	reconcileSequence := []serviceReconcileStep[scope.ClusterScope]{
+	reconcileSequence := []serviceReconcileStep[scope.Cluster]{
 		{"ReconcileControlPlaneEndpoint", cloudService.ReconcileControlPlaneEndpoint},
 	}
 	for _, step := range reconcileSequence {
@@ -149,7 +149,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(ctx context.Context, clust
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ClusterScope, cloudService *cloud.Service) (ctrl.Result, error) {
+func (r *IonosCloudClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.Cluster, cloudService *cloud.Service) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
 		log.Error(errors.New("deletion was requested but owning cluster wasn't deleted"), "unable to delete IonosCloudCluster")
@@ -169,7 +169,7 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(ctx context.Context, clust
 	// TODO(lubedacht): check if there are any more machine CRs existing.
 	// If there are requeue with an offset.
 
-	reconcileSequence := []serviceReconcileStep[scope.ClusterScope]{
+	reconcileSequence := []serviceReconcileStep[scope.Cluster]{
 		{"ReconcileControlPlaneEndpointDeletion", cloudService.ReconcileControlPlaneEndpointDeletion},
 	}
 	for _, step := range reconcileSequence {
@@ -186,7 +186,7 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(ctx context.Context, clust
 }
 
 func (r *IonosCloudClusterReconciler) checkRequestStatus(
-	ctx context.Context, clusterScope *scope.ClusterScope, cloudService *cloud.Service,
+	ctx context.Context, clusterScope *scope.Cluster, cloudService *cloud.Service,
 ) (requeue bool, retErr error) {
 	log := ctrl.LoggerFrom(ctx)
 	ionosCluster := clusterScope.IonosCluster
