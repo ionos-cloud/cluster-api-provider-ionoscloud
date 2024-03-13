@@ -28,7 +28,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 
-	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -167,11 +166,8 @@ func (s *Service) createLAN(ctx context.Context, ms *scope.Machine) error {
 		return fmt.Errorf("unable to create LAN in data center %s: %w", ms.DatacenterID(), err)
 	}
 
-	ms.ClusterScope.IonosCluster.SetCurrentRequestByDatacenter(ms.DatacenterID(), infrav1.ProvisioningRequest{
-		Method:      http.MethodPost,
-		RequestPath: requestPath,
-		State:       sdk.RequestStatusQueued,
-	})
+	ms.ClusterScope.IonosCluster.SetCurrentRequestByDatacenter(ms.DatacenterID(),
+		http.MethodPost, sdk.RequestStatusQueued, requestPath)
 
 	err = ms.ClusterScope.PatchObject()
 	if err != nil {
@@ -191,15 +187,8 @@ func (s *Service) deleteLAN(ctx context.Context, ms *scope.Machine, lanID string
 		return fmt.Errorf("unable to request LAN deletion in data center: %w", err)
 	}
 
-	if ms.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter == nil {
-		ms.ClusterScope.IonosCluster.Status.CurrentRequestByDatacenter = make(map[string]infrav1.ProvisioningRequest)
-	}
-
-	ms.ClusterScope.IonosCluster.SetCurrentRequestByDatacenter(ms.DatacenterID(), infrav1.ProvisioningRequest{
-		Method:      http.MethodDelete,
-		RequestPath: requestPath,
-		State:       sdk.RequestStatusQueued,
-	})
+	ms.ClusterScope.IonosCluster.SetCurrentRequestByDatacenter(ms.DatacenterID(),
+		http.MethodDelete, sdk.RequestStatusQueued, requestPath)
 
 	err = ms.ClusterScope.PatchObject()
 	if err != nil {

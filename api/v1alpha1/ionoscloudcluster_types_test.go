@@ -144,7 +144,8 @@ var _ = Describe("IonosCloudCluster", func() {
 				RequestPath: "/path/to/resource",
 				State:       "QUEUED",
 			}
-			fetched.SetCurrentRequestByDatacenter("123", wantProvisionRequest)
+			fetched.SetCurrentRequestByDatacenter("123",
+				wantProvisionRequest.Method, wantProvisionRequest.State, wantProvisionRequest.RequestPath)
 			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
 
 			By("updating the cluster status")
