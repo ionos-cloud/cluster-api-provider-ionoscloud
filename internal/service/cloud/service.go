@@ -18,7 +18,6 @@ limitations under the License.
 package cloud
 
 import (
-	"context"
 	"errors"
 	"net/http"
 
@@ -27,7 +26,6 @@ import (
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 const (
@@ -37,37 +35,25 @@ const (
 
 // Service offers infra resources services for IONOS Cloud machine reconciliation.
 type Service struct {
-	scope  *scope.MachineScope // Deprecated: pass machine scope explicitly to each method.
-	ctx    context.Context     // Deprecated: pass context explicitly to each method.
-	logger *logr.Logger
-	cloud  ionoscloud.Client
+	logger      logr.Logger
+	ionosClient ionoscloud.Client
 }
 
 // NewService returns a new Service.
-func NewService(ctx context.Context, s *scope.MachineScope) (*Service, error) {
+func NewService(ionosClient ionoscloud.Client, log logr.Logger) (*Service, error) {
+	if ionosClient == nil {
+		return nil, errors.New("IONOS Cloud client is required")
+	}
 	return &Service{
-		scope:  s,
-		ctx:    ctx,
-		logger: s.ClusterScope.Logger,
-		cloud:  s.ClusterScope.IonosClient,
+		logger:      log,
+		ionosClient: ionosClient,
 	}, nil
-}
-
-// api is a shortcut for the IONOS Cloud Client.
-// Deprecated: use Service.cloud instead.
-func (s *Service) api() ionoscloud.Client {
-	return s.scope.ClusterScope.IonosClient
 }
 
 // apiWithDepth is a shortcut for the IONOS Cloud Client with a specific depth.
 // It will create a copy of the client with the depth set to the provided value.
 func (s *Service) apiWithDepth(depth int32) ionoscloud.Client {
-	return client.WithDepth(s.api(), depth)
-}
-
-// datacenterID is a shortcut for getting the data center ID used by the IONOS Cloud machine.
-func (s *Service) datacenterID() string {
-	return s.scope.IonosMachine.Spec.DatacenterID
+	return client.WithDepth(s.ionosClient, depth)
 }
 
 // isNotFound is a shortcut for checking if an error is a not found error.

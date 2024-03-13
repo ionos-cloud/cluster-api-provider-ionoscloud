@@ -200,10 +200,6 @@ spec:
                 description: CurrentRequest shows the current provisioning request
                   for any cloud resource that is being provisioned.
                 properties:
-                  message:
-                    description: Message is the request message, which can also contain
-                      error information.
-                    type: string
                   method:
                     description: Method is the request method
                     type: string

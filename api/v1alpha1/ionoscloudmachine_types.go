@@ -287,6 +287,20 @@ func (m *IonosCloudMachine) ExtractServerID() string {
 	return after
 }
 
+// SetCurrentRequest sets the current provisioning request for the machine.
+func (m *IonosCloudMachine) SetCurrentRequest(method, status, requestPath string) {
+	m.Status.CurrentRequest = &ProvisioningRequest{
+		Method:      method,
+		RequestPath: requestPath,
+		State:       status,
+	}
+}
+
+// DeleteCurrentRequest deletes the current provisioning request for the machine.
+func (m *IonosCloudMachine) DeleteCurrentRequest() {
+	m.Status.CurrentRequest = nil
+}
+
 func init() {
 	objectTypes = append(objectTypes, &IonosCloudMachine{}, &IonosCloudMachineList{})
 }

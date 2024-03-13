@@ -25,62 +25,48 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
 )
 
-func TestNewClusterScope_MissingParams(t *testing.T) {
+func TestNewClusterMissingParams(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, infrav1.AddToScheme(scheme))
 	cl := fake.NewClientBuilder().WithScheme(scheme).Build()
 
 	tests := []struct {
 		name    string
-		params  ClusterScopeParams
+		params  ClusterParams
 		wantErr bool
 	}{
 		{
 			name: "all present",
-			params: ClusterScopeParams{
+			params: ClusterParams{
 				Client:       cl,
 				Cluster:      &clusterv1.Cluster{},
 				IonosCluster: &infrav1.IonosCloudCluster{},
-				IonosClient:  &client.IonosCloudClient{},
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing client",
-			params: ClusterScopeParams{
+			params: ClusterParams{
 				Cluster:      &clusterv1.Cluster{},
 				IonosCluster: &infrav1.IonosCloudCluster{},
-				IonosClient:  &client.IonosCloudClient{},
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing cluster",
-			params: ClusterScopeParams{
+			params: ClusterParams{
 				Client:       cl,
 				IonosCluster: &infrav1.IonosCloudCluster{},
-				IonosClient:  &client.IonosCloudClient{},
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing IONOS cluster",
-			params: ClusterScopeParams{
-				Client:      cl,
-				Cluster:     &clusterv1.Cluster{},
-				IonosClient: &client.IonosCloudClient{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "missing IONOS client",
-			params: ClusterScopeParams{
-				Client:       cl,
-				Cluster:      &clusterv1.Cluster{},
-				IonosCluster: &infrav1.IonosCloudCluster{},
+			params: ClusterParams{
+				Client:  cl,
+				Cluster: &clusterv1.Cluster{},
 			},
 			wantErr: true,
 		},
@@ -89,10 +75,10 @@ func TestNewClusterScope_MissingParams(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if test.wantErr {
-				_, err := NewClusterScope(test.params)
+				_, err := NewCluster(test.params)
 				require.Error(t, err)
 			} else {
-				params, err := NewClusterScope(test.params)
+				params, err := NewCluster(test.params)
 				require.NoError(t, err)
 				require.NotNil(t, params)
 			}

@@ -20,7 +20,6 @@ import (
 	"context"
 	"testing"
 
-	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -34,6 +33,7 @@ import (
 const (
 	// newValueStr is a string that represents a changed value.
 	newValueStr = "changed"
+	exampleIP   = "198.51.100.1"
 )
 
 func TestIonosCloudCluster_Conditions(t *testing.T) {
@@ -52,7 +52,7 @@ func defaultCluster() *IonosCloudCluster {
 		},
 		Spec: IonosCloudClusterSpec{
 			ControlPlaneEndpoint: clusterv1.APIEndpoint{
-				Host: "1.2.3.4",
+				Host: exampleIP,
 				Port: 5678,
 			},
 			ContractNumber: "12345678",
@@ -142,9 +142,10 @@ var _ = Describe("IonosCloudCluster", func() {
 			wantProvisionRequest := ProvisioningRequest{
 				Method:      "POST",
 				RequestPath: "/path/to/resource",
-				State:       sdk.RequestStatusQueued,
+				State:       "QUEUED",
 			}
-			fetched.SetCurrentRequestByDatacenter("123", wantProvisionRequest)
+			fetched.SetCurrentRequestByDatacenter("123",
+				wantProvisionRequest.Method, wantProvisionRequest.State, wantProvisionRequest.RequestPath)
 			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
 
 			By("updating the cluster status")

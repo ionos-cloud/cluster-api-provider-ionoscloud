@@ -34,15 +34,16 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 // ReconcileServer ensures the cluster server exist, creating one if it doesn't.
-func (s *Service) ReconcileServer() (requeue bool, retErr error) {
-	log := s.scope.Logger.WithName("ReconcileServer")
+func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (requeue bool, retErr error) {
+	log := s.logger.WithName("ReconcileServer")
 
 	log.V(4).Info("Reconciling server")
 
-	secret, err := s.scope.GetBootstrapDataSecret(s.ctx)
+	secret, err := ms.GetBootstrapDataSecret(ctx, s.logger)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// secret not available yet
@@ -53,11 +54,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 		return true, fmt.Errorf("unexpected error when trying to get bootstrap secret: %w", err)
 	}
 
-	server, request, err := findResource(
-		s.ctx,
-		s.getServer,
-		s.getLatestServerCreationRequest,
-	)
+	server, request, err := scopedFindResource(ctx, ms, s.getServer, s.getLatestServerCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -81,7 +78,7 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 
 	// server does not exist yet, create it
 	log.V(4).Info("No server was found. Creating new server")
-	if err := s.createServer(secret); err != nil {
+	if err := s.createServer(ctx, secret, ms); err != nil {
 		return false, err
 	}
 
@@ -92,43 +89,33 @@ func (s *Service) ReconcileServer() (requeue bool, retErr error) {
 }
 
 // ReconcileServerDeletion ensures the server is deleted.
-func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
-	log := s.scope.Logger.WithName("ReconcileLANDeletion")
+func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
+	log := s.logger.WithName("ReconcileLANDeletion")
 
-	server, request, err := findResource(
-		s.ctx,
-		s.getServer,
-		s.getLatestServerCreationRequest,
-	)
+	server, request, err := scopedFindResource(ctx, ms, s.getServer, s.getLatestServerCreationRequest)
 	if err != nil {
 		return false, err
 	}
 
 	if request != nil && request.isPending() {
-		s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewRequestWithState(
-			http.MethodPost, request.location,
-			request.status),
-		)
+		ms.IonosMachine.SetCurrentRequest(http.MethodPost, request.status, request.location)
 		log.Info("Creation request is pending", "location", request.location)
 		return true, nil
 	}
 
 	if server == nil {
-		s.scope.IonosMachine.Status.CurrentRequest = nil
+		ms.IonosMachine.DeleteCurrentRequest()
 		return false, nil
 	}
 
-	request, err = s.getLatestServerDeletionRequest(s.ctx, *server.Id)
+	request, err = s.getLatestServerDeletionRequest(ctx, ms.DatacenterID(), *server.Id)
 	if err != nil {
 		return false, err
 	}
 
 	if request != nil {
 		if request.isPending() {
-			s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewRequestWithState(
-				http.MethodDelete, request.location,
-				request.status),
-			)
+			ms.IonosMachine.SetCurrentRequest(http.MethodDelete, request.status, request.location)
 
 			// We want to requeue and check again after some time
 			log.Info("Deletion request is pending", "location", request.location)
@@ -136,23 +123,23 @@ func (s *Service) ReconcileServerDeletion() (requeue bool, err error) {
 		}
 
 		if request.isDone() {
-			s.scope.IonosMachine.Status.CurrentRequest = nil
+			ms.IonosMachine.DeleteCurrentRequest()
 			return false, nil
 		}
 	}
 
-	err = s.deleteServer(*server.Id)
+	err = s.deleteServer(ctx, ms, *server.Id)
 	return err == nil, err
 }
 
-func (s *Service) FinalizeMachineProvisioning() (bool, error) {
-	s.scope.IonosMachine.Status.Ready = true
-	conditions.MarkTrue(s.scope.IonosMachine, infrav1.MachineProvisionedCondition)
+func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
+	ms.IonosMachine.Status.Ready = true
+	conditions.MarkTrue(ms.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil
 }
 
 func (s *Service) isServerAvailable(server *sdk.Server) bool {
-	log := s.scope.Logger.WithName("isServerAvailable")
+	log := s.logger.WithName("isServerAvailable")
 	if state := getState(server); !isAvailable(state) {
 		log.Info("Server is not available yet", "state", state)
 		return false
@@ -171,19 +158,19 @@ func (s *Service) isServerAvailable(server *sdk.Server) bool {
 // getServerByProviderID checks if the IonosCloudMachine has a provider ID set.
 // If it does, it will attempt to extract the server ID from the provider ID and
 // query for the server in the cloud.
-func (s *Service) getServerByProviderID() (*sdk.Server, error) {
+func (s *Service) getServerByProviderID(ctx context.Context, ms *scope.Machine) (*sdk.Server, error) {
 	// first we check if the provider ID is set
-	if !ptr.IsNilOrZero(s.scope.IonosMachine.Spec.ProviderID) {
-		serverID := s.scope.IonosMachine.ExtractServerID()
+	if !ptr.IsNilOrZero(ms.IonosMachine.Spec.ProviderID) {
+		serverID := ms.IonosMachine.ExtractServerID()
 		// we expect the server ID to be a valid UUID
 		if err := uuid.Validate(serverID); err != nil {
 			return nil, fmt.Errorf("invalid server ID %s: %w", serverID, err)
 		}
 
 		depth := int32(2) // for getting the server and its NICs' properties
-		server, err := s.apiWithDepth(depth).GetServer(s.ctx, s.datacenterID(), serverID)
+		server, err := s.apiWithDepth(depth).GetServer(ctx, ms.DatacenterID(), serverID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, s.datacenterID(), err)
+			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, ms.DatacenterID(), err)
 		}
 
 		// if the server was found, we return it
@@ -196,9 +183,8 @@ func (s *Service) getServerByProviderID() (*sdk.Server, error) {
 	return nil, nil
 }
 
-// getServer looks for the server in the data center.
-func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
-	server, err := s.getServerByProviderID()
+func (s *Service) getServer(ctx context.Context, ms *scope.Machine) (*sdk.Server, error) {
+	server, err := s.getServerByProviderID(ctx, ms)
 	// if the server was not found, we try to find it by listing all servers.
 	if server != nil || ignoreNotFound(err) != nil {
 		return server, err
@@ -209,17 +195,17 @@ func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
 	const listDepth = 3
 	// without provider ID, we need to list all servers and see if
 	// there is one with the expected name.
-	serverList, listErr := s.apiWithDepth(listDepth).ListServers(s.ctx, s.datacenterID())
+	serverList, listErr := s.apiWithDepth(listDepth).ListServers(ctx, ms.DatacenterID())
 	if listErr != nil {
-		return nil, fmt.Errorf("failed to list servers in data center %s: %w", s.datacenterID(), listErr)
+		return nil, fmt.Errorf("failed to list servers in data center %s: %w", ms.DatacenterID(), listErr)
 	}
 
 	items := ptr.Deref(serverList.Items, []sdk.Server{})
 	// find servers with the expected name
 	for _, server := range items {
-		if server.HasProperties() && *server.Properties.Name == s.serverName() {
+		if server.HasProperties() && *server.Properties.Name == s.serverName(ms.IonosMachine) {
 			// if the server was found, we set the provider ID and return it
-			s.scope.SetProviderID(ptr.Deref(server.Id, ""))
+			ms.SetProviderID(ptr.Deref(server.Id, ""))
 			return &server, nil
 		}
 	}
@@ -229,50 +215,50 @@ func (s *Service) getServer(_ context.Context) (*sdk.Server, error) {
 	return nil, err
 }
 
-func (s *Service) deleteServer(serverID string) error {
-	log := s.scope.WithName("deleteServer")
+func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, serverID string) error {
+	log := s.logger.WithName("deleteServer")
 
 	log.V(4).Info("Deleting server", "serverID", serverID)
-	requestLocation, err := s.api().DeleteServer(s.ctx, s.datacenterID(), serverID)
+	requestLocation, err := s.ionosClient.DeleteServer(ctx, ms.DatacenterID(), serverID)
 	if err != nil {
 		return fmt.Errorf("failed to request server deletion: %w", err)
 	}
 
 	log.Info("Successfully requested for server deletion", "location", requestLocation)
-	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodDelete, requestLocation))
+	ms.IonosMachine.SetCurrentRequest(http.MethodDelete, sdk.RequestStatusQueued, requestLocation)
 
 	log.V(4).Info("Done deleting server")
 	return nil
 }
 
-func (s *Service) getLatestServerCreationRequest(_ context.Context) (*requestInfo, error) {
+func (s *Service) getLatestServerCreationRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
 	return getMatchingRequest(
-		s.ctx,
+		ctx,
 		s,
 		http.MethodPost,
-		path.Join("datacenters", s.datacenterID(), "servers"),
-		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName()),
+		path.Join("datacenters", ms.DatacenterID(), "servers"),
+		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName(ms.IonosMachine)),
 	)
 }
 
-func (s *Service) getLatestServerDeletionRequest(_ context.Context, serverID string) (*requestInfo, error) {
+func (s *Service) getLatestServerDeletionRequest(ctx context.Context, datacenterID, serverID string) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Server](
-		s.ctx,
+		ctx,
 		s,
 		http.MethodDelete,
-		path.Join("datacenters", s.datacenterID(), "servers", serverID),
+		path.Join("datacenters", datacenterID, "servers", serverID),
 	)
 }
 
-func (s *Service) createServer(secret *corev1.Secret) error {
-	log := s.scope.WithName("createServer")
+func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *scope.Machine) error {
+	log := s.logger.WithName("createServer")
 
 	bootstrapData, exists := secret.Data["value"]
 	if !exists {
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	lan, err := s.getLAN(s.ctx)
+	lan, err := s.getLAN(ctx, ms)
 	if err != nil {
 		return err
 	}
@@ -282,26 +268,26 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 		return fmt.Errorf("unable to parse LAN ID: %w", err)
 	}
 
-	renderedData := s.renderUserData(string(bootstrapData))
-	copySpec := s.scope.IonosMachine.Spec.DeepCopy()
+	renderedData := s.renderUserData(ms, string(bootstrapData))
+	copySpec := ms.IonosMachine.Spec.DeepCopy()
 	entityParams := serverEntityParams{
 		boostrapData: renderedData,
 		machineSpec:  *copySpec,
 		lanID:        int32(lanID),
 	}
 
-	server, requestLocation, err := s.api().CreateServer(
-		s.ctx,
-		s.datacenterID(),
-		s.buildServerProperties(copySpec),
-		s.buildServerEntities(entityParams),
+	server, requestLocation, err := s.ionosClient.CreateServer(
+		ctx,
+		ms.DatacenterID(),
+		s.buildServerProperties(ms, copySpec),
+		s.buildServerEntities(ms, entityParams),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create server in data center %s: %w", s.datacenterID(), err)
+		return fmt.Errorf("failed to create server in data center %s: %w", ms.DatacenterID(), err)
 	}
 
 	log.Info("Successfully requested for server creation", "location", requestLocation)
-	s.scope.IonosMachine.Status.CurrentRequest = ptr.To(infrav1.NewQueuedRequest(http.MethodPost, requestLocation))
+	ms.IonosMachine.SetCurrentRequest(http.MethodPost, sdk.RequestStatusQueued, requestLocation)
 
 	serverID := ptr.Deref(server.GetId(), "")
 	if serverID == "" {
@@ -309,19 +295,19 @@ func (s *Service) createServer(secret *corev1.Secret) error {
 	}
 
 	// make sure to set the provider ID
-	s.scope.SetProviderID(serverID)
+	ms.SetProviderID(serverID)
 
 	log.V(4).Info("Done creating server")
 	return nil
 }
 
 // buildServerProperties returns the server properties for the expected cloud server resource.
-func (s *Service) buildServerProperties(machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerProperties {
+func (s *Service) buildServerProperties(ms *scope.Machine, machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerProperties {
 	props := sdk.ServerProperties{
 		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
 		Cores:            &machineSpec.NumCores,
 		CpuFamily:        &machineSpec.CPUFamily,
-		Name:             ptr.To(s.serverName()),
+		Name:             ptr.To(s.serverName(ms.IonosMachine)),
 		Ram:              &machineSpec.MemoryMB,
 	}
 
@@ -335,14 +321,12 @@ type serverEntityParams struct {
 }
 
 // buildServerEntities returns the server entities for the expected cloud server resource.
-func (s *Service) buildServerEntities(
-	params serverEntityParams,
-) sdk.ServerEntities {
+func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityParams) sdk.ServerEntities {
 	machineSpec := params.machineSpec
 	bootVolume := sdk.Volume{
 		Properties: &sdk.VolumeProperties{
 			AvailabilityZone: ptr.To(machineSpec.Disk.AvailabilityZone.String()),
-			Name:             ptr.To(s.serverName()),
+			Name:             ptr.To(s.serverName(ms.IonosMachine)),
 			Size:             ptr.To(float32(machineSpec.Disk.SizeGB)),
 			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
 			UserData:         ptr.To(params.boostrapData),
@@ -367,7 +351,7 @@ func (s *Service) buildServerEntities(
 				Properties: &sdk.NicProperties{
 					Dhcp: ptr.To(true),
 					Lan:  &params.lanID,
-					Name: ptr.To(s.serverName()),
+					Name: ptr.To(s.serverName(ms.IonosMachine)),
 				},
 			},
 		},
@@ -375,7 +359,7 @@ func (s *Service) buildServerEntities(
 
 	// Attach server to additional LANs
 	items := *serverNICs.Items
-	for _, nic := range s.scope.IonosMachine.Spec.AdditionalNetworks {
+	for _, nic := range ms.IonosMachine.Spec.AdditionalNetworks {
 		items = append(items, sdk.Nic{Properties: &sdk.NicProperties{
 			Lan: ptr.To(nic.NetworkID),
 		}})
@@ -387,7 +371,7 @@ func (s *Service) buildServerEntities(
 	}
 }
 
-func (s *Service) renderUserData(input string) string {
+func (s *Service) renderUserData(ms *scope.Machine, input string) string {
 	// TODO(lubedacht) update user data to include needed information
 	// 	VNC and hostname
 
@@ -395,20 +379,20 @@ func (s *Service) renderUserData(input string) string {
   - echo %[1]s > /etc/hostname
   - hostname %[1]s
 `
-	bootCmdString := fmt.Sprintf(bootCmdFormat, s.serverName())
+	bootCmdString := fmt.Sprintf(bootCmdFormat, s.serverName(ms.IonosMachine))
 	input = fmt.Sprintf("%s\n%s", input, bootCmdString)
 
 	return base64.StdEncoding.EncodeToString([]byte(input))
 }
 
-func (s *Service) serversURL() string {
-	return path.Join("datacenters", s.datacenterID(), "servers")
+func (s *Service) serversURL(datacenterID string) string {
+	return path.Join("datacenters", datacenterID, "servers")
 }
 
 // serverName returns a formatted name for the expected cloud server resource.
-func (s *Service) serverName() string {
+func (s *Service) serverName(m *infrav1.IonosCloudMachine) string {
 	return fmt.Sprintf(
 		"k8s-%s-%s",
-		s.scope.IonosMachine.Namespace,
-		s.scope.IonosMachine.Name)
+		m.Namespace,
+		m.Name)
 }

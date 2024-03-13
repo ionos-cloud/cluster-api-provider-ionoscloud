@@ -17,20 +17,23 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 const (
 	defaultReconcileDuration = time.Second * 20
 )
 
-type serviceReconcileStep struct {
-	name          string
-	reconcileFunc func() (requeue bool, err error)
+type serviceReconcileStep[T scope.Cluster | scope.Machine] struct {
+	name string
+	fn   func(context.Context, *T) (requeue bool, err error)
 }
 
 // withStatus is a helper function to handle the different request states

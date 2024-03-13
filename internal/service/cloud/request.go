@@ -27,12 +27,13 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 // GetRequestStatus returns the status of a request for a given request URL.
 // If the request contains a message, it is also returned.
 func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (requestStatus string, statusMessage string, err error) {
-	status, err := s.api().CheckRequestStatus(ctx, requestURL)
+	status, err := s.ionosClient.CheckRequestStatus(ctx, requestURL)
 	if err != nil {
 		return "", "", fmt.Errorf("unable to retrieve the request status: %w", err)
 	}
@@ -119,7 +120,7 @@ func getMatchingRequest[T any](
 	// As we later on ignore query parameters in found requests, we need to do the same here for consistency.
 	urlWithoutQueryParams := strings.Split(url, "?")[0]
 
-	requests, err := s.api().GetRequests(ctx, method, urlWithoutQueryParams)
+	requests, err := s.ionosClient.GetRequests(ctx, method, urlWithoutQueryParams)
 	if err != nil {
 		return nil, fmt.Errorf("could not get requests: %w", err)
 	}
@@ -150,7 +151,7 @@ requestLoop:
 			// As at least 1 additional matcher function is given, reconstruct the resource from the request body.
 			var unmarshalled T
 			if err = json.Unmarshal([]byte(ptr.Deref(req.GetProperties().GetBody(), "")), &unmarshalled); err != nil {
-				s.scope.Logger.WithValues(
+				s.logger.WithValues(
 					"requestID", ptr.Deref(req.GetId(), ""),
 					"body", ptr.Deref(req.GetProperties().GetBody(), ""),
 				).Info("could not unmarshal request")
@@ -169,7 +170,7 @@ requestLoop:
 		status := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetStatus(), "")
 		if status == sdk.RequestStatusFailed {
 			message := ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetMessage(), "")
-			s.scope.Logger.Error(nil,
+			s.logger.Error(nil,
 				"Last request has failed, logging it for debugging purposes",
 				"resourceType", resourceType,
 				"requestID", req.Id, "requestStatus", status,
@@ -195,6 +196,21 @@ func hasRequestTargetType(req sdk.Request, typeName sdk.Type) bool {
 	}
 
 	return false
+}
+
+func scopedFindResource[T any, S scope.Cluster | scope.Machine](
+	ctx context.Context,
+	s *S,
+	tryLookupResource func(context.Context, *S) (*T, error),
+	checkQueue func(context.Context, *S) (*requestInfo, error),
+) (*T, *requestInfo, error) {
+	scopedLookUpFunc := func(ctx context.Context) (*T, error) {
+		return tryLookupResource(ctx, s)
+	}
+	scopedCheckQueueFunc := func(ctx context.Context) (*requestInfo, error) {
+		return checkQueue(ctx, s)
+	}
+	return findResource(ctx, scopedLookUpFunc, scopedCheckQueueFunc)
 }
 
 type (

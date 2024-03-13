@@ -16,8 +16,6 @@ limitations under the License.
 
 package v1alpha1
 
-import sdk "github.com/ionos-cloud/sdk-go/v6"
-
 const (
 	ManagedLANAnnotation = "cloud.ionos.com/managed-lan"
 )
@@ -35,27 +33,4 @@ type ProvisioningRequest struct {
 	//+kubebuilder:validation:Enum=QUEUED;RUNNING;DONE;FAILED
 	//+optional
 	State string `json:"state,omitempty"`
-
-	// Message is the request message, which can also contain error information.
-	//+optional
-	Message *string `json:"message,omitempty"`
-}
-
-// NewQueuedRequest creates a new provisioning request with the status set to queued.
-// TODO(gfariasalves): Remove this in the refactor (and then get rid of the sdk import here).
-func NewQueuedRequest(method, path string) ProvisioningRequest {
-	return ProvisioningRequest{
-		Method:      method,
-		RequestPath: path,
-		State:       sdk.RequestStatusQueued,
-	}
-}
-
-// NewRequestWithState creates a new provisioning request with the given state.
-func NewRequestWithState(method, path, state string) ProvisioningRequest {
-	return ProvisioningRequest{
-		Method:      method,
-		RequestPath: path,
-		State:       state,
-	}
 }

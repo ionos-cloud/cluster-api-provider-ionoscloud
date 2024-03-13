@@ -375,7 +375,6 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				Method:      "GET",
 				RequestPath: "path/to/resource",
 				State:       sdk.RequestStatusRunning,
-				Message:     nil,
 			}
 			m.Status.FailureReason = ptr.To(errors.InvalidConfigurationMachineError)
 			m.Status.FailureMessage = ptr.To("Failure message")

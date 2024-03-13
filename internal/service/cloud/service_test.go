@@ -16,10 +16,25 @@ limitations under the License.
 
 package cloud
 
-func (s *ServiceTestSuite) TestDatacenterID() {
-	s.Equal(s.service.scope.IonosMachine.Spec.DatacenterID, s.service.datacenterID())
+import (
+	"testing"
+
+	"github.com/go-logr/logr"
+	"github.com/stretchr/testify/require"
+
+	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+)
+
+func TestNewServiceValid(t *testing.T) {
+	ionosClient := clienttest.NewMockClient(t)
+	svc, err := NewService(ionosClient, logr.Discard())
+	require.NotNil(t, svc)
+	require.NoError(t, err)
+	require.Same(t, ionosClient, svc.ionosClient)
 }
 
-func (s *ServiceTestSuite) TestAPI() {
-	s.Equal(s.service.scope.ClusterScope.IonosClient, s.service.api())
+func TestNewServiceNilIONOSCloud(t *testing.T) {
+	svc, err := NewService(nil, logr.Discard())
+	require.Nil(t, svc)
+	require.Error(t, err)
 }
