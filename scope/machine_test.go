@@ -41,14 +41,14 @@ func exampleParams(t *testing.T) MachineParams {
 	}
 }
 
-func TestNewMachine_OK(t *testing.T) {
+func TestNewMachineOK(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NotNil(t, scope, "returned machine scope should not be nil")
 	require.NoError(t, err)
 	require.NotNil(t, scope.patchHelper, "returned scope should have a non-nil patchHelper")
 }
 
-func TestMachineParams_NilClientShouldFail(t *testing.T) {
+func TestMachineParamsNilClientShouldFail(t *testing.T) {
 	params := exampleParams(t)
 	params.Client = nil
 	scope, err := NewMachine(params)
@@ -56,7 +56,7 @@ func TestMachineParams_NilClientShouldFail(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestMachineParams_NilMachineShouldFail(t *testing.T) {
+func TestMachineParamsNilMachineShouldFail(t *testing.T) {
 	params := exampleParams(t)
 	params.Machine = nil
 	scope, err := NewMachine(params)
@@ -64,7 +64,7 @@ func TestMachineParams_NilMachineShouldFail(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestMachineParams_NilIonosMachineShouldFail(t *testing.T) {
+func TestMachineParamsNilIonosMachineShouldFail(t *testing.T) {
 	params := exampleParams(t)
 	params.IonosMachine = nil
 	scope, err := NewMachine(params)
@@ -72,7 +72,7 @@ func TestMachineParams_NilIonosMachineShouldFail(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestMachineParams_NilClusterScopeShouldFail(t *testing.T) {
+func TestMachineParamsNilClusterScopeShouldFail(t *testing.T) {
 	params := exampleParams(t)
 	params.ClusterScope = nil
 	scope, err := NewMachine(params)
@@ -80,14 +80,14 @@ func TestMachineParams_NilClusterScopeShouldFail(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestMachine_HasFailed_FailureMessage(t *testing.T) {
+func TestMachineHasFailedFailureMessage(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
 	scope.IonosMachine.Status.FailureMessage = ptr.To("¯\\_(ツ)_/¯")
 	require.True(t, scope.HasFailed())
 }
 
-func TestMachine_HasFailed_FailureReason(t *testing.T) {
+func TestMachineHasFailedFailureReason(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
 	scope.IonosMachine.Status.FailureReason = capierrors.MachineStatusErrorPtr("¯\\_(ツ)_/¯")

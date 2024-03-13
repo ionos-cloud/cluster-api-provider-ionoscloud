@@ -27,7 +27,7 @@ import (
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 )
 
-func TestNewCluster_MissingParams(t *testing.T) {
+func TestNewClusterMissingParams(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, infrav1.AddToScheme(scheme))
 	cl := fake.NewClientBuilder().WithScheme(scheme).Build()
