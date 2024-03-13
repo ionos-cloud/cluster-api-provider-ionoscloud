@@ -139,7 +139,6 @@ func (i *IonosCloudCluster) SetCurrentClusterRequest(method, status, requestPath
 		Method:      method,
 		RequestPath: requestPath,
 		State:       status,
-		Message:     nil,
 	}
 }
 

@@ -33,8 +33,4 @@ type ProvisioningRequest struct {
 	//+kubebuilder:validation:Enum=QUEUED;RUNNING;DONE;FAILED
 	//+optional
 	State string `json:"state,omitempty"`
-
-	// Message is the request message, which can also contain error information.
-	//+optional
-	Message *string `json:"message,omitempty"`
 }

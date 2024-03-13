@@ -293,7 +293,6 @@ func (m *IonosCloudMachine) SetCurrentRequest(method, status, requestPath string
 		Method:      method,
 		RequestPath: requestPath,
 		State:       status,
-		Message:     nil,
 	}
 }
 
