@@ -197,7 +197,7 @@ func (r *IonosCloudClusterReconciler) checkRequestStatus(
 		} else {
 			requeue, retErr = withStatus(status, message, &log,
 				func() error {
-					ionosCluster.Status.CurrentClusterRequest = nil
+					ionosCluster.DeleteCurrentClusterRequest()
 					return nil
 				},
 			)
