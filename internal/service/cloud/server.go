@@ -326,7 +326,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	bootVolume := sdk.Volume{
 		Properties: &sdk.VolumeProperties{
 			AvailabilityZone: ptr.To(machineSpec.Disk.AvailabilityZone.String()),
-			Name:             ptr.To(s.serverName(ms.IonosMachine)),
+			Name:             ptr.To(s.serverName(ms.IonosMachine) + "-volume"),
 			Size:             ptr.To(float32(machineSpec.Disk.SizeGB)),
 			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
 			UserData:         ptr.To(params.boostrapData),
@@ -351,7 +351,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 				Properties: &sdk.NicProperties{
 					Dhcp: ptr.To(true),
 					Lan:  &params.lanID,
-					Name: ptr.To(s.serverName(ms.IonosMachine)),
+					Name: ptr.To(s.serverName(ms.IonosMachine) + "-nic"),
 				},
 			},
 		},
