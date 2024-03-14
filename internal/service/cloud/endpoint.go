@@ -269,7 +269,7 @@ func (s *Service) getLatestIPBlockDeletionRequest(ctx context.Context, ipBlockID
 
 // ipBlockName returns the name that should be used for cluster context resources.
 func (s *Service) ipBlockName(cs *scope.Cluster) string {
-	return fmt.Sprintf("k8s-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
+	return fmt.Sprintf("k8s-ipb-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
 }
 
 func ignoreErrUserSetIPNotFound(err error) error {

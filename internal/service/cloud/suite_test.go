@@ -223,7 +223,7 @@ func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request 
 	return req
 }
 
-func defaultServer(serverName string, ips ...string) *sdk.Server {
+func (s *ServiceTestSuite) defaultServer(m *infrav1.IonosCloudMachine, ips ...string) *sdk.Server {
 	return &sdk.Server{
 		Id: ptr.To(exampleServerID),
 		Entities: &sdk.ServerEntities{
@@ -232,7 +232,7 @@ func defaultServer(serverName string, ips ...string) *sdk.Server {
 					Id: ptr.To(exampleNICID),
 					Properties: &sdk.NicProperties{
 						Dhcp: ptr.To(true),
-						Name: ptr.To(serverName),
+						Name: ptr.To(s.service.nicName(m)),
 						Ips:  &ips,
 					},
 				}},

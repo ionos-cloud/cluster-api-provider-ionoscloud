@@ -326,7 +326,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	bootVolume := sdk.Volume{
 		Properties: &sdk.VolumeProperties{
 			AvailabilityZone: ptr.To(machineSpec.Disk.AvailabilityZone.String()),
-			Name:             ptr.To(s.serverName(ms.IonosMachine)),
+			Name:             ptr.To(s.volumeName(ms.IonosMachine)),
 			Size:             ptr.To(float32(machineSpec.Disk.SizeGB)),
 			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
 			UserData:         ptr.To(params.boostrapData),
@@ -351,7 +351,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 				Properties: &sdk.NicProperties{
 					Dhcp: ptr.To(true),
 					Lan:  &params.lanID,
-					Name: ptr.To(s.serverName(ms.IonosMachine)),
+					Name: ptr.To(s.nicName(ms.IonosMachine)),
 				},
 			},
 		},
@@ -395,4 +395,8 @@ func (s *Service) serverName(m *infrav1.IonosCloudMachine) string {
 		"k8s-%s-%s",
 		m.Namespace,
 		m.Name)
+}
+
+func (s *Service) volumeName(m *infrav1.IonosCloudMachine) string {
+	return fmt.Sprintf("k8s-vol-%s-%s", m.Namespace, m.Name)
 }
