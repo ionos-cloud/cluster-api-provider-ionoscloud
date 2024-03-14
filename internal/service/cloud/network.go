@@ -332,7 +332,7 @@ func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine)
 
 	newNICID := ptr.Deref(nic.GetId(), "")
 	if newNICID == "" {
-		return false, nil
+		return false, errors.New("unable to find primary NIC on server, but it was expected")
 	}
 
 	// assign the updated NIC to the failover group
