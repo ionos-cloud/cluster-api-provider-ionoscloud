@@ -300,11 +300,11 @@ func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine)
 		return requeue, err
 	}
 
-	ipFailoverConfig := *failoverConfig
-	lanID := *lan.GetId()
+	ipFailoverConfig := ptr.Deref(failoverConfig, []sdk.IPFailover{})
+	lanID := ptr.Deref(lan.GetId(), unknownValue)
 
 	findFunc := func(failover sdk.IPFailover) bool {
-		return ptr.Deref(failover.GetNicUuid(), "undefined") == nicID
+		return ptr.Deref(failover.GetNicUuid(), unknownValue) == nicID
 	}
 
 	var index int
@@ -388,12 +388,12 @@ func (s *Service) reconcileIPFailoverGroup(
 		return requeue, err
 	}
 
-	ipFailoverConfig := *failoverConfig
-	lanID := *lan.GetId()
+	ipFailoverConfig := ptr.Deref(failoverConfig, []sdk.IPFailover{})
+	lanID := ptr.Deref(lan.GetId(), unknownValue)
 
 	for index, entry := range ipFailoverConfig {
-		nicUUID := ptr.Deref(entry.GetNicUuid(), "undefined")
-		ip := ptr.Deref(entry.GetIp(), "undefined")
+		nicUUID := ptr.Deref(entry.GetNicUuid(), unknownValue)
+		ip := ptr.Deref(entry.GetIp(), unknownValue)
 		if ip == endpointIP && nicUUID != nicID {
 			log.V(4).Info("Another NIC is already defined in this failover group. Skipping further actions")
 			return false, nil
@@ -444,7 +444,7 @@ func (s *Service) removeNICFromFailoverGroup(ctx context.Context, ms *scope.Mach
 	lanID := *lan.GetId()
 
 	findNICFunc := func(failover sdk.IPFailover) bool {
-		return ptr.Deref(failover.GetNicUuid(), "undefined") == nicID
+		return ptr.Deref(failover.GetNicUuid(), unknownValue) == nicID
 	}
 
 	var index int
