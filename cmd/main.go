@@ -24,6 +24,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/cluster-api/util/flags"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,16 +33,23 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/controller"
 	icc "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
 )
 
+const (
+	flagHealthProbeBindAddress = "health-probe-bind-address"
+	flagLeaderElection         = "leader-elect"
+)
+
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme               = runtime.NewScheme()
+	setupLog             = ctrl.Log.WithName("setup")
+	healthProbeAddr      string
+	enableLeaderElection bool
+	diagnosticOptions    = flags.DiagnosticsOptions{}
 )
 
 func init() {
@@ -54,23 +62,16 @@ func init() {
 
 func main() {
 	ctrl.SetLogger(klog.Background())
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	klog.InitFlags(nil)
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
 
+	klog.InitFlags(nil)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	pflag.Parse()
+	parseFlags()
+	flags.AddDiagnosticsOptions(pflag.CommandLine, &diagnosticOptions)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
-		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
-		HealthProbeBindAddress: probeAddr,
+		Metrics:                flags.GetDiagnosticsOptions(diagnosticOptions),
+		HealthProbeBindAddress: healthProbeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "15f3d3ca.cluster.x-k8s.io",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
@@ -131,4 +132,14 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+// parseFlags parses the command line flags.
+func parseFlags() {
+	pflag.StringVar(&healthProbeAddr, flagHealthProbeBindAddress, ":8081",
+		"The address the probe endpoint binds to.")
+	pflag.BoolVar(&enableLeaderElection, flagLeaderElection, false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+	pflag.Parse()
 }
