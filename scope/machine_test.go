@@ -17,9 +17,12 @@ limitations under the License.
 package scope
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -34,9 +37,11 @@ func exampleParams(t *testing.T) MachineParams {
 		require.NoError(t, err, "could not construct params")
 	}
 	return MachineParams{
-		Client:       fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
-		Machine:      &clusterv1.Machine{},
-		ClusterScope: &Cluster{},
+		Client:  fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
+		Machine: &clusterv1.Machine{},
+		ClusterScope: &Cluster{
+			Cluster: &clusterv1.Cluster{},
+		},
 		IonosMachine: &infrav1.IonosCloudMachine{},
 	}
 }
@@ -92,4 +97,91 @@ func TestMachineHasFailedFailureReason(t *testing.T) {
 	require.NoError(t, err)
 	scope.IonosMachine.Status.FailureReason = capierrors.MachineStatusErrorPtr("¯\\_(ツ)_/¯")
 	require.True(t, scope.HasFailed())
+}
+
+func TestMachineCountExistingMachines(t *testing.T) {
+	scope, err := NewMachine(exampleParams(t))
+	require.NoError(t, err)
+
+	scope.ClusterScope.Cluster.SetName("test-cluster")
+
+	count, err := scope.CountExistingMachines(context.Background(), false)
+	require.NoError(t, err)
+	require.Equal(t, 0, count)
+
+	cpLabels := map[string]string{
+		clusterv1.ClusterNameLabel:         scope.ClusterScope.Cluster.Name,
+		clusterv1.MachineControlPlaneLabel: "",
+	}
+
+	cpMachines := []string{"cp-test-1", "cp-test-2", "cp-test-3"}
+	for _, machine := range cpMachines {
+		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, cpLabels))
+		require.NoError(t, err)
+	}
+
+	workerLabels := map[string]string{
+		clusterv1.ClusterNameLabel: scope.ClusterScope.Cluster.Name,
+	}
+
+	workerMachines := []string{"worker-test-1", "worker-test-2", "worker-test-3"}
+	for _, machine := range workerMachines {
+		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, workerLabels))
+		require.NoError(t, err)
+	}
+
+	count, err = scope.CountExistingMachines(context.Background(), false)
+	require.NoError(t, err)
+	require.Equal(t, 6, count)
+
+	count, err = scope.CountExistingMachines(context.Background(), true)
+	require.NoError(t, err)
+	require.Equal(t, 3, count)
+}
+
+func TestMachineFindLatestControlPlaneMachine(t *testing.T) {
+	scope, err := NewMachine(exampleParams(t))
+	require.NoError(t, err)
+
+	scope.ClusterScope.Cluster.SetName("test-cluster")
+	scope.IonosMachine.SetName("cp-test-1")
+
+	latestMachine, err := scope.FindLatestControlPlaneMachine(context.Background())
+	require.NoError(t, err)
+	require.Nil(t, latestMachine)
+
+	cpLabels := map[string]string{
+		clusterv1.ClusterNameLabel:         scope.ClusterScope.Cluster.Name,
+		clusterv1.MachineControlPlaneLabel: "",
+	}
+
+	cpMachines := []string{"cp-test-1", "cp-test-2", "cp-test-3"}
+	for _, machine := range cpMachines {
+		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, cpLabels))
+		require.NoError(t, err)
+	}
+
+	latestMachine, err = scope.FindLatestControlPlaneMachine(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, latestMachine)
+	require.Equal(t, "cp-test-3", latestMachine.Name)
+
+	err = scope.client.Delete(context.Background(), latestMachine)
+	require.NoError(t, err)
+
+	latestMachine, err = scope.FindLatestControlPlaneMachine(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, latestMachine)
+	require.Equal(t, "cp-test-2", latestMachine.Name)
+}
+
+func createMachineWithLabels(name string, labels map[string]string) *infrav1.IonosCloudMachine {
+	return &infrav1.IonosCloudMachine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              name,
+			Namespace:         metav1.NamespaceDefault,
+			CreationTimestamp: metav1.NewTime(time.Now()),
+			Labels:            labels,
+		},
+	}
 }

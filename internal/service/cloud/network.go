@@ -330,16 +330,16 @@ func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine)
 		return false, err
 	}
 
-	newNIC := ptr.Deref(nic.GetId(), "")
-	if newNIC == "" {
+	newNICID := ptr.Deref(nic.GetId(), "")
+	if newNICID == "" {
 		return false, nil
 	}
 
 	// assign the updated NIC to the failover group
-	ipFailoverConfig[index].NicUuid = &newNIC
+	ipFailoverConfig[index].NicUuid = &newNICID
 	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
 
-	log.V(4).Info("Updating failover group with new NIC", "oldNIC", nicID, "newNIC", newNIC)
+	log.V(4).Info("Updating failover group with new NIC", "oldNIC", nicID, "newNIC", newNICID)
 	return true, s.patchLAN(ctx, ms, lanID, props)
 }
 

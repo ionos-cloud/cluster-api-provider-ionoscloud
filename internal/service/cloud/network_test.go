@@ -460,11 +460,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionPrimaryNICNotFound() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: ""})
 	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 
-	labels := s.machineScope.IonosMachine.GetLabels()
-	labels[clusterv1.MachineControlPlaneLabel] = ""
-	s.machineScope.IonosMachine.SetLabels(labels)
-
-	err := s.k8sClient.Update(s.ctx, s.machineScope.IonosMachine)
+	err := setControlPlaneLabel(s.ctx, s.k8sClient, s.machineScope.IonosMachine)
 	s.NoError(err)
 
 	testServer := &sdk.Server{
