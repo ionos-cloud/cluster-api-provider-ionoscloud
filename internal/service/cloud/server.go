@@ -155,22 +155,21 @@ func (s *Service) isServerAvailable(server *sdk.Server) bool {
 	return true
 }
 
-// getServerByProviderID checks if the IonosCloudMachine has a provider ID set.
+// getServerByServerID checks if the IonosCloudMachine has a provider ID set.
 // If it does, it will attempt to extract the server ID from the provider ID and
 // query for the server in the cloud.
-func (s *Service) getServerByProviderID(ctx context.Context, ms *scope.Machine) (*sdk.Server, error) {
+func (s *Service) getServerByServerID(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error) {
 	// first we check if the provider ID is set
-	if !ptr.IsNilOrZero(ms.IonosMachine.Spec.ProviderID) {
-		serverID := ms.IonosMachine.ExtractServerID()
+	if serverID != "" {
 		// we expect the server ID to be a valid UUID
 		if err := uuid.Validate(serverID); err != nil {
 			return nil, fmt.Errorf("invalid server ID %s: %w", serverID, err)
 		}
 
 		depth := int32(2) // for getting the server and its NICs' properties
-		server, err := s.apiWithDepth(depth).GetServer(ctx, ms.DatacenterID(), serverID)
+		server, err := s.apiWithDepth(depth).GetServer(ctx, datacenterID, serverID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, ms.DatacenterID(), err)
+			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, datacenterID, err)
 		}
 
 		// if the server was found, we return it
@@ -184,7 +183,7 @@ func (s *Service) getServerByProviderID(ctx context.Context, ms *scope.Machine) 
 }
 
 func (s *Service) getServer(ctx context.Context, ms *scope.Machine) (*sdk.Server, error) {
-	server, err := s.getServerByProviderID(ctx, ms)
+	server, err := s.getServerByServerID(ctx, ms.DatacenterID(), ms.IonosMachine.ExtractServerID())
 	// if the server was not found, we try to find it by listing all servers.
 	if server != nil || ignoreNotFound(err) != nil {
 		return server, err
