@@ -110,10 +110,14 @@ func (m *Machine) DatacenterID() string {
 	return m.IonosMachine.Spec.DatacenterID
 }
 
+// SetProviderID sets the provider ID for the IonosCloudMachine.
 func (m *Machine) SetProviderID(id string) {
 	m.IonosMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ionos://%s", id))
 }
 
+// CountExistingMachines returns the number of existing IonosCloudMachines in the same namespace
+// and with the same cluster label. If ignoreWorkers is set to true, only control plane machines
+// will be counted.
 func (m *Machine) CountExistingMachines(ctx context.Context, ignoreWorkers bool) (int, error) {
 	matchLabels := client.MatchingLabels{
 		clusterv1.ClusterNameLabel: m.ClusterScope.Cluster.Name,
@@ -131,6 +135,11 @@ func (m *Machine) CountExistingMachines(ctx context.Context, ignoreWorkers bool)
 	return len(machineList.Items), nil
 }
 
+// FindLatestControlPlaneMachine returns the latest control plane IonosCloudMachine in the same namespace
+// and with the same cluster label. If no control plane machine is found, nil is returned.
+//
+// If there are zero or one control plane machines, the function will return nil,
+// otherwise the machine with the latest creation timestamp will be returned.
 func (m *Machine) FindLatestControlPlaneMachine(ctx context.Context) (*infrav1.IonosCloudMachine, error) {
 	matchLabels := client.MatchingLabels{
 		clusterv1.ClusterNameLabel:         m.ClusterScope.Cluster.Name,

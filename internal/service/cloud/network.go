@@ -257,6 +257,11 @@ func (s *Service) ReconcileIPFailover(ctx context.Context, ms *scope.Machine) (r
 	return s.reconcileIPFailoverGroup(ctx, ms, nicID, endpointIP)
 }
 
+// ReconcileIPFailoverDeletion ensures the proper deletion of the IPFailover configuration.
+// If the machine is the last control plane machine, the entry in the IPFailover group will be removed.
+//
+// If the machine is the primary in the failover group, the NIC will be swapped with another machine,
+// otherwise the machine cannot be deleted, which is relevant for upgrading or downgrading the cluster.
 func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileIPFailoverDeletion")
 

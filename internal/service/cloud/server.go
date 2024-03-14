@@ -132,6 +132,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 	return err == nil, err
 }
 
+// FinalizeMachineProvisioning marks the machine as provisioned.
 func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
 	ms.IonosMachine.Status.Ready = true
 	conditions.MarkTrue(ms.IonosMachine, infrav1.MachineProvisionedCondition)
