@@ -298,11 +298,12 @@ func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine)
 	ipFailoverConfig := *failoverConfig
 	lanID := *lan.GetId()
 
-	index := slices.IndexFunc(ipFailoverConfig, func(failover sdk.IPFailover) bool {
+	findFunc := func(failover sdk.IPFailover) bool {
 		return ptr.Deref(failover.GetNicUuid(), "undefined") == nicID
-	})
+	}
 
-	if index < 0 {
+	var index int
+	if index = slices.IndexFunc(ipFailoverConfig, findFunc); index < 0 {
 		log.V(4).Info("NIC not found in failover group. No action required.")
 		return false, nil
 	}
@@ -437,11 +438,12 @@ func (s *Service) removeNICFromFailoverGroup(ctx context.Context, ms *scope.Mach
 	ipFailoverConfig := *failoverConfig
 	lanID := *lan.GetId()
 
-	index := slices.IndexFunc(ipFailoverConfig, func(failover sdk.IPFailover) bool {
+	findNICFunc := func(failover sdk.IPFailover) bool {
 		return ptr.Deref(failover.GetNicUuid(), "undefined") == nicID
-	})
+	}
 
-	if index < 0 {
+	var index int
+	if index = slices.IndexFunc(ipFailoverConfig, findNICFunc); index < 0 {
 		log.V(4).Info("NIC not found in failover group. No action required.")
 		return false, nil
 	}

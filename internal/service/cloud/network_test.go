@@ -376,14 +376,9 @@ func (s *lanSuite) TestReconcileIPFailoverDeletion() {
 	}
 
 	s.mockPatchLANCall(props).Return(exampleRequestPath, nil).Once()
-
-	requeue, err := s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope)
-
-	s.NoError(err)
-	s.True(requeue)
-	s.Equal(exampleRequestPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
-	s.Equal(http.MethodPatch, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
-	s.Equal(sdk.RequestStatusQueued, s.machineScope.IonosMachine.Status.CurrentRequest.State)
+	s.assertSuccessfulDeletion(
+		s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope),
+	)
 }
 
 func (s *lanSuite) TestReconcileIPFailoverDeletionSwitchNIC() {
@@ -432,8 +427,12 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionSwitchNIC() {
 	}
 
 	s.mockPatchLANCall(props).Return(exampleRequestPath, nil).Once()
-	requeue, err := s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope)
+	s.assertSuccessfulDeletion(
+		s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope),
+	)
+}
 
+func (s *lanSuite) assertSuccessfulDeletion(requeue bool, err error) {
 	s.NoError(err)
 	s.True(requeue)
 	s.Equal(exampleRequestPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
