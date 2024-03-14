@@ -29,7 +29,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/ionos-cloud/cluster-api-provider-ionos-cloud
+          images: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud
 
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
