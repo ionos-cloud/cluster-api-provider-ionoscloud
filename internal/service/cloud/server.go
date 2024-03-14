@@ -160,27 +160,22 @@ func (s *Service) isServerAvailable(server *sdk.Server) bool {
 // If it does, it will attempt to extract the server ID from the provider ID and
 // query for the server in the cloud.
 func (s *Service) getServerByServerID(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error) {
-	// first we check if the provider ID is set
-	if serverID != "" {
-		// we expect the server ID to be a valid UUID
-		if err := uuid.Validate(serverID); err != nil {
-			return nil, fmt.Errorf("invalid server ID %s: %w", serverID, err)
-		}
-
-		depth := int32(2) // for getting the server and its NICs' properties
-		server, err := s.apiWithDepth(depth).GetServer(ctx, datacenterID, serverID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, datacenterID, err)
-		}
-
-		// if the server was found, we return it
-		if server != nil {
-			return server, nil
-		}
+	if serverID == "" {
+		return nil, nil
 	}
 
-	// couldn't find a server
-	return nil, nil
+	// we expect the server ID to be a valid UUID
+	if err := uuid.Validate(serverID); err != nil {
+		return nil, fmt.Errorf("invalid server ID %s: %w", serverID, err)
+	}
+
+	depth := int32(2) // for getting the server and its NICs' properties
+	server, err := s.apiWithDepth(depth).GetServer(ctx, datacenterID, serverID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get server %s in data center %s: %w", serverID, datacenterID, err)
+	}
+
+	return server, nil
 }
 
 func (s *Service) getServer(ctx context.Context, ms *scope.Machine) (*sdk.Server, error) {
