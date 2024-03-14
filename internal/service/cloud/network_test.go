@@ -196,7 +196,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
 	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 
-	testServer := defaultServer(s.service.serverName(s.infraMachine), exampleDHCPIP, exampleEndpointIP)
+	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
@@ -224,7 +224,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
 	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 
-	testServer := defaultServer(s.service.serverName(s.infraMachine), exampleDHCPIP, exampleEndpointIP)
+	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
 	testLAN := s.exampleLAN()
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
 		Ip:      ptr.To(exampleEndpointIP),
@@ -245,7 +245,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
 	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 
-	testServer := defaultServer(s.service.serverName(s.infraMachine), exampleDHCPIP, exampleEndpointIP)
+	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
 	testLAN := s.exampleLAN()
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
@@ -305,7 +305,7 @@ func (s *lanSuite) TestReconcileIPFailoverAnotherNICInFailoverGroup() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
 	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 
-	testServer := defaultServer(s.service.serverName(s.infraMachine), exampleDHCPIP, exampleEndpointIP)
+	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
 	testLAN := s.exampleLAN()
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
@@ -339,7 +339,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletion() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
 	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 
-	testServer := defaultServer(s.service.serverName(s.infraMachine), exampleDHCPIP, exampleEndpointIP)
+	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
 	testLAN := s.exampleLAN()
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{

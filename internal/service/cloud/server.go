@@ -351,7 +351,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 				Properties: &sdk.NicProperties{
 					Dhcp: ptr.To(true),
 					Lan:  &params.lanID,
-					Name: ptr.To(s.serverName(ms.IonosMachine)),
+					Name: ptr.To(s.primaryNICName(ms.IonosMachine)),
 				},
 			},
 		},
@@ -397,6 +397,10 @@ func (s *Service) serverName(m *infrav1.IonosCloudMachine) string {
 		m.Name)
 }
 
-func (*Service) bootVolumeName(m *infrav1.IonosCloudMachine) string {
+func (s *Service) bootVolumeName(m *infrav1.IonosCloudMachine) string {
 	return fmt.Sprintf("k8s-%s-%s-boot-volume", m.Namespace, m.Name)
+}
+
+func (s *Service) primaryNICName(m *infrav1.IonosCloudMachine) string {
+	return fmt.Sprintf("k8s-%s-%s-primary-nic", m.Namespace, m.Name)
 }
