@@ -158,7 +158,7 @@ func (m *Machine) FindLatestControlPlaneMachine(ctx context.Context) (*infrav1.I
 
 	latestMachine := machineList.Items[0]
 	for _, machine := range machineList.Items {
-		if (machine.CreationTimestamp.Compare(latestMachine.CreationTimestamp.Time) >= 0) && machine.Name != m.IonosMachine.Name {
+		if !machine.CreationTimestamp.Before(&latestMachine.CreationTimestamp) && machine.Name != m.IonosMachine.Name {
 			latestMachine = machine
 		}
 	}
