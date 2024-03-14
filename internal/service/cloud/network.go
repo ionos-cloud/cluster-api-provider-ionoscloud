@@ -281,7 +281,7 @@ func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Mac
 		return s.ensureFailoverDeletion(ctx, ms)
 	case count > 1:
 		// if the server NIC matches the NIC on the failover group, we need
-		// to select another service to be the primary.
+		// to select another server to be the primary.
 		return s.swapNICInFailoverGroup(ctx, ms)
 	default:
 		return false, nil
@@ -313,6 +313,8 @@ func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine)
 		return false, nil
 	}
 
+	// get the latest control plane machine, which is not the current one
+	// in the scope, to swap the NIC UUID in the failover group.
 	machine, err := ms.FindLatestControlPlaneMachine(ctx)
 	if err != nil || machine == nil {
 		return false, err
