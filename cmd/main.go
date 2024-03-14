@@ -62,11 +62,8 @@ func init() {
 
 func main() {
 	ctrl.SetLogger(klog.Background())
-
-	klog.InitFlags(nil)
-	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	parseFlags()
-	flags.AddDiagnosticsOptions(pflag.CommandLine, &diagnosticOptions)
+	setFlags()
+	pflag.Parse()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -134,12 +131,14 @@ func main() {
 	}
 }
 
-// parseFlags parses the command line flags.
-func parseFlags() {
+// setFlags parses the command line flags.
+func setFlags() {
+	klog.InitFlags(nil)
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	flags.AddDiagnosticsOptions(pflag.CommandLine, &diagnosticOptions)
 	pflag.StringVar(&healthProbeAddr, flagHealthProbeBindAddress, ":8081",
 		"The address the probe endpoint binds to.")
 	pflag.BoolVar(&enableLeaderElection, flagLeaderElection, false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	pflag.Parse()
 }
