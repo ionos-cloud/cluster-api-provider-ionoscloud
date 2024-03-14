@@ -197,7 +197,7 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANDoesNotExist() {
 }
 
 func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
-	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
+	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: ""})
 	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
@@ -225,7 +225,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 }
 
 func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
-	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
+	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: ""})
 	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
@@ -246,7 +246,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
 }
 
 func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
-	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: "true"})
+	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: ""})
 	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
