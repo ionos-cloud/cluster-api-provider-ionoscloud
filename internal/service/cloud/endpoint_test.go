@@ -38,7 +38,7 @@ func TestEndpointTestSuite(t *testing.T) {
 }
 
 const (
-	exampleIPBlockName = "k8s-default-test-cluster-ipblock"
+	exampleIPBlockName = "k8s-ipb-default-test-cluster"
 )
 
 func (s *EndpointTestSuite) TestGetIPBlockFuncMultipleMatches() {

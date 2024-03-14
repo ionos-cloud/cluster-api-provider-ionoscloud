@@ -232,7 +232,7 @@ func (s *ServiceTestSuite) defaultServer(m *infrav1.IonosCloudMachine, ips ...st
 					Id: ptr.To(exampleNICID),
 					Properties: &sdk.NicProperties{
 						Dhcp: ptr.To(true),
-						Name: ptr.To(s.service.primaryNICName(m)),
+						Name: ptr.To(s.service.nicName(m)),
 						Ips:  &ips,
 					},
 				}},
