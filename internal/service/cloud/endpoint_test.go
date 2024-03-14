@@ -38,7 +38,7 @@ func TestEndpointTestSuite(t *testing.T) {
 }
 
 const (
-	exampleName = "k8s-default-test-cluster"
+	exampleIPBlockName = "k8s-default-test-cluster-ipblock"
 )
 
 func (s *EndpointTestSuite) TestGetIPBlockFuncMultipleMatches() {
@@ -60,7 +60,7 @@ func (s *EndpointTestSuite) TestGetIPBlockFuncSingleMatch() {
 			*exampleIPBlock(),
 			{
 				Properties: &sdk.IpBlockProperties{
-					Name:     ptr.To(exampleName),
+					Name:     ptr.To(exampleIPBlockName),
 					Location: ptr.To("es/vit"),
 				},
 			},
@@ -70,7 +70,7 @@ func (s *EndpointTestSuite) TestGetIPBlockFuncSingleMatch() {
 	block, err := s.service.getIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
 	s.NotNil(block)
-	s.Equal(exampleName, *block.Properties.Name, "IP block name does not match")
+	s.Equal(exampleIPBlockName, *block.Properties.Name, "IP block name does not match")
 	s.Equal(exampleLocation, *block.Properties.Location, "IP block location does not match")
 	s.Equal(sdk.Available, *block.Metadata.State, "IP block state does not match")
 }
@@ -143,7 +143,7 @@ func (s *EndpointTestSuite) TestGetIPBlockNoMatch() {
 		Items: &[]sdk.IpBlock{
 			{
 				Properties: &sdk.IpBlockProperties{
-					Name:     ptr.To(exampleName),
+					Name:     ptr.To(exampleIPBlockName),
 					Location: ptr.To("de/fra"),
 				},
 			},
@@ -403,7 +403,7 @@ func exampleIPBlock() *sdk.IpBlock {
 			State: ptr.To(sdk.Available),
 		},
 		Properties: &sdk.IpBlockProperties{
-			Name:     ptr.To(exampleName),
+			Name:     ptr.To(exampleIPBlockName),
 			Location: ptr.To(exampleLocation),
 			Ips: &[]string{
 				exampleEndpointIP,
