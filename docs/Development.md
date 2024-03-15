@@ -187,12 +187,12 @@ kind create cluster --name capi-test
   Copy `../cluster-api-provider-ionoscloud/envfile.example` to `../cluster-api-provider-ionoscloud/envfile` and make changes pertaining to your configuration.
   For documentation on environment variables, see [usage](Usage.md#environment-variables)
 
-- If you already had a kind cluster, add this line to `../cluster-api-provider-ionoscloud/envfile`:
+- If you already have a kind cluster with a name that is different to `kind-capi-test`, add this line to `../cluster-api-provider-ionoscloud/envfile`:
 ```
 export CAPI_KIND_CLUSTER_NAME=<yourclustername>
 ```
 
-- Start tilt with the following command (with CWD still being ./cluster-api):
+- Start Tilt with the following command (with CWD still being ./cluster-api):
 ```
 . ../cluster-api-provider-ionoscloud/envfile && tilt up
 ```
