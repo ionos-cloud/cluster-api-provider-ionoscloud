@@ -165,7 +165,7 @@ More information can be found via the [Kubebuilder Documentation](https://book.k
 ```json
 {
   "default_registry": "ghcr.io/ionos-cloud",
-  "provider_repos": ["../cluster-api-provider-ionoscloud/", "../cluster-api-ipam-provider-in-cluster/"],
+  "provider_repos": ["../cluster-api-provider-ionoscloud/"],
   "enable_providers": ["ionoscloud", "kubeadm-bootstrap", "kubeadm-control-plane"],
   "allowed_contexts": ["minikube"],
   "kustomize_substitutions": {},
@@ -189,7 +189,7 @@ kind create cluster --name capi-test
 
 - If you already had a kind cluster, add this line to `../cluster-api-provider-ionoscloud/envfile`:
 ```
-CAPI_KIND_CLUSTER_NAME=<yourclustername>
+export CAPI_KIND_CLUSTER_NAME=<yourclustername>
 ```
 
 - Start tilt with the following command (with CWD still being ./cluster-api):
