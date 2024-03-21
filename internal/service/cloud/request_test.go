@@ -162,7 +162,7 @@ func (s *getMatchingRequestSuite) TestMatching() {
 	// req3 doesn't fulfill the matcher function
 	req3 := s.examplePostRequest("req3", sdk.RequestStatusQueued)
 	renamed := strings.Replace(*req3.Properties.Body, s.service.lanName(s.clusterScope.Cluster), "wrongName", 1)
-	req3.Properties.Body = ptr.To(renamed)
+	req3.Properties.Body = &renamed
 
 	// req4 is the one we want to find
 	req4 := s.examplePostRequest("req4", sdk.RequestStatusFailed)

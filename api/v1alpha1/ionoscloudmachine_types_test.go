@@ -92,7 +92,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 			DescribeTable("tests for extraction of provider IDs", func(providerID, want string) {
 				m := defaultMachine()
-				m.Spec.ProviderID = ptr.To(providerID)
+				m.Spec.ProviderID = &providerID
 				Expect(m.ExtractServerID()).To(Equal(want))
 			},
 				Entry("valid ID", "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
