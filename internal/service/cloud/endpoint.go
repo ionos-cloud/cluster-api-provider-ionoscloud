@@ -160,13 +160,13 @@ func (s *Service) getIPBlock(ctx context.Context, cs *scope.Cluster) (*sdk.IpBlo
 			continue
 		case ptr.Deref(props.GetName(), "") == expectedName:
 			count++
-			foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block) //nolint:gosec
+			foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block)
 			if err != nil {
 				return nil, err
 			}
 		case s.checkIfUserSetBlock(cs, props):
 			// NOTE: this is for when customers set IPs for the control plane endpoint themselves.
-			foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block) //nolint:gosec
+			foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block)
 			if err != nil {
 				return nil, err
 			}
