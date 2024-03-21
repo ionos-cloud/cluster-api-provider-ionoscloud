@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -36,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
@@ -61,17 +61,11 @@ type IonosCloudClusterReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.0/pkg/reconcile
-func (r *IonosCloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, retErr error) {
+func (r *IonosCloudClusterReconciler) Reconcile(
+	ctx context.Context,
+	ionosCloudCluster *infrav1.IonosCloudCluster,
+) (_ ctrl.Result, retErr error) {
 	logger := ctrl.LoggerFrom(ctx)
-
-	ionosCloudCluster := &infrav1.IonosCloudCluster{}
-	if err := r.Client.Get(ctx, req.NamespacedName, ionosCloudCluster); err != nil {
-		if apierrors.IsNotFound(err) {
-			return ctrl.Result{}, nil
-		}
-
-		return ctrl.Result{}, err
-	}
 
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, ionosCloudCluster.ObjectMeta)
 	if err != nil {
@@ -216,5 +210,5 @@ func (r *IonosCloudClusterReconciler) SetupWithManager(ctx context.Context, mgr 
 				util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.IonosCloudClusterKind), r.Client, &infrav1.IonosCloudCluster{})),
 			builder.WithPredicates(predicates.ClusterUnpaused(ctrl.LoggerFrom(ctx))),
 		).
-		Complete(r)
+		Complete(reconcile.AsReconciler[*infrav1.IonosCloudCluster](r.Client, r))
 }

@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
@@ -62,16 +63,11 @@ type IonosCloudMachineReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.0/pkg/reconcile
-func (r *IonosCloudMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, retErr error) {
+func (r *IonosCloudMachineReconciler) Reconcile(
+	ctx context.Context,
+	ionosCloudMachine *infrav1.IonosCloudMachine,
+) (_ ctrl.Result, retErr error) {
 	logger := ctrl.LoggerFrom(ctx)
-
-	ionosCloudMachine := &infrav1.IonosCloudMachine{}
-	if err := r.Client.Get(ctx, req.NamespacedName, ionosCloudMachine); err != nil {
-		if apierrors.IsNotFound(err) {
-			return ctrl.Result{}, nil
-		}
-		return ctrl.Result{}, err
-	}
 
 	// Fetch the Machine.
 	machine, err := util.GetOwnerMachine(ctx, r.Client, ionosCloudMachine.ObjectMeta)
@@ -321,7 +317,7 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(
 			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind(infrav1.IonosCloudMachineType)))).
-		Complete(r)
+		Complete(reconcile.AsReconciler[*infrav1.IonosCloudMachine](r.Client, r))
 }
 
 func (r *IonosCloudMachineReconciler) getClusterScope(
