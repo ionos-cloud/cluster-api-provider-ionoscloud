@@ -140,7 +140,6 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 
 	for _, l := range *lans.Items {
 		if l.Properties.HasName() && *l.Properties.Name == expectedName {
-			l := l
 			foundLAN = &l
 			lanCount++
 		}

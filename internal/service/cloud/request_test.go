@@ -282,7 +282,6 @@ func (s *findResourceSuite) TestIgnoreNotFound() {
 	}}
 
 	for _, tt := range tests {
-		tt := tt
 		s.Run(tt.name, func() {
 			listCalls := 0
 			resource, gotRequest, err := findResource(
