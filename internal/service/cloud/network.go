@@ -257,6 +257,11 @@ func (s *Service) ReconcileIPFailover(ctx context.Context, ms *scope.Machine) (r
 	return s.reconcileIPFailoverGroup(ctx, ms, nicID, endpointIP)
 }
 
+// ReconcileIPFailoverDeletion ensures the proper deletion of the IPFailover configuration.
+// If the machine is the last control plane machine, the entry in the IPFailover group will be removed.
+//
+// If the machine is the primary in the failover group, the NIC will be swapped with another machine,
+// otherwise the machine cannot be deleted, which is relevant for upgrading or downgrading the cluster.
 func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileIPFailoverDeletion")
 
@@ -265,24 +270,107 @@ func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Mac
 		return false, nil
 	}
 
+	count, err := ms.CountExistingMachines(ctx, true)
+
+	switch {
+	case err != nil:
+		return false, err
+	case count == 1:
+		// this function should only be invoked, when this is the last machine,
+		// which has to be deleted
+		return s.ensureFailoverDeletion(ctx, ms)
+	case count > 1:
+		// if the server NIC matches the NIC on the failover group, we need
+		// to select another server to be the primary.
+		return s.swapNICInFailoverGroup(ctx, ms)
+	default:
+		return false, nil
+	}
+}
+
+func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
+	log := s.logger.WithName("swapNICInFailoverGroup")
+	nicID, err := s.getServerNICID(ctx, ms)
+	if err != nil {
+		return false, err
+	}
+
+	lan, failoverConfig := &sdk.Lan{}, &[]sdk.IPFailover{}
+	if requeue, err := s.retrieveLANFailoverConfig(ctx, ms, lan, failoverConfig); err != nil || requeue {
+		return requeue, err
+	}
+
+	ipFailoverConfig := ptr.Deref(failoverConfig, []sdk.IPFailover{})
+	lanID := ptr.Deref(lan.GetId(), unknownValue)
+
+	findFunc := func(failover sdk.IPFailover) bool {
+		return ptr.Deref(failover.GetNicUuid(), unknownValue) == nicID
+	}
+
+	var index int
+	if index = slices.IndexFunc(ipFailoverConfig, findFunc); index < 0 {
+		log.V(4).Info("NIC not found in failover group. No action required.")
+		return false, nil
+	}
+
+	// get the latest control plane machine, which is not the current one
+	// in the scope, to swap the NIC UUID in the failover group.
+	machine, err := ms.FindLatestControlPlaneMachine(ctx)
+	if err != nil || machine == nil {
+		return false, err
+	}
+
+	server, err := s.getServerByServerID(ctx, ms.DatacenterID(), machine.ExtractServerID())
+	if err != nil {
+		return false, err
+	}
+
+	nic, err := s.findPrimaryNIC(machine, server)
+	if err != nil {
+		return false, err
+	}
+
+	newNICID := ptr.Deref(nic.GetId(), "")
+	if newNICID == "" {
+		return false, errors.New("unable to find primary NIC on server, but it was expected")
+	}
+
+	// assign the updated NIC to the failover group
+	ipFailoverConfig[index].NicUuid = &newNICID
+	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
+
+	log.V(4).Info("Updating failover group with new NIC", "oldNICID", nicID, "newNICID", newNICID)
+	return true, s.patchLAN(ctx, ms, lanID, props)
+}
+
+func (s *Service) ensureFailoverDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
+	nicID, err := s.getServerNICID(ctx, ms)
+	if err != nil || nicID == "" {
+		return false, err
+	}
+
+	return s.removeNICFromFailoverGroup(ctx, ms, nicID)
+}
+
+func (s *Service) getServerNICID(ctx context.Context, ms *scope.Machine) (string, error) {
+	log := s.logger.WithName("getServerNICID")
 	server, err := s.getServer(ctx, ms)
 	if err != nil {
 		if isNotFound(err) {
 			log.Info("Server was not found or already deleted.")
-			return false, nil
+			return "", nil
 		}
 		log.Error(err, "Unable to retrieve server")
-		return false, err
+		return "", err
 	}
 
-	nic, err := s.findPrimaryNIC(ms, server)
+	nic, err := s.findPrimaryNIC(ms.IonosMachine, server)
 	if err != nil {
 		log.Error(err, "Unable to find primary NIC on server")
-		return false, nil
+		return "", nil
 	}
 
-	nicID := ptr.Deref(nic.GetId(), "")
-	return s.removeNICFromFailoverGroup(ctx, ms, nicID)
+	return ptr.Deref(nic.GetId(), ""), nil
 }
 
 // reconcileIPFailoverGroup ensures that the public LAN has a failover group with the NIC for this machine and
@@ -302,12 +390,12 @@ func (s *Service) reconcileIPFailoverGroup(
 		return requeue, err
 	}
 
-	ipFailoverConfig := *failoverConfig
-	lanID := *lan.GetId()
+	ipFailoverConfig := ptr.Deref(failoverConfig, []sdk.IPFailover{})
+	lanID := ptr.Deref(lan.GetId(), unknownValue)
 
 	for index, entry := range ipFailoverConfig {
-		nicUUID := ptr.Deref(entry.GetNicUuid(), "undefined")
-		ip := ptr.Deref(entry.GetIp(), "undefined")
+		nicUUID := ptr.Deref(entry.GetNicUuid(), unknownValue)
+		ip := ptr.Deref(entry.GetIp(), unknownValue)
 		if ip == endpointIP && nicUUID != nicID {
 			log.V(4).Info("Another NIC is already defined in this failover group. Skipping further actions")
 			return false, nil
@@ -357,11 +445,12 @@ func (s *Service) removeNICFromFailoverGroup(ctx context.Context, ms *scope.Mach
 	ipFailoverConfig := *failoverConfig
 	lanID := *lan.GetId()
 
-	index := slices.IndexFunc(ipFailoverConfig, func(failover sdk.IPFailover) bool {
-		return ptr.Deref(failover.GetNicUuid(), "undefined") == nicID
-	})
+	findNICFunc := func(failover sdk.IPFailover) bool {
+		return ptr.Deref(failover.GetNicUuid(), unknownValue) == nicID
+	}
 
-	if index < 0 {
+	var index int
+	if index = slices.IndexFunc(ipFailoverConfig, findNICFunc); index < 0 {
 		log.V(4).Info("NIC not found in failover group. No action required.")
 		return false, nil
 	}

@@ -16,10 +16,6 @@ limitations under the License.
 
 package v1alpha1
 
-const (
-	ManagedLANAnnotation = "cloud.ionos.com/managed-lan"
-)
-
 // ProvisioningRequest is a definition of a provisioning request
 // in the IONOS Cloud.
 type ProvisioningRequest struct {

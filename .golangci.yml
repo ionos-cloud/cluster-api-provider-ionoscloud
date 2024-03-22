@@ -38,6 +38,8 @@ linters:
 linters-settings:
   revive:
     rules:
+      - name: "exported"
+        severity: "warning"
       - name: "var-naming"
         arguments:
         - [] # first list is an allow list. All initialisms placed here will be ignored

@@ -46,7 +46,7 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, end
 	}
 
 	// Find the primary NIC and ensure that the endpoint IP address is added to the NIC.
-	nic, err := s.findPrimaryNIC(ms, server)
+	nic, err := s.findPrimaryNIC(ms.IonosMachine, server)
 	if err != nil {
 		return nil, err
 	}
@@ -91,14 +91,14 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, end
 	return nic, nil
 }
 
-func (s *Service) findPrimaryNIC(ms *scope.Machine, server *sdk.Server) (*sdk.Nic, error) {
+func (s *Service) findPrimaryNIC(m *infrav1.IonosCloudMachine, server *sdk.Server) (*sdk.Nic, error) {
 	serverNICs := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
 	for _, nic := range serverNICs {
-		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name == s.nicName(ms.IonosMachine) {
+		if name := ptr.Deref(nic.GetProperties().GetName(), ""); name == s.nicName(m) {
 			return &nic, nil
 		}
 	}
-	return nil, fmt.Errorf("could not find primary NIC with name %s", s.nicName(ms.IonosMachine))
+	return nil, fmt.Errorf("could not find primary NIC with name %s", s.nicName(m))
 }
 
 func (s *Service) patchNIC(ctx context.Context, ms *scope.Machine, serverID string, nic *sdk.Nic, props sdk.NicProperties) error {

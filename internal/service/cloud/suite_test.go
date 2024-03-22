@@ -51,17 +51,20 @@ const (
 	exampleUnexpectedIP = "203.0.113.10"
 	// Used to test cases where a LAN already contains configurations with other IP addresses
 	// to ensure that the service does not overwrite them.
-	exampleArbitraryIP = "203.0.113.11"
-	exampleDHCPIP      = "192.0.2.2"
+	exampleArbitraryIP     = "203.0.113.11"
+	exampleDHCPIP          = "192.0.2.2"
+	exampleSecondaryDHCPIP = "192.0.2.3"
 )
 
 const (
-	exampleLANID       = "42"
-	exampleNICID       = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3e"
-	exampleIPBlockID   = "f882d597-4ee2-4b89-b01a-cbecd0f513d8"
-	exampleServerID    = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
-	exampleRequestPath = "/test"
-	exampleLocation    = "de/txl"
+	exampleLANID             = "42"
+	exampleNICID             = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3e"
+	exampleSecondaryNICID    = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3d"
+	exampleIPBlockID         = "f882d597-4ee2-4b89-b01a-cbecd0f513d8"
+	exampleServerID          = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"
+	exampleSecondaryServerID = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebd"
+	exampleRequestPath       = "/test"
+	exampleLocation          = "de/txl"
 )
 
 type ServiceTestSuite struct {
@@ -105,6 +108,9 @@ func (s *ServiceTestSuite) SetupTest() {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: metav1.NamespaceDefault,
 			Name:      s.capiCluster.Name,
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: s.capiCluster.Name,
+			},
 		},
 		Spec: infrav1.IonosCloudClusterSpec{
 			ContractNumber: "12345678",
@@ -116,6 +122,9 @@ func (s *ServiceTestSuite) SetupTest() {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: metav1.NamespaceDefault,
 			Name:      "test-machine",
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: s.capiCluster.Name,
+			},
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: s.capiCluster.Name,
@@ -127,6 +136,9 @@ func (s *ServiceTestSuite) SetupTest() {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: metav1.NamespaceDefault,
 			Name:      "test-machine",
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: s.capiCluster.Name,
+			},
 		},
 		Spec: infrav1.IonosCloudMachineSpec{
 			ProviderID:       ptr.To("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),

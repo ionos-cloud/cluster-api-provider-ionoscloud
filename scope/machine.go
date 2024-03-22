@@ -110,8 +110,59 @@ func (m *Machine) DatacenterID() string {
 	return m.IonosMachine.Spec.DatacenterID
 }
 
+// SetProviderID sets the provider ID for the IonosCloudMachine.
 func (m *Machine) SetProviderID(id string) {
 	m.IonosMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ionos://%s", id))
+}
+
+// CountExistingMachines returns the number of existing IonosCloudMachines in the same namespace
+// and with the same cluster label. If ignoreWorkers is set to true, only control plane machines
+// will be counted.
+func (m *Machine) CountExistingMachines(ctx context.Context, ignoreWorkers bool) (int, error) {
+	matchLabels := client.MatchingLabels{
+		clusterv1.ClusterNameLabel: m.ClusterScope.Cluster.Name,
+	}
+	if ignoreWorkers {
+		matchLabels[clusterv1.MachineControlPlaneLabel] = ""
+	}
+
+	listOpts := []client.ListOption{client.InNamespace(m.IonosMachine.Namespace), matchLabels}
+
+	machineList := &infrav1.IonosCloudMachineList{}
+	if err := m.client.List(ctx, machineList, listOpts...); err != nil {
+		return 0, err
+	}
+	return len(machineList.Items), nil
+}
+
+// FindLatestControlPlaneMachine returns the latest control plane IonosCloudMachine in the same namespace
+// and with the same cluster label. If no control plane machine is found, nil is returned.
+//
+// If there are zero or one control plane machines, the function will return nil,
+// otherwise the machine with the latest creation timestamp will be returned.
+func (m *Machine) FindLatestControlPlaneMachine(ctx context.Context) (*infrav1.IonosCloudMachine, error) {
+	matchLabels := client.MatchingLabels{
+		clusterv1.ClusterNameLabel:         m.ClusterScope.Cluster.Name,
+		clusterv1.MachineControlPlaneLabel: "",
+	}
+
+	listOpts := []client.ListOption{client.InNamespace(m.IonosMachine.Namespace), matchLabels}
+
+	machineList := &infrav1.IonosCloudMachineList{}
+	if err := m.client.List(ctx, machineList, listOpts...); err != nil {
+		return nil, err
+	}
+	if len(machineList.Items) <= 1 {
+		return nil, nil
+	}
+
+	latestMachine := machineList.Items[0]
+	for _, machine := range machineList.Items {
+		if !machine.CreationTimestamp.Before(&latestMachine.CreationTimestamp) && machine.Name != m.IonosMachine.Name {
+			latestMachine = machine
+		}
+	}
+	return &latestMachine, nil
 }
 
 // HasFailed checks if the IonosCloudMachine is in a failed state.
