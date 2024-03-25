@@ -199,7 +199,6 @@ func TestWithDepth(t *testing.T) {
 		{5},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(fmt.Sprintf("depth=%d", tt.depth), func(t *testing.T) {
 			t.Parallel()
 			c := &IonosCloudClient{}
