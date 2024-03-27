@@ -359,6 +359,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 			Lan: &nic.NetworkID,
 		}})
 	}
+	serverNICs.Items = &items
 
 	return sdk.ServerEntities{
 		Nics:    &serverNICs,
