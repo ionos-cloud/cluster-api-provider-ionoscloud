@@ -9,7 +9,6 @@
 - [Overview](#overview)
 - [Documentation](#documentation)
 - [Launching a Kubernetes cluster on IONOS Cloud](#launching-a-kubernetes-cluster-on-ionos-cloud)
-- [Cluster Identity Structure](#cluster-identity-structure)
 - [Maintainers](#maintainers)
 - [License](#license)
 <!-- TODO -[Contributing](./CONTRIBUTING.md) -->
@@ -33,17 +32,6 @@ To get started with developing, please see [our development docs](./docs/Develop
 ---
 
 Check out the [quickstart guide](./docs/quickstart.md) to get started with launching a cluster on IONOS Cloud.
-
-## Cluster Identity Structure
-
----
-
-In order to allow CAPIC to manage resources in the IONOS Cloud environment, we need to provider the 
-necessary credentials. These credentials are stored in a Kubernetes secret. The secret must be created in the 
-same namespace as the cluster.
-
-You can provide either a token or a username and password. The token is the preferred method.
-Both methods are mutually exclusive.
 
 ## Maintainers
 
