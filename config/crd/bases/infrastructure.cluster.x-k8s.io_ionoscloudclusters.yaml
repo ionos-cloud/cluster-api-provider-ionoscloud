@@ -84,9 +84,8 @@ spec:
                 - message: control plane endpoint port cannot be updated
                   rule: self.port == oldSelf.port || oldSelf.port == 0
               credentialsRef:
-                description: |-
-                  CredentialsRef is a reference to the secret containing the credentials to access the IONOS Cloud API.
-                  See Readme for structure details.
+                description: CredentialsRef is a reference to the secret containing
+                  the credentials to access the IONOS Cloud API.
                 properties:
                   name:
                     description: |-

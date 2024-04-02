@@ -55,7 +55,6 @@ type IonosCloudClusterSpec struct {
 	Location string `json:"location"`
 
 	// CredentialsRef is a reference to the secret containing the credentials to access the IONOS Cloud API.
-	// See Readme for structure details.
 	//+kubebuilder:validation:XValidation:rule="has(self.name) && self.name != ''",message="credentialsRef.name must be provided"
 	CredentialsRef corev1.LocalObjectReference `json:"credentialsRef"`
 }
