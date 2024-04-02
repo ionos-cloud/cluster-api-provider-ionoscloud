@@ -15,6 +15,10 @@ limitations under the License.
 */
 
 // Package ptr offers generic pointer utility functions.
+//
+// It is implementing the generic ptr functionality from the k8s.io/utils package,
+// because the dependency is not versioned and every upstream commit would cause
+// Dependabot to create a new PR for a version update.
 package ptr
 
 // To returns a pointer to the given value.

@@ -16,6 +16,15 @@ spec:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     name: "${CLUSTER_NAME}-control-plane"
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "${CLUSTER_NAME}-credentials"
+type: Opaque
+stringData:
+  token: "${IONOS_TOKEN}"
+  apiURL: "${IONOS_API_URL:-https://api.ionos.com/cloudapi/v6}"
+---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: IonosCloudCluster
 metadata:
@@ -26,6 +35,8 @@ spec:
     port: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
   location: ${CONTROL_PLANE_ENDPOINT_LOCATION}
   contractNumber: "${IONOSCLOUD_CONTRACT_NUMBER}"
+  credentialsRef:
+    name: "${CLUSTER_NAME}-credentials"
 ---
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
