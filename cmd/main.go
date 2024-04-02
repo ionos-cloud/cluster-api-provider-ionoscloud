@@ -38,11 +38,6 @@ import (
 	icc "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
 )
 
-const (
-	flagHealthProbeBindAddress = "health-probe-bind-address"
-	flagLeaderElection         = "leader-elect"
-)
-
 var (
 	scheme               = runtime.NewScheme()
 	setupLog             = ctrl.Log.WithName("setup")
@@ -135,9 +130,9 @@ func setFlags() {
 	klog.InitFlags(nil)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	flags.AddDiagnosticsOptions(pflag.CommandLine, &diagnosticOptions)
-	pflag.StringVar(&healthProbeAddr, flagHealthProbeBindAddress, ":8081",
+	pflag.StringVar(&healthProbeAddr, "health-probe-bind-address", ":8081",
 		"The address the probe endpoint binds to.")
-	pflag.BoolVar(&enableLeaderElection, flagLeaderElection, false,
+	pflag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 }
