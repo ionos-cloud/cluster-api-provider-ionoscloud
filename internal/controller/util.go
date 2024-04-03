@@ -81,15 +81,9 @@ func createIonosClientFromCluster(
 	}
 
 	token := string(authSecret.Data["token"])
-	userName := string(authSecret.Data["user"])
-	password := string(authSecret.Data["password"])
 	apiURL := string(authSecret.Data["apiUrl"])
 
-	if token != "" {
-		userName, password = "", ""
-	}
-
-	ionosClient, err := icc.NewClient(userName, password, token, apiURL)
+	ionosClient, err := icc.NewClient(token, apiURL)
 	if err != nil {
 		return nil, err
 	}

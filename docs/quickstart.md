@@ -71,10 +71,6 @@ CAPIC requires several environment variables to be set in order to create a Kube
 
 ```env
 ## -- Cloud specific environment variables -- ##
-## Using the username and password is not recommended
-IONOS_USERNAME                              # The username of the IONOS Cloud account
-IONOS_PASSWORD                              # The password of the IONOS Cloud account
-## Using the token is recommended
 IONOS_TOKEN                                 # The token of the IONOS Cloud account
 IONOS_API_URL                               # The API URL of the IONOS Cloud account. 
                                             #   Defaults to https://api.ionos.com/cloudapi/v6

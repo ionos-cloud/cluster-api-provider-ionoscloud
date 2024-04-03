@@ -118,9 +118,9 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 	cloudService, err := createIonosClientFromCluster(ctx, r.Client, clusterScope.IonosCluster, logger)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// Without a secret we don't need to retry.
 			logger.Error(err, "unable to create IONOS Cloud client")
-			return ctrl.Result{}, nil
+			// Secret is missing, we try again after some time.
+			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 		}
 
 		return ctrl.Result{}, fmt.Errorf("failed to create ionos client: %w", err)

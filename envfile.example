@@ -1,8 +1,6 @@
 #!/bin/bash
 
 # Controller related environment variables
-# export IONOS_USERNAME="username"
-# export IONOS_PASSWORD="password"
 export IONOS_TOKEN="token"
 export IONOS_API_URL="https://api.ionos.com/cloudapi/v6"
 
