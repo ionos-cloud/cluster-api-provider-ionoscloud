@@ -54,9 +54,13 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+// Add RBAC for the authorized diagnostics endpoint.
+// +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
+// +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
+
 func main() {
 	ctrl.SetLogger(klog.Background())
-	setFlags()
+	initFlags()
 	pflag.Parse()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -125,8 +129,8 @@ func main() {
 	}
 }
 
-// setFlags parses the command line flags.
-func setFlags() {
+// initFlags parses the command line flags.
+func initFlags() {
 	klog.InitFlags(nil)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	flags.AddDiagnosticsOptions(pflag.CommandLine, &diagnosticOptions)

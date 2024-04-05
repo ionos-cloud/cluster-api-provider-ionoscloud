@@ -69,7 +69,9 @@ spec:
       - command:
         - /manager
         args:
-        - --leader-elect
+        - "--diagnostics-address=${CAPIC_DIAGNOSTICS_ADDRESS:=:8443}"
+        - "--insecure-diagnostics=${CAPIC_INSECURE_DIAGNOSTICS:=false}"
+        - "--leader-elect"
         image: controller:latest
         name: manager
         securityContext:
