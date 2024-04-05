@@ -92,6 +92,26 @@ IONOSCLOUD_MACHINE_CPU_FAMILY               # The CPU family.
 IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used.
 ```
 
+### Credential Secret Structure
+
+---
+
+The `IONOS_TOKEN` should be stored in a secret in the same namespace as the management cluster. 
+The secret should have the following structure:
+
+The `apiURl` field is optional and defaults to `https://api.ionos.com/cloudapi/v6` if no value was provided.
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-ionos-credentials
+type: Opaque
+stringData:
+  token: "Token-Goes-Here"
+  apiURL: "https://api.ionos.com/cloudapi/v6"
+```
+
 ### Create a workload cluster
 
 ---
