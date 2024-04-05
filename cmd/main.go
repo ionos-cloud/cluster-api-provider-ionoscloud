@@ -25,7 +25,6 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/klog/v2"
 
-	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -36,7 +35,6 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/controller"
-	icc "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
 )
 
 var (
@@ -89,28 +87,19 @@ func main() {
 		setupLog.Error(err, "unable to create manager")
 		os.Exit(1)
 	}
-	ionosCloudClient, err := icc.NewClient(
-		os.Getenv(sdk.IonosUsernameEnvVar), os.Getenv(sdk.IonosPasswordEnvVar),
-		os.Getenv(sdk.IonosTokenEnvVar), os.Getenv(sdk.IonosApiUrlEnvVar))
-	if err != nil {
-		setupLog.Error(err, "could not create IONOS client")
-		os.Exit(1)
-	}
 
 	ctx := ctrl.SetupSignalHandler()
 
 	if err = (&controller.IonosCloudClusterReconciler{
-		Client:           mgr.GetClient(),
-		Scheme:           mgr.GetScheme(),
-		IonosCloudClient: ionosCloudClient,
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudCluster")
 		os.Exit(1)
 	}
 	if err = (&controller.IonosCloudMachineReconciler{
-		Client:           mgr.GetClient(),
-		Scheme:           mgr.GetScheme(),
-		IonosCloudClient: ionosCloudClient,
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
 		os.Exit(1)

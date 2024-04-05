@@ -83,6 +83,21 @@ spec:
                   rule: self.host == oldSelf.host || oldSelf.host == ''
                 - message: control plane endpoint port cannot be updated
                   rule: self.port == oldSelf.port || oldSelf.port == 0
+              credentialsRef:
+                description: CredentialsRef is a reference to the secret containing
+                  the credentials to access the IONOS Cloud API.
+                properties:
+                  name:
+                    description: |-
+                      Name of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+                x-kubernetes-validations:
+                - message: credentialsRef.name must be provided
+                  rule: has(self.name) && self.name != ''
               location:
                 description: Location is the location where the data centers should
                   be located.
@@ -94,6 +109,7 @@ spec:
                   rule: self == oldSelf
             required:
             - contractNumber
+            - credentialsRef
             - location
             type: object
           status:
