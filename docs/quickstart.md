@@ -32,14 +32,14 @@ Before you can use CAPIC, you need to have the following prerequisites:
   of the datacenter where you want to create the Kubernetes cluster.
   * The image can be built via [image-builder](https://github.com/kubernetes-sigs/image-builder)
     * It must be built as a raw QEMU image. Refer to the [custom image](./custom-image.md) documentation for more information. 
-* clusterctl, which can be installed via the [official documentation](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl).
+* `clusterctl`, which can be installed via the [official documentation](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl).
 * A datacenter in IONOS Cloud where you want to create the Kubernetes cluster.
 
 ## Quickstart
 
 ---
 
-In order to install Cluster API Provider for IONOS Cloud (CAPIC), you need to have a Kubernetes cluster IP and running,
+In order to install Cluster API Provider for IONOS Cloud (CAPIC), you need to have a Kubernetes cluster up and running,
 and `clusterctl` installed.
 
 ### Case 1: Using a local provider
@@ -55,7 +55,7 @@ supports the `IONOS Cloud provider`.
 ### Configuring the management cluster
 
 Before you can create a Kubernetes cluster on IONOS Cloud, you need to configure the management cluster.
-Currently the controller has no need of any special configuration, so you can just run the following command:
+Currently, the controller has no need of any special configuration, so you can just run the following command:
 
 ```sh
 clusterctl init --infrastructure=ionoscloud
@@ -71,25 +71,25 @@ CAPIC requires several environment variables to be set in order to create a Kube
 
 ```env
 ## -- Cloud specific environment variables -- ##
-IONOS_TOKEN                                 # The token of the IONOS Cloud account
-IONOS_API_URL                               # The API URL of the IONOS Cloud account. 
+IONOS_TOKEN                                 # The token of the IONOS Cloud account.
+IONOS_API_URL                               # The API URL of the IONOS Cloud account.
                                             #   Defaults to https://api.ionos.com/cloudapi/v6
 
 ## -- Cluster API related environment variables -- ##
-CONTROL_PLANE_ENDPOINT_IP                   # The IP address of the control plane endpoint          
-CONTROL_PLANE_ENDPOINT_PORT                 # The port of the control plane endpoint
-CONTROL_PLANE_ENDPOINT_LOCATION             # The location of the control plane endpoint
-CLUSTER_NAME                                # The name of the cluster
+CONTROL_PLANE_ENDPOINT_IP                   # The IP address of the control plane endpoint.        
+CONTROL_PLANE_ENDPOINT_PORT                 # The port of the control plane endpoint.
+CONTROL_PLANE_ENDPOINT_LOCATION             # The location of the control plane endpoint.
+CLUSTER_NAME                                # The name of the cluster.
 KUBERNETES_VERSION                          # The version of Kubernetes to be installed (can also be set via clusterctl).
 
 ## -- Kubernetes Cluster related environment variables -- ##
-IONOSCLOUD_CONTRACT_NUMBER                  # The contract number of the IONOS Cloud account
-IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluster should be created
-IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores
-IONOSCLOUD_MACHINE_MEMORY_MB                # The memory in MB
-IONOSCLOUD_MACHINE_IMAGE_ID                 # The image ID
-IONOSCLOUD_MACHINE_CPU_FAMILY               # The CPU family
-IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used
+IONOSCLOUD_CONTRACT_NUMBER                  # The contract number of the IONOS Cloud contract.
+IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluster should be created.
+IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores.
+IONOSCLOUD_MACHINE_MEMORY_MB                # The memory in MB.
+IONOSCLOUD_MACHINE_IMAGE_ID                 # The image ID.
+IONOSCLOUD_MACHINE_CPU_FAMILY               # The CPU family.
+IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used.
 ```
 
 ### Create a workload cluster
