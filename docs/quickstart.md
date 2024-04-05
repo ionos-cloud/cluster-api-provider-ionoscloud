@@ -28,10 +28,10 @@ to the official [Cluster API book](https://cluster-api.sigs.k8s.io/).
 Before you can use CAPIC, you need to have the following prerequisites:
 
 * A Kubernetes cluster which can run the required providers for CAPIC.
-* An image, which is used to create the Kubernetes cluster. This image should be available in the IONOS Cloud 
-data center where you want to create the cluster.
+* An image, which is used to create the Kubernetes cluster. This image has to be available in the IONOS Cloud location
+  of the datacenter where you want to create the Kubernetes cluster.
   * The image can be built via [image-builder](https://github.com/kubernetes-sigs/image-builder)
-    * It must be built as a raw qemu image. Refer to the [custom image](./custom-image.md) documentation for more information. 
+    * It must be built as a raw QEMU image. Refer to the [custom image](./custom-image.md) documentation for more information. 
 * clusterctl, which can be installed via the [official documentation](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl).
 * A datacenter in IONOS Cloud where you want to create the Kubernetes cluster.
 
@@ -39,7 +39,7 @@ data center where you want to create the cluster.
 
 ---
 
-In order to install Cluster API Provider for IONOS Cloud (CAPIC), you need to have a Kubernetes cluster ip and running,
+In order to install Cluster API Provider for IONOS Cloud (CAPIC), you need to have a Kubernetes cluster IP and running,
 and `clusterctl` installed.
 
 ### Case 1: Using a local provider

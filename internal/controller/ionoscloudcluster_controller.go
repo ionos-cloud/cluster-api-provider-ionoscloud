@@ -97,7 +97,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(
 		}
 	}()
 
-	cloudService, err := createIonosClientFromCluster(ctx, r.Client, ionosCloudCluster, logger)
+	cloudService, err := createServiceFromCluster(ctx, r.Client, ionosCloudCluster, logger)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Error(err, "unable to create IONOS Cloud client")

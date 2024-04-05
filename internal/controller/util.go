@@ -64,7 +64,7 @@ func withStatus(
 	return false, fmt.Errorf("unknown request status %s", status)
 }
 
-func createIonosClientFromCluster(
+func createServiceFromCluster(
 	ctx context.Context,
 	c client.Client,
 	cluster *infrav1.IonosCloudCluster,

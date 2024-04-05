@@ -74,4 +74,4 @@ cd <cluster-api-repo-path>
 
 Now you can find the generated files in: `~/.config/cluster-api/dev-repository`
 
-The cli tool will also tell you how to invoke the command properly. Make sure that you use the correct config file.
+The CLI tool will also tell you how to invoke the command properly. Make sure that you use the correct config file.
