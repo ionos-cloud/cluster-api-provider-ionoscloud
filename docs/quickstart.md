@@ -44,15 +44,21 @@ and `clusterctl` installed.
 
 ### Case 1: Using a local provider
 
+---
+
 If the provider is not yet added to the list of providers in `clusterctl`, you can bootstrap the management cluster
 using a local provider. Refer to [local provider](./local-provider.md) for more information.
 
 ### Case 2: The provider is already available in clusterctl
 
+---
+
 In this case you can simply follow the steps below. Make sure you are using a version of `clusterctl` which
 supports the `IONOS Cloud provider`.
 
 ### Configuring the management cluster
+
+---
 
 Before you can create a Kubernetes cluster on IONOS Cloud, you need to configure the management cluster.
 Currently, the controller has no need of any special configuration, so you can just run the following command:
@@ -61,7 +67,6 @@ Currently, the controller has no need of any special configuration, so you can j
 clusterctl init --infrastructure=ionoscloud
 ```
 
----
 
 ### Environment variables
 
