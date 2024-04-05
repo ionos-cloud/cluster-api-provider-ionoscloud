@@ -104,7 +104,7 @@ IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used.
 The `IONOS_TOKEN` should be stored in a secret in the same namespace as the management cluster. 
 The secret should have the following structure:
 
-The `apiURl` field is optional and defaults to `https://api.ionos.com/cloudapi/v6` if no value was provided.
+The `apiURL` field is optional and defaults to `https://api.ionos.com/cloudapi/v6` if no value was provided.
 
 ```yaml
 apiVersion: v1
