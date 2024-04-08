@@ -100,11 +100,15 @@ spec:
                         - ZONE_2
                         type: string
                       cpuFamily:
+                        default: ""
                         description: |-
                           CPUFamily defines the CPU architecture, which will be used for this VM.
                           Not all CPU architectures are available in all data centers.
+
+
+                          If not specified, the cloud will select a suitable CPU family
+                          based on the availability in the data center.
                         example: AMD_OPTERON
-                        minLength: 1
                         type: string
                       datacenterID:
                         description: DatacenterID is the ID of the data center where

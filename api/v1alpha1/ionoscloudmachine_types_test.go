@@ -211,14 +211,6 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 		})
 
-		Context("CPU family", func() {
-			It("should fail if not set", func() {
-				m := defaultMachine()
-				m.Spec.CPUFamily = ""
-				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
-			})
-		})
-
 		Context("Disk", func() {
 			It("should fail if not set", func() {
 				m := defaultMachine()
