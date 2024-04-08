@@ -14,5 +14,5 @@ Release vX.X.X
 - [ ] Update metadata & clusterctl-settings.
 - [ ] Update docs (compatibility table; usage etc).
 - [ ] Create tag.
-- [ ] Update the created draft release to include (BREAKING Changes, Important Notes).
+- [ ] Update the created draft release to include things like breaking changes or important notes.
 - [ ] Publish the release.
