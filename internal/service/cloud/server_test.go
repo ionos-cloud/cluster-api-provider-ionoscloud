@@ -123,6 +123,7 @@ func (s *serverSuite) TestReconcileServerNoRequest() {
 }
 
 func (s *serverSuite) prepareReconcileServerRequestTest() {
+	s.T().Helper()
 	bootstrapSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
@@ -154,7 +155,7 @@ func (s *serverSuite) TestReconcileServerDeletion() {
 	s.NoError(err)
 	s.True(res)
 	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
+	s.Equal(http.MethodDelete, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, reqLocation)
 }
 
@@ -186,7 +187,7 @@ func (s *serverSuite) TestReconcileServerDeletionCreateRequestPending() {
 	s.True(res)
 
 	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodPost)
+	s.Equal(http.MethodPost, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, *exampleRequest.Metadata.RequestStatus.Href)
 }
 
@@ -204,7 +205,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestPending() {
 	s.True(res)
 
 	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
+	s.Equal(http.MethodDelete, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, *exampleRequest.Metadata.RequestStatus.Href)
 }
 
@@ -239,8 +240,8 @@ func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
 	s.True(res)
 
 	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, "delete/triggered")
+	s.Equal(http.MethodDelete, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
+	s.Equal("delete/triggered", s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
 }
 
 func (s *serverSuite) TestGetServerWithProviderID() {

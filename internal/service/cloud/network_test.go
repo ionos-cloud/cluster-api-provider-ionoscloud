@@ -298,6 +298,7 @@ type expectedPatchResult struct {
 }
 
 func (s *lanSuite) checkSuccessfulFailoverGroupPatch(result expectedPatchResult) {
+	s.T().Helper()
 	s.NoError(result.err)
 	s.True(result.requeue)
 	s.Equal(result.requestPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
@@ -433,6 +434,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionSwitchNIC() {
 }
 
 func (s *lanSuite) assertSuccessfulDeletion(requeue bool, err error) {
+	s.T().Helper()
 	s.NoError(err)
 	s.True(requeue)
 	s.Equal(exampleRequestPath, s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)

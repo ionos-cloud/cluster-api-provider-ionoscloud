@@ -3,9 +3,13 @@ linters:
   enable:
     - asciicheck
     - bodyclose
-    - copyloopvar
+#    - containedctx
     - dogsled
+    - depguard
     - errcheck
+    - errname
+    - errorlint
+    - exhaustive
     - gci
     - ginkgolinter
     - goconst
@@ -13,23 +17,29 @@ linters:
     - gocyclo
     - godot
     - gofumpt
+    - goheader
     - goimports
-    - goprintffuncname
     - gosec
     - gosimple
     - govet
     - importas
     - ineffassign
     - intrange
+    - ireturn
     - loggercheck
     - misspell
     - nakedret
+    - nestif
     - nilerr
     - nolintlint
     - prealloc
+#    - perfsprint
     - revive
+    - reassign
     - staticcheck
     - stylecheck
+    - testifylint
+    - tenv
     - typecheck
     - unconvert
     - unparam
@@ -37,6 +47,14 @@ linters:
     - whitespace
 
 linters-settings:
+  depguard:
+    rules:
+      main:
+        deny:
+          - pkg: "github.com/pkg/errors"
+            desc: Should be replaced by stdlib errors package
+  errorlint:
+    errorf-multi: false
   gci:
     sections:
       - standard
@@ -47,6 +65,8 @@ linters-settings:
   gosec:
     excludes:
       - G601 # Implicit memory aliasing of items from a range statement: Obsolete since Go 1.22
+  nestif:
+    min-complexity: 4
   revive:
     rules:
       - name: "exported"
@@ -56,13 +76,8 @@ linters-settings:
         - [] # first list is an allow list. All initialisms placed here will be ignored
         - ["LAN", "IP", "NIC"] # second list is a deny list. These rules will be enforced
         severity: error
-
-
   goimports:
     local-prefixes: github.com/ionos-cloud/cluster-api-provider-ionoscloud/
-  ifshort:
-    # Maximum length of variable declaration measured in number of characters, after which linter won't suggest using short syntax.
-    max-decl-chars: 50
   importas:
     no-unaliased: true
     alias:
@@ -94,6 +109,14 @@ linters-settings:
     go: "1.22"
   stylecheck:
     go: "1.22"
+  testifylint:
+    enable-all: true
+  goheader:
+    template-path: hack/boilerplate.go.txt
+  ireturn:
+    allow:
+      - "error,generic"
+      - "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud.Client"
 
 issues:
   max-same-issues: 0
