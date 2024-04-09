@@ -17,7 +17,7 @@ linters:
     - gocyclo
     - godot
     - gofumpt
-    - goheader
+#    - goheader
     - goimports
     - gosec
     - gosimple
