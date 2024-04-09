@@ -3,7 +3,7 @@ linters:
   enable:
     - asciicheck
     - bodyclose
-#    - containedctx
+    - containedctx
     - dogsled
     - depguard
     - errcheck
@@ -169,11 +169,14 @@ issues:
     # within test files.
     - path: _test\.go
       text: should not use dot imports
-    - path: (framework|e2e)/.*.go
-      text: should not use dot imports
     - path: _test\.go
       text: cyclomatic complexity
+    - linters:
+        - containedctx
+      path: '(.+)_test\.go'
     # Append should be able to assign to a different var/slice.
+    - path: (framework|e2e)/.*.go
+      text: should not use dot imports
     - linters:
         - gocritic
       text: "appendAssign: append result not assigned to the same slice"
