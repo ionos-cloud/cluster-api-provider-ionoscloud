@@ -121,9 +121,12 @@ type IonosCloudMachineSpec struct {
 
 	// CPUFamily defines the CPU architecture, which will be used for this VM.
 	// Not all CPU architectures are available in all data centers.
+	//
+	// If not specified, the cloud will select a suitable CPU family
+	// based on the availability in the data center.
 	//+kubebuilder:example=AMD_OPTERON
-	//+kubebuilder:validation:MinLength=1
-	CPUFamily string `json:"cpuFamily"`
+	//+optional
+	CPUFamily *string `json:"cpuFamily,omitempty"`
 
 	// Disk defines the boot volume of the VM.
 	Disk *Volume `json:"disk"`

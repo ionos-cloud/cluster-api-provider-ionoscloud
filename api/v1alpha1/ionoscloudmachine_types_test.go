@@ -45,7 +45,7 @@ func defaultMachine() *IonosCloudMachine {
 			NumCores:         1,
 			AvailabilityZone: AvailabilityZoneTwo,
 			MemoryMB:         2048,
-			CPUFamily:        "AMD_OPTERON",
+			CPUFamily:        ptr.To("AMD_OPTERON"),
 			Disk: &Volume{
 				Name:             "disk",
 				DiskType:         VolumeDiskTypeSSDStandard,
@@ -211,11 +211,11 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 		})
 
-		Context("CPU family", func() {
-			It("should fail if not set", func() {
+		Context("CPU Family", func() {
+			It("should not fail if not set", func() {
 				m := defaultMachine()
-				m.Spec.CPUFamily = ""
-				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+				m.Spec.CPUFamily = nil
+				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 			})
 		})
 

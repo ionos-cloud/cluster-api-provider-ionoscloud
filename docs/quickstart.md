@@ -93,7 +93,6 @@ IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluste
 IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores.
 IONOSCLOUD_MACHINE_MEMORY_MB                # The memory in MB.
 IONOSCLOUD_MACHINE_IMAGE_ID                 # The image ID.
-IONOSCLOUD_MACHINE_CPU_FAMILY               # The CPU family.
 IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used.
 ```
 

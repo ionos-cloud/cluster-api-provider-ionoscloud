@@ -301,9 +301,9 @@ func (s *Service) buildServerProperties(ms *scope.Machine, machineSpec *infrav1.
 	props := sdk.ServerProperties{
 		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
 		Cores:            &machineSpec.NumCores,
-		CpuFamily:        &machineSpec.CPUFamily,
 		Name:             ptr.To(s.serverName(ms.IonosMachine)),
 		Ram:              &machineSpec.MemoryMB,
+		CpuFamily:        machineSpec.CPUFamily,
 	}
 
 	return props
