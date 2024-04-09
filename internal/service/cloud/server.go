@@ -303,10 +303,7 @@ func (s *Service) buildServerProperties(ms *scope.Machine, machineSpec *infrav1.
 		Cores:            &machineSpec.NumCores,
 		Name:             ptr.To(s.serverName(ms.IonosMachine)),
 		Ram:              &machineSpec.MemoryMB,
-	}
-
-	if machineSpec.CPUFamily != "" {
-		props.CpuFamily = &machineSpec.CPUFamily
+		CpuFamily:        machineSpec.CPUFamily,
 	}
 
 	return props

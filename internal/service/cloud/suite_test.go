@@ -146,7 +146,7 @@ func (s *ServiceTestSuite) SetupTest() {
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
 			MemoryMB:         4096,
-			CPUFamily:        "AMD_OPTERON",
+			CPUFamily:        ptr.To("AMD_OPTERON"),
 			Disk: &infrav1.Volume{
 				Name:             "test-machine-hdd",
 				DiskType:         infrav1.VolumeDiskTypeHDD,

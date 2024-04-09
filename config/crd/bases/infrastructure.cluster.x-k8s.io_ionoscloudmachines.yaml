@@ -67,7 +67,6 @@ spec:
                 - ZONE_2
                 type: string
               cpuFamily:
-                default: ""
                 description: |-
                   CPUFamily defines the CPU architecture, which will be used for this VM.
                   Not all CPU architectures are available in all data centers.
@@ -157,7 +156,6 @@ spec:
                   will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                 type: string
             required:
-            - cpuFamily
             - datacenterID
             - disk
             type: object

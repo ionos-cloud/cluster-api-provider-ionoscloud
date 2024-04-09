@@ -228,6 +228,11 @@ func (in *IonosCloudMachineSpec) DeepCopyInto(out *IonosCloudMachineSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.CPUFamily != nil {
+		in, out := &in.CPUFamily, &out.CPUFamily
+		*out = new(string)
+		**out = **in
+	}
 	if in.Disk != nil {
 		in, out := &in.Disk, &out.Disk
 		*out = new(Volume)
