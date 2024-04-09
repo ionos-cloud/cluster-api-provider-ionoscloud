@@ -17,7 +17,6 @@ linters:
     - gocyclo
     - godot
     - gofumpt
-#    - goheader
     - gosec
     - gosimple
     - govet
@@ -32,7 +31,7 @@ linters:
     - nilerr
     - nolintlint
     - prealloc
-#    - perfsprint
+    - perfsprint
     - revive
     - reassign
     - staticcheck
