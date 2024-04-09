@@ -4,6 +4,7 @@ linters:
     - asciicheck
     - bodyclose
     - containedctx
+    - copyloopvar
     - dogsled
     - depguard
     - errcheck
