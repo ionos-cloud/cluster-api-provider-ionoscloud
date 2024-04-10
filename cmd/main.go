@@ -22,7 +22,6 @@ import (
 	"flag"
 	"os"
 
-	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
