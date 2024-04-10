@@ -1,8 +1,6 @@
 #!/bin/bash
 
 # Controller related environment variables
-export IONOS_USERNAME="username"
-export IONOS_PASSWORD="password"
 export IONOS_TOKEN="token"
 export IONOS_API_URL="https://api.ionos.com/cloudapi/v6"
 
@@ -20,5 +18,4 @@ export IONOSCLOUD_DATACENTER_ID="12345"
 export IONOSCLOUD_MACHINE_NUM_CORES=2
 export IONOSCLOUD_MACHINE_MEMORY_MB=4096
 export IONOSCLOUD_MACHINE_IMAGE_ID=123456
-export IONOSCLOUD_MACHINE_CPU_FAMILY="INTEL_SKYLAKE"
 export IONOSCLOUD_MACHINE_SSH_KEYS="ssh-ed25519 ..., ssh-ed25519 ..."

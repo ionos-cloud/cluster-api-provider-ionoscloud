@@ -301,9 +301,9 @@ func (s *Service) buildServerProperties(ms *scope.Machine, machineSpec *infrav1.
 	props := sdk.ServerProperties{
 		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
 		Cores:            &machineSpec.NumCores,
-		CpuFamily:        &machineSpec.CPUFamily,
 		Name:             ptr.To(s.serverName(ms.IonosMachine)),
 		Ram:              &machineSpec.MemoryMB,
+		CpuFamily:        machineSpec.CPUFamily,
 	}
 
 	return props
@@ -324,7 +324,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 			Name:             ptr.To(s.volumeName(ms.IonosMachine)),
 			Size:             ptr.To(float32(machineSpec.Disk.SizeGB)),
 			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
-			UserData:         ptr.To(params.boostrapData),
+			UserData:         &params.boostrapData,
 		},
 	}
 
@@ -335,7 +335,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	}
 
 	serverVolumes := sdk.AttachedVolumes{
-		Items: ptr.To([]sdk.Volume{bootVolume}),
+		Items: &[]sdk.Volume{bootVolume},
 	}
 
 	// As we want to retrieve a public IP from the DHCP, we need to
@@ -356,9 +356,10 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	items := *serverNICs.Items
 	for _, nic := range ms.IonosMachine.Spec.AdditionalNetworks {
 		items = append(items, sdk.Nic{Properties: &sdk.NicProperties{
-			Lan: ptr.To(nic.NetworkID),
+			Lan: &nic.NetworkID,
 		}})
 	}
+	serverNICs.Items = &items
 
 	return sdk.ServerEntities{
 		Nics:    &serverNICs,

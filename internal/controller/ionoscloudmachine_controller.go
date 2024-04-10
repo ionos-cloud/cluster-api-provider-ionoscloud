@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -42,8 +41,7 @@ import (
 // IonosCloudMachineReconciler reconciles a IonosCloudMachine object.
 type IonosCloudMachineReconciler struct {
 	client.Client
-	Scheme           *runtime.Scheme
-	IonosCloudClient ionoscloud.Client
+	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines,verbs=get;list;watch;create;update;patch;delete
@@ -117,7 +115,17 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 		}
 	}()
 
-	cloudService, err := cloud.NewService(r.IonosCloudClient, logger)
+	cloudService, err := createServiceFromCluster(ctx, r.Client, clusterScope.IonosCluster, logger)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Error(err, "unable to create IONOS Cloud client")
+			// Secret is missing, we try again after some time.
+			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
+		}
+
+		return ctrl.Result{}, fmt.Errorf("failed to create ionos client: %w", err)
+	}
+
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("could not create machine service")
 	}

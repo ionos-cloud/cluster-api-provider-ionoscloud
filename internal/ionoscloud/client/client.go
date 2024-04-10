@@ -42,13 +42,13 @@ type IonosCloudClient struct {
 
 var _ ionoscloud.Client = &IonosCloudClient{}
 
-// NewClient instantiates a usable IonosCloudClient. The client needs the username AND password OR the token to work.
-// Failing to provide both will result in an error.
-func NewClient(username, password, token, apiURL string) (*IonosCloudClient, error) {
-	if err := validate(username, password, token); err != nil {
-		return nil, fmt.Errorf("incomplete credentials provided: %w", err)
+// NewClient instantiates a usable IonosCloudClient.
+// The client needs a token to work. Basic auth is not be supported.
+func NewClient(token, apiURL string) (*IonosCloudClient, error) {
+	if token == "" {
+		return nil, errors.New("token must be set")
 	}
-	cfg := sdk.NewConfiguration(username, password, token, apiURL)
+	cfg := sdk.NewConfiguration("", "", token, apiURL)
 	apiClient := sdk.NewAPIClient(cfg)
 	return &IonosCloudClient{
 		API: apiClient,
@@ -71,19 +71,6 @@ func clone(client *IonosCloudClient) *IonosCloudClient {
 		API:          client.API,
 		requestDepth: client.requestDepth,
 	}
-}
-
-func validate(username, password, token string) error {
-	if username != "" && password == "" {
-		return errors.New("username is set but password is not")
-	}
-	if username == "" && password != "" {
-		return errors.New("password is set but username is not")
-	}
-	if username == "" && password == "" && token == "" {
-		return errors.New("token or username and password need to be set")
-	}
-	return nil
 }
 
 // CreateServer creates a new server with provided properties in the specified data center.

@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: ionoscloudmachinetemplates.infrastructure.cluster.x-k8s.io
 spec:
   group: infrastructure.cluster.x-k8s.io
@@ -21,14 +21,19 @@ spec:
           API.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -41,40 +46,43 @@ spec:
                   the IonosCloudMachineTemplate.
                 properties:
                   metadata:
-                    description: 'Standard object''s metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata'
+                    description: |-
+                      Standard object's metadata.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
                     properties:
                       annotations:
                         additionalProperties:
                           type: string
-                        description: 'Annotations is an unstructured key value map
-                          stored with a resource that may be set by external tools
-                          to store and retrieve arbitrary metadata. They are not queryable
-                          and should be preserved when modifying objects. More info:
-                          http://kubernetes.io/docs/user-guide/annotations'
+                        description: |-
+                          Annotations is an unstructured key value map stored with a resource that may be
+                          set by external tools to store and retrieve arbitrary metadata. They are not
+                          queryable and should be preserved when modifying objects.
+                          More info: http://kubernetes.io/docs/user-guide/annotations
                         type: object
                       labels:
                         additionalProperties:
                           type: string
-                        description: 'Map of string keys and values that can be used
-                          to organize and categorize (scope and select) objects. May
-                          match selectors of replication controllers and services.
-                          More info: http://kubernetes.io/docs/user-guide/labels'
+                        description: |-
+                          Map of string keys and values that can be used to organize and categorize
+                          (scope and select) objects. May match selectors of replication controllers
+                          and services.
+                          More info: http://kubernetes.io/docs/user-guide/labels
                         type: object
                     type: object
                   spec:
                     description: Spec is the IonosCloudMachineSpec for the IonosCloudMachineTemplate.
                     properties:
                       additionalNetworks:
-                        description: 'AdditionalNetworks defines the additional network
-                          configurations for the VM. NOTE(lubedacht): We currently
-                          only support networks with DHCP enabled.'
+                        description: |-
+                          AdditionalNetworks defines the additional network configurations for the VM.
+                          NOTE(lubedacht): We currently only support networks with DHCP enabled.
                         items:
                           description: Network contains a network config.
                           properties:
                             networkID:
-                              description: NetworkID represents an ID an existing
-                                LAN in the data center. This LAN will be excluded
-                                from the deletion process.
+                              description: |-
+                                NetworkID represents an ID an existing LAN in the data center.
+                                This LAN will be excluded from the deletion process.
                               format: int32
                               minimum: 1
                               type: integer
@@ -92,11 +100,14 @@ spec:
                         - ZONE_2
                         type: string
                       cpuFamily:
-                        description: CPUFamily defines the CPU architecture, which
-                          will be used for this VM. Not all CPU architectures are
-                          available in all data centers.
+                        description: |-
+                          CPUFamily defines the CPU architecture, which will be used for this VM.
+                          Not all CPU architectures are available in all data centers.
+
+
+                          If not specified, the cloud will select a suitable CPU family
+                          based on the availability in the data center.
                         example: AMD_OPTERON
-                        minLength: 1
                         type: string
                       datacenterID:
                         description: DatacenterID is the ID of the data center where
@@ -131,8 +142,9 @@ spec:
                             description: Image is the image to use for the VM.
                             properties:
                               aliases:
-                                description: 'Aliases is a list of image aliases to
-                                  use for the VM. TODO(lubedacht): Needs implementation.'
+                                description: |-
+                                  Aliases is a list of image aliases to use for the VM.
+                                  TODO(lubedacht): Needs implementation.
                                 items:
                                   type: string
                                 type: array
@@ -159,10 +171,10 @@ spec:
                         type: object
                       memoryMB:
                         default: 3072
-                        description: MemoryMB is the memory size for the VM in MB.
-                          Size must be specified in multiples of 256 MB with a minimum
-                          of 1024 MB which is required as we are using hot-pluggable
-                          RAM by default.
+                        description: |-
+                          MemoryMB is the memory size for the VM in MB.
+                          Size must be specified in multiples of 256 MB with a minimum of 1024 MB
+                          which is required as we are using hot-pluggable RAM by default.
                         format: int32
                         minimum: 2048
                         multipleOf: 1024
@@ -175,11 +187,11 @@ spec:
                         minimum: 1
                         type: integer
                       providerID:
-                        description: ProviderID is the IONOS Cloud provider ID will
-                          be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
+                        description: |-
+                          ProviderID is the IONOS Cloud provider ID
+                          will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                         type: string
                     required:
-                    - cpuFamily
                     - datacenterID
                     - disk
                     type: object

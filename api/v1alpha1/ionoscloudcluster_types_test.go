@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -57,6 +58,7 @@ func defaultCluster() *IonosCloudCluster {
 			},
 			ContractNumber: "12345678",
 			Location:       "de/txl",
+			CredentialsRef: corev1.LocalObjectReference{Name: "secret-name"},
 		},
 	}
 }
@@ -70,6 +72,11 @@ var _ = Describe("IonosCloudCluster", func() {
 	Context("Create", func() {
 		It("should allow creating valid clusters", func() {
 			Expect(k8sClient.Create(context.Background(), defaultCluster())).To(Succeed())
+		})
+		It("should not allow creating clusters with empty credential secret", func() {
+			cluster := defaultCluster()
+			cluster.Spec.CredentialsRef.Name = ""
+			Expect(k8sClient.Create(context.Background(), cluster)).Should(MatchError(ContainSubstring("credentialsRef.name must be provided")))
 		})
 	})
 

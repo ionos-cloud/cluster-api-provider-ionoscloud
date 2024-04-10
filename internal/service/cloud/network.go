@@ -140,7 +140,6 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 
 	for _, l := range *lans.Items {
 		if l.Properties.HasName() && *l.Properties.Name == expectedName {
-			l := l
 			foundLAN = &l
 			lanCount++
 		}
@@ -414,7 +413,7 @@ func (s *Service) reconcileIPFailoverGroup(
 
 		log.Info("NIC is already in the failover group but with a different IP address", "currentIP", ip, "expectedIP", endpointIP)
 		// The IP address of the NIC is different. We need to update the failover group.
-		entry.Ip = ptr.To(endpointIP)
+		entry.Ip = &endpointIP
 		ipFailoverConfig[index] = entry
 
 		err := s.patchLAN(ctx, ms, lanID, sdk.LanProperties{IpFailover: &ipFailoverConfig})
@@ -423,8 +422,8 @@ func (s *Service) reconcileIPFailoverGroup(
 
 	// NIC was not found in failover group. We need to add it.
 	ipFailoverConfig = append(ipFailoverConfig, sdk.IPFailover{
-		Ip:      ptr.To(endpointIP),
-		NicUuid: ptr.To(nicID),
+		Ip:      &endpointIP,
+		NicUuid: &nicID,
 	})
 
 	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}

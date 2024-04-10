@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: ionoscloudmachines.infrastructure.cluster.x-k8s.io
 spec:
   group: infrastructure.cluster.x-k8s.io
@@ -20,14 +20,19 @@ spec:
         description: IonosCloudMachine is the Schema for the ionoscloudmachines API.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -35,15 +40,16 @@ spec:
             description: IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
             properties:
               additionalNetworks:
-                description: 'AdditionalNetworks defines the additional network configurations
-                  for the VM. NOTE(lubedacht): We currently only support networks
-                  with DHCP enabled.'
+                description: |-
+                  AdditionalNetworks defines the additional network configurations for the VM.
+                  NOTE(lubedacht): We currently only support networks with DHCP enabled.
                 items:
                   description: Network contains a network config.
                   properties:
                     networkID:
-                      description: NetworkID represents an ID an existing LAN in the
-                        data center. This LAN will be excluded from the deletion process.
+                      description: |-
+                        NetworkID represents an ID an existing LAN in the data center.
+                        This LAN will be excluded from the deletion process.
                       format: int32
                       minimum: 1
                       type: integer
@@ -61,11 +67,14 @@ spec:
                 - ZONE_2
                 type: string
               cpuFamily:
-                description: CPUFamily defines the CPU architecture, which will be
-                  used for this VM. Not all CPU architectures are available in all
-                  data centers.
+                description: |-
+                  CPUFamily defines the CPU architecture, which will be used for this VM.
+                  Not all CPU architectures are available in all data centers.
+
+
+                  If not specified, the cloud will select a suitable CPU family
+                  based on the availability in the data center.
                 example: AMD_OPTERON
-                minLength: 1
                 type: string
               datacenterID:
                 description: DatacenterID is the ID of the data center where the VM
@@ -100,8 +109,9 @@ spec:
                     description: Image is the image to use for the VM.
                     properties:
                       aliases:
-                        description: 'Aliases is a list of image aliases to use for
-                          the VM. TODO(lubedacht): Needs implementation.'
+                        description: |-
+                          Aliases is a list of image aliases to use for the VM.
+                          TODO(lubedacht): Needs implementation.
                         items:
                           type: string
                         type: array
@@ -126,9 +136,10 @@ spec:
                 type: object
               memoryMB:
                 default: 3072
-                description: MemoryMB is the memory size for the VM in MB. Size must
-                  be specified in multiples of 256 MB with a minimum of 1024 MB which
-                  is required as we are using hot-pluggable RAM by default.
+                description: |-
+                  MemoryMB is the memory size for the VM in MB.
+                  Size must be specified in multiples of 256 MB with a minimum of 1024 MB
+                  which is required as we are using hot-pluggable RAM by default.
                 format: int32
                 minimum: 2048
                 multipleOf: 1024
@@ -140,11 +151,11 @@ spec:
                 minimum: 1
                 type: integer
               providerID:
-                description: ProviderID is the IONOS Cloud provider ID will be in
-                  the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
+                description: |-
+                  ProviderID is the IONOS Cloud provider ID
+                  will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                 type: string
             required:
-            - cpuFamily
             - datacenterID
             - disk
             type: object
@@ -158,37 +169,37 @@ spec:
                     operational state.
                   properties:
                     lastTransitionTime:
-                      description: Last time the condition transitioned from one status
-                        to another. This should be when the underlying condition changed.
-                        If that is not known, then using the time when the API field
-                        changed is acceptable.
+                      description: |-
+                        Last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed. If that is not known, then using the time when
+                        the API field changed is acceptable.
                       format: date-time
                       type: string
                     message:
-                      description: A human readable message indicating details about
-                        the transition. This field may be empty.
+                      description: |-
+                        A human readable message indicating details about the transition.
+                        This field may be empty.
                       type: string
                     reason:
-                      description: The reason for the condition's last transition
-                        in CamelCase. The specific API may choose whether or not this
-                        field is considered a guaranteed API. This field may not be
-                        empty.
+                      description: |-
+                        The reason for the condition's last transition in CamelCase.
+                        The specific API may choose whether or not this field is considered a guaranteed API.
+                        This field may not be empty.
                       type: string
                     severity:
-                      description: Severity provides an explicit classification of
-                        Reason code, so the users or machines can immediately understand
-                        the current situation and act accordingly. The Severity field
-                        MUST be set only when Status=False.
+                      description: |-
+                        Severity provides an explicit classification of Reason code, so the users or machines can immediately
+                        understand the current situation and act accordingly.
+                        The Severity field MUST be set only when Status=False.
                       type: string
                     status:
                       description: Status of the condition, one of True, False, Unknown.
                       type: string
                     type:
-                      description: Type of condition in CamelCase or in foo.example.com/CamelCase.
-                        Many .condition.type values are consistent across resources
-                        like Available, but because arbitrary conditions can be useful
-                        (see .node.status.conditions), the ability to deconflict is
-                        important.
+                      description: |-
+                        Type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+                        can be useful (see .node.status.conditions), the ability to deconflict is important.
                       type: string
                   required:
                   - lastTransitionTime
@@ -197,8 +208,9 @@ spec:
                   type: object
                 type: array
               currentRequest:
-                description: CurrentRequest shows the current provisioning request
-                  for any cloud resource that is being provisioned.
+                description: |-
+                  CurrentRequest shows the current provisioning request for any
+                  cloud resource that is being provisioned.
                 properties:
                   method:
                     description: Method is the request method
@@ -220,36 +232,46 @@ spec:
                 - requestPath
                 type: object
               failureMessage:
-                description: "FailureMessage will be set in the event that there is
-                  a terminal problem reconciling the Machine and will contain a more
-                  verbose string suitable for logging and human consumption. \n This
-                  field should not be set for transitive errors that a controller
-                  faces that are expected to be fixed automatically over time (like
-                  service outages), but instead indicate that something is fundamentally
-                  wrong with the Machine's spec or the configuration of the controller,
-                  and that manual intervention is required. Examples of terminal errors
-                  would be invalid combinations of settings in the spec, values that
-                  are unsupported by the controller, or the responsible controller
-                  itself being critically misconfigured. \n Any transient errors that
-                  occur during the reconciliation of IonosCloudMachines can be added
-                  as events to the IonosCloudMachine object and/or logged in the controller's
-                  output."
+                description: |-
+                  FailureMessage will be set in the event that there is a terminal problem
+                  reconciling the Machine and will contain a more verbose string suitable
+                  for logging and human consumption.
+
+
+                  This field should not be set for transitive errors that a controller
+                  faces that are expected to be fixed automatically over
+                  time (like service outages), but instead indicate that something is
+                  fundamentally wrong with the Machine's spec or the configuration of
+                  the controller, and that manual intervention is required. Examples
+                  of terminal errors would be invalid combinations of settings in the
+                  spec, values that are unsupported by the controller, or the
+                  responsible controller itself being critically misconfigured.
+
+
+                  Any transient errors that occur during the reconciliation of IonosCloudMachines
+                  can be added as events to the IonosCloudMachine object and/or logged in the
+                  controller's output.
                 type: string
               failureReason:
-                description: "FailureReason will be set in the event that there is
-                  a terminal problem reconciling the Machine and will contain a succinct
-                  value suitable for machine interpretation. \n This field should
-                  not be set for transitive errors that a controller faces that are
-                  expected to be fixed automatically over time (like service outages),
-                  but instead indicate that something is fundamentally wrong with
-                  the Machine's spec or the configuration of the controller, and that
-                  manual intervention is required. Examples of terminal errors would
-                  be invalid combinations of settings in the spec, values that are
-                  unsupported by the controller, or the responsible controller itself
-                  being critically misconfigured. \n Any transient errors that occur
-                  during the reconciliation of IonosCloudMachines can be added as
-                  events to the IonosCloudMachine object and/or logged in the controller's
-                  output."
+                description: |-
+                  FailureReason will be set in the event that there is a terminal problem
+                  reconciling the Machine and will contain a succinct value suitable
+                  for machine interpretation.
+
+
+                  This field should not be set for transitive errors that a controller
+                  faces that are expected to be fixed automatically over
+                  time (like service outages), but instead indicate that something is
+                  fundamentally wrong with the Machine's spec or the configuration of
+                  the controller, and that manual intervention is required. Examples
+                  of terminal errors would be invalid combinations of settings in the
+                  spec, values that are unsupported by the controller, or the
+                  responsible controller itself being critically misconfigured.
+
+
+                  Any transient errors that occur during the reconciliation of IonosCloudMachines
+                  can be added as events to the IonosCloudMachine object and/or logged in the
+                  controller's output.
                 type: string
               ready:
                 description: Ready indicates the VM has been provisioned and is ready.

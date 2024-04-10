@@ -10,7 +10,6 @@ resources:
 - ../crd
 - ../rbac
 - ../manager
-- ionos-credentials-secret.yaml
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
 #- ../webhook
@@ -21,7 +20,6 @@ resources:
 
 patchesStrategicMerge:
 - manager_image_patch.yaml
-- manager_credentials_patch.yaml
 
 
 

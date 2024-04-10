@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -52,6 +53,10 @@ type IonosCloudClusterSpec struct {
 	//+kubebuilder:example=de/txl
 	//+kubebuilder:validation:MinLength=1
 	Location string `json:"location"`
+
+	// CredentialsRef is a reference to the secret containing the credentials to access the IONOS Cloud API.
+	//+kubebuilder:validation:XValidation:rule="has(self.name) && self.name != ''",message="credentialsRef.name must be provided"
+	CredentialsRef corev1.LocalObjectReference `json:"credentialsRef"`
 }
 
 // IonosCloudClusterStatus defines the observed state of IonosCloudCluster.

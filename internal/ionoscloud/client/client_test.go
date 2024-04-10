@@ -40,33 +40,22 @@ const (
 func TestNewClient(t *testing.T) {
 	w := "SET"
 	tests := []struct {
-		username   string
-		password   string
 		token      string
 		apiURL     string
 		shouldPass bool
 	}{
-		{w, w, w, w, true},
-		{w, w, w, "", true},
-		{"", "", w, w, true},
-		{"", "", w, "", true},
-		{w, w, "", w, true},
-		{w, "", w, w, false},
-		{w, "", "", w, false},
-		{"", w, w, w, false},
-		{"", w, "", w, false},
-		{"", "", "", "", false},
+		{w, w, true},
+		{w, "", true},
+		{"", w, false},
 	}
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("username=%s password=%s token=%s apiURL=%s (shouldPass=%t)",
-			tt.username, tt.password, tt.token, tt.apiURL, tt.shouldPass), func(t *testing.T) {
-			c, err := NewClient(tt.username, tt.password, tt.token, tt.apiURL)
+		t.Run(fmt.Sprintf("token=%s apiURL=%s (shouldPass=%t)",
+			tt.token, tt.apiURL, tt.shouldPass), func(t *testing.T) {
+			c, err := NewClient(tt.token, tt.apiURL)
 			if tt.shouldPass {
 				require.NotNil(t, c, "NewClient returned a nil IonosCloudClient")
 				require.NoError(t, err, "NewClient returned an error")
 				cfg := c.API.GetConfig()
-				require.Equal(t, tt.username, cfg.Username, "username didn't match")
-				require.Equal(t, tt.password, cfg.Password, "password didn't match")
 				require.Equal(t, tt.token, cfg.Token, "token didn't match")
 				require.Equal(t, tt.apiURL, cfg.Host, "apiURL didn't match")
 			} else {
@@ -94,7 +83,7 @@ func (s *IonosCloudClientTestSuite) SetupSuite() {
 	s.ctx = context.Background()
 
 	var err error
-	s.client, err = NewClient("username", "password", "", "localhost")
+	s.client, err = NewClient("token", "localhost")
 	s.NoError(err)
 
 	httpmock.Activate()
@@ -199,7 +188,6 @@ func TestWithDepth(t *testing.T) {
 		{5},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(fmt.Sprintf("depth=%d", tt.depth), func(t *testing.T) {
 			t.Parallel()
 			c := &IonosCloudClient{}

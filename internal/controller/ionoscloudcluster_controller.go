@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -38,7 +39,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -46,8 +46,7 @@ import (
 // IonosCloudClusterReconciler reconciles a IonosCloudCluster object.
 type IonosCloudClusterReconciler struct {
 	client.Client
-	Scheme           *runtime.Scheme
-	IonosCloudClient ionoscloud.Client
+	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudclusters,verbs=get;list;watch;create;update;patch;delete
@@ -98,9 +97,14 @@ func (r *IonosCloudClusterReconciler) Reconcile(
 		}
 	}()
 
-	cloudService, err := cloud.NewService(r.IonosCloudClient, logger)
+	cloudService, err := createServiceFromCluster(ctx, r.Client, ionosCloudCluster, logger)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to create cloud service: %w", err)
+		if apierrors.IsNotFound(err) {
+			logger.Error(err, "unable to create IONOS Cloud client")
+			// Secret is missing, we try again after some time.
+			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
+		}
+		return ctrl.Result{}, fmt.Errorf("failed to create ionos client: %w", err)
 	}
 
 	if !ionosCloudCluster.DeletionTimestamp.IsZero() {
@@ -110,7 +114,11 @@ func (r *IonosCloudClusterReconciler) Reconcile(
 	return r.reconcileNormal(ctx, clusterScope, cloudService)
 }
 
-func (r *IonosCloudClusterReconciler) reconcileNormal(ctx context.Context, clusterScope *scope.Cluster, cloudService *cloud.Service) (ctrl.Result, error) {
+func (r *IonosCloudClusterReconciler) reconcileNormal(
+	ctx context.Context,
+	clusterScope *scope.Cluster,
+	cloudService *cloud.Service,
+) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	controllerutil.AddFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)

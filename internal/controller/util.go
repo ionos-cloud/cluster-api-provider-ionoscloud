@@ -23,7 +23,12 @@ import (
 
 	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	icc "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -57,4 +62,31 @@ func withStatus(
 	}
 
 	return false, fmt.Errorf("unknown request status %s", status)
+}
+
+func createServiceFromCluster(
+	ctx context.Context,
+	c client.Client,
+	cluster *infrav1.IonosCloudCluster,
+	log logr.Logger,
+) (*cloud.Service, error) {
+	secretKey := client.ObjectKey{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Spec.CredentialsRef.Name,
+	}
+
+	var authSecret corev1.Secret
+	if err := c.Get(ctx, secretKey, &authSecret); err != nil {
+		return nil, err
+	}
+
+	token := string(authSecret.Data["token"])
+	apiURL := string(authSecret.Data["apiURL"])
+
+	ionosClient, err := icc.NewClient(token, apiURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return cloud.NewService(ionosClient, log)
 }

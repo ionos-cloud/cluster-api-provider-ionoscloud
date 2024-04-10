@@ -146,7 +146,7 @@ func (s *ServiceTestSuite) SetupTest() {
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
 			MemoryMB:         4096,
-			CPUFamily:        "AMD_OPTERON",
+			CPUFamily:        ptr.To("AMD_OPTERON"),
 			Disk: &infrav1.Volume{
 				Name:             "test-machine-hdd",
 				DiskType:         infrav1.VolumeDiskTypeHDD,
@@ -204,20 +204,20 @@ type requestBuildOptions struct {
 
 func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request {
 	req := sdk.Request{
-		Id: ptr.To(opts.requestID),
+		Id: &opts.requestID,
 		Metadata: &sdk.RequestMetadata{
 			RequestStatus: &sdk.RequestStatus{
-				Href: ptr.To(opts.href),
+				Href: &opts.href,
 				Metadata: &sdk.RequestStatusMetadata{
-					Status:  ptr.To(opts.status),
+					Status:  &opts.status,
 					Message: ptr.To("test"),
 				},
 			},
 		},
 		Properties: &sdk.RequestProperties{
-			Url:    ptr.To(opts.url),
-			Method: ptr.To(opts.method),
-			Body:   ptr.To(opts.body),
+			Url:    &opts.url,
+			Method: &opts.method,
+			Body:   &opts.body,
 		},
 	}
 
@@ -225,8 +225,8 @@ func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request 
 		req.Metadata.RequestStatus.Metadata.Targets = &[]sdk.RequestTarget{
 			{
 				Target: &sdk.ResourceReference{
-					Id:   ptr.To(opts.targetID),
-					Type: ptr.To(opts.targetType),
+					Id:   &opts.targetID,
+					Type: &opts.targetType,
 				},
 			},
 		}
