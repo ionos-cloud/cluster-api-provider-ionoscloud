@@ -71,7 +71,7 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: unit-test lint-fix vet integration-test ## Run tests.
+test: unit-test vet integration-test ## Run tests.
 
 .PHONY: unit-test
 unit-test: generate mocks ## Run unit tests.
