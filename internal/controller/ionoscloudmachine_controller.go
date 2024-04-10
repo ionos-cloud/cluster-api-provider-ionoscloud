@@ -127,7 +127,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 	}
 
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("could not create machine service")
+		return ctrl.Result{}, errors.New("could not create machine service")
 	}
 	if !ionosCloudMachine.ObjectMeta.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, machineScope, cloudService)
