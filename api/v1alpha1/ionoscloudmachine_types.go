@@ -270,16 +270,16 @@ type IonosCloudMachineStatus struct {
 
 // MachineNetworkInfo contains information about the network configuration of the VM.
 type MachineNetworkInfo struct {
-	// IPv4IPs defines the primary NIC IPv4 addresses of the VM.
+	// IPv4Addresses defines the primary NIC IPv4 addresses of the VM.
 	//+optional
-	IPv4IPs []string `json:"ipv4IPs,omitempty"`
+	IPv4Addresses []string `json:"ipv4Addresses,omitempty"`
 
-	// IPv6IPs defines the primary NIC IPv6 IP addresses of the VM.
+	// IPv6Addresses defines the primary NIC IPv6 IP addresses of the VM.
 	//
 	// The maximum number of IPv6 IP addresses per NIC is 50
 	//+kubebuilder:validation:MaxItems=50
 	//+optional
-	IPv6IPs []string `json:"ipv6IPs,omitempty"`
+	IPv6Addresses []string `json:"ipv6Addresses,omitempty"`
 }
 
 //+kubebuilder:object:root=true

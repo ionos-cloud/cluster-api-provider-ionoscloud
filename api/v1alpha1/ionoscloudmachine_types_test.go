@@ -377,8 +377,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			m.Status.FailureMessage = ptr.To("Failure message")
 
 			networkInfo := &MachineNetworkInfo{
-				IPv4IPs: []string{"198.51.100.10"},
-				IPv6IPs: []string{"2001:db8:2c3:30a0::1", "2001:db8:2c3:30a0::2"},
+				IPv4Addresses: []string{"198.51.100.10"},
+				IPv6Addresses: []string{"2001:db8:2c3:30a0::1", "2001:db8:2c3:30a0::2"},
 			}
 
 			m.SetMachineNetworkInfo(networkInfo)

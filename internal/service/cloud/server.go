@@ -76,8 +76,8 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 		}
 
 		netStatus := &infrav1.MachineNetworkInfo{
-			IPv4IPs: ptr.Deref(primary.GetProperties().GetIps(), []string{}),
-			IPv6IPs: ptr.Deref(primary.GetProperties().GetIpv6Ips(), []string{}),
+			IPv4Addresses: ptr.Deref(primary.GetProperties().GetIps(), []string{}),
+			IPv6Addresses: ptr.Deref(primary.GetProperties().GetIpv6Ips(), []string{}),
 		}
 
 		ms.IonosMachine.SetMachineNetworkInfo(netStatus)
@@ -393,6 +393,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 			Lan: &nic.NetworkID,
 		}})
 	}
+
 	serverNICs.Items = &items
 
 	return sdk.ServerEntities{

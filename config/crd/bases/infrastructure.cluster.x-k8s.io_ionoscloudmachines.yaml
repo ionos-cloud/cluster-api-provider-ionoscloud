@@ -313,15 +313,15 @@ spec:
                   MachineNetworkInfo contains information about the network configuration of the VM.
                   This information is only available after the VM has been provisioned.
                 properties:
-                  ipv4IPs:
-                    description: IPv4IPs defines the primary NIC IPv4 addresses of
-                      the VM.
+                  ipv4Addresses:
+                    description: IPv4Addresses defines the primary NIC IPv4 addresses
+                      of the VM.
                     items:
                       type: string
                     type: array
-                  ipv6IPs:
+                  ipv6Addresses:
                     description: |-
-                      IPv6IPs defines the primary NIC IPv6 IP addresses of the VM.
+                      IPv6Addresses defines the primary NIC IPv6 IP addresses of the VM.
 
 
                       The maximum number of IPv6 IP addresses per NIC is 50
