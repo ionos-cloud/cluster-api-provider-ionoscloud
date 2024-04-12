@@ -77,7 +77,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 
 		netStatus := &infrav1.MachineNetworkInfo{
 			IPv4IPs: ptr.Deref(primary.GetProperties().GetIps(), []string{}),
-			IPv6IPs: ptr.Deref(primary.GetProperties().Ipv6Ips, []string{}),
+			IPv6IPs: ptr.Deref(primary.GetProperties().GetIpv6Ips(), []string{}),
 		}
 
 		ms.IonosMachine.SetMachineNetworkInfo(netStatus)
