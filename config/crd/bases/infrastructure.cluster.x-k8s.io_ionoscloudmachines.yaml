@@ -23,10 +23,10 @@ spec:
       jsonPath: .status.ready
       name: Ready
       type: string
-    - jsonPath: .status.machineNetworkInfo.ipv4IPs
+    - jsonPath: .status.machineNetworkInfo.ipv4Addresses
       name: IPs Version 4
       type: string
-    - jsonPath: .status.machineNetworkInfo.ipv6IPs
+    - jsonPath: .status.machineNetworkInfo.ipv6Addresses
       name: IPs Version 6
       priority: 1
       type: string

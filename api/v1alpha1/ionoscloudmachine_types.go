@@ -286,8 +286,8 @@ type MachineNetworkInfo struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
 //+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine is ready"
-//+kubebuilder:printcolumn:name="IPs Version 4",type="string",JSONPath=".status.machineNetworkInfo.ipv4IPs"
-//+kubebuilder:printcolumn:name="IPs Version 6",type="string",JSONPath=".status.machineNetworkInfo.ipv6IPs",priority=1
+//+kubebuilder:printcolumn:name="IPs Version 4",type="string",JSONPath=".status.machineNetworkInfo.ipv4Addresses"
+//+kubebuilder:printcolumn:name="IPs Version 6",type="string",JSONPath=".status.machineNetworkInfo.ipv6Addresses",priority=1
 
 // IonosCloudMachine is the Schema for the ionoscloudmachines API.
 type IonosCloudMachine struct {
