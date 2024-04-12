@@ -157,10 +157,16 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 func (s *Service) createLAN(ctx context.Context, ms *scope.Machine) error {
 	log := s.logger.WithName("createLAN")
 
-	requestPath, err := s.ionosClient.CreateLAN(ctx, ms.DatacenterID(), sdk.LanPropertiesPost{
+	lanProperties := sdk.LanPropertiesPost{
 		Name:   ptr.To(s.lanName(ms.ClusterScope.Cluster)),
 		Public: ptr.To(true),
-	})
+	}
+
+	if ms.IonosMachine.Spec.NetworkConfig != nil {
+		lanProperties.Ipv6CidrBlock = ms.IonosMachine.Spec.NetworkConfig.DefaultNetworkIPv6CIDR
+	}
+
+	requestPath, err := s.ionosClient.CreateLAN(ctx, ms.DatacenterID(), lanProperties)
 	if err != nil {
 		return fmt.Errorf("unable to create LAN in data center %s: %w", ms.DatacenterID(), err)
 	}

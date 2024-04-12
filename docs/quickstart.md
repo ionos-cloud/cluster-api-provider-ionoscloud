@@ -16,6 +16,7 @@ to the official [Cluster API book](https://cluster-api.sigs.k8s.io/).
     * [Create a workload cluster](#create-a-workload-cluster)
   * [Next Steps](#next-steps)
   * [Troubleshooting](#troubleshooting)
+  * [Useful Resources](#useful-resources)
 
 ## Prerequisites
 
@@ -116,7 +117,7 @@ $ clusterctl generate cluster ionos-quickstart \
 $ kubectl apply -f cluster.yaml
 ```
 
-### Next Steps
+### Next steps
 
 TODO
 
@@ -131,3 +132,14 @@ For more information, refer to [Cluster API documentation](https://main.cluster-
 
 
 TODO
+
+
+### Useful resources
+
+---
+
+* [Cluster API Book](https://cluster-api.sigs.k8s.io/)
+* [Cloud API Docs](https://api.ionos.com/docs/cloud/v6/)
+* [IONOS Cloud Docs](https://docs.ionos.com/cloud)
+* [IPv6 Documentation](https://docs.ionos.com/cloud/network-services/ipv6)
+

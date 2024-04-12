@@ -55,9 +55,12 @@ func defaultMachine() *IonosCloudMachine {
 					ID: "1eef-48ec-a246-a51a33aa4f3a",
 				},
 			},
-			AdditionalNetworks: Networks{
-				{
-					NetworkID: 1,
+			NetworkConfig: &NetworkConfig{
+				DefaultNetworkIPv6CIDR: ptr.To("2001:db8:2c3:30a0::/64"),
+				AdditionalNetworks: Networks{
+					{
+						NetworkID: 1,
+					},
 				},
 			},
 		},
@@ -325,15 +328,15 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		Context("Additional Networks", func() {
 			It("network config should be optional", func() {
 				m := defaultMachine()
-				m.Spec.AdditionalNetworks = nil
+				m.Spec.NetworkConfig.AdditionalNetworks = nil
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(m.Spec.AdditionalNetworks).To(BeNil())
+				Expect(m.Spec.NetworkConfig.AdditionalNetworks).To(BeNil())
 			})
 			It("network ID must be greater than 0", func() {
 				m := defaultMachine()
-				m.Spec.AdditionalNetworks[0].NetworkID = 0
+				m.Spec.NetworkConfig.AdditionalNetworks[0].NetworkID = 0
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
-				m.Spec.AdditionalNetworks[0].NetworkID = -1
+				m.Spec.NetworkConfig.AdditionalNetworks[0].NetworkID = -1
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 		})
@@ -372,6 +375,13 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			}
 			m.Status.FailureReason = ptr.To(errors.InvalidConfigurationMachineError)
 			m.Status.FailureMessage = ptr.To("Failure message")
+
+			networkInfo := &MachineNetworkInfo{
+				IPv4IPs: []string{"198.51.100.10"},
+				IPv6IPs: []string{"2001:db8:2c3:30a0::1", "2001:db8:2c3:30a0::2"},
+			}
+
+			m.SetMachineNetworkInfo(networkInfo)
 
 			want := *m.DeepCopy()
 
