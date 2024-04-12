@@ -144,6 +144,10 @@ TODO
 
 ### Troubleshooting
 
----
+#### Diagnostics
+
+Access to metrics is secured by default. Before using it, it is necessary to create appropriate roles and role bindings.
+For more information, refer to [Cluster API documentation](https://main.cluster-api.sigs.k8s.io/tasks/diagnostics).
+
 
 TODO
