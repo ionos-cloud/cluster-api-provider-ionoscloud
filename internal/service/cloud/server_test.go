@@ -100,35 +100,6 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 				Nics: &sdk.Nics{
 					Items: &[]sdk.Nic{{
 						Properties: &sdk.NicProperties{
-							Name: ptr.To(s.service.nicName(s.infraMachine)),
-						},
-					}},
-				},
-			},
-		},
-	}}, nil).Once()
-
-	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
-	s.NoError(err)
-	s.False(requeue)
-}
-
-func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableIPv6() {
-	s.prepareReconcileServerRequestTest()
-	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
-	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{
-		{
-			Metadata: &sdk.DatacenterElementMetadata{
-				State: ptr.To(sdk.Available),
-			},
-			Properties: &sdk.ServerProperties{
-				Name:    ptr.To(s.service.serverName(s.infraMachine)),
-				VmState: ptr.To("RUNNING"),
-			},
-			Entities: &sdk.ServerEntities{
-				Nics: &sdk.Nics{
-					Items: &[]sdk.Nic{{
-						Properties: &sdk.NicProperties{
 							Name:          ptr.To(s.service.nicName(s.infraMachine)),
 							Dhcp:          ptr.To(true),
 							Lan:           ptr.To(int32(1)),
