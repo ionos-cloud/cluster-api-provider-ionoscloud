@@ -28,7 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
@@ -283,7 +283,7 @@ func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
 }
 
 //nolint:unused
-func (s *serverSuite) exampleServer() sdk.Server {
+func (*serverSuite) exampleServer() sdk.Server {
 	return sdk.Server{
 		Id: ptr.To("1"),
 		Metadata: &sdk.DatacenterElementMetadata{
@@ -314,7 +314,8 @@ func (s *serverSuite) mockDeleteServer(serverID string) *clienttest.MockClient_D
 }
 
 func (s *serverSuite) mockGetServerCreationRequest() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.serversURL(s.machineScope.DatacenterID()))
+	return s.ionosClient.EXPECT().
+		GetRequests(s.ctx, http.MethodPost, s.service.serversURL(s.machineScope.DatacenterID()))
 }
 
 func (s *serverSuite) mockGetServerDeletionRequest(serverID string) *clienttest.MockClient_GetRequests_Call {

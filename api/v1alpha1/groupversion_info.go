@@ -35,7 +35,8 @@ var (
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = schemeBuilder.AddToScheme
 
-	// In order to reduce dependencies for API package consumers, CAPI has diverged from the default kubebuilder scheme builder.
+	// In order to reduce dependencies for API package consumers, CAPI has diverged from the default
+	// kubebuilder scheme builder.
 	// This new pattern may also be useful for reducing dependencies in provider API packages.
 	// For more information see the implementers guide.
 	// https://main.cluster-api.sigs.k8s.io/developer/providers/implementers-guide/create_api#registering-apis-in-the-scheme

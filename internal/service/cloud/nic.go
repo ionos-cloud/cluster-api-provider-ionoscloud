@@ -30,7 +30,7 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-func (s *Service) nicURL(ms *scope.Machine, serverID, nicID string) string {
+func (*Service) nicURL(ms *scope.Machine, serverID, nicID string) string {
 	return path.Join("datacenters", ms.DatacenterID(), "servers", serverID, "nics", nicID)
 }
 
@@ -101,7 +101,9 @@ func (s *Service) findPrimaryNIC(m *infrav1.IonosCloudMachine, server *sdk.Serve
 	return nil, fmt.Errorf("could not find primary NIC with name %s", s.nicName(m))
 }
 
-func (s *Service) patchNIC(ctx context.Context, ms *scope.Machine, serverID string, nic *sdk.Nic, props sdk.NicProperties) error {
+func (s *Service) patchNIC(
+	ctx context.Context, ms *scope.Machine, serverID string, nic *sdk.Nic, props sdk.NicProperties,
+) error {
 	log := s.logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")
@@ -120,7 +122,9 @@ func (s *Service) patchNIC(ctx context.Context, ms *scope.Machine, serverID stri
 	return s.ionosClient.WaitForRequest(ctx, location)
 }
 
-func (s *Service) getLatestNICPatchRequest(ctx context.Context, ms *scope.Machine, serverID string, nicID string) (*requestInfo, error) {
+func (s *Service) getLatestNICPatchRequest(
+	ctx context.Context, ms *scope.Machine, serverID string, nicID string,
+) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Nic](
 		ctx,
 		s,
@@ -135,6 +139,6 @@ func nicHasIP(nic *sdk.Nic, expectedIP string) bool {
 	return slices.Contains(ips, expectedIP)
 }
 
-func (s *Service) nicName(m *infrav1.IonosCloudMachine) string {
+func (*Service) nicName(m *infrav1.IonosCloudMachine) string {
 	return fmt.Sprintf("k8s-nic-%s-%s", m.Namespace, m.Name)
 }

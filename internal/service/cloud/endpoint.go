@@ -189,7 +189,7 @@ func (s *Service) getIPBlock(ctx context.Context, cs *scope.Cluster) (*sdk.IpBlo
 	return nil, err
 }
 
-func (s *Service) checkIfUserSetBlock(cs *scope.Cluster, props *sdk.IpBlockProperties) bool {
+func (*Service) checkIfUserSetBlock(cs *scope.Cluster, props *sdk.IpBlockProperties) bool {
 	ip := cs.GetControlPlaneEndpoint().Host
 	ips := ptr.Deref(props.GetIps(), nil)
 	return ip != "" && slices.Contains(ips, ip)
@@ -268,7 +268,7 @@ func (s *Service) getLatestIPBlockDeletionRequest(ctx context.Context, ipBlockID
 }
 
 // ipBlockName returns the name that should be used for cluster context resources.
-func (s *Service) ipBlockName(cs *scope.Cluster) string {
+func (*Service) ipBlockName(cs *scope.Cluster) string {
 	return fmt.Sprintf("k8s-ipb-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
 }
 

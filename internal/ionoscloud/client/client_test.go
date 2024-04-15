@@ -89,11 +89,11 @@ func (s *IonosCloudClientTestSuite) SetupSuite() {
 	httpmock.Activate()
 }
 
-func (s *IonosCloudClientTestSuite) TearDownSuite() {
+func (*IonosCloudClientTestSuite) TearDownSuite() {
 	httpmock.Deactivate()
 }
 
-func (s *IonosCloudClientTestSuite) TearDownTest() {
+func (*IonosCloudClientTestSuite) TearDownTest() {
 	httpmock.Reset()
 }
 
@@ -191,8 +191,8 @@ func TestWithDepth(t *testing.T) {
 		t.Run(fmt.Sprintf("depth=%d", tt.depth), func(t *testing.T) {
 			t.Parallel()
 			c := &IonosCloudClient{}
-			n := WithDepth(c, tt.depth).(*IonosCloudClient)
-
+			n, ok := WithDepth(c, tt.depth).(*IonosCloudClient)
+			require.True(t, ok, "WithDepth didn't return an IonosCloudClient")
 			require.Equal(t, tt.depth, n.requestDepth, "depth didn't match")
 			require.NotEqualf(t, c, n, "WithDepth returned the same client")
 		})

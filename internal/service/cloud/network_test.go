@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
@@ -51,7 +51,8 @@ func (s *lanSuite) TestNetworkLANName() {
 }
 
 func (s *lanSuite) TestLANURL() {
-	s.Equal("datacenters/"+s.machineScope.DatacenterID()+"/lans/1", s.service.lanURL(s.machineScope.DatacenterID(), "1"))
+	s.Equal("datacenters/"+s.machineScope.DatacenterID()+"/lans/1",
+		s.service.lanURL(s.machineScope.DatacenterID(), "1"))
 }
 
 func (s *lanSuite) TestLANURLs() {
@@ -61,7 +62,8 @@ func (s *lanSuite) TestLANURLs() {
 func (s *lanSuite) TestNetworkCreateLANSuccessful() {
 	s.mockCreateLANCall().Return(exampleRequestPath, nil).Once()
 	s.NoError(s.service.createLAN(s.ctx, s.machineScope))
-	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.machineScope.DatacenterID(), "request should be stored in status")
+	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.machineScope.DatacenterID(),
+		"request should be stored in status")
 	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.machineScope.DatacenterID()]
 	s.Equal(exampleRequestPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodPost, req.Method, "request method should be stored in status")
@@ -71,7 +73,8 @@ func (s *lanSuite) TestNetworkCreateLANSuccessful() {
 func (s *lanSuite) TestNetworkDeleteLANSuccessful() {
 	s.mockDeleteLANCall(exampleLANID).Return(exampleRequestPath, nil).Once()
 	s.NoError(s.service.deleteLAN(s.ctx, s.machineScope, exampleLANID))
-	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.machineScope.DatacenterID(), "request should be stored in status")
+	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.machineScope.DatacenterID(),
+		"request should be stored in status")
 	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.machineScope.DatacenterID()]
 	s.Equal(exampleRequestPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodDelete, req.Method, "request method should be stored in status")
@@ -110,7 +113,8 @@ func (s *lanSuite) TestNetworkRemoveLANPendingRequestFromClusterSuccessful() {
 		},
 	}
 	s.NoError(s.service.removeLANPendingRequestFromCluster(s.machineScope))
-	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.machineScope.DatacenterID(), "request should be removed from status")
+	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter,
+		s.machineScope.DatacenterID(), "request should be removed from status")
 }
 
 func (s *lanSuite) TestNetworkRemoveLANPendingRequestFromClusterNoRequest() {
@@ -449,7 +453,9 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionServerNotFound() {
 	err := setControlPlaneLabel(s.ctx, s.k8sClient, s.machineScope.IonosMachine)
 	s.NoError(err)
 
-	s.mockGetServerCall(exampleServerID).Return(nil, sdk.NewGenericOpenAPIError("server not found", nil, nil, 404)).Once()
+	s.mockGetServerCall(exampleServerID).
+		Return(nil, sdk.NewGenericOpenAPIError("server not found", nil, nil, 404)).
+		Once()
 	s.mockListServerCall().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
 
 	requeue, err := s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope)
@@ -562,11 +568,13 @@ func (s *lanSuite) mockGetLANCreationRequestsCall() *clienttest.MockClient_GetRe
 }
 
 func (s *lanSuite) mockGetLANPatchRequestCall() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPatch, s.service.lanURL(s.machineScope.DatacenterID(), exampleLANID))
+	return s.ionosClient.EXPECT().
+		GetRequests(s.ctx, http.MethodPatch, s.service.lanURL(s.machineScope.DatacenterID(), exampleLANID))
 }
 
 func (s *lanSuite) mockGetLANDeletionRequestsCall() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, s.service.lanURL(s.machineScope.DatacenterID(), exampleLANID))
+	return s.ionosClient.EXPECT().
+		GetRequests(s.ctx, http.MethodDelete, s.service.lanURL(s.machineScope.DatacenterID(), exampleLANID))
 }
 
 func (s *lanSuite) mockGetServerCall(serverID string) *clienttest.MockClient_GetServer_Call {

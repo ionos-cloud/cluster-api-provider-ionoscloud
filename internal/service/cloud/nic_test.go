@@ -24,7 +24,7 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/suite"
 
-	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 )
 
 const (
@@ -61,7 +61,8 @@ func (s *nicSuite) TestReconcileNICConfig() {
 }
 
 func (s *nicSuite) TestReconcileNICConfigIPIsSet() {
-	s.mockGetServer(exampleServerID).Return(s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP), nil).Once()
+	s.mockGetServer(exampleServerID).
+		Return(s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP), nil).Once()
 	nic, err := s.service.reconcileNICConfig(s.ctx, s.machineScope, exampleEndpointIP)
 
 	s.NotNil(nic, assertMessageNICIsNil)
@@ -96,7 +97,8 @@ func (s *nicSuite) mockPatchNIC(serverID, nicID string, props sdk.NicProperties)
 }
 
 func (s *nicSuite) mockGetLatestNICPatchRequest(serverID, nicID string) *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPatch, s.service.nicURL(s.machineScope, serverID, nicID))
+	return s.ionosClient.EXPECT().
+		GetRequests(s.ctx, http.MethodPatch, s.service.nicURL(s.machineScope, serverID, nicID))
 }
 
 func (s *nicSuite) mockWaitForRequest(location string) *clienttest.MockClient_WaitForRequest_Call {

@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
@@ -113,7 +113,9 @@ func (s *getRequestStatusSuite) TestGetRequestStatus() {
 	s.Empty(message, messageEmptyText)
 }
 
-func (s *getRequestStatusSuite) mockCheckRequestStatusCall(requestURL string) *clienttest.MockClient_CheckRequestStatus_Call {
+func (s *getRequestStatusSuite) mockCheckRequestStatusCall(
+	requestURL string,
+) *clienttest.MockClient_CheckRequestStatus_Call {
 	return s.ionosClient.EXPECT().CheckRequestStatus(s.ctx, requestURL)
 }
 

@@ -151,10 +151,13 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.Cluster, cloudService *cloud.Service) (ctrl.Result, error) {
+func (r *IonosCloudClusterReconciler) reconcileDelete(
+	ctx context.Context, clusterScope *scope.Cluster, cloudService *cloud.Service,
+) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
-		log.Error(errors.New("deletion was requested but owning cluster wasn't deleted"), "unable to delete IonosCloudCluster")
+		log.Error(errors.New("deletion was requested but owning cluster wasn't deleted"),
+			"unable to delete IonosCloudCluster")
 		// No need to reconcile again until the owning cluster was deleted.
 		return ctrl.Result{}, nil
 	}
@@ -187,7 +190,7 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(ctx context.Context, clust
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudClusterReconciler) checkRequestStatus(
+func (*IonosCloudClusterReconciler) checkRequestStatus(
 	ctx context.Context, clusterScope *scope.Cluster, cloudService *cloud.Service,
 ) (requeue bool, retErr error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -215,7 +218,12 @@ func (r *IonosCloudClusterReconciler) SetupWithManager(ctx context.Context, mgr 
 		WithEventFilter(predicates.ResourceNotPaused(ctrl.LoggerFrom(ctx))).
 		Watches(&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(
-				util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(infrav1.IonosCloudClusterKind), r.Client, &infrav1.IonosCloudCluster{})),
+				util.ClusterToInfrastructureMapFunc(
+					ctx,
+					infrav1.GroupVersion.WithKind(infrav1.IonosCloudClusterKind),
+					r.Client, &infrav1.IonosCloudCluster{},
+				),
+			),
 			builder.WithPredicates(predicates.ClusterUnpaused(ctrl.LoggerFrom(ctx))),
 		).
 		Complete(reconcile.AsReconciler[*infrav1.IonosCloudCluster](r.Client, r))

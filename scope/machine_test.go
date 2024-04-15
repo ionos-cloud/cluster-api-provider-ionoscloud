@@ -105,10 +105,6 @@ func TestMachineCountExistingMachines(t *testing.T) {
 
 	scope.ClusterScope.Cluster.SetName("test-cluster")
 
-	count, err := scope.CountExistingMachines(context.Background(), false)
-	require.NoError(t, err)
-	require.Equal(t, 0, count)
-
 	cpLabels := map[string]string{
 		clusterv1.ClusterNameLabel:         scope.ClusterScope.Cluster.Name,
 		clusterv1.MachineControlPlaneLabel: "",
@@ -130,11 +126,7 @@ func TestMachineCountExistingMachines(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	count, err = scope.CountExistingMachines(context.Background(), false)
-	require.NoError(t, err)
-	require.Equal(t, 6, count)
-
-	count, err = scope.CountExistingMachines(context.Background(), true)
+	count, err := scope.CountExistingControlPlanes(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 3, count)
 }

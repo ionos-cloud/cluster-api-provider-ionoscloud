@@ -33,18 +33,18 @@ import (
 )
 
 // lanName returns the name of the cluster LAN.
-func (s *Service) lanName(c *clusterv1.Cluster) string {
+func (*Service) lanName(c *clusterv1.Cluster) string {
 	return fmt.Sprintf(
 		"k8s-lan-%s-%s",
 		c.Namespace,
 		c.Name)
 }
 
-func (s *Service) lanURL(datacenterID, id string) string {
+func (*Service) lanURL(datacenterID, id string) string {
 	return path.Join("datacenters", datacenterID, "lans", id)
 }
 
-func (s *Service) lansURL(datacenterID string) string {
+func (*Service) lansURL(datacenterID string) string {
 	return path.Join("datacenters", datacenterID, "lans")
 }
 
@@ -217,7 +217,9 @@ func (s *Service) getLatestLANCreationRequest(ctx context.Context, ms *scope.Mac
 		matchByName[*sdk.Lan, *sdk.LanProperties](s.lanName(ms.ClusterScope.Cluster)))
 }
 
-func (s *Service) getLatestLANDeletionRequest(ctx context.Context, ms *scope.Machine, lanID string) (*requestInfo, error) {
+func (s *Service) getLatestLANDeletionRequest(
+	ctx context.Context, ms *scope.Machine, lanID string,
+) (*requestInfo, error) {
 	return s.getLatestLANRequestByMethod(ctx, http.MethodDelete, s.lanURL(ms.DatacenterID(), lanID))
 }
 
@@ -225,7 +227,7 @@ func (s *Service) getLatestLANPatchRequest(ctx context.Context, ms *scope.Machin
 	return s.getLatestLANRequestByMethod(ctx, http.MethodPatch, s.lanURL(ms.DatacenterID(), lanID))
 }
 
-func (s *Service) removeLANPendingRequestFromCluster(ms *scope.Machine) error {
+func (*Service) removeLANPendingRequestFromCluster(ms *scope.Machine) error {
 	ms.ClusterScope.IonosCluster.DeleteCurrentRequestByDatacenter(ms.DatacenterID())
 	if err := ms.ClusterScope.PatchObject(); err != nil {
 		return fmt.Errorf("could not remove stale LAN pending request from cluster: %w", err)
@@ -269,7 +271,7 @@ func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Mac
 		return false, nil
 	}
 
-	count, err := ms.CountExistingMachines(ctx, true)
+	count, err := ms.CountExistingControlPlanes(ctx)
 
 	switch {
 	case err != nil:
@@ -411,7 +413,8 @@ func (s *Service) reconcileIPFailoverGroup(
 			return false, nil
 		}
 
-		log.Info("NIC is already in the failover group but with a different IP address", "currentIP", ip, "expectedIP", endpointIP)
+		log.Info("NIC is already in the failover group but with a different IP address",
+			"currentIP", ip, "expectedIP", endpointIP)
 		// The IP address of the NIC is different. We need to update the failover group.
 		entry.Ip = &endpointIP
 		ipFailoverConfig[index] = entry
@@ -433,7 +436,9 @@ func (s *Service) reconcileIPFailoverGroup(
 	return true, err
 }
 
-func (s *Service) removeNICFromFailoverGroup(ctx context.Context, ms *scope.Machine, nicID string) (requeue bool, err error) {
+func (s *Service) removeNICFromFailoverGroup(
+	ctx context.Context, ms *scope.Machine, nicID string,
+) (requeue bool, err error) {
 	log := s.logger.WithName("removeNICFromFailoverGroup")
 
 	lan, failoverConfig := &sdk.Lan{}, &[]sdk.IPFailover{}

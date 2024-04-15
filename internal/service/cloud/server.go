@@ -133,7 +133,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 }
 
 // FinalizeMachineProvisioning marks the machine as provisioned.
-func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
+func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
 	ms.IonosMachine.Status.Ready = true
 	conditions.MarkTrue(ms.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil
@@ -236,7 +236,9 @@ func (s *Service) getLatestServerCreationRequest(ctx context.Context, ms *scope.
 	)
 }
 
-func (s *Service) getLatestServerDeletionRequest(ctx context.Context, datacenterID, serverID string) (*requestInfo, error) {
+func (s *Service) getLatestServerDeletionRequest(
+	ctx context.Context, datacenterID, serverID string,
+) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Server](
 		ctx,
 		s,
@@ -297,7 +299,9 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 }
 
 // buildServerProperties returns the server properties for the expected cloud server resource.
-func (s *Service) buildServerProperties(ms *scope.Machine, machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerProperties {
+func (s *Service) buildServerProperties(
+	ms *scope.Machine, machineSpec *infrav1.IonosCloudMachineSpec,
+) sdk.ServerProperties {
 	props := sdk.ServerProperties{
 		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
 		Cores:            &machineSpec.NumCores,
@@ -381,18 +385,18 @@ func (s *Service) renderUserData(ms *scope.Machine, input string) string {
 	return base64.StdEncoding.EncodeToString([]byte(input))
 }
 
-func (s *Service) serversURL(datacenterID string) string {
+func (*Service) serversURL(datacenterID string) string {
 	return path.Join("datacenters", datacenterID, "servers")
 }
 
 // serverName returns a formatted name for the expected cloud server resource.
-func (s *Service) serverName(m *infrav1.IonosCloudMachine) string {
+func (*Service) serverName(m *infrav1.IonosCloudMachine) string {
 	return fmt.Sprintf(
 		"k8s-%s-%s",
 		m.Namespace,
 		m.Name)
 }
 
-func (s *Service) volumeName(m *infrav1.IonosCloudMachine) string {
+func (*Service) volumeName(m *infrav1.IonosCloudMachine) string {
 	return fmt.Sprintf("k8s-vol-%s-%s", m.Namespace, m.Name)
 }
