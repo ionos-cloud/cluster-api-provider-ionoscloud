@@ -136,15 +136,15 @@ issues:
   exclude-use-default: false
   exclude-rules:
     - linters:
-        - revive
-      text: "comment-spacings: no space between comment delimiter and comment text"
-      source: "//\\+(kubebuilder|optional|required)"
-    - linters:
         - containedctx
       path: '(.+)_test\.go'
     - linters:
         - gocritic
       text: "appendAssign: append result not assigned to the same slice"
+    - linters:
+        - revive
+      text: "comment-spacings: no space between comment delimiter and comment text"
+      source: "//\\+(kubebuilder|optional|required)"
     - linters:
         - revive
       text: "exported: exported method .*\\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported"
