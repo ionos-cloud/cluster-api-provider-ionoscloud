@@ -54,18 +54,49 @@ kubebuilder create api \
 
 ### Setup local test environment
 
-TODO: convert steps to proper documentation
-
 Steps:
-1. make sure to have folder structure
-../
-/cluster-api
-/cluster-api-provider-ionoscloud
-2. tilt settings file
-3. install kind
-4. install tilt
-5. create kind cluster
-6. tilt up
+1. Make sure to have following folder structure: `../ /cluster-api /cluster-api-provider-ionoscloud` (both cluster-api related projects in the same subfolder)
+2. Create the tilt settings file `tilt-settings.json` in the `cluster-api` folder:
+```json
+{
+  "default_registry": "ghcr.io/ionos-cloud",
+  "provider_repos": [
+    "../cluster-api-provider-ionoscloud/"
+  ],
+  "enable_providers": [
+    "ionoscloud",
+    "kubeadm-bootstrap",
+    "kubeadm-control-plane"
+  ],
+  "allowed_contexts": [
+    "minikube"
+  ],
+  "kustomize_substitutions": {},
+  "extra_args": {
+    "ionoscloud": [
+      "--v=4"
+    ]
+  }
+}
+```
+3. Install kind (https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+4. Install tilt   
+Linux: https://docs.tilt.dev/install.html#linux   
+Mac: https://docs.tilt.dev/install.html#macos
+5. Create a kind cluster   
+You can create a `kind-config.yaml` file (name doesn't matter) to configure node count and versions:
+```yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  image: kindest/node:v1.28.0
+- role: worker
+  image: kindest/node:v1.28.0
+```
+Choose the version you'd like and add more nodes if needed.   
+Now create the kind cluster using the config: `kind create cluster --name <name> --config kind-config.yaml`
+6. Now you can run `tilt up`, and everything should run.
 
 ### Make sure our api resources implement the contracts
 
