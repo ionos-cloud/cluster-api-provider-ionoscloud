@@ -152,7 +152,7 @@ func (s *Service) isServerAvailable(server *sdk.Server, ms *scope.Machine) bool 
 			log.Error(err, "Failed to start the server")
 			return false
 		}
-		return false
+		return true
 	}
 
 	return true
