@@ -72,6 +72,10 @@ spec:
         - "--leader-elect"
         image: controller:latest
         name: manager
+        ports:
+          - containerPort: 8443
+            name: diagnostics
+            protocol: TCP
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -118,8 +122,9 @@ spec:
   selector:
     control-plane: controller-manager
   ports:
-    - name: metrics
+    - name: diagnostics-svc
       protocol: TCP
       port: 8443
+      targetPort: diagnostics
 
 
