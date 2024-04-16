@@ -35,6 +35,7 @@ type Client interface {
 	// DeleteServer deletes the server that matches the provided serverID in the specified data center.
 	DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error)
 	// StartServer starts the server that matches the provided serverID in the specified data center.
+	// Returning the location and an error if starting the server fails.
 	StartServer(ctx context.Context, datacenterID, serverID string) (string, error)
 	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request path.
 	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost) (string, error)

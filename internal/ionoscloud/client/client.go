@@ -156,6 +156,7 @@ func (c *IonosCloudClient) DeleteServer(ctx context.Context, datacenterID, serve
 }
 
 // StartServer starts the server that matches the provided serverID in the specified data center.
+// Returning the location and an error if starting the server fails.
 func (c *IonosCloudClient) StartServer(ctx context.Context, datacenterID, serverID string) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
