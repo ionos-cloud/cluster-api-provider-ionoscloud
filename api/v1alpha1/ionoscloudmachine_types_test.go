@@ -320,12 +320,6 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 					m.Spec.Disk.Image.ID = ptr.To("1eef-48ec-a246-a51a33aa4f3a")
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				})
-				It("should not fail if ID is not set but aliases contains a value", func() {
-					m := defaultMachine()
-					m.Spec.Disk.Image.ID = nil
-					m.Spec.Disk.Image.Aliases = []string{"ubuntu-20.04"}
-					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				})
 			})
 		})
 		Context("Additional Networks", func() {

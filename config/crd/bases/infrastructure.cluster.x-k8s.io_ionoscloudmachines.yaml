@@ -108,21 +108,12 @@ spec:
                   image:
                     description: Image is the image to use for the VM.
                     properties:
-                      aliases:
-                        description: |-
-                          Aliases is a list of image aliases to use for the VM.
-                          TODO(lubedacht): Needs implementation.
-                        items:
-                          type: string
-                        type: array
                       id:
                         description: ID is the ID of the image to use for the VM.
                         type: string
                     type: object
                     x-kubernetes-validations:
-                    - message: either id or aliases must be set
-                      rule: has(self.id) && self.id != '' || self.aliases.size() >
-                        0
+                    - rule: has(self.id) && self.id != ''
                   name:
                     description: Name is the name of the volume
                     type: string
