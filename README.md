@@ -2,7 +2,7 @@
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/main/docs/book/src/images/introduction.svg"  width="80" style="vertical-align: middle;">
-<img src="./LOGO_IONOS_Blue_RGB.png" width="200" style="vertical-align: middle;">
+<img src="./docs/LOGO_IONOS_Blue_RGB.png" width="200" style="vertical-align: middle;">
 </p>
 <p align="center">
 <!-- go doc / reference card -->
