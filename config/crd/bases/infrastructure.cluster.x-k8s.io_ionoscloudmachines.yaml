@@ -110,6 +110,7 @@ spec:
                     properties:
                       id:
                         description: ID is the ID of the image to use for the VM.
+                        minLength: 1
                         type: string
                     required:
                     - id
