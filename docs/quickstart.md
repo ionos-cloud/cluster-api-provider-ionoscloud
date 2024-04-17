@@ -1,14 +1,10 @@
 ## Usage
 
----
-
 This is a guide on how to use the Cluster API Provider for IONOS Cloud (CAPIC) to create a Kubernetes cluster 
 on IONOS Cloud. To learn more about the Cluster API, please refer 
 to the official [Cluster API book](https://cluster-api.sigs.k8s.io/).
 
 ## Table of Contents
-
----
 
 * [Usage](#usage)
   * [Prerequisites](#prerequisites)
@@ -23,8 +19,6 @@ to the official [Cluster API book](https://cluster-api.sigs.k8s.io/).
 
 ## Prerequisites
 
----
-
 Before you can use CAPIC, you need to have the following prerequisites:
 
 * A Kubernetes cluster which can run the required providers for CAPIC.
@@ -37,28 +31,20 @@ Before you can use CAPIC, you need to have the following prerequisites:
 
 ## Quickstart
 
----
-
 In order to install Cluster API Provider for IONOS Cloud (CAPIC), you need to have a Kubernetes cluster up and running,
 and `clusterctl` installed.
 
 ### Case 1: Using a local provider
-
----
 
 If the provider is not yet added to the list of providers in `clusterctl`, you can bootstrap the management cluster
 using a local provider. Refer to [local provider](./local-provider.md) for more information.
 
 ### Case 2: The provider is already available in clusterctl
 
----
-
 In this case you can simply follow the steps below. Make sure you are using a version of `clusterctl` which
 supports the `IONOS Cloud provider`.
 
 ### Configuring the management cluster
-
----
 
 Before you can create a Kubernetes cluster on IONOS Cloud, you need to configure the management cluster.
 Currently, the controller has no need of any special configuration, so you can just run the following command:
@@ -69,8 +55,6 @@ clusterctl init --infrastructure=ionoscloud
 
 
 ### Environment variables
-
----
 
 CAPIC requires several environment variables to be set in order to create a Kubernetes cluster on IONOS Cloud.
 
@@ -98,8 +82,6 @@ IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used.
 
 ### Credential Secret Structure
 
----
-
 The `IONOS_TOKEN` should be stored in a secret in the same namespace as the management cluster. 
 The secret should have the following structure:
 
@@ -117,8 +99,6 @@ stringData:
 ```
 
 ### Create a workload cluster
-
----
 
 In order to create a new cluster, you need to generate a cluster manifest.
 
@@ -138,12 +118,16 @@ $ kubectl apply -f cluster.yaml
 
 ### Next Steps
 
----
-
 TODO
+
+### Observability
+
+#### Diagnostics
+
+Access to metrics is secured by default. Before using it, it is necessary to create appropriate roles and role bindings.
+For more information, refer to [Cluster API documentation](https://main.cluster-api.sigs.k8s.io/tasks/diagnostics).
 
 ### Troubleshooting
 
----
 
 TODO
