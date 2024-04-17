@@ -16,8 +16,6 @@
 <img src="https://img.shields.io/badge/join%20slack-%23cluster--api--ionoscloud-003d8f?logo=slack"></a>
 </p>
 
-------
-
 Kubernetes-native declarative infrastructure for IONOS Cloud.
 
 ## What is the Cluster API Provider IONOS Cloud
@@ -34,8 +32,6 @@ Check out the [Cluster API Quick Start][quickstart] to create your first Kuberne
 ## Getting Help
 
 If you need help with CAPIC, please visit the [#cluster-api-ionoscloud][slack] channel on Slack or open a [GitHub issue](CONTRIBUTING.md).
-
-------
 
 ## Compatibility
 
