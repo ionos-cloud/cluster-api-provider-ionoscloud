@@ -115,9 +115,6 @@ spec:
                     required:
                     - id
                     type: object
-                    x-kubernetes-validations:
-                    - message: image ID must be set
-                      rule: has(self.id) && self.id != ''
                   name:
                     description: Name is the name of the volume
                     type: string

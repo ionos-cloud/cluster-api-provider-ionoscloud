@@ -173,7 +173,6 @@ type Volume struct {
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	// Image is the image to use for the VM.
-	//+kubebuilder:validation:XValidation:rule="has(self.id) && self.id != ''",message="image ID must be set"
 	//+required
 	Image *ImageSpec `json:"image"`
 }
