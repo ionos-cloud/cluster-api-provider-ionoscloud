@@ -104,6 +104,29 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 	s.False(requeue)
 }
 
+func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
+	s.prepareReconcileServerRequestTest()
+	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
+	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{
+		{
+			Id: ptr.To(exampleServerID),
+			Metadata: &sdk.DatacenterElementMetadata{
+				State: ptr.To(sdk.Available),
+			},
+			Properties: &sdk.ServerProperties{
+				Name:    ptr.To(s.service.serverName(s.infraMachine)),
+				VmState: ptr.To(sdk.Available),
+			},
+		},
+	}}, nil).Once()
+
+	s.mockStartServer().Return("", nil)
+
+	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.False(requeue)
+}
+
 func (s *serverSuite) TestReconcileServerNoRequest() {
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequest().Return([]sdk.Request{}, nil)
@@ -328,6 +351,10 @@ func (s *serverSuite) mockCreateServer() *clienttest.MockClient_CreateServer_Cal
 		mock.Anything,
 		mock.Anything,
 	)
+}
+
+func (s *serverSuite) mockStartServer() *clienttest.MockClient_StartServer_Call {
+	return s.ionosClient.EXPECT().StartServer(s.ctx, s.machineScope.DatacenterID(), exampleServerID)
 }
 
 func (s *serverSuite) mockListLANs() *clienttest.MockClient_ListLANs_Call {

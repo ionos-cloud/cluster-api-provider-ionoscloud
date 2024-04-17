@@ -65,7 +65,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 	if server != nil {
 		// Server is available
 
-		if !s.isServerAvailable(server) {
+		if !s.isServerAvailable(ms, server) {
 			// server is still provisioning, checking again later
 			return true, nil
 		}
@@ -138,18 +138,20 @@ func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machi
 	return false, nil
 }
 
-func (s *Service) isServerAvailable(server *sdk.Server) bool {
+func (s *Service) isServerAvailable(ms *scope.Machine, server *sdk.Server) bool {
 	log := s.logger.WithName("isServerAvailable")
 	if state := getState(server); !isAvailable(state) {
 		log.Info("Server is not available yet", "state", state)
 		return false
 	}
 
-	// TODO ensure server is started
 	if vmState := getVMState(server); !isRunning(vmState) {
-		log.Info("Server is not running yet", "state", vmState)
-		// TODO start server
-		return false
+		err := s.startServer(context.Background(), ms.DatacenterID(), *server.Id)
+		if err != nil {
+			log.Error(err, "Failed to start the server")
+			return false
+		}
+		return true
 	}
 
 	return true
@@ -222,6 +224,20 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, serverID 
 	ms.IonosMachine.SetCurrentRequest(http.MethodDelete, sdk.RequestStatusQueued, requestLocation)
 
 	log.V(4).Info("Done deleting server")
+	return nil
+}
+
+func (s *Service) startServer(ctx context.Context, datacenterID, serverID string) error {
+	log := s.logger.WithName("startServer")
+
+	log.V(4).Info("Starting server", "serverID", serverID)
+	requestLocation, err := s.ionosClient.StartServer(ctx, datacenterID, serverID)
+	if err != nil {
+		return fmt.Errorf("failed to request server start: %w", err)
+	}
+
+	log.Info("Successfully requested for server start", "location", requestLocation)
+	log.V(4).Info("Done starting server")
 	return nil
 }
 
