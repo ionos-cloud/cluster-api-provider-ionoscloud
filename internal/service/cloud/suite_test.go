@@ -153,7 +153,7 @@ func (s *ServiceTestSuite) SetupTest() {
 				SizeGB:           20,
 				AvailabilityZone: infrav1.AvailabilityZoneAuto,
 				Image: &infrav1.ImageSpec{
-					ID: ptr.To("3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
+					ID: "3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e",
 				},
 			},
 		},

@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"path"
 	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -328,10 +327,8 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		},
 	}
 
-	bootVolume.Properties.ImageAlias = ptr.To(strings.Join(machineSpec.Disk.Image.Aliases, ","))
-	if machineSpec.Disk.Image.ID != nil {
-		bootVolume.Properties.Image = machineSpec.Disk.Image.ID
-		bootVolume.Properties.ImageAlias = nil // we don't want to use the aliases if we have an ID provided
+	if machineSpec.Disk.Image.ID != "" {
+		bootVolume.Properties.Image = &machineSpec.Disk.Image.ID
 	}
 
 	serverVolumes := sdk.AttachedVolumes{
