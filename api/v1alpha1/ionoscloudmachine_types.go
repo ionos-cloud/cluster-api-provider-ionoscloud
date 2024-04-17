@@ -181,7 +181,7 @@ type Volume struct {
 // ImageSpec defines the image to use for the VM.
 type ImageSpec struct {
 	// ID is the ID of the image to use for the VM.
-	ID *string `json:"id,omitempty"`
+	ID string `json:"id"`
 }
 
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.

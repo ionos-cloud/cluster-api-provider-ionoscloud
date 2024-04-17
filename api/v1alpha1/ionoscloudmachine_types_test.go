@@ -52,7 +52,7 @@ func defaultMachine() *IonosCloudMachine {
 				SizeGB:           23,
 				AvailabilityZone: AvailabilityZoneOne,
 				Image: &ImageSpec{
-					ID: ptr.To("1eef-48ec-a246-a51a33aa4f3a"),
+					ID: "1eef-48ec-a246-a51a33aa4f3a",
 				},
 			},
 			AdditionalNetworks: Networks{
@@ -312,12 +312,12 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				})
 				It("should fail none is set", func() {
 					m := defaultMachine()
-					m.Spec.Disk.Image.ID = nil
+					m.Spec.Disk.Image.ID = ""
 					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 				})
 				It("should not fail if ID is set", func() {
 					m := defaultMachine()
-					m.Spec.Disk.Image.ID = ptr.To("1eef-48ec-a246-a51a33aa4f3a")
+					m.Spec.Disk.Image.ID = "1eef-48ec-a246-a51a33aa4f3a"
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				})
 			})

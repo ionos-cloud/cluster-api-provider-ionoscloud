@@ -327,8 +327,8 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		},
 	}
 
-	if machineSpec.Disk.Image.ID != nil {
-		bootVolume.Properties.Image = machineSpec.Disk.Image.ID
+	if machineSpec.Disk.Image.ID != "" {
+		bootVolume.Properties.Image = &machineSpec.Disk.Image.ID
 	}
 
 	serverVolumes := sdk.AttachedVolumes{

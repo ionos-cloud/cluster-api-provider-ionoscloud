@@ -145,6 +145,8 @@ spec:
                                 description: ID is the ID of the image to use for
                                   the VM.
                                 type: string
+                            required:
+                            - id
                             type: object
                             x-kubernetes-validations:
                             - message: image ID must be set
