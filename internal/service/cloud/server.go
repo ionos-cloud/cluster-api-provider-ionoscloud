@@ -146,7 +146,7 @@ func (s *Service) isServerAvailable(ms *scope.Machine, server *sdk.Server) bool 
 	}
 
 	if vmState := getVMState(server); !isRunning(vmState) {
-		err := s.startServer(context.Background(), ms.DatacenterID(), *server.Id)
+		err := s.startServer(context.Background(), ms, *server.Id)
 		if err != nil {
 			log.Error(err, "Failed to start the server")
 			return false
@@ -227,16 +227,18 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, serverID 
 	return nil
 }
 
-func (s *Service) startServer(ctx context.Context, datacenterID, serverID string) error {
+func (s *Service) startServer(ctx context.Context, ms *scope.Machine, serverID string) error {
 	log := s.logger.WithName("startServer")
 
 	log.V(4).Info("Starting server", "serverID", serverID)
-	requestLocation, err := s.ionosClient.StartServer(ctx, datacenterID, serverID)
+	requestLocation, err := s.ionosClient.StartServer(ctx, ms.DatacenterID(), serverID)
 	if err != nil {
 		return fmt.Errorf("failed to request server start: %w", err)
 	}
 
 	log.Info("Successfully requested for server start", "location", requestLocation)
+	ms.IonosMachine.SetCurrentRequest(http.MethodPost, sdk.RequestStatusQueued, requestLocation)
+
 	log.V(4).Info("Done starting server")
 	return nil
 }
