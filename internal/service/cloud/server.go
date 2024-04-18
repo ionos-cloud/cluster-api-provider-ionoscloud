@@ -70,6 +70,15 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 			return true, nil
 		}
 
+		if vmState := getVMState(server); !isRunning(vmState) {
+			err := s.startServer(context.Background(), ms, *server.Id)
+			if err != nil {
+				log.Error(err, "Failed to start the server")
+				return false, err
+			}
+			return true, nil
+		}
+
 		log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
 		// server exists and is available.
 		return false, nil
@@ -144,16 +153,6 @@ func (s *Service) isServerAvailable(ms *scope.Machine, server *sdk.Server) bool 
 		log.Info("Server is not available yet", "state", state)
 		return false
 	}
-
-	if vmState := getVMState(server); !isRunning(vmState) {
-		err := s.startServer(context.Background(), ms, *server.Id)
-		if err != nil {
-			log.Error(err, "Failed to start the server")
-			return false
-		}
-		return true
-	}
-
 	return true
 }
 
@@ -239,7 +238,6 @@ func (s *Service) startServer(ctx context.Context, ms *scope.Machine, serverID s
 	log.Info("Successfully requested for server start", "location", requestLocation)
 	ms.IonosMachine.SetCurrentRequest(http.MethodPost, sdk.RequestStatusQueued, requestLocation)
 
-	log.V(4).Info("Done starting server")
 	return nil
 }
 
