@@ -71,7 +71,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 		}
 
 		if vmState := getVMState(server); !isRunning(vmState) {
-			err := s.startServer(context.Background(), ms, *server.Id)
+			err := s.startServer(ctx, ms, *server.Id)
 			if err != nil {
 				log.Error(err, "Failed to start the server")
 				return false, err
