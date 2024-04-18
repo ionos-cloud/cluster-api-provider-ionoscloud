@@ -65,7 +65,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 	if server != nil {
 		// Server is available
 
-		if !s.isServerAvailable(ms, server) {
+		if !s.isServerAvailable(server) {
 			// server is still provisioning, checking again later
 			return true, nil
 		}
@@ -146,7 +146,7 @@ func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machi
 	return false, nil
 }
 
-func (s *Service) isServerAvailable(ms *scope.Machine, server *sdk.Server) bool {
+func (s *Service) isServerAvailable(server *sdk.Server) bool {
 	log := s.logger.WithName("isServerAvailable")
 	if state := getState(server); !isAvailable(state) {
 		log.Info("Server is not available yet", "state", state)
