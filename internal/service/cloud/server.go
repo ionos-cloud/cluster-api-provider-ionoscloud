@@ -76,7 +76,6 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 				log.Error(err, "Failed to start the server")
 				return false, err
 			}
-			return true, nil
 		}
 
 		log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
