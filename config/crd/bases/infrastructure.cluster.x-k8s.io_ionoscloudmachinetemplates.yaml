@@ -72,6 +72,25 @@ spec:
                   spec:
                     description: Spec is the IonosCloudMachineSpec for the IonosCloudMachineTemplate.
                     properties:
+                      additionalNetworks:
+                        description: |-
+                          AdditionalNetworks defines the additional network configurations for the VM.
+                          NOTE(lubedacht): We currently only support networks with DHCP enabled.
+                        items:
+                          description: Network contains the config for additional
+                            LANs.
+                          properties:
+                            networkID:
+                              description: |-
+                                NetworkID represents an ID an existing LAN in the data center.
+                                This LAN will be excluded from the deletion process.
+                              format: int32
+                              minimum: 1
+                              type: integer
+                          required:
+                          - networkID
+                          type: object
+                        type: array
                       availabilityZone:
                         default: AUTO
                         description: AvailabilityZone is the availability zone in
@@ -153,52 +172,6 @@ spec:
                         minimum: 2048
                         multipleOf: 1024
                         type: integer
-                      networkConfig:
-                        description: |-
-                          NetworkConfig defines the VM network configuration.
-
-
-                          The network configuration also contains data center related settings,
-                          as the machines can also be created in different data centers.
-
-
-                          TODO(lubedacht): Implement creation of nodes in different data centers.
-                        properties:
-                          additionalNetworks:
-                            description: |-
-                              AdditionalNetworks defines the additional network configurations for the VM.
-                              NOTE(lubedacht): We currently only support networks with DHCP enabled.
-                            items:
-                              description: Network contains the config for additional
-                                LANs.
-                              properties:
-                                networkID:
-                                  description: |-
-                                    NetworkID represents an ID an existing LAN in the data center.
-                                    This LAN will be excluded from the deletion process.
-                                  format: int32
-                                  minimum: 1
-                                  type: integer
-                              required:
-                              - networkID
-                              type: object
-                            type: array
-                          defaultNetworkIPv6CIDR:
-                            description: |-
-                              DefaultNetworkIPv6CIDR defines the CIDR block for the default network,
-                              which will be created to connect the Nodes in the datacenter.
-
-
-                              If you want to enable IPv6 for this LAN, you can provide 'AUTO'
-                              which will result in enabling and automatically assigning a /64 IPv6
-                              CIDR block to the default LAN.
-
-
-                              If you decide to provide a custom CIDR block, you need to make sure,
-                              that your /64 block is within the /56 block assigned to your data center.
-                              The /56 block can be found in the data center details.
-                            type: string
-                        type: object
                       numCores:
                         default: 1
                         description: NumCores defines the number of cores for the

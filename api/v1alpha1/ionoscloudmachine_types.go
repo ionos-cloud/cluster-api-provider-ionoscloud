@@ -131,14 +131,10 @@ type IonosCloudMachineSpec struct {
 	// Disk defines the boot volume of the VM.
 	Disk *Volume `json:"disk"`
 
-	// NetworkConfig defines the VM network configuration.
-	//
-	// The network configuration also contains data center related settings,
-	// as the machines can also be created in different data centers.
-	//
-	// TODO(lubedacht): Implement creation of nodes in different data centers.
+	// AdditionalNetworks defines the additional network configurations for the VM.
+	// NOTE(lubedacht): We currently only support networks with DHCP enabled.
 	//+optional
-	NetworkConfig *NetworkConfig `json:"networkConfig,omitempty"`
+	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
 }
 
 // Networks contains a list of additional LAN IDs
@@ -151,27 +147,6 @@ type Network struct {
 	// This LAN will be excluded from the deletion process.
 	//+kubebuilder:validation:Minimum=1
 	NetworkID int32 `json:"networkID"`
-}
-
-// NetworkConfig contains network configuration.
-type NetworkConfig struct {
-	// AdditionalNetworks defines the additional network configurations for the VM.
-	// NOTE(lubedacht): We currently only support networks with DHCP enabled.
-	//+optional
-	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
-
-	// DefaultNetworkIPv6CIDR defines the CIDR block for the default network,
-	// which will be created to connect the Nodes in the datacenter.
-	//
-	// If you want to enable IPv6 for this LAN, you can provide 'AUTO'
-	// which will result in enabling and automatically assigning a /64 IPv6
-	// CIDR block to the default LAN.
-	//
-	// If you decide to provide a custom CIDR block, you need to make sure,
-	// that your /64 block is within the /56 block assigned to your data center.
-	// The /56 block can be found in the data center details.
-	//+optional
-	DefaultNetworkIPv6CIDR *string `json:"defaultNetworkIPv6CIDR,omitempty"`
 }
 
 // Volume is the physical storage on the VM.
@@ -270,24 +245,36 @@ type IonosCloudMachineStatus struct {
 
 // MachineNetworkInfo contains information about the network configuration of the VM.
 type MachineNetworkInfo struct {
-	// IPv4Addresses defines the primary NIC IPv4 addresses of the VM.
+	// NICInfo holds information about the NICs, which are attached to the VM.
 	//+optional
-	IPv4Addresses []string `json:"ipv4Addresses,omitempty"`
+	NICInfo []NICInfo `json:"nicInfo,omitempty"`
+}
 
-	// IPv6Addresses defines the primary NIC IPv6 IP addresses of the VM.
-	//
-	// The maximum number of IPv6 IP addresses per NIC is 50
-	//+kubebuilder:validation:MaxItems=50
-	//+optional
-	IPv6Addresses []string `json:"ipv6Addresses,omitempty"`
+// NICInfo provides information about the NIC of the VM.
+type NICInfo struct {
+	// IPv4Addresses contains the IPv4 addresses of the NIC.
+	IPv4Addresses []string `json:"ipv4Addresses"`
+
+	// IPv6Addresses contains the IPv6 addresses of the NIC.
+	IPv6Addresses []string `json:"ipv6Addresses"`
+
+	// NetworkID is the ID of the LAN to which the NIC is connected.
+	NetworkID int32 `json:"networkID"`
+
+	// Name holds the NIC name.
+	Name string `json:"name"`
+
+	// Primary indicates whether the NIC is the primary NIC of the VM.
+	Primary bool `json:"primary"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
 //+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine is ready"
-//+kubebuilder:printcolumn:name="IPs Version 4",type="string",JSONPath=".status.machineNetworkInfo.ipv4Addresses"
-//+kubebuilder:printcolumn:name="IPs Version 6",type="string",JSONPath=".status.machineNetworkInfo.ipv6Addresses",priority=1
+//+kubebuilder:printcolumn:name="IPv4 Addresses",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].ipv4Addresses"
+//+kubebuilder:printcolumn:name="Machine Connected Networks",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].networkID"
+//+kubebuilder:printcolumn:name="IPv6 Addresses",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].ipv6Addresses",priority=1
 
 // IonosCloudMachine is the Schema for the ionoscloudmachines API.
 type IonosCloudMachine struct {
@@ -305,11 +292,6 @@ type IonosCloudMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []IonosCloudMachine `json:"items"`
-}
-
-// SetMachineNetworkInfo sets the network information for the IonosCloudMachine in the status.
-func (m *IonosCloudMachine) SetMachineNetworkInfo(info *MachineNetworkInfo) {
-	m.Status.MachineNetworkInfo = info
 }
 
 // GetConditions returns the observations of the operational state of the IonosCloudMachine resource.
