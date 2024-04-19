@@ -96,12 +96,31 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 				Name:    ptr.To(s.service.serverName(s.infraMachine)),
 				VmState: ptr.To("RUNNING"),
 			},
+			Entities: &sdk.ServerEntities{
+				Nics: &sdk.Nics{
+					Items: &[]sdk.Nic{{
+						Properties: &sdk.NicProperties{
+							Name:          ptr.To(s.service.nicName(s.infraMachine)),
+							Dhcp:          ptr.To(true),
+							Lan:           ptr.To(int32(1)),
+							Ips:           ptr.To([]string{"198.51.100.10"}),
+							Ipv6CidrBlock: ptr.To("2001:db8:2c0:301::/64"),
+							Ipv6Ips:       ptr.To([]string{"2001:db8:2c0:301::1"}),
+						},
+					}},
+				},
+			},
 		},
 	}}, nil).Once()
 
 	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.False(requeue)
+
+	s.NotNil(s.machineScope.IonosMachine.Status.MachineNetworkInfo)
+	s.Equal([]string{"198.51.100.10"}, s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv4Addresses)
+	s.Equal([]string{"2001:db8:2c0:301::1"}, s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv6Addresses)
+	s.Equal(int32(1), s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].NetworkID)
 }
 
 func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
