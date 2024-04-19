@@ -27,6 +27,7 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
@@ -238,27 +239,79 @@ func (*Service) removeLANPendingRequestFromCluster(ms *scope.Machine) error {
 	return nil
 }
 
-// ReconcileIPFailover ensures that the control plane nodes will attach the endpoint IP to their primary
-// NIC and add the NIC to the failover group of the public LAN.
-// This is needed for kube-vip in order to set up HA control planes.
+// ReconcileIPFailover will provide the given machine with a failover configuration. Depending on the machine role,
+// the failover IP will be either the control plane endpoint or the one provided in the machine spec.
+// The control plane nodes will attach the endpoint IP to their primary NIC and add the NIC to the Failover Group
+// of the public LAN. This is needed for kube-vip to set up HA control planes.
+//
+// The worker nodes can optionally have a Failover Group. This is useful for scenarios where the worker nodes
+// are meant to be highly available such as load balancers.
 //
 // If we want to support private clusters in the future, this will require some adjustments.
 func (s *Service) ReconcileIPFailover(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileIPFailover")
 
-	if !util.IsControlPlaneMachine(ms.Machine) {
-		log.V(4).Info("Failover is only applied to control plane machines.")
+	if !failoverRequired(ms) {
+		log.V(4).Info("Failover is not required for this machine.")
 		return false, nil
 	}
 
-	endpointIP := ms.ClusterScope.GetControlPlaneEndpoint().Host
-	nic, err := s.reconcileNICConfig(ctx, ms, endpointIP)
+	requeue, failoverIP, err := s.retrieveFailoverIPForMachine(ctx, ms)
+	if requeue || err != nil {
+		return requeue, err
+	}
+
+	nic, err := s.reconcileNICConfig(ctx, ms, failoverIP)
 	if err != nil {
 		return false, err
 	}
 
 	nicID := ptr.Deref(nic.GetId(), "")
-	return s.reconcileIPFailoverGroup(ctx, ms, nicID, endpointIP)
+	return s.reconcileIPFailoverGroup(ctx, ms, nicID, failoverIP)
+}
+
+func (s *Service) retrieveFailoverIPForMachine(ctx context.Context, ms *scope.Machine) (requeue bool, failoverIP string, err error) {
+	log := s.logger.WithName("retrieveFailoverIPForMachine")
+
+	if util.IsControlPlaneMachine(ms.Machine) {
+		return false, ms.ClusterScope.GetControlPlaneEndpoint().Host, nil
+	}
+
+	failoverIP = ptr.Deref(ms.IonosMachine.Spec.NodeFailoverIP, "")
+	if failoverIP == "" {
+		return false, "", errors.New("failover IP contains an empty string. Provide either a valid IP address or 'AUTO")
+	}
+
+	// AUTO means we have to reserve an IP address.
+	if failoverIP == "AUTO" {
+		// Check if the IP block is already reserved.
+		ipBlock, info, err := scopedFindResource(ctx, ms, s.getFailoverIPBlock, s.getLatestFailoverIPBlockCreationRequest)
+		if err != nil {
+			return false, "", err
+		}
+
+		if ipBlock != nil {
+			if state := getState(ipBlock); !isAvailable(state) {
+				log.Info("IP block is not available yet", "state", state)
+				return true, "", nil
+			}
+
+			failoverIP = (*ipBlock.GetProperties().GetIps())[0]
+			return false, failoverIP, err
+		}
+
+		if info != nil && info.isPending() {
+			log.Info("Request is pending", "location", info.location)
+			return true, "", nil
+		}
+
+		// Reserve a new IP block
+		err = s.reserveNodeFailoverIPBlock(ctx, ms)
+		return true, "", err
+	}
+
+	// If the failover IP is not "AUTO", we can return it directly.
+	return false, failoverIP, nil
 }
 
 // ReconcileIPFailoverDeletion ensures the proper deletion of the IPFailover configuration.
@@ -269,12 +322,20 @@ func (s *Service) ReconcileIPFailover(ctx context.Context, ms *scope.Machine) (r
 func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileIPFailoverDeletion")
 
-	if !util.IsControlPlaneMachine(ms.Machine) {
-		log.V(4).Info("Failover is only applied to control plane machines.")
+	if !failoverRequired(ms) {
+		log.V(4).Info("Failover is not required for this machine. Deletion not necessary")
 		return false, nil
 	}
 
-	count, err := ms.CountControlPlaneMachines(ctx)
+	matchLabels := client.MatchingLabels{}
+
+	if util.IsControlPlaneMachine(ms.Machine) {
+		matchLabels[clusterv1.MachineControlPlaneLabel] = ""
+	} else {
+		matchLabels[clusterv1.MachineDeploymentNameLabel] = ms.IonosMachine.Labels[clusterv1.MachineDeploymentNameLabel]
+	}
+
+	count, err := ms.CountExistingMachines(ctx, matchLabels)
 
 	switch {
 	case err != nil:
@@ -286,13 +347,13 @@ func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Mac
 	case count > 1:
 		// if the server NIC matches the NIC on the failover group, we need
 		// to select another server to be the primary.
-		return s.swapNICInFailoverGroup(ctx, ms)
+		return s.swapNICInFailoverGroup(ctx, ms, matchLabels)
 	default:
 		return false, nil
 	}
 }
 
-func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
+func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine, matchLabels client.MatchingLabels) (requeue bool, err error) {
 	log := s.logger.WithName("swapNICInFailoverGroup")
 	nicID, err := s.getServerNICID(ctx, ms)
 	if err != nil {
@@ -317,9 +378,9 @@ func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine)
 		return false, nil
 	}
 
-	// get the latest control plane machine, which is not the current one
+	// get the latest machine from the Failover Group, which is not the current one
 	// in the scope, to swap the NIC UUID in the failover group.
-	machine, err := ms.FindLatestControlPlaneMachine(ctx)
+	machine, err := ms.FindLatestMachine(ctx, matchLabels)
 	if err != nil || machine == nil {
 		return false, err
 	}
@@ -378,9 +439,10 @@ func (s *Service) getServerNICID(ctx context.Context, ms *scope.Machine) (string
 }
 
 // reconcileIPFailoverGroup ensures that the public LAN has a failover group with the NIC for this machine and
-// the endpoint IP address. It further ensures that NICs from additional control plane machines are also added.
+// the provided failover IP address. It further ensures that NICs from other related machines are also added to
+// the Failover Group.
 func (s *Service) reconcileIPFailoverGroup(
-	ctx context.Context, ms *scope.Machine, nicID, endpointIP string,
+	ctx context.Context, ms *scope.Machine, nicID, failoverIP string,
 ) (requeue bool, err error) {
 	log := s.logger.WithName("reconcileIPFailoverGroup")
 	if nicID == "" {
@@ -400,7 +462,7 @@ func (s *Service) reconcileIPFailoverGroup(
 	for index, entry := range ipFailoverConfig {
 		nicUUID := ptr.Deref(entry.GetNicUuid(), unknownValue)
 		ip := ptr.Deref(entry.GetIp(), unknownValue)
-		if ip == endpointIP && nicUUID != nicID {
+		if ip == failoverIP && nicUUID != nicID {
 			log.V(4).Info("Another NIC is already defined in this failover group. Skipping further actions")
 			return false, nil
 		}
@@ -411,15 +473,15 @@ func (s *Service) reconcileIPFailoverGroup(
 
 		// Make sure the NIC is in the failover group with the correct IP address.
 		log.V(4).Info("Found NIC in failover group", "nicID", nicID)
-		if ip == endpointIP {
+		if ip == failoverIP {
 			log.V(4).Info("NIC is already in the failover group with the correct IP address")
 			return false, nil
 		}
 
 		log.Info("NIC is already in the failover group but with a different IP address",
-			"currentIP", ip, "expectedIP", endpointIP)
+			"currentIP", ip, "expectedIP", failoverIP)
 		// The IP address of the NIC is different. We need to update the failover group.
-		entry.Ip = &endpointIP
+		entry.Ip = &failoverIP
 		ipFailoverConfig[index] = entry
 
 		err := s.patchLAN(ctx, ms, lanID, sdk.LanProperties{IpFailover: &ipFailoverConfig})
@@ -428,12 +490,12 @@ func (s *Service) reconcileIPFailoverGroup(
 
 	// NIC was not found in failover group. We need to add it.
 	ipFailoverConfig = append(ipFailoverConfig, sdk.IPFailover{
-		Ip:      &endpointIP,
+		Ip:      &failoverIP,
 		NicUuid: &nicID,
 	})
 
 	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
-	log.V(4).Info("Patching LAN failover group to add NIC", "nicID", nicID, "endpointIP", endpointIP)
+	log.V(4).Info("Patching LAN failover group to add NIC", "nicID", nicID, "failoverIP", failoverIP)
 
 	err = s.patchLAN(ctx, ms, lanID, props)
 	return true, err
@@ -511,4 +573,8 @@ func (s *Service) patchLAN(ctx context.Context, ms *scope.Machine, lanID string,
 	}
 	ms.IonosMachine.SetCurrentRequest(http.MethodPatch, sdk.RequestStatusQueued, location)
 	return nil
+}
+
+func failoverRequired(ms *scope.Machine) bool {
+	return util.IsControlPlaneMachine(ms.Machine) || ms.IonosMachine.Spec.NodeFailoverIP != nil
 }

@@ -115,15 +115,15 @@ func (m *Machine) SetProviderID(id string) {
 	m.IonosMachine.Spec.ProviderID = ptr.To("ionos://" + id)
 }
 
-// CountControlPlaneMachines returns the number of existing IonosCloudMachines in the same namespace
-// and with the same cluster label that are control planes.
-func (m *Machine) CountControlPlaneMachines(ctx context.Context) (int, error) {
-	matchLabels := client.MatchingLabels{
-		clusterv1.ClusterNameLabel:         m.ClusterScope.Cluster.Name,
-		clusterv1.MachineControlPlaneLabel: "",
+// CountExistingMachines returns the number of existing IonosCloudMachines in the same namespace
+// and with the same cluster label. With machineLabels, additional search labels can be provided.
+func (m *Machine) CountExistingMachines(ctx context.Context, machineLabels client.MatchingLabels) (int, error) {
+	if machineLabels == nil {
+		machineLabels = client.MatchingLabels{}
 	}
 
-	listOpts := []client.ListOption{client.InNamespace(m.IonosMachine.Namespace), matchLabels}
+	machineLabels[clusterv1.ClusterNameLabel] = m.ClusterScope.Cluster.Name
+	listOpts := []client.ListOption{client.InNamespace(m.IonosMachine.Namespace), machineLabels}
 
 	machineList := &infrav1.IonosCloudMachineList{}
 	if err := m.client.List(ctx, machineList, listOpts...); err != nil {
@@ -132,17 +132,17 @@ func (m *Machine) CountControlPlaneMachines(ctx context.Context) (int, error) {
 	return len(machineList.Items), nil
 }
 
-// FindLatestControlPlaneMachine returns the latest control plane IonosCloudMachine in the same namespace
+// FindLatestMachine returns the latest control plane IonosCloudMachine in the same namespace
 // and with the same cluster label. If no control plane machine is found, nil is returned.
 //
 // If there are zero or one control plane machines, the function will return nil,
 // otherwise the machine with the latest creation timestamp will be returned.
-func (m *Machine) FindLatestControlPlaneMachine(ctx context.Context) (*infrav1.IonosCloudMachine, error) {
-	matchLabels := client.MatchingLabels{
-		clusterv1.ClusterNameLabel:         m.ClusterScope.Cluster.Name,
-		clusterv1.MachineControlPlaneLabel: "",
+func (m *Machine) FindLatestMachine(ctx context.Context, matchLabels client.MatchingLabels) (*infrav1.IonosCloudMachine, error) {
+	if matchLabels == nil {
+		matchLabels = client.MatchingLabels{}
 	}
 
+	matchLabels[clusterv1.ClusterNameLabel] = m.ClusterScope.Cluster.Name
 	listOpts := []client.ListOption{client.InNamespace(m.IonosMachine.Namespace), matchLabels}
 
 	machineList := &infrav1.IonosCloudMachineList{}

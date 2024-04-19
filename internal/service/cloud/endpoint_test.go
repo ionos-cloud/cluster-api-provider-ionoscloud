@@ -157,7 +157,7 @@ func (s *EndpointTestSuite) TestGetIPBlockNoMatch() {
 func (s *EndpointTestSuite) TestReserveIPBlockRequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockReserveIPBlockCall().Return(requestPath, nil).Once()
-	err := s.service.reserveIPBlock(s.ctx, s.clusterScope)
+	err := s.service.reserveClusterIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
 	req := s.clusterScope.IonosCluster.Status.CurrentClusterRequest
 	s.NotNil(req)

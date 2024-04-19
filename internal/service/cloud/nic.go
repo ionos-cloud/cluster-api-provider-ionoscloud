@@ -34,8 +34,8 @@ func (*Service) nicURL(ms *scope.Machine, serverID, nicID string) string {
 	return path.Join("datacenters", ms.DatacenterID(), "servers", serverID, "nics", nicID)
 }
 
-// reconcileNICConfig ensures that the primary NIC contains the endpoint IP address.
-func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, endpointIP string) (*sdk.Nic, error) {
+// reconcileNICConfig ensures that the primary NIC contains the provided failover IP address.
+func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, failoverIP string) (*sdk.Nic, error) {
 	log := s.logger.WithName("reconcileNICConfig")
 
 	log.V(4).Info("Reconciling NIC config")
@@ -52,7 +52,7 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, end
 	}
 
 	// if the NIC already contains the endpoint IP address, we can return
-	if nicHasIP(nic, endpointIP) {
+	if nicHasIP(nic, failoverIP) {
 		log.V(4).Info("Primary NIC contains endpoint IP address. Reconcile successful.")
 		return nic, nil
 	}
@@ -77,7 +77,7 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, end
 
 	log.V(4).Info("Unable to find endpoint IP address in primary NIC. Patching NIC.")
 	nicIPs := ptr.Deref(nic.GetProperties().GetIps(), []string{})
-	nicIPs = append(nicIPs, endpointIP)
+	nicIPs = append(nicIPs, failoverIP)
 
 	if err := s.patchNIC(ctx, ms, serverID, nic, sdk.NicProperties{Ips: &nicIPs}); err != nil {
 		return nil, err

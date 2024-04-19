@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -105,6 +106,10 @@ func TestCountControlPlaneMachines(t *testing.T) {
 
 	scope.ClusterScope.Cluster.SetName("test-cluster")
 
+	count, err := scope.CountExistingMachines(context.Background(), client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""})
+	require.NoError(t, err)
+	require.Equal(t, 0, count)
+
 	cpLabels := map[string]string{
 		clusterv1.ClusterNameLabel:         scope.ClusterScope.Cluster.Name,
 		clusterv1.MachineControlPlaneLabel: "",
@@ -126,7 +131,11 @@ func TestCountControlPlaneMachines(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	count, err := scope.CountControlPlaneMachines(context.Background())
+	count, err = scope.CountExistingMachines(context.Background(), nil)
+	require.NoError(t, err)
+	require.Equal(t, 6, count)
+
+	count, err = scope.CountExistingMachines(context.Background(), client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""})
 	require.NoError(t, err)
 	require.Equal(t, 3, count)
 }
@@ -138,7 +147,8 @@ func TestMachineFindLatestControlPlaneMachine(t *testing.T) {
 	scope.ClusterScope.Cluster.SetName("test-cluster")
 	scope.IonosMachine.SetName("cp-test-1")
 
-	latestMachine, err := scope.FindLatestControlPlaneMachine(context.Background())
+	controlPlaneLabel := client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""}
+	latestMachine, err := scope.FindLatestMachine(context.Background(), controlPlaneLabel)
 	require.NoError(t, err)
 	require.Nil(t, latestMachine)
 
@@ -153,7 +163,7 @@ func TestMachineFindLatestControlPlaneMachine(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	latestMachine, err = scope.FindLatestControlPlaneMachine(context.Background())
+	latestMachine, err = scope.FindLatestMachine(context.Background(), controlPlaneLabel)
 	require.NoError(t, err)
 	require.NotNil(t, latestMachine)
 	require.Equal(t, "cp-test-3", latestMachine.Name)
@@ -161,7 +171,7 @@ func TestMachineFindLatestControlPlaneMachine(t *testing.T) {
 	err = scope.client.Delete(context.Background(), latestMachine)
 	require.NoError(t, err)
 
-	latestMachine, err = scope.FindLatestControlPlaneMachine(context.Background())
+	latestMachine, err = scope.FindLatestMachine(context.Background(), controlPlaneLabel)
 	require.NoError(t, err)
 	require.NotNil(t, latestMachine)
 	require.Equal(t, "cp-test-2", latestMachine.Name)

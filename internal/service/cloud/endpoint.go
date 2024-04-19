@@ -24,7 +24,9 @@ import (
 	"path"
 	"slices"
 
+	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
@@ -74,7 +76,7 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 	}
 
 	log.V(4).Info("No IP block was found. Creating new IP block")
-	if err := s.reserveIPBlock(ctx, cs); err != nil {
+	if err := s.reserveClusterIPBlock(ctx, cs); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -133,10 +135,29 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 	return err == nil, err
 }
 
+func (s *Service) getFailoverIPBlock(ctx context.Context, ms *scope.Machine) (*sdk.IpBlock, error) {
+	blocks, err := s.apiWithDepth(listIPBlocksDepth).ListIPBlocks(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list IP blocks: %w", err)
+	}
+
+	for _, block := range ptr.Deref(blocks.GetItems(), nil) {
+		props := block.GetProperties()
+		if ptr.Deref(props.GetLocation(), "") != ms.ClusterScope.Location() {
+			continue
+		}
+		if ptr.Deref(props.GetName(), "") == s.failoverIPBlockName(ms) {
+			return s.cloudAPIStateInconsistencyWorkaround(ctx, &block)
+		}
+	}
+
+	return nil, nil
+}
+
 // getIPBlock finds the IP block that matches the expected name and location. An
 // error is returned if there are multiple IP blocks that match both the name and location.
 func (s *Service) getIPBlock(ctx context.Context, cs *scope.Cluster) (*sdk.IpBlock, error) {
-	ipBlock, err := s.getIPBlockByID(ctx, cs)
+	ipBlock, err := s.getIPBlockByID(ctx, cs.IonosCluster.Status.ControlPlaneEndpointIPBlockID)
 	if ipBlock != nil || ignoreNotFound(err) != nil {
 		return ipBlock, err
 	}
@@ -207,31 +228,44 @@ func (s *Service) cloudAPIStateInconsistencyWorkaround(ctx context.Context, bloc
 	return trueBlock, nil
 }
 
-func (s *Service) getIPBlockByID(ctx context.Context, cs *scope.Cluster) (*sdk.IpBlock, error) {
-	id := cs.IonosCluster.Status.ControlPlaneEndpointIPBlockID
-	if id == "" {
+func (s *Service) getIPBlockByID(ctx context.Context, ipBlockID string) (*sdk.IpBlock, error) {
+	if ipBlockID == "" {
 		s.logger.Info("Could not find any IP block by ID as the provider ID is not set.")
 		return nil, nil
 	}
-	ipBlock, err := s.ionosClient.GetIPBlock(ctx, id)
+	ipBlock, err := s.ionosClient.GetIPBlock(ctx, ipBlockID)
 	if err != nil {
 		return nil, fmt.Errorf("could not get IP block by ID using the API: %w", err)
 	}
 	return ipBlock, nil
 }
 
-// reserveIPBlock requests for the reservation of an IP block.
-func (s *Service) reserveIPBlock(ctx context.Context, cs *scope.Cluster) error {
-	var err error
-	log := s.logger.WithName("reserveIPBlock")
+// reserveClusterIPBlock requests for the reservation of an IP block.
+func (s *Service) reserveClusterIPBlock(ctx context.Context, cs *scope.Cluster) error {
+	log := s.logger.WithName("reserveClusterIPBlock")
+	return s.reserveIPBlock(ctx, s.ipBlockName(cs), cs.Location(), log, cs.IonosCluster.SetCurrentClusterRequest)
+}
 
-	requestPath, err := s.ionosClient.ReserveIPBlock(ctx, s.ipBlockName(cs), cs.Location(), 1)
+func (s *Service) reserveNodeFailoverIPBlock(ctx context.Context, ms *scope.Machine) error {
+	log := s.logger.WithName("reserveNodeFailoverIPBlock")
+	return s.reserveIPBlock(ctx, s.failoverIPBlockName(ms), ms.ClusterScope.Location(), log, ms.IonosMachine.SetCurrentRequest)
+}
+
+func (s *Service) reserveIPBlock(
+	ctx context.Context,
+	ipBlockName,
+	location string,
+	log logr.Logger,
+	setRequestStatusFunc func(string, string, string),
+) error {
+	requestPath, err := s.ionosClient.ReserveIPBlock(ctx, ipBlockName, location, 1)
 	if err != nil {
-		return fmt.Errorf("failed to request the cloud for IP block reservation: %w", err)
+		return fmt.Errorf("failed to request the cloud for failover IP block reservation: %w", err)
 	}
 
-	cs.IonosCluster.SetCurrentClusterRequest(http.MethodPost, sdk.RequestStatusQueued, requestPath)
+	setRequestStatusFunc(http.MethodPost, sdk.RequestStatusQueued, requestPath)
 	log.Info("Successfully requested for IP block reservation", "requestPath", requestPath)
+
 	return nil
 }
 
@@ -250,14 +284,24 @@ func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.Cluster, id strin
 
 // getLatestIPBlockCreationRequest returns the latest IP block creation request.
 func (s *Service) getLatestIPBlockCreationRequest(ctx context.Context, cs *scope.Cluster) (*requestInfo, error) {
+	return s.getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx, s.ipBlockName(cs), cs.Location())
+}
+
+// getLatestFailoverIPBlockCreationRequest returns the latest failover IP block creation request.
+func (s *Service) getLatestFailoverIPBlockCreationRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
+	return s.getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx, s.failoverIPBlockName(ms), ms.ClusterScope.Location())
+}
+
+// getLatestIPBlockRequestCreationRequestByNameAndLocation returns the latest IP block creation request by a given name and location.
+func (s *Service) getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx context.Context, ipBlockName, location string) (*requestInfo, error) {
 	return getMatchingRequest(
 		ctx,
 		s,
 		http.MethodPost,
 		ipBlocksPath,
-		matchByName[*sdk.IpBlock, *sdk.IpBlockProperties](s.ipBlockName(cs)),
+		matchByName[*sdk.IpBlock, *sdk.IpBlockProperties](ipBlockName),
 		func(r *sdk.IpBlock, _ sdk.Request) bool {
-			return ptr.Deref(r.GetProperties().GetLocation(), unknownValue) == cs.Location()
+			return ptr.Deref(r.GetProperties().GetLocation(), unknownValue) == location
 		},
 	)
 }
@@ -270,6 +314,10 @@ func (s *Service) getLatestIPBlockDeletionRequest(ctx context.Context, ipBlockID
 // ipBlockName returns the name that should be used for cluster context resources.
 func (*Service) ipBlockName(cs *scope.Cluster) string {
 	return fmt.Sprintf("k8s-ipb-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
+}
+
+func (s *Service) failoverIPBlockName(ms *scope.Machine) string {
+	return fmt.Sprintf("k8s-fo-ipb-%s-%s", ms.IonosMachine.Namespace, ms.IonosMachine.Labels[clusterv1.MachineDeploymentNameLabel])
 }
 
 func ignoreErrUserSetIPNotFound(err error) error {

@@ -135,6 +135,12 @@ type IonosCloudMachineSpec struct {
 	// NOTE(lubedacht): We currently only support networks with DHCP enabled.
 	//+optional
 	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
+
+	// NodeFailoverIP can be set to enable failover for VMs in the same MachineDeployment.
+	// It can be either set to an already reserved IP address, or it can be set to "AUTO"
+	// which will automatically reserve an IP address for the Failover Group.
+	//+optional
+	NodeFailoverIP *string `json:"nodeFailoverIP,omitempty"`
 }
 
 // Networks contains a list of additional LAN IDs
