@@ -121,7 +121,6 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 	s.Equal([]string{"198.51.100.10"}, s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv4Addresses)
 	s.Equal([]string{"2001:db8:2c0:301::1"}, s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv6Addresses)
 	s.Equal(int32(1), s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].NetworkID)
-	s.Equal("k8s-nic-default-test-machine", s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].Name)
 }
 
 func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {

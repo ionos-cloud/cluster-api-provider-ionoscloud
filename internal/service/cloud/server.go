@@ -78,7 +78,6 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 				IPv4Addresses: ptr.Deref(nic.GetProperties().GetIps(), []string{}),
 				IPv6Addresses: ptr.Deref(nic.GetProperties().GetIpv6Ips(), []string{}),
 				NetworkID:     ptr.Deref(nic.GetProperties().GetLan(), 0),
-				Name:          ptr.Deref(nic.GetProperties().GetName(), ""),
 				Primary:       s.isPrimaryNIC(ms.IonosMachine, &nic),
 			})
 		}

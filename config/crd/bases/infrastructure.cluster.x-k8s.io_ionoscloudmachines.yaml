@@ -308,9 +308,6 @@ spec:
                           items:
                             type: string
                           type: array
-                        name:
-                          description: Name holds the NIC name.
-                          type: string
                         networkID:
                           description: NetworkID is the ID of the LAN to which the
                             NIC is connected.
@@ -323,7 +320,6 @@ spec:
                       required:
                       - ipv4Addresses
                       - ipv6Addresses
-                      - name
                       - networkID
                       - primary
                       type: object

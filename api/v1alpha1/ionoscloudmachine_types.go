@@ -261,9 +261,6 @@ type NICInfo struct {
 	// NetworkID is the ID of the LAN to which the NIC is connected.
 	NetworkID int32 `json:"networkID"`
 
-	// Name holds the NIC name.
-	Name string `json:"name"`
-
 	// Primary indicates whether the NIC is the primary NIC of the VM.
 	Primary bool `json:"primary"`
 }
