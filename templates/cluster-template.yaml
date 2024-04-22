@@ -190,15 +190,15 @@ spec:
         owner: root:root
         permissions: "0700"
 
-        # CSI Metadata config
-        - content: |
-            {
-              "node-id": "NODE_ID_PLACEHOLDER",
-              "datacenter-id": "${IONOSCLOUD_DATACENTER_ID}"
-            }
-          owner: root:root
-          path: /etc/ie-csi/cfg.json
-          permissions: '0644'
+      # CSI Metadata config
+      - content: |
+          {
+            "node-id": "NODE_ID_PLACEHOLDER",
+            "datacenter-id": "${IONOSCLOUD_DATACENTER_ID}"
+          }
+        owner: root:root
+        path: /etc/ie-csi/cfg.json
+        permissions: '0644'
 
     preKubeadmCommands:
       - systemctl restart systemd-networkd.service systemd-modules-load.service systemd-journald containerd
