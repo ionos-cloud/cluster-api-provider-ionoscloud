@@ -28,6 +28,7 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -133,6 +134,50 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 
 	err = s.deleteClusterIPBlock(ctx, cs, *ipBlock.Id)
 	return err == nil, err
+}
+
+// ReconcileFailoverIPBlockDeletion ensures that the IP block is deleted.
+func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
+	if foIP := ms.IonosMachine.Spec.NodeFailoverIP; foIP == nil || *foIP != infrav1.CloudResourceConfigAuto {
+		// Config is not managed by the Cluster API provider, so there is nothing we have to do here.
+		return false, nil
+	}
+
+	// check if the IP block is currently in creation. We need to wait for it to be finished
+	// before we can trigger the deletion.
+	ipBlock, request, err := scopedFindResource(ctx, ms, s.getFailoverIPBlock, s.getLatestFailoverIPBlockCreationRequest)
+	if err != nil {
+		return false, err
+	}
+
+	if request != nil && request.isPending() {
+		ms.IonosMachine.SetCurrentRequest(http.MethodPost, sdk.RequestStatusQueued, request.location)
+		return true, nil
+	}
+
+	if ipBlock == nil {
+		ms.IonosMachine.DeleteCurrentRequest()
+		return false, nil
+	}
+
+	request, err = s.getLatestIPBlockDeletionRequest(ctx, *ipBlock.GetId())
+	if err != nil {
+		return false, err
+	}
+
+	if request != nil {
+		if request.isPending() {
+			ms.IonosMachine.SetCurrentRequest(http.MethodDelete, sdk.RequestStatusQueued, request.location)
+			return true, nil
+		}
+
+		if request.isDone() {
+			ms.IonosMachine.DeleteCurrentRequest()
+			return false, nil
+		}
+	}
+
+	return true, s.deleteFailoverIPBlock(ctx, ms, *ipBlock.GetId())
 }
 
 func (s *Service) getFailoverIPBlock(ctx context.Context, ms *scope.Machine) (*sdk.IpBlock, error) {

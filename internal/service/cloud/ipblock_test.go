@@ -25,23 +25,24 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/suite"
 
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
-type EndpointTestSuite struct {
+type ipBlockTestSuite struct {
 	ServiceTestSuite
 }
 
 func TestEndpointTestSuite(t *testing.T) {
-	suite.Run(t, new(EndpointTestSuite))
+	suite.Run(t, new(ipBlockTestSuite))
 }
 
 const (
 	exampleIPBlockName = "k8s-ipb-default-test-cluster"
 )
 
-func (s *EndpointTestSuite) TestGetIPBlockFuncMultipleMatches() {
+func (s *ipBlockTestSuite) TestGetIPBlockFuncMultipleMatches() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{
 			*exampleIPBlock(),
@@ -54,7 +55,7 @@ func (s *EndpointTestSuite) TestGetIPBlockFuncMultipleMatches() {
 	s.Nil(block)
 }
 
-func (s *EndpointTestSuite) TestGetIPBlockFuncSingleMatch() {
+func (s *ipBlockTestSuite) TestGetIPBlockFuncSingleMatch() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{
 			*exampleIPBlock(),
@@ -75,7 +76,7 @@ func (s *EndpointTestSuite) TestGetIPBlockFuncSingleMatch() {
 	s.Equal(sdk.Available, *block.Metadata.State, "IP block state does not match")
 }
 
-func (s *EndpointTestSuite) TestGetIPBlockFuncUserSetIP() {
+func (s *ipBlockTestSuite) TestGetIPBlockFuncUserSetIP() {
 	s.clusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 	name := ptr.To("random name")
 	location := ptr.To(exampleLocation)
@@ -116,7 +117,7 @@ func (s *EndpointTestSuite) TestGetIPBlockFuncUserSetIP() {
 	s.Equal(sdk.Available, *block.Metadata.State, "IP block state does not match")
 }
 
-func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetID() {
+func (s *ipBlockTestSuite) TestGetIPBlockPreviouslySetID() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleIPBlockID
 	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
 		Id: ptr.To(exampleIPBlockID),
@@ -127,7 +128,7 @@ func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetID() {
 	s.Equal(exampleIPBlockID, *block.Id)
 }
 
-func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetIDNotFound() {
+func (s *ipBlockTestSuite) TestGetIPBlockPreviouslySetIDNotFound() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleIPBlockID
 	s.mockGetIPBlockByIDCall().Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404)).Once()
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
@@ -138,7 +139,7 @@ func (s *EndpointTestSuite) TestGetIPBlockPreviouslySetIDNotFound() {
 	s.Nil(block)
 }
 
-func (s *EndpointTestSuite) TestGetIPBlockNoMatch() {
+func (s *ipBlockTestSuite) TestGetIPBlockNoMatch() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{
 			{
@@ -154,7 +155,7 @@ func (s *EndpointTestSuite) TestGetIPBlockNoMatch() {
 	s.Nil(block)
 }
 
-func (s *EndpointTestSuite) TestReserveIPBlockRequestSuccess() {
+func (s *ipBlockTestSuite) TestReserveIPBlockRequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockReserveIPBlockCall().Return(requestPath, nil).Once()
 	err := s.service.reserveClusterIPBlock(s.ctx, s.clusterScope)
@@ -166,7 +167,7 @@ func (s *EndpointTestSuite) TestReserveIPBlockRequestSuccess() {
 	s.Equal(requestPath, req.RequestPath)
 }
 
-func (s *EndpointTestSuite) TestDeleteIPBlockRequestSuccess() {
+func (s *ipBlockTestSuite) TestDeleteIPBlockRequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockDeleteIPBlockCall().Return(requestPath, nil).Once()
 	err := s.service.deleteClusterIPBlock(s.ctx, s.clusterScope, exampleIPBlockID)
@@ -178,14 +179,14 @@ func (s *EndpointTestSuite) TestDeleteIPBlockRequestSuccess() {
 	s.Equal(requestPath, req.RequestPath)
 }
 
-func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequestNoRequest() {
+func (s *ipBlockTestSuite) TestGetLatestIPBlockCreationRequestNoRequest() {
 	s.mockGetRequestsCallPost().Return(make([]sdk.Request, 0), nil).Once()
 	req, err := s.service.getLatestIPBlockCreationRequest(s.ctx, s.clusterScope)
 	s.NoError(err)
 	s.Nil(req)
 }
 
-func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequestRequest() {
+func (s *ipBlockTestSuite) TestGetLatestIPBlockCreationRequestRequest() {
 	req := s.buildRequest(sdk.RequestStatusQueued, http.MethodPost, "")
 	reqs := []sdk.Request{req}
 	s.mockGetRequestsCallPost().Return(reqs, nil).Once()
@@ -194,14 +195,14 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockCreationRequestRequest() {
 	s.NotNil(info)
 }
 
-func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequestNoRequest() {
+func (s *ipBlockTestSuite) TestGetLatestIPBlockDeletionRequestNoRequest() {
 	s.mockGetRequestsCallDelete(exampleIPBlockID).Return(make([]sdk.Request, 0), nil).Once()
 	info, err := s.service.getLatestIPBlockDeletionRequest(s.ctx, exampleIPBlockID)
 	s.NoError(err)
 	s.Nil(info)
 }
 
-func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequestRequest() {
+func (s *ipBlockTestSuite) TestGetLatestIPBlockDeletionRequestRequest() {
 	req := s.buildRequest(sdk.RequestStatusQueued, http.MethodDelete, exampleIPBlockID)
 	reqs := []sdk.Request{req}
 	s.mockGetRequestsCallDelete(exampleIPBlockID).Return(reqs, nil).Once()
@@ -210,7 +211,7 @@ func (s *EndpointTestSuite) TestGetLatestIPBlockDeletionRequestRequest() {
 	s.NotNil(info)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointUserSetIP() {
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointUserSetIP() {
 	block := exampleIPBlock()
 	block.Properties.Name = ptr.To("asdf")
 	block.Properties.Ips = &[]string{
@@ -231,7 +232,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointUserSetIP() {
 	s.Equal(exampleIPBlockID, s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointUserSetPort() {
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointUserSetPort() {
 	var port int32 = 9999
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleIPBlockID
 	s.clusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = ""
@@ -245,7 +246,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointUserSetPort() {
 	s.Equal(exampleIPBlockID, s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointPendingRequest() {
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointPendingRequest() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{}, nil).Once()
 	s.mockGetRequestsCallPost().Return([]sdk.Request{
 		s.buildRequest(sdk.RequestStatusRunning, http.MethodPost, ""),
@@ -258,7 +259,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointPendingRequest() {
 	s.Equal(http.MethodPost, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointRequestNewIPBlock() {
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointRequestNewIPBlock() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{}, nil).Once()
 	s.mockGetRequestsCallPost().Return([]sdk.Request{}, nil).Once()
 	s.mockReserveIPBlockCall().Return(exampleRequestPath, nil).Once()
@@ -268,7 +269,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointRequestNewIPBlock()
 	s.Equal(exampleRequestPath, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionCreationPendingRequest() {
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionCreationPendingRequest() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{}, nil).Once()
 	s.mockGetRequestsCallPost().Return([]sdk.Request{
 		s.buildRequest(sdk.RequestStatusRunning, http.MethodPost, ""),
@@ -281,7 +282,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionCreationPen
 	s.Equal(http.MethodPost, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.Method)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithIPBlockID() {
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithIPBlockID() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleIPBlockID
 	s.mockGetIPBlockByIDCall().Return(&sdk.IpBlock{
 		Id: ptr.To(exampleIPBlockID),
@@ -291,7 +292,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWi
 	s.NoError(err)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithoutIPBlockID() {
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithoutIPBlockID() {
 	block := exampleIPBlock()
 	block.Properties.Name = ptr.To("aaaa")
 	block.Properties.Ips = &[]string{
@@ -310,7 +311,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWi
 	s.NoError(err)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionNoBlockLeft() {
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionNoBlockLeft() {
 	s.infraCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 	s.mockListIPBlockCall().Return(nil, nil).Once()
 	requeue, err := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
@@ -319,7 +320,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionNoBlockLeft
 	s.Nil(s.clusterScope.IonosCluster.Status.CurrentClusterRequest)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionDeletionPendingRequest() {
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionDeletionPendingRequest() {
 	block := exampleIPBlock()
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{
 		*block,
@@ -334,7 +335,7 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionDeletionPen
 	s.Equal(sdk.RequestStatusRunning, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.State)
 }
 
-func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionRequestNewDeletion() {
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionRequestNewDeletion() {
 	block := exampleIPBlock()
 	block.Metadata.State = ptr.To(sdk.Busy)
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{
@@ -350,33 +351,100 @@ func (s *EndpointTestSuite) TestReconcileControlPlaneEndpointDeletionRequestNewD
 	s.Equal(exampleRequestPath, s.clusterScope.IonosCluster.Status.CurrentClusterRequest.RequestPath)
 }
 
-func (s *EndpointTestSuite) mockReserveIPBlockCall() *clienttest.MockClient_ReserveIPBlock_Call {
+func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletion() {
+	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
+
+	s.mockListIPBlockCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{*ipBlock}}, nil).Once()
+	s.mockGetIPBlockByIDCall().Return(ipBlock, nil).Once()
+	s.mockGetRequestsCallDelete(exampleIPBlockID).Return(nil, nil).Once()
+	s.mockDeleteIPBlockCall().Return(exampleRequestPath, nil).Once()
+
+	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
+	s.Nil(err)
+	s.True(requeue)
+}
+
+func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingCreation() {
+	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+
+	s.mockListIPBlockCall().Return(nil, nil).Once()
+	s.mockGetRequestsCallPost().Return([]sdk.Request{
+		s.buildRequestWithName(
+			s.service.failoverIPBlockName(s.machineScope), sdk.RequestStatusQueued, http.MethodPost, ""),
+	}, nil,
+	).Once()
+
+	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
+	s.Nil(err)
+	s.True(requeue)
+}
+
+func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingDeletion() {
+	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
+
+	s.mockListIPBlockCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{*ipBlock}}, nil).Once()
+	s.mockGetIPBlockByIDCall().Return(ipBlock, nil).Once()
+
+	deleteRequest := s.buildRequestWithName(s.service.failoverIPBlockName(s.machineScope), sdk.RequestStatusQueued, http.MethodDelete, exampleIPBlockID)
+	s.mockGetRequestsCallDelete(exampleIPBlockID).Return([]sdk.Request{deleteRequest}, nil).Once()
+
+	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
+	s.Nil(err)
+	s.True(requeue)
+	s.Equal(*deleteRequest.GetMetadata().GetRequestStatus().GetHref(), s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
+	s.Equal(http.MethodDelete, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
+	s.Equal(sdk.RequestStatusQueued, s.machineScope.IonosMachine.Status.CurrentRequest.State)
+}
+
+func (s *lanSuite) TestReconcileFailoverIPBlockDeletionDeletionFinished() {
+	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
+
+	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{*ipBlock}}, nil).Once()
+	s.mockGetIPBlockCall(exampleIPBlockID).Return(ipBlock, nil).Once()
+
+	deleteRequest := s.exampleIPBlockDeleteRequest(sdk.RequestStatusDone)
+	s.mockDeleteIPBlockRequestCall(exampleIPBlockID).Return(deleteRequest, nil).Once()
+
+	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
+	s.Nil(err)
+	s.False(requeue)
+	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest)
+}
+
+func (s *ipBlockTestSuite) mockReserveIPBlockCall() *clienttest.MockClient_ReserveIPBlock_Call {
 	return s.ionosClient.
 		EXPECT().
 		ReserveIPBlock(s.ctx, s.service.ipBlockName(s.clusterScope), s.clusterScope.Location(), int32(1))
 }
 
-func (s *EndpointTestSuite) mockGetIPBlockByIDCall() *clienttest.MockClient_GetIPBlock_Call {
+func (s *ipBlockTestSuite) mockGetIPBlockByIDCall() *clienttest.MockClient_GetIPBlock_Call {
 	return s.ionosClient.EXPECT().GetIPBlock(s.ctx, exampleIPBlockID)
 }
 
-func (s *EndpointTestSuite) mockListIPBlockCall() *clienttest.MockClient_ListIPBlocks_Call {
+func (s *ipBlockTestSuite) mockListIPBlockCall() *clienttest.MockClient_ListIPBlocks_Call {
 	return s.ionosClient.EXPECT().ListIPBlocks(s.ctx)
 }
 
-func (s *EndpointTestSuite) mockDeleteIPBlockCall() *clienttest.MockClient_DeleteIPBlock_Call {
+func (s *ipBlockTestSuite) mockDeleteIPBlockCall() *clienttest.MockClient_DeleteIPBlock_Call {
 	return s.ionosClient.EXPECT().DeleteIPBlock(s.ctx, exampleIPBlockID)
 }
 
-func (s *EndpointTestSuite) mockGetRequestsCallPost() *clienttest.MockClient_GetRequests_Call {
+func (s *ipBlockTestSuite) mockGetRequestsCallPost() *clienttest.MockClient_GetRequests_Call {
 	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, ipBlocksPath)
 }
 
-func (s *EndpointTestSuite) mockGetRequestsCallDelete(id string) *clienttest.MockClient_GetRequests_Call {
+func (s *ipBlockTestSuite) mockGetRequestsCallDelete(id string) *clienttest.MockClient_GetRequests_Call {
 	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, path.Join(ipBlocksPath, id))
 }
 
-func (s *EndpointTestSuite) buildRequest(status string, method, id string) sdk.Request {
+func (s *ipBlockTestSuite) buildRequest(status string, method, id string) sdk.Request {
+	return s.buildRequestWithName(s.service.ipBlockName(s.clusterScope), status, method, id)
+}
+
+func (s *ipBlockTestSuite) buildRequestWithName(name, status, method, id string) sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
 		method:     method,
@@ -390,20 +458,24 @@ func (s *EndpointTestSuite) buildRequest(status string, method, id string) sdk.R
 	}
 	if method == http.MethodPost {
 		opts.body = fmt.Sprintf(`{"properties":{"location":"%s","name":"%s","size":1}}`,
-			s.clusterScope.Location(), s.service.ipBlockName(s.clusterScope))
+			s.clusterScope.Location(), name)
 	}
 	return s.exampleRequest(opts)
 }
 
 // exampleIPBlock returns a new sdk.IpBlock instance for testing. The IPs need to be set.
 func exampleIPBlock() *sdk.IpBlock {
+	return exampleIPBlockWithName(exampleIPBlockName)
+}
+
+func exampleIPBlockWithName(name string) *sdk.IpBlock {
 	return &sdk.IpBlock{
 		Id: ptr.To(exampleIPBlockID),
 		Metadata: &sdk.DatacenterElementMetadata{
 			State: ptr.To(sdk.Available),
 		},
 		Properties: &sdk.IpBlockProperties{
-			Name:     ptr.To(exampleIPBlockName),
+			Name:     ptr.To(name),
 			Location: ptr.To(exampleLocation),
 			Ips: &[]string{
 				exampleEndpointIP,

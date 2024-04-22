@@ -521,65 +521,6 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionOnWorker() {
 	s.False(requeue)
 }
 
-func (s *lanSuite) TestReconcileFailoverIPBlockDeletion() {
-	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
-	ipBlock := s.exampleIPBlock()
-
-	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{ipBlock}}, nil).Once()
-	s.mockGetIPBlockCall(exampleIPBlockID).Return(&ipBlock, nil).Once()
-	s.mockDeleteIPBlockRequestCall(exampleIPBlockID).Return(nil, nil).Once()
-	s.mockDeleteIPBlockCall(exampleIPBlockID).Return(exampleRequestPath, nil).Once()
-
-	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
-	s.Nil(err)
-	s.True(requeue)
-}
-
-func (s *lanSuite) TestReconcileFailoverIPBlockDeletionPendingCreation() {
-	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
-
-	s.mockListIPBlocksCall().Return(nil, nil).Once()
-	s.mockCreateIPBlockRequestCall().Return(s.exampleIPBlockPostRequest(sdk.RequestStatusQueued), nil).Once()
-
-	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
-	s.Nil(err)
-	s.True(requeue)
-}
-
-func (s *lanSuite) TestReconcileFailoverIPBlockDeletionPendingDeletion() {
-	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
-	ipBlock := s.exampleIPBlock()
-
-	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{ipBlock}}, nil).Once()
-	s.mockGetIPBlockCall(exampleIPBlockID).Return(&ipBlock, nil).Once()
-
-	deleteRequest := s.exampleIPBlockDeleteRequest(sdk.RequestStatusQueued)
-	s.mockDeleteIPBlockRequestCall(exampleIPBlockID).Return(deleteRequest, nil).Once()
-
-	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
-	s.Nil(err)
-	s.True(requeue)
-	s.Equal(*deleteRequest[0].GetMetadata().GetRequestStatus().GetHref(), s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
-	s.Equal(http.MethodDelete, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
-	s.Equal(sdk.RequestStatusQueued, s.machineScope.IonosMachine.Status.CurrentRequest.State)
-}
-
-func (s *lanSuite) TestReconcileFailoverIPBlockDeletionDeletionFinished() {
-	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
-	ipBlock := s.exampleIPBlock()
-
-	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{ipBlock}}, nil).Once()
-	s.mockGetIPBlockCall(exampleIPBlockID).Return(&ipBlock, nil).Once()
-
-	deleteRequest := s.exampleIPBlockDeleteRequest(sdk.RequestStatusDone)
-	s.mockDeleteIPBlockRequestCall(exampleIPBlockID).Return(deleteRequest, nil).Once()
-
-	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
-	s.Nil(err)
-	s.False(requeue)
-	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest)
-}
-
 func (s *lanSuite) exampleIPBlock() sdk.IpBlock {
 	return sdk.IpBlock{
 		Id: ptr.To(exampleIPBlockID),
@@ -733,8 +674,4 @@ func (s *lanSuite) mockListIPBlocksCall() *clienttest.MockClient_ListIPBlocks_Ca
 
 func (s *lanSuite) mockGetIPBlockCall(ipBlockID string) *clienttest.MockClient_GetIPBlock_Call {
 	return s.ionosClient.EXPECT().GetIPBlock(s.ctx, ipBlockID)
-}
-
-func (s *lanSuite) mockDeleteIPBlockCall(ipBlockID string) *clienttest.MockClient_DeleteIPBlock_Call {
-	return s.ionosClient.EXPECT().DeleteIPBlock(s.ctx, ipBlockID)
 }
