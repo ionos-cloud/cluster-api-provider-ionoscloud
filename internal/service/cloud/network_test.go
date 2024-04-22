@@ -274,6 +274,21 @@ func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 	s.checkSuccessfulFailoverGroupPatch(s.service.ReconcileIPFailover(s.ctx, s.machineScope))
 }
 
+func (s *lanSuite) TestReconcileIPFailoverReserveIPBlock() {
+	const deploymentLabel = "test-deployment"
+	s.infraMachine.SetLabels(map[string]string{clusterv1.MachineDeploymentNameLabel: deploymentLabel})
+	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+
+	s.mockListIPBlocksCall().Return(nil, nil).Once()
+	s.mockCreateIPBlockRequestCall().Return(nil, nil).Once()
+	s.mockReserveIPBlockCall(s.service.failoverIPBlockName(s.machineScope), s.clusterScope.Location()).
+		Return(exampleRequestPath, nil).Once()
+
+	requeue, err := s.service.ReconcileIPFailover(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.True(requeue)
+}
+
 func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 	s.machineScope.Machine.SetLabels(map[string]string{clusterv1.MachineControlPlaneLabel: ""})
 	s.machineScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
@@ -674,4 +689,8 @@ func (s *lanSuite) mockListIPBlocksCall() *clienttest.MockClient_ListIPBlocks_Ca
 
 func (s *lanSuite) mockGetIPBlockCall(ipBlockID string) *clienttest.MockClient_GetIPBlock_Call {
 	return s.ionosClient.EXPECT().GetIPBlock(s.ctx, ipBlockID)
+}
+
+func (s *lanSuite) mockReserveIPBlockCall(name, location string) *clienttest.MockClient_ReserveIPBlock_Call {
+	return s.ionosClient.EXPECT().ReserveIPBlock(s.ctx, name, location, int32(1))
 }
