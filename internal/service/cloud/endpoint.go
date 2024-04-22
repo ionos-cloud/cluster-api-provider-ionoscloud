@@ -299,21 +299,16 @@ func (s *Service) deleteIPBlock(
 
 // getLatestIPBlockCreationRequest returns the latest IP block creation request.
 func (s *Service) getLatestIPBlockCreationRequest(ctx context.Context, cs *scope.Cluster) (*requestInfo, error) {
-	return s.getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx, http.MethodPost, s.ipBlockName(cs), cs.Location())
+	return s.getLatestIPBlockRequestByNameAndLocation(ctx, http.MethodPost, s.ipBlockName(cs), cs.Location())
 }
 
 // getLatestFailoverIPBlockCreationRequest returns the latest failover IP block creation request.
 func (s *Service) getLatestFailoverIPBlockCreationRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
-	return s.getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx, http.MethodPost, s.failoverIPBlockName(ms), ms.ClusterScope.Location())
+	return s.getLatestIPBlockRequestByNameAndLocation(ctx, http.MethodPost, s.failoverIPBlockName(ms), ms.ClusterScope.Location())
 }
 
-// getLatestFailoverIPBlockDeletionRequest returns the latest failover IP block deletion request.
-func (s *Service) getLatestFailoverIPBlockDeletionRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
-	return s.getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx, http.MethodDelete, s.failoverIPBlockName(ms), ms.ClusterScope.Location())
-}
-
-// getLatestIPBlockRequestCreationRequestByNameAndLocation returns the latest IP block creation request by a given name and location.
-func (s *Service) getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx context.Context, method, ipBlockName, location string) (*requestInfo, error) {
+// getLatestIPBlockRequestByNameAndLocation returns the latest IP block creation request by a given name and location.
+func (s *Service) getLatestIPBlockRequestByNameAndLocation(ctx context.Context, method, ipBlockName, location string) (*requestInfo, error) {
 	return getMatchingRequest(
 		ctx,
 		s,

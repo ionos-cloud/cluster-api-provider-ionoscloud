@@ -427,7 +427,7 @@ func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scop
 
 	// check if the IP block is currently in creation. We need to wait for it to be finished
 	// before we can trigger the deletion.
-	ipBlock, request, err := scopedFindResource(ctx, ms, s.getFailoverIPBlock, s.getLatestServerCreationRequest)
+	ipBlock, request, err := scopedFindResource(ctx, ms, s.getFailoverIPBlock, s.getLatestFailoverIPBlockCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -442,7 +442,7 @@ func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scop
 		return false, nil
 	}
 
-	request, err = s.getLatestFailoverIPBlockDeletionRequest(ctx, ms)
+	request, err = s.getLatestIPBlockDeletionRequest(ctx, *ipBlock.GetId())
 	if err != nil {
 		return false, err
 	}

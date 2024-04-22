@@ -47,6 +47,8 @@ import (
 const (
 	// The expected endpoint IP.
 	exampleEndpointIP = "203.0.113.1"
+	// Used when we expect the worker node to implement failover.
+	exampleWorkerFailoverIP = "203.0.113.2"
 	// Used when we actually expect the endpoint IP but receive this instead.
 	exampleUnexpectedIP = "203.0.113.10"
 	// Used to test cases where a LAN already contains configurations with other IP addresses
