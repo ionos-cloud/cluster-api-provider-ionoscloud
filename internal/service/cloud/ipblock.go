@@ -291,8 +291,8 @@ func (s *Service) reserveClusterIPBlock(ctx context.Context, cs *scope.Cluster) 
 	return s.reserveIPBlock(ctx, s.ipBlockName(cs), cs.Location(), log, cs.IonosCluster.SetCurrentClusterRequest)
 }
 
-func (s *Service) reserveNodeFailoverIPBlock(ctx context.Context, ms *scope.Machine) error {
-	log := s.logger.WithName("reserveNodeFailoverIPBlock")
+func (s *Service) reserveMachineDeploymentFailoverIPBlock(ctx context.Context, ms *scope.Machine) error {
+	log := s.logger.WithName("reserveMachineDeploymentFailoverIPBlock")
 	return s.reserveIPBlock(ctx, s.failoverIPBlockName(ms), ms.ClusterScope.Location(), log, ms.IonosMachine.SetCurrentRequest)
 }
 

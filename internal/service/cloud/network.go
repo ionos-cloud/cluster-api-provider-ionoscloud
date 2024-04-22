@@ -307,7 +307,7 @@ func (s *Service) retrieveFailoverIPForMachine(ctx context.Context, ms *scope.Ma
 		}
 
 		// Reserve a new IP block
-		err = s.reserveNodeFailoverIPBlock(ctx, ms)
+		err = s.reserveMachineDeploymentFailoverIPBlock(ctx, ms)
 		return true, "", err
 	}
 
