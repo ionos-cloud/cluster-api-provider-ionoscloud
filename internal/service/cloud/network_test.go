@@ -564,6 +564,22 @@ func (s *lanSuite) TestReconcileFailoverIPBlockDeletionPendingDeletion() {
 	s.Equal(sdk.RequestStatusQueued, s.machineScope.IonosMachine.Status.CurrentRequest.State)
 }
 
+func (s *lanSuite) TestReconcileFailoverIPBlockDeletionDeletionFinished() {
+	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	ipBlock := s.exampleIPBlock()
+
+	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{ipBlock}}, nil).Once()
+	s.mockGetIPBlockCall(exampleIPBlockID).Return(&ipBlock, nil).Once()
+
+	deleteRequest := s.exampleIPBlockDeleteRequest(sdk.RequestStatusDone)
+	s.mockDeleteIPBlockRequestCall(exampleIPBlockID).Return(deleteRequest, nil).Once()
+
+	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
+	s.Nil(err)
+	s.False(requeue)
+	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest)
+}
+
 func (s *lanSuite) exampleIPBlock() sdk.IpBlock {
 	return sdk.IpBlock{
 		Id: ptr.To(exampleIPBlockID),
