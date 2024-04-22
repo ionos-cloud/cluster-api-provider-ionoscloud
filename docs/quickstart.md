@@ -86,8 +86,6 @@ IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used.
 The `IONOS_TOKEN` should be stored in a secret in the same namespace as the management cluster. 
 The secret should have the following structure:
 
-The `apiURL` field is optional and defaults to `https://api.ionos.com/cloudapi/v6` if no value was provided.
-
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -97,7 +95,18 @@ type: Opaque
 stringData:
   token: "Token-Goes-Here"
   apiURL: "https://api.ionos.com/cloudapi/v6"
+  caBundle: |
+    -----BEGIN CERTIFICATE-----
+    d293LCBtdWNoIGJhc2U2NCwgc3VjaCBhd2Vzb21lIQ==
+    ...
+    -----END CERTIFICATE-----
 ```
+
+The `apiURL` field is optional and defaults to `https://api.ionos.com/cloudapi/v6` if no value was provided.
+
+The `caBundle` field is optional. It can be used to provide a custom PEM-encoded CA bundle used to validate the
+IONOS Cloud API TLS certificate. If unset the system's root CA set is used, in case of our provided Dockerfile that is
+Debian 12's `ca-certificates` package.
 
 ### Create a workload cluster
 

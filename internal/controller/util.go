@@ -82,8 +82,9 @@ func createServiceFromCluster(
 
 	token := string(authSecret.Data["token"])
 	apiURL := string(authSecret.Data["apiURL"])
+	caBundle := authSecret.Data["caBundle"]
 
-	ionosClient, err := icc.NewClient(token, apiURL)
+	ionosClient, err := icc.NewClient(token, apiURL, caBundle)
 	if err != nil {
 		return nil, err
 	}
