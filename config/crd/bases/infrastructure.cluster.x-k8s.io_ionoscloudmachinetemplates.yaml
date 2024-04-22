@@ -77,7 +77,8 @@ spec:
                           AdditionalNetworks defines the additional network configurations for the VM.
                           NOTE(lubedacht): We currently only support networks with DHCP enabled.
                         items:
-                          description: Network contains a network config.
+                          description: Network contains the config for additional
+                            LANs.
                           properties:
                             networkID:
                               description: |-

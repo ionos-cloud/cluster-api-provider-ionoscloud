@@ -9,6 +9,7 @@
 - [Overview](#overview)
 - [Documentation](#documentation)
 - [Launching a Kubernetes cluster on IONOS Cloud](#launching-a-kubernetes-cluster-on-ionos-cloud)
+- [Features](#features)
 - [Maintainers](#maintainers)
 - [License](#license)
 <!-- TODO -[Contributing](./CONTRIBUTING.md) -->
@@ -32,6 +33,17 @@ To get started with developing, please see [our development docs](./docs/Develop
 ---
 
 Check out the [quickstart guide](./docs/quickstart.md) to get started with launching a cluster on IONOS Cloud.
+
+## Features
+
+---
+
+* Native Kubernetes manifests and API.
+* Manages the bootstrapping of LANs, Failover Groups and VMs on IONOS Cloud.
+* Deploys Kubernetes control planes into provided virtual data center in IONOS Cloud.
+* Doesn't use SSH for bootstrapping nodes.
+* Installs only the minimal components to bootstrap a control plane and workers.
+* Uses IPv6 by default.
 
 ## Maintainers
 

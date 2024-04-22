@@ -37,3 +37,7 @@ envfile
 
 # test path for local test programs
 /cmd/test/**
+cluster.yaml
+
+# release
+out/

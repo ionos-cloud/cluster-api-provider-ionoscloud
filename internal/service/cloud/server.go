@@ -78,6 +78,20 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 			}
 		}
 
+		// Attach the IPs from all NICs of the server to the status
+		netInfo := &infrav1.MachineNetworkInfo{NICInfo: make([]infrav1.NICInfo, 0)}
+
+		for _, nic := range ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{}) {
+			netInfo.NICInfo = append(netInfo.NICInfo, infrav1.NICInfo{
+				IPv4Addresses: ptr.Deref(nic.GetProperties().GetIps(), []string{}),
+				IPv6Addresses: ptr.Deref(nic.GetProperties().GetIpv6Ips(), []string{}),
+				NetworkID:     ptr.Deref(nic.GetProperties().GetLan(), 0),
+				Primary:       s.isPrimaryNIC(ms.IonosMachine, &nic),
+			})
+		}
+
+		ms.IonosMachine.Status.MachineNetworkInfo = netInfo
+
 		log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
 		// server exists and is available.
 		return false, nil
@@ -364,13 +378,15 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		},
 	}
 
-	// Attach server to additional LANs
+	// Attach server to additional LANs if any.
 	items := *serverNICs.Items
+
 	for _, nic := range ms.IonosMachine.Spec.AdditionalNetworks {
 		items = append(items, sdk.Nic{Properties: &sdk.NicProperties{
 			Lan: &nic.NetworkID,
 		}})
 	}
+
 	serverNICs.Items = &items
 
 	return sdk.ServerEntities{
