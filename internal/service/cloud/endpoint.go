@@ -131,7 +131,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 		return true, nil
 	}
 
-	err = s.deleteIPBlock(ctx, cs, *ipBlock.Id)
+	err = s.deleteClusterIPBlock(ctx, cs, *ipBlock.Id)
 	return err == nil, err
 }
 
@@ -269,35 +269,55 @@ func (s *Service) reserveIPBlock(
 	return nil
 }
 
-// deleteIPBlock requests for the deletion of the IP block with the given ID.
-func (s *Service) deleteIPBlock(ctx context.Context, cs *scope.Cluster, id string) error {
-	log := s.logger.WithName("deleteIPBlock")
+// deleteClusterIPBlock requests for the deletion of the IP block with the given ID.
+func (s *Service) deleteClusterIPBlock(ctx context.Context, cs *scope.Cluster, ipBlockID string) error {
+	log := s.logger.WithName("deleteClusterIPBlock")
+	return s.deleteIPBlock(ctx, log, ipBlockID, cs.IonosCluster.SetCurrentClusterRequest)
+}
 
-	requestPath, err := s.ionosClient.DeleteIPBlock(ctx, id)
+// deleteFailoverIPBlock requests for the deletion of the failover IP block with the given ID.
+func (s *Service) deleteFailoverIPBlock(ctx context.Context, ms *scope.Machine, ipBlockID string) error {
+	log := s.logger.WithName("deleteFailoverIPBlock")
+	return s.deleteIPBlock(ctx, log, ipBlockID, ms.IonosMachine.SetCurrentRequest)
+}
+
+func (s *Service) deleteIPBlock(
+	ctx context.Context,
+	log logr.Logger,
+	ipBlockID string,
+	setRequestStatusFunc func(string, string, string),
+) error {
+	requestPath, err := s.ionosClient.DeleteIPBlock(ctx, ipBlockID)
 	if err != nil {
-		return fmt.Errorf("failed to requestPath IP block deletion: %w", err)
+		return fmt.Errorf("failed to request IP block deletion: %w", err)
 	}
-	cs.IonosCluster.SetCurrentClusterRequest(http.MethodDelete, sdk.RequestStatusQueued, requestPath)
+
+	setRequestStatusFunc(http.MethodDelete, sdk.RequestStatusQueued, requestPath)
 	log.Info("Successfully requested for IP block deletion", "requestPath", requestPath)
 	return nil
 }
 
 // getLatestIPBlockCreationRequest returns the latest IP block creation request.
 func (s *Service) getLatestIPBlockCreationRequest(ctx context.Context, cs *scope.Cluster) (*requestInfo, error) {
-	return s.getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx, s.ipBlockName(cs), cs.Location())
+	return s.getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx, http.MethodPost, s.ipBlockName(cs), cs.Location())
 }
 
 // getLatestFailoverIPBlockCreationRequest returns the latest failover IP block creation request.
 func (s *Service) getLatestFailoverIPBlockCreationRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
-	return s.getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx, s.failoverIPBlockName(ms), ms.ClusterScope.Location())
+	return s.getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx, http.MethodPost, s.failoverIPBlockName(ms), ms.ClusterScope.Location())
+}
+
+// getLatestFailoverIPBlockDeletionRequest returns the latest failover IP block deletion request.
+func (s *Service) getLatestFailoverIPBlockDeletionRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
+	return s.getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx, http.MethodDelete, s.failoverIPBlockName(ms), ms.ClusterScope.Location())
 }
 
 // getLatestIPBlockRequestCreationRequestByNameAndLocation returns the latest IP block creation request by a given name and location.
-func (s *Service) getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx context.Context, ipBlockName, location string) (*requestInfo, error) {
+func (s *Service) getLatestIPBlockRequestCreationRequestByNameAndLocation(ctx context.Context, method, ipBlockName, location string) (*requestInfo, error) {
 	return getMatchingRequest(
 		ctx,
 		s,
-		http.MethodPost,
+		method,
 		ipBlocksPath,
 		matchByName[*sdk.IpBlock, *sdk.IpBlockProperties](ipBlockName),
 		func(r *sdk.IpBlock, _ sdk.Request) bool {

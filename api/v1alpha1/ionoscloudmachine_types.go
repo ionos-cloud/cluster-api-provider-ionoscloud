@@ -47,6 +47,10 @@ const (
 	// WaitingForBootstrapDataReason (Severity=Info) indicates that the bootstrap provider has not yet finished
 	// creating the bootstrap data secret and store it in the Cluster API Machine.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
+
+	// CloudResourceConfigAuto is a constant to indicate that the cloud resource should be managed by the.
+	// Cluster API provider implementation.
+	CloudResourceConfigAuto = "AUTO"
 )
 
 // VolumeDiskType specifies the type of  hard disk.

@@ -225,6 +225,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		{"ReconcileIPFailoverDeletion", cloudService.ReconcileIPFailoverDeletion},
 		{"ReconcileServerDeletion", cloudService.ReconcileServerDeletion},
 		{"ReconcileLANDeletion", cloudService.ReconcileLANDeletion},
+		{"ReconcileFailoverIPBlockDeletion", cloudService.ReconcileFailoverIPBlockDeletion},
 	}
 
 	for _, step := range reconcileSequence {

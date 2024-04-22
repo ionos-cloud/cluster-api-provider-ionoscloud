@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -283,7 +284,7 @@ func (s *Service) retrieveFailoverIPForMachine(ctx context.Context, ms *scope.Ma
 	}
 
 	// AUTO means we have to reserve an IP address.
-	if failoverIP == "AUTO" {
+	if failoverIP == infrav1.CloudResourceConfigAuto {
 		// Check if the IP block is already reserved.
 		ipBlock, info, err := scopedFindResource(ctx, ms, s.getFailoverIPBlock, s.getLatestFailoverIPBlockCreationRequest)
 		if err != nil {
@@ -415,6 +416,50 @@ func (s *Service) ensureFailoverDeletion(ctx context.Context, ms *scope.Machine)
 	}
 
 	return s.removeNICFromFailoverGroup(ctx, ms, nicID)
+}
+
+// ReconcileFailoverIPBlockDeletion ensures that the IP block is deleted.
+func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
+	if foIP := ms.IonosMachine.Spec.NodeFailoverIP; foIP == nil || *foIP != infrav1.CloudResourceConfigAuto {
+		// Config is not managed by the Cluster API provider, so there is nothing we have to do here.
+		return false, nil
+	}
+
+	// check if the IP block is currently in creation. We need to wait for it to be finished
+	// before we can trigger the deletion.
+	ipBlock, request, err := scopedFindResource(ctx, ms, s.getFailoverIPBlock, s.getLatestServerCreationRequest)
+	if err != nil {
+		return false, err
+	}
+
+	if request != nil && request.isPending() {
+		ms.IonosMachine.SetCurrentRequest(http.MethodPost, sdk.RequestStatusQueued, request.location)
+		return true, nil
+	}
+
+	if ipBlock == nil {
+		ms.IonosMachine.DeleteCurrentRequest()
+		return false, nil
+	}
+
+	request, err = s.getLatestFailoverIPBlockDeletionRequest(ctx, ms)
+	if err != nil {
+		return false, err
+	}
+
+	if request != nil {
+		if request.isPending() {
+			ms.IonosMachine.SetCurrentRequest(http.MethodDelete, sdk.RequestStatusQueued, request.location)
+			return true, nil
+		}
+
+		if request.isDone() {
+			ms.IonosMachine.DeleteCurrentRequest()
+			return false, nil
+		}
+	}
+
+	return true, s.deleteFailoverIPBlock(ctx, ms, *ipBlock.GetId())
 }
 
 func (s *Service) getServerNICID(ctx context.Context, ms *scope.Machine) (string, error) {
@@ -572,6 +617,14 @@ func (s *Service) patchLAN(ctx context.Context, ms *scope.Machine, lanID string,
 		return fmt.Errorf("failed to patch LAN %s: %w", lanID, err)
 	}
 	ms.IonosMachine.SetCurrentRequest(http.MethodPatch, sdk.RequestStatusQueued, location)
+
+	err = s.ionosClient.WaitForRequest(ctx, location)
+	if err != nil {
+		return err
+	}
+
+	ms.IonosMachine.DeleteCurrentRequest()
+
 	return nil
 }
 

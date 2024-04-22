@@ -118,6 +118,13 @@ func (m *Machine) SetProviderID(id string) {
 // CountExistingMachines returns the number of existing IonosCloudMachines in the same namespace
 // and with the same cluster label. With machineLabels, additional search labels can be provided.
 func (m *Machine) CountExistingMachines(ctx context.Context, machineLabels client.MatchingLabels) (int, error) {
+	machines, err := m.ListMachines(ctx, machineLabels)
+	return len(machines), err
+}
+
+// ListMachines returns a list of IonosCloudMachines in the same namespace and with the same cluster label.
+// With machineLabels, additional search labels can be provided.
+func (m *Machine) ListMachines(ctx context.Context, machineLabels client.MatchingLabels) ([]infrav1.IonosCloudMachine, error) {
 	if machineLabels == nil {
 		machineLabels = client.MatchingLabels{}
 	}
@@ -127,9 +134,9 @@ func (m *Machine) CountExistingMachines(ctx context.Context, machineLabels clien
 
 	machineList := &infrav1.IonosCloudMachineList{}
 	if err := m.client.List(ctx, machineList, listOpts...); err != nil {
-		return 0, err
+		return nil, err
 	}
-	return len(machineList.Items), nil
+	return machineList.Items, nil
 }
 
 // FindLatestMachine returns the latest control plane IonosCloudMachine in the same namespace

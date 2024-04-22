@@ -169,7 +169,7 @@ func (s *EndpointTestSuite) TestReserveIPBlockRequestSuccess() {
 func (s *EndpointTestSuite) TestDeleteIPBlockRequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockDeleteIPBlockCall().Return(requestPath, nil).Once()
-	err := s.service.deleteIPBlock(s.ctx, s.clusterScope, exampleIPBlockID)
+	err := s.service.deleteClusterIPBlock(s.ctx, s.clusterScope, exampleIPBlockID)
 	s.NoError(err)
 	req := s.clusterScope.IonosCluster.Status.CurrentClusterRequest
 	s.NotNil(req)
