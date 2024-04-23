@@ -46,7 +46,8 @@ type IonosCloudClient struct {
 var _ ionoscloud.Client = &IonosCloudClient{}
 
 // NewClient instantiates a usable IonosCloudClient.
-// The client needs a token to work. Basic auth is not be supported.
+// The client needs a token to work. Basic auth is not supported.
+// Passing a CA bundle is optional.
 func NewClient(token, apiURL string, caBundle []byte) (*IonosCloudClient, error) {
 	if token == "" {
 		return nil, errors.New("token must be set")
