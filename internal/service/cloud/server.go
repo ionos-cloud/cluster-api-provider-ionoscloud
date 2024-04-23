@@ -74,7 +74,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 			err := s.startServer(ctx, ms, *server.Id)
 			if err != nil {
 				log.Error(err, "Failed to start the server")
-				return false, err
+				return true, err
 			}
 		}
 
