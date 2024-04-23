@@ -105,8 +105,8 @@ stringData:
 The `apiURL` field is optional and defaults to `https://api.ionos.com/cloudapi/v6` if no value was provided.
 
 The `caBundle` field is optional. It can be used to provide a custom PEM-encoded CA bundle used to validate the
-IONOS Cloud API TLS certificate. If unset the system's root CA set is used, in case of our provided Dockerfile that is
-Debian 12's `ca-certificates` package.
+IONOS Cloud API TLS certificate. If unset, the system's root CA set is used. In case of our provided Dockerfile that
+would be Debian 12's `ca-certificates` package.
 
 ### Create a workload cluster
 
