@@ -195,7 +195,8 @@ func (c *IonosCloudClient) StartServer(ctx context.Context, datacenterID, server
 	return "", errLocationHeaderEmpty
 }
 
-// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
+// CreateLAN creates a new LAN with the provided properties in the specified data center,
+// returning the request location.
 func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost,
 ) (string, error) {
 	if datacenterID == "" {
@@ -214,8 +215,11 @@ func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, p
 	return "", errLocationHeaderEmpty
 }
 
-// PatchLAN patches the LAN that matches lanID in the specified data center with the provided properties, returning the request location.
-func (c *IonosCloudClient) PatchLAN(ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties) (string, error) {
+// PatchLAN patches the LAN that matches lanID in the specified data center
+// with the provided properties, returning the request location.
+func (c *IonosCloudClient) PatchLAN(
+	ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties,
+) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
 	}
@@ -248,7 +252,8 @@ func (c *IonosCloudClient) ListLANs(ctx context.Context, datacenterID string) (*
 	return &lans, nil
 }
 
-// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
+// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center,
+// returning the request location.
 func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
@@ -268,7 +273,9 @@ func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID st
 
 // ReserveIPBlock reserves an IP block with the provided properties in the specified location, returning the request
 // path.
-func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, location string, size int32) (requestPath string, err error) {
+func (c *IonosCloudClient) ReserveIPBlock(
+	ctx context.Context, name, location string, size int32,
+) (requestPath string, err error) {
 	if location == "" {
 		return "", errors.New("location must be set")
 	}
@@ -396,7 +403,9 @@ func (c *IonosCloudClient) WaitForRequest(ctx context.Context, requestURL string
 }
 
 // PatchNIC updates the NIC identified by nicID with the provided properties.
-func (c *IonosCloudClient) PatchNIC(ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties) (string, error) {
+func (c *IonosCloudClient) PatchNIC(
+	ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties,
+) (string, error) {
 	if err := validateNICParameters(datacenterID, serverID, nicID); err != nil {
 		return "", err
 	}

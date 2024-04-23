@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -202,7 +202,7 @@ type requestBuildOptions struct {
 	targetType sdk.Type
 }
 
-func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request {
+func (*ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request {
 	req := sdk.Request{
 		Id: &opts.requestID,
 		Metadata: &sdk.RequestMetadata{

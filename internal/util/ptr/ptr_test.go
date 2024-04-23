@@ -25,8 +25,8 @@ import (
 func Test_PtrTo(t *testing.T) {
 	type testType struct{}
 
-	require.IsType(t, To(testType{}), (*testType)(nil))
-	require.IsType(t, To((*testType)(nil)), (**testType)(nil))
+	require.IsType(t, (*testType)(nil), To(testType{}))
+	require.IsType(t, (**testType)(nil), To((*testType)(nil)))
 }
 
 func Test_PtrDeref(t *testing.T) {
@@ -34,10 +34,10 @@ func Test_PtrDeref(t *testing.T) {
 
 	testTypeInstance := &testType{}
 	// check result types
-	require.IsType(t, Deref(&testType{}, testType{}), testType{})
-	require.IsType(t, Deref(&testTypeInstance, &testType{}), &testType{})
+	require.IsType(t, testType{}, Deref(&testType{}, testType{}))
+	require.IsType(t, &testType{}, Deref(&testTypeInstance, &testType{}))
 	// validate that deref returns default when passing a nil value
 	var nilTestType *testType
-	require.Equal(t, Deref[testType](nilTestType, testType{}), testType{})
-	require.Equal(t, Deref[testType](nil, testType{}), testType{})
+	require.Equal(t, testType{}, Deref[testType](nilTestType, testType{}))
+	require.Equal(t, testType{}, Deref[testType](nil, testType{}))
 }

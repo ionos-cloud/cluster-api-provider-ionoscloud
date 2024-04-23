@@ -76,7 +76,8 @@ var _ = Describe("IonosCloudCluster", func() {
 		It("should not allow creating clusters with empty credential secret", func() {
 			cluster := defaultCluster()
 			cluster.Spec.CredentialsRef.Name = ""
-			Expect(k8sClient.Create(context.Background(), cluster)).Should(MatchError(ContainSubstring("credentialsRef.name must be provided")))
+			Expect(k8sClient.Create(context.Background(), cluster)).
+				Should(MatchError(ContainSubstring("credentialsRef.name must be provided")))
 		})
 	})
 
@@ -86,7 +87,8 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
 
 			cluster.Spec.ContractNumber = newValueStr
-			Expect(k8sClient.Update(context.Background(), cluster)).Should(MatchError(ContainSubstring("contractNumber is immutable")))
+			Expect(k8sClient.Update(context.Background(), cluster)).
+				Should(MatchError(ContainSubstring("contractNumber is immutable")))
 		})
 
 		It("should not allow changing the location", func() {

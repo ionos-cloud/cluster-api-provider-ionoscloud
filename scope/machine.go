@@ -112,18 +112,15 @@ func (m *Machine) DatacenterID() string {
 
 // SetProviderID sets the provider ID for the IonosCloudMachine.
 func (m *Machine) SetProviderID(id string) {
-	m.IonosMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ionos://%s", id))
+	m.IonosMachine.Spec.ProviderID = ptr.To("ionos://" + id)
 }
 
-// CountExistingMachines returns the number of existing IonosCloudMachines in the same namespace
-// and with the same cluster label. If ignoreWorkers is set to true, only control plane machines
-// will be counted.
-func (m *Machine) CountExistingMachines(ctx context.Context, ignoreWorkers bool) (int, error) {
+// CountControlPlaneMachines returns the number of existing IonosCloudMachines in the same namespace
+// and with the same cluster label that are control planes.
+func (m *Machine) CountControlPlaneMachines(ctx context.Context) (int, error) {
 	matchLabels := client.MatchingLabels{
-		clusterv1.ClusterNameLabel: m.ClusterScope.Cluster.Name,
-	}
-	if ignoreWorkers {
-		matchLabels[clusterv1.MachineControlPlaneLabel] = ""
+		clusterv1.ClusterNameLabel:         m.ClusterScope.Cluster.Name,
+		clusterv1.MachineControlPlaneLabel: "",
 	}
 
 	listOpts := []client.ListOption{client.InNamespace(m.IonosMachine.Namespace), matchLabels}

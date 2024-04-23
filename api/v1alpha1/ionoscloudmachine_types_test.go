@@ -95,7 +95,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				m.Spec.ProviderID = &providerID
 				Expect(m.ExtractServerID()).To(Equal(want))
 			},
-				Entry("valid ID", "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
+				Entry("valid ID", "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
+					"ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
 				Entry("invalid provider name", "ionoscloud://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
 				Entry("typo in provider name", "ions://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
 				Entry("no provider name", "://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
@@ -343,13 +344,15 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		It("should correctly set and get the conditions", func() {
 			m := defaultMachine()
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+			Expect(k8sClient.Get(
+				context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			// Calls SetConditions with required fields
 			conditions.MarkTrue(m, MachineProvisionedCondition)
 
 			Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
-			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+			Expect(k8sClient.Get(context.Background(),
+				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			machineConditions := m.GetConditions()
 			Expect(machineConditions).To(HaveLen(1))
@@ -361,7 +364,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		It("should correctly set and get the status", func() {
 			m := defaultMachine()
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+			Expect(k8sClient.Get(context.Background(),
+				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			m.Status.Ready = true
 			conditions.MarkTrue(m, MachineProvisionedCondition)
@@ -387,7 +391,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			want := *m.DeepCopy()
 
 			Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
-			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+			Expect(k8sClient.Get(context.Background(),
+				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			// Gomega matcher seems to have issues with comparing the dates.
 			diff := cmp.Diff(want.Status, m.Status)

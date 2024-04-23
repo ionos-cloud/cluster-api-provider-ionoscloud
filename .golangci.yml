@@ -2,34 +2,47 @@ linters:
   disable-all: true
   enable:
     - asciicheck
+    - bidichk
     - bodyclose
+    - containedctx
     - copyloopvar
+    - depguard
     - dogsled
+    - dupl
     - errcheck
+    - errname
+    - errorlint
+    - exhaustive
     - gci
     - ginkgolinter
     - goconst
     - gocritic
-    - gocyclo
     - godot
     - gofumpt
-    - goimports
-    - goprintffuncname
     - gosec
     - gosimple
     - govet
     - importas
+    - inamedparam
     - ineffassign
     - intrange
+    - ireturn
     - loggercheck
     - misspell
+    - musttag
     - nakedret
     - nilerr
     - nolintlint
+    - nosprintfhostport
     - prealloc
+    - perfsprint
     - revive
+    - reassign
     - staticcheck
     - stylecheck
+    - tagalign
+    - testifylint
+    - tenv
     - typecheck
     - unconvert
     - unparam
@@ -37,6 +50,12 @@ linters:
     - whitespace
 
 linters-settings:
+  depguard:
+    rules:
+      main:
+        deny:
+          - pkg: "github.com/pkg/errors"
+            desc: Should be replaced by stdlib errors package
   gci:
     sections:
       - standard
@@ -47,22 +66,6 @@ linters-settings:
   gosec:
     excludes:
       - G601 # Implicit memory aliasing of items from a range statement: Obsolete since Go 1.22
-  revive:
-    rules:
-      - name: "exported"
-        severity: "warning"
-      - name: "var-naming"
-        arguments:
-        - [] # first list is an allow list. All initialisms placed here will be ignored
-        - ["LAN", "IP", "NIC"] # second list is a deny list. These rules will be enforced
-        severity: error
-
-
-  goimports:
-    local-prefixes: github.com/ionos-cloud/cluster-api-provider-ionoscloud/
-  ifshort:
-    # Maximum length of variable declaration measured in number of characters, after which linter won't suggest using short syntax.
-    max-decl-chars: 50
   importas:
     no-unaliased: true
     alias:
@@ -87,13 +90,41 @@ linters-settings:
         alias: infrav1
       - pkg: github.com/ionos-cloud/sdk-go/v6
         alias: sdk
+  ireturn:
+    allow:
+      - error
+      - generic
+      - "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud.Client"
   loggercheck:
     require-string-key: true
     no-printf-like: true
-  staticcheck:
-    go: "1.22"
-  stylecheck:
-    go: "1.22"
+  revive:
+    enable-all-rules: true
+    rules:
+      - name: add-constant
+        disabled: true
+      - name: cognitive-complexity
+        arguments:
+          - 25
+      - name: cyclomatic
+        arguments:
+          - 15
+      - name: line-length-limit
+        arguments:
+          - 120
+      - name: max-public-structs
+        disabled: true
+      - name: range-val-address
+        disabled: true # Obsolete since Go 1.22
+      - name: struct-tag
+        arguments:
+          - json,inline
+      - name: var-naming
+        arguments:
+          - [] # first list is an allow list. All initialisms placed here will be ignored
+          - [LAN, IP, NIC] # second list is a deny list. These rules will be enforced
+  testifylint:
+    enable-all: true
 
 issues:
   max-same-issues: 0
@@ -101,32 +132,24 @@ issues:
   # We are disabling default golangci exclusions because we want to help reviewers to focus on reviewing the most relevant
   # changes in PRs and avoid nitpicking.
   exclude-use-default: false
-  # List of regexps of issue texts to exclude, empty list by default.
-  exclude:
-    # The following are being worked on to remove their exclusion. This list should be reduced or go away all together over time.
-    # If it is decided they will not be addressed they should be moved above this comment.
-    - Subprocess launch(ed with variable|ing should be audited)
-    - (Expect directory permissions to be 0750 or less|Expect file permissions to be 0600 or less)
-    - (G104|G307)
   exclude-rules:
     - linters:
-        - gci
-      path: main\.go
+        - containedctx
+      path: '(.+)_test\.go'
     - linters:
-        - gosec
-      text: "G108: Profiling endpoint is automatically exposed on /debug/pprof"
+        - gocritic
+      text: "appendAssign: append result not assigned to the same slice"
+    - linters:
+        - revive
+      text: "comment-spacings: no space between comment delimiter and comment text"
+      source: "//(\\+(kubebuilder|optional|required)|#nosec)"
     - linters:
         - revive
       text: "exported: exported method .*\\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported"
     - linters:
-        - errcheck
-      text: Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?Setenv). is not checked
-    # With Go 1.16, the new embed directive can be used with an un-named import,
-    # revive (previously, golint) only allows these to be imported in a main.go, which wouldn't work for us.
-    # This directive allows the embed package to be imported with an underscore everywhere.
-    - linters:
         - revive
-      source: _ "embed"
+      text: maximum number of lines per function exceeded
+      path: suite_test.go
     # Exclude some packages or code to require comments, for example test code, or fake clients.
     - linters:
         - revive
@@ -140,6 +163,19 @@ issues:
         - revive
       text: exported (method|function|type|const) (.+) should have comment or be unexported
       path: "(framework|e2e|infrastructure/docker)/.*.go"
+    - linters:
+        - revive
+      text: "line is \\d+ characters, out of limit \\d+"
+      source: "\\s*//\\+kubebuilder:.*"
+    - linters:
+        - revive
+      text: "line is \\d+ characters, out of limit \\d+"
+      # If a line comment ends with something that looks like a URL, we ignore the line length limit.
+      source: "\\s*//.*[-a-zA-Z0-9@:%_\\+.~#?&//=]{2,256}\\.[a-z]{2,4}\\b(\\/[-a-zA-Z0-9@:%_\\+.~#?&//=]*)?$"
+    - linters:
+        - revive
+      text: "function-length: maximum number of lines per function exceeded"
+      path: _test\.go
     # Disable unparam "always receives" which might not be really
     # useful when building libraries.
     - linters:
@@ -149,21 +185,18 @@ issues:
     # within test files.
     - path: _test\.go
       text: should not use dot imports
-    - path: (framework|e2e)/.*.go
-      text: should not use dot imports
     - path: _test\.go
       text: cyclomatic complexity
     # Append should be able to assign to a different var/slice.
-    - linters:
-        - gocritic
-      text: "appendAssign: append result not assigned to the same slice"
+    - path: (framework|e2e)/.*.go
+      text: should not use dot imports
   exclude-files:
     - "zz_generated.*\\.go$"
     - ".*conversion.*\\.go$"
   exclude-dirs:
     - mock*
 
-
 run:
   timeout: 10m
   allow-parallel-runners: true
+  go: "1.22"

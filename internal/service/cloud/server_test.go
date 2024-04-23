@@ -28,7 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
@@ -119,7 +119,8 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 
 	s.NotNil(s.machineScope.IonosMachine.Status.MachineNetworkInfo)
 	s.Equal([]string{"198.51.100.10"}, s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv4Addresses)
-	s.Equal([]string{"2001:db8:2c0:301::1"}, s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv6Addresses)
+	s.Equal([]string{"2001:db8:2c0:301::1"},
+		s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv6Addresses)
 	s.Equal(int32(1), s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].NetworkID)
 }
 
@@ -165,6 +166,7 @@ func (s *serverSuite) TestReconcileServerNoRequest() {
 }
 
 func (s *serverSuite) prepareReconcileServerRequestTest() {
+	s.T().Helper()
 	bootstrapSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
@@ -196,7 +198,7 @@ func (s *serverSuite) TestReconcileServerDeletion() {
 	s.NoError(err)
 	s.True(res)
 	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
+	s.Equal(http.MethodDelete, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, reqLocation)
 }
 
@@ -228,7 +230,7 @@ func (s *serverSuite) TestReconcileServerDeletionCreateRequestPending() {
 	s.True(res)
 
 	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodPost)
+	s.Equal(http.MethodPost, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, *exampleRequest.Metadata.RequestStatus.Href)
 }
 
@@ -246,7 +248,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestPending() {
 	s.True(res)
 
 	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
+	s.Equal(http.MethodDelete, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
 	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, *exampleRequest.Metadata.RequestStatus.Href)
 }
 
@@ -281,8 +283,8 @@ func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
 	s.True(res)
 
 	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.Method, http.MethodDelete)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, "delete/triggered")
+	s.Equal(http.MethodDelete, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
+	s.Equal("delete/triggered", s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
 }
 
 func (s *serverSuite) TestGetServerWithProviderID() {
@@ -324,7 +326,7 @@ func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
 }
 
 //nolint:unused
-func (s *serverSuite) exampleServer() sdk.Server {
+func (*serverSuite) exampleServer() sdk.Server {
 	return sdk.Server{
 		Id: ptr.To("1"),
 		Metadata: &sdk.DatacenterElementMetadata{
@@ -355,7 +357,8 @@ func (s *serverSuite) mockDeleteServer(serverID string) *clienttest.MockClient_D
 }
 
 func (s *serverSuite) mockGetServerCreationRequest() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.serversURL(s.machineScope.DatacenterID()))
+	return s.ionosClient.EXPECT().
+		GetRequests(s.ctx, http.MethodPost, s.service.serversURL(s.machineScope.DatacenterID()))
 }
 
 func (s *serverSuite) mockGetServerDeletionRequest(serverID string) *clienttest.MockClient_GetRequests_Call {
