@@ -150,12 +150,6 @@ issues:
         - revive
       text: maximum number of lines per function exceeded
       path: suite_test.go
-    # With Go 1.16, the new embed directive can be used with an un-named import,
-    # revive (previously, golint) only allows these to be imported in a main.go, which wouldn't work for us.
-    # This directive allows the embed package to be imported with an underscore everywhere.
-    - linters:
-        - revive
-      source: _ "embed"
     # Exclude some packages or code to require comments, for example test code, or fake clients.
     - linters:
         - revive
