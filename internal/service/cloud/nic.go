@@ -45,15 +45,15 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, fai
 		return nil, err
 	}
 
-	// Find the primary NIC and ensure that the endpoint IP address is added to the NIC.
+	// Find the primary NIC and ensure that the failover IP address is added to the NIC.
 	nic, err := s.findPrimaryNIC(ms.IonosMachine, server)
 	if err != nil {
 		return nil, err
 	}
 
-	// if the NIC already contains the endpoint IP address, we can return
+	// if the NIC already contains the failover IP address, we can return
 	if nicHasIP(nic, failoverIP) {
-		log.V(4).Info("Primary NIC contains endpoint IP address. Reconcile successful.")
+		log.V(4).Info("Primary NIC contains failover IP address. Reconcile successful.")
 		return nic, nil
 	}
 
@@ -75,7 +75,7 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, fai
 		return nic, nil
 	}
 
-	log.V(4).Info("Unable to find endpoint IP address in primary NIC. Patching NIC.")
+	log.V(4).Info("Unable to find failover IP address in primary NIC. Patching NIC.")
 	nicIPs := ptr.Deref(nic.GetProperties().GetIps(), []string{})
 	nicIPs = append(nicIPs, failoverIP)
 
