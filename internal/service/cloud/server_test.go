@@ -119,7 +119,8 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 
 	s.NotNil(s.machineScope.IonosMachine.Status.MachineNetworkInfo)
 	s.Equal([]string{"198.51.100.10"}, s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv4Addresses)
-	s.Equal([]string{"2001:db8:2c0:301::1"}, s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv6Addresses)
+	s.Equal([]string{"2001:db8:2c0:301::1"},
+		s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv6Addresses)
 	s.Equal(int32(1), s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].NetworkID)
 }
 

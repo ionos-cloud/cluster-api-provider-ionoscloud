@@ -142,7 +142,7 @@ issues:
     - linters:
         - revive
       text: "comment-spacings: no space between comment delimiter and comment text"
-      source: "//\\+(kubebuilder|optional|required)"
+      source: "//(\\+(kubebuilder|optional|required)|#nosec)"
     - linters:
         - revive
       text: "exported: exported method .*\\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported"
@@ -172,6 +172,10 @@ issues:
       text: "line is \\d+ characters, out of limit \\d+"
       # If a line comment ends with something that looks like a URL, we ignore the line length limit.
       source: "\\s*//.*[-a-zA-Z0-9@:%_\\+.~#?&//=]{2,256}\\.[a-z]{2,4}\\b(\\/[-a-zA-Z0-9@:%_\\+.~#?&//=]*)?$"
+    - linters:
+        - revive
+      text: "function-length: maximum number of lines per function exceeded"
+      path: _test\.go
     # Disable unparam "always receives" which might not be really
     # useful when building libraries.
     - linters:

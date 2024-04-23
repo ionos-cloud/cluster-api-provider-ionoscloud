@@ -123,8 +123,10 @@ yuGnBXj8ytqU0CwIPX4WecigUCAkVDNx
 					require.NotNil(t, cfg.HTTPClient, "HTTP client is nil")
 					require.NotNil(t, cfg.HTTPClient.Transport, "HTTP client lacks a custom transport")
 					require.IsType(t, &http.Transport{}, cfg.HTTPClient.Transport, "transport is not an http.Transport")
-					require.NotNil(t, cfg.HTTPClient.Transport.(*http.Transport).TLSClientConfig, "TLSClientConfig is nil")
-					require.NotNil(t, cfg.HTTPClient.Transport.(*http.Transport).TLSClientConfig.RootCAs, "RootCAs is nil")
+					require.NotNil(t, cfg.HTTPClient.Transport.(*http.Transport).TLSClientConfig,
+						"TLSClientConfig is nil")
+					require.NotNil(t, cfg.HTTPClient.Transport.(*http.Transport).TLSClientConfig.RootCAs,
+						"RootCAs is nil")
 				} else {
 					require.Equal(t, http.DefaultClient, cfg.HTTPClient, "HTTP client is not the default client")
 				}
