@@ -19,8 +19,11 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"time"
 
@@ -43,12 +46,27 @@ type IonosCloudClient struct {
 var _ ionoscloud.Client = &IonosCloudClient{}
 
 // NewClient instantiates a usable IonosCloudClient.
-// The client needs a token to work. Basic auth is not be supported.
-func NewClient(token, apiURL string) (*IonosCloudClient, error) {
+// The client needs a token to work. Basic auth is not supported.
+// Passing a CA bundle is optional.
+func NewClient(token, apiURL string, caBundle []byte) (*IonosCloudClient, error) {
 	if token == "" {
 		return nil, errors.New("token must be set")
 	}
 	cfg := sdk.NewConfiguration("", "", token, apiURL)
+
+	if len(caBundle) > 0 {
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caBundle) {
+			return nil, errors.New("failed to read trusted CA certificates bundle")
+		}
+
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.TLSClientConfig = &tls.Config{ //#nosec G402 # Use Go's default MinVersion
+			RootCAs: caCertPool,
+		}
+		cfg.HTTPClient = &http.Client{Transport: transport}
+	}
+
 	apiClient := sdk.NewAPIClient(cfg)
 	return &IonosCloudClient{
 		API: apiClient,
