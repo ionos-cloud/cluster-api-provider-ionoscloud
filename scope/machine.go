@@ -115,9 +115,9 @@ func (m *Machine) SetProviderID(id string) {
 	m.IonosMachine.Spec.ProviderID = ptr.To("ionos://" + id)
 }
 
-// CountExistingControlPlanes returns the number of existing IonosCloudMachines in the same namespace
+// CountControlPlaneMachines returns the number of existing IonosCloudMachines in the same namespace
 // and with the same cluster label that are control planes.
-func (m *Machine) CountExistingControlPlanes(ctx context.Context) (int, error) {
+func (m *Machine) CountControlPlaneMachines(ctx context.Context) (int, error) {
 	matchLabels := client.MatchingLabels{
 		clusterv1.ClusterNameLabel:         m.ClusterScope.Cluster.Name,
 		clusterv1.MachineControlPlaneLabel: "",

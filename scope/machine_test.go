@@ -99,7 +99,7 @@ func TestMachineHasFailedFailureReason(t *testing.T) {
 	require.True(t, scope.HasFailed())
 }
 
-func TestMachineCountExistingMachines(t *testing.T) {
+func TestCountControlPlaneMachines(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
 
@@ -126,7 +126,7 @@ func TestMachineCountExistingMachines(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	count, err := scope.CountExistingControlPlanes(context.Background())
+	count, err := scope.CountControlPlaneMachines(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 3, count)
 }

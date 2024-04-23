@@ -271,7 +271,7 @@ func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Mac
 		return false, nil
 	}
 
-	count, err := ms.CountExistingControlPlanes(ctx)
+	count, err := ms.CountControlPlaneMachines(ctx)
 
 	switch {
 	case err != nil:
