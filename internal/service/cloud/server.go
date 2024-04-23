@@ -62,51 +62,47 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 		return true, nil
 	}
 
-	if server != nil {
-		// Server is available
-
-		if !s.isServerAvailable(server) {
-			// server is still provisioning, checking again later
-			return true, nil
+	if server == nil {
+		// Server does not exist yet, create it
+		log.V(4).Info("No server was found. Creating new server")
+		if err := s.createServer(ctx, secret, ms); err != nil {
+			return false, err
 		}
-
-		if vmState := getVMState(server); !isRunning(vmState) {
-			err := s.startServer(ctx, ms, *server.Id)
-			if err != nil {
-				log.Error(err, "Failed to start the server")
-				return true, err
-			}
-		}
-
-		// Attach the IPs from all NICs of the server to the status
-		netInfo := &infrav1.MachineNetworkInfo{NICInfo: make([]infrav1.NICInfo, 0)}
-
-		for _, nic := range ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{}) {
-			netInfo.NICInfo = append(netInfo.NICInfo, infrav1.NICInfo{
-				IPv4Addresses: ptr.Deref(nic.GetProperties().GetIps(), []string{}),
-				IPv6Addresses: ptr.Deref(nic.GetProperties().GetIpv6Ips(), []string{}),
-				NetworkID:     ptr.Deref(nic.GetProperties().GetLan(), 0),
-				Primary:       s.isPrimaryNIC(ms.IonosMachine, &nic),
-			})
-		}
-
-		ms.IonosMachine.Status.MachineNetworkInfo = netInfo
-
-		log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
-		// server exists and is available.
-		return false, nil
+		log.V(4).Info("Successfully initiated server creation")
+		return true, nil
 	}
 
-	// server does not exist yet, create it
-	log.V(4).Info("No server was found. Creating new server")
-	if err := s.createServer(ctx, secret, ms); err != nil {
-		return false, err
+	// Server is available
+	if !s.isServerAvailable(server) {
+		// server is still provisioning, checking again later
+		return true, nil
 	}
 
-	log.V(4).Info("successfully finished reconciling server")
-	// If we reach this point, we want to requeue as the request is not processed yet,
-	// and we will check for the status again later.
-	return true, nil
+	if vmState := getVMState(server); !isRunning(vmState) {
+		err := s.startServer(ctx, ms, *server.Id)
+		if err != nil {
+			log.Error(err, "Failed to start the server")
+			return true, err
+		}
+	}
+
+	// Attach the IPs from all NICs of the server to the status
+	netInfo := &infrav1.MachineNetworkInfo{NICInfo: make([]infrav1.NICInfo, 0)}
+
+	for _, nic := range ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{}) {
+		netInfo.NICInfo = append(netInfo.NICInfo, infrav1.NICInfo{
+			IPv4Addresses: ptr.Deref(nic.GetProperties().GetIps(), []string{}),
+			IPv6Addresses: ptr.Deref(nic.GetProperties().GetIpv6Ips(), []string{}),
+			NetworkID:     ptr.Deref(nic.GetProperties().GetLan(), 0),
+			Primary:       s.isPrimaryNIC(ms.IonosMachine, &nic),
+		})
+	}
+
+	ms.IonosMachine.Status.MachineNetworkInfo = netInfo
+
+	log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
+	// server exists and is available.
+	return false, nil
 }
 
 // ReconcileServerDeletion ensures the server is deleted.
