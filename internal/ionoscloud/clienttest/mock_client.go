@@ -929,6 +929,64 @@ func (_c *MockClient_ReserveIPBlock_Call) RunAndReturn(run func(context.Context,
 	return _c
 }
 
+// StartServer provides a mock function with given fields: ctx, datacenterID, serverID
+func (_m *MockClient) StartServer(ctx context.Context, datacenterID string, serverID string) (string, error) {
+	ret := _m.Called(ctx, datacenterID, serverID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for StartServer")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+		return rf(ctx, datacenterID, serverID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+		r0 = rf(ctx, datacenterID, serverID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, datacenterID, serverID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_StartServer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartServer'
+type MockClient_StartServer_Call struct {
+	*mock.Call
+}
+
+// StartServer is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - serverID string
+func (_e *MockClient_Expecter) StartServer(ctx interface{}, datacenterID interface{}, serverID interface{}) *MockClient_StartServer_Call {
+	return &MockClient_StartServer_Call{Call: _e.mock.On("StartServer", ctx, datacenterID, serverID)}
+}
+
+func (_c *MockClient_StartServer_Call) Run(run func(ctx context.Context, datacenterID string, serverID string)) *MockClient_StartServer_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_StartServer_Call) Return(_a0 string, _a1 error) *MockClient_StartServer_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_StartServer_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_StartServer_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // WaitForRequest provides a mock function with given fields: ctx, requestURL
 func (_m *MockClient) WaitForRequest(ctx context.Context, requestURL string) error {
 	ret := _m.Called(ctx, requestURL)

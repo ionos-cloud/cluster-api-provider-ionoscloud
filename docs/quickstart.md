@@ -1,14 +1,10 @@
 ## Usage
 
----
-
 This is a guide on how to use the Cluster API Provider for IONOS Cloud (CAPIC) to create a Kubernetes cluster 
 on IONOS Cloud. To learn more about the Cluster API, please refer 
 to the official [Cluster API book](https://cluster-api.sigs.k8s.io/).
 
 ## Table of Contents
-
----
 
 * [Usage](#usage)
   * [Prerequisites](#prerequisites)
@@ -20,10 +16,9 @@ to the official [Cluster API book](https://cluster-api.sigs.k8s.io/).
     * [Create a workload cluster](#create-a-workload-cluster)
   * [Next Steps](#next-steps)
   * [Troubleshooting](#troubleshooting)
+  * [Useful Resources](#useful-resources)
 
 ## Prerequisites
-
----
 
 Before you can use CAPIC, you need to have the following prerequisites:
 
@@ -37,28 +32,20 @@ Before you can use CAPIC, you need to have the following prerequisites:
 
 ## Quickstart
 
----
-
 In order to install Cluster API Provider for IONOS Cloud (CAPIC), you need to have a Kubernetes cluster up and running,
 and `clusterctl` installed.
 
 ### Case 1: Using a local provider
-
----
 
 If the provider is not yet added to the list of providers in `clusterctl`, you can bootstrap the management cluster
 using a local provider. Refer to [local provider](./local-provider.md) for more information.
 
 ### Case 2: The provider is already available in clusterctl
 
----
-
 In this case you can simply follow the steps below. Make sure you are using a version of `clusterctl` which
 supports the `IONOS Cloud provider`.
 
 ### Configuring the management cluster
-
----
 
 Before you can create a Kubernetes cluster on IONOS Cloud, you need to configure the management cluster.
 Currently, the controller has no need of any special configuration, so you can just run the following command:
@@ -69,8 +56,6 @@ clusterctl init --infrastructure=ionoscloud
 
 
 ### Environment variables
-
----
 
 CAPIC requires several environment variables to be set in order to create a Kubernetes cluster on IONOS Cloud.
 
@@ -93,18 +78,13 @@ IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluste
 IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores.
 IONOSCLOUD_MACHINE_MEMORY_MB                # The memory in MB.
 IONOSCLOUD_MACHINE_IMAGE_ID                 # The image ID.
-IONOSCLOUD_MACHINE_CPU_FAMILY               # The CPU family.
 IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used.
 ```
 
 ### Credential Secret Structure
 
----
-
 The `IONOS_TOKEN` should be stored in a secret in the same namespace as the management cluster. 
 The secret should have the following structure:
-
-The `apiURL` field is optional and defaults to `https://api.ionos.com/cloudapi/v6` if no value was provided.
 
 ```yaml
 apiVersion: v1
@@ -115,11 +95,20 @@ type: Opaque
 stringData:
   token: "Token-Goes-Here"
   apiURL: "https://api.ionos.com/cloudapi/v6"
+  caBundle: |
+    -----BEGIN CERTIFICATE-----
+    d293LCBtdWNoIGJhc2U2NCwgc3VjaCBhd2Vzb21lIQ==
+    ...
+    -----END CERTIFICATE-----
 ```
 
-### Create a workload cluster
+The `apiURL` field is optional and defaults to `https://api.ionos.com/cloudapi/v6` if no value was provided.
 
----
+The `caBundle` field is optional. It can be used to provide a custom PEM-encoded CA bundle used to validate the
+IONOS Cloud API TLS certificate. If unset, the system's root CA set is used. In case of our provided Dockerfile that
+would be Debian 12's `ca-certificates` package.
+
+### Create a workload cluster
 
 In order to create a new cluster, you need to generate a cluster manifest.
 
@@ -137,14 +126,29 @@ $ clusterctl generate cluster ionos-quickstart \
 $ kubectl apply -f cluster.yaml
 ```
 
-### Next Steps
-
----
+### Next steps
 
 TODO
+
+### Observability
+
+#### Diagnostics
+
+Access to metrics is secured by default. Before using it, it is necessary to create appropriate roles and role bindings.
+For more information, refer to [Cluster API documentation](https://main.cluster-api.sigs.k8s.io/tasks/diagnostics).
 
 ### Troubleshooting
 
----
 
 TODO
+
+
+### Useful resources
+
+---
+
+* [Cluster API Book](https://cluster-api.sigs.k8s.io/)
+* [Cloud API Docs](https://api.ionos.com/docs/cloud/v6/)
+* [IONOS Cloud Docs](https://docs.ionos.com/cloud)
+* [IPv6 Documentation](https://docs.ionos.com/cloud/network-services/ipv6)
+

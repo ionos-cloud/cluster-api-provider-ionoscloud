@@ -45,14 +45,14 @@ func defaultMachine() *IonosCloudMachine {
 			NumCores:         1,
 			AvailabilityZone: AvailabilityZoneTwo,
 			MemoryMB:         2048,
-			CPUFamily:        "AMD_OPTERON",
+			CPUFamily:        ptr.To("AMD_OPTERON"),
 			Disk: &Volume{
 				Name:             "disk",
 				DiskType:         VolumeDiskTypeSSDStandard,
 				SizeGB:           23,
 				AvailabilityZone: AvailabilityZoneOne,
 				Image: &ImageSpec{
-					ID: ptr.To("1eef-48ec-a246-a51a33aa4f3a"),
+					ID: "1eef-48ec-a246-a51a33aa4f3a",
 				},
 			},
 			AdditionalNetworks: Networks{
@@ -212,11 +212,11 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 		})
 
-		Context("CPU family", func() {
-			It("should fail if not set", func() {
+		Context("CPU Family", func() {
+			It("should not fail if not set", func() {
 				m := defaultMachine()
-				m.Spec.CPUFamily = ""
-				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+				m.Spec.CPUFamily = nil
+				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 			})
 		})
 
@@ -313,18 +313,12 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				})
 				It("should fail none is set", func() {
 					m := defaultMachine()
-					m.Spec.Disk.Image.ID = nil
+					m.Spec.Disk.Image.ID = ""
 					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 				})
 				It("should not fail if ID is set", func() {
 					m := defaultMachine()
-					m.Spec.Disk.Image.ID = ptr.To("1eef-48ec-a246-a51a33aa4f3a")
-					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				})
-				It("should not fail if ID is not set but aliases contains a value", func() {
-					m := defaultMachine()
-					m.Spec.Disk.Image.ID = nil
-					m.Spec.Disk.Image.Aliases = []string{"ubuntu-20.04"}
+					m.Spec.Disk.Image.ID = "1eef-48ec-a246-a51a33aa4f3a"
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				})
 			})
@@ -382,6 +376,17 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			}
 			m.Status.FailureReason = ptr.To(errors.InvalidConfigurationMachineError)
 			m.Status.FailureMessage = ptr.To("Failure message")
+
+			m.Status.MachineNetworkInfo = &MachineNetworkInfo{
+				NICInfo: []NICInfo{
+					{
+						IPv4Addresses: []string{"198.51.100.10"},
+						IPv6Addresses: []string{"2001:db8:2c3:30a0::1", "2001:db8:2c3:30a0::2"},
+						NetworkID:     10,
+						Primary:       false,
+					},
+				},
+			}
 
 			want := *m.DeepCopy()
 

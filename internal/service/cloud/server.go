@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"path"
 	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -66,10 +65,24 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 	if server != nil {
 		// Server is available
 
-		if !s.isServerAvailable(server) {
+		if !s.isServerAvailable(ms, server) {
 			// server is still provisioning, checking again later
 			return true, nil
 		}
+
+		// Attach the IPs from all NICs of the server to the status
+		netInfo := &infrav1.MachineNetworkInfo{NICInfo: make([]infrav1.NICInfo, 0)}
+
+		for _, nic := range ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{}) {
+			netInfo.NICInfo = append(netInfo.NICInfo, infrav1.NICInfo{
+				IPv4Addresses: ptr.Deref(nic.GetProperties().GetIps(), []string{}),
+				IPv6Addresses: ptr.Deref(nic.GetProperties().GetIpv6Ips(), []string{}),
+				NetworkID:     ptr.Deref(nic.GetProperties().GetLan(), 0),
+				Primary:       s.isPrimaryNIC(ms.IonosMachine, &nic),
+			})
+		}
+
+		ms.IonosMachine.Status.MachineNetworkInfo = netInfo
 
 		log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
 		// server exists and is available.
@@ -139,18 +152,20 @@ func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine
 	return false, nil
 }
 
-func (s *Service) isServerAvailable(server *sdk.Server) bool {
+func (s *Service) isServerAvailable(ms *scope.Machine, server *sdk.Server) bool {
 	log := s.logger.WithName("isServerAvailable")
 	if state := getState(server); !isAvailable(state) {
 		log.Info("Server is not available yet", "state", state)
 		return false
 	}
 
-	// TODO ensure server is started
 	if vmState := getVMState(server); !isRunning(vmState) {
-		log.Info("Server is not running yet", "state", vmState)
-		// TODO start server
-		return false
+		err := s.startServer(context.Background(), ms.DatacenterID(), *server.Id)
+		if err != nil {
+			log.Error(err, "Failed to start the server")
+			return false
+		}
+		return true
 	}
 
 	return true
@@ -223,6 +238,20 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, serverID 
 	ms.IonosMachine.SetCurrentRequest(http.MethodDelete, sdk.RequestStatusQueued, requestLocation)
 
 	log.V(4).Info("Done deleting server")
+	return nil
+}
+
+func (s *Service) startServer(ctx context.Context, datacenterID, serverID string) error {
+	log := s.logger.WithName("startServer")
+
+	log.V(4).Info("Starting server", "serverID", serverID)
+	requestLocation, err := s.ionosClient.StartServer(ctx, datacenterID, serverID)
+	if err != nil {
+		return fmt.Errorf("failed to request server start: %w", err)
+	}
+
+	log.Info("Successfully requested for server start", "location", requestLocation)
+	log.V(4).Info("Done starting server")
 	return nil
 }
 
@@ -305,9 +334,9 @@ func (s *Service) buildServerProperties(
 	props := sdk.ServerProperties{
 		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
 		Cores:            &machineSpec.NumCores,
-		CpuFamily:        &machineSpec.CPUFamily,
 		Name:             ptr.To(s.serverName(ms.IonosMachine)),
 		Ram:              &machineSpec.MemoryMB,
+		CpuFamily:        machineSpec.CPUFamily,
 	}
 
 	return props
@@ -332,10 +361,8 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		},
 	}
 
-	bootVolume.Properties.ImageAlias = ptr.To(strings.Join(machineSpec.Disk.Image.Aliases, ","))
-	if machineSpec.Disk.Image.ID != nil {
-		bootVolume.Properties.Image = machineSpec.Disk.Image.ID
-		bootVolume.Properties.ImageAlias = nil // we don't want to use the aliases if we have an ID provided
+	if machineSpec.Disk.Image.ID != "" {
+		bootVolume.Properties.Image = &machineSpec.Disk.Image.ID
 	}
 
 	serverVolumes := sdk.AttachedVolumes{
@@ -356,13 +383,15 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		},
 	}
 
-	// Attach server to additional LANs
+	// Attach server to additional LANs if any.
 	items := *serverNICs.Items
+
 	for _, nic := range ms.IonosMachine.Spec.AdditionalNetworks {
 		items = append(items, sdk.Nic{Properties: &sdk.NicProperties{
 			Lan: &nic.NetworkID,
 		}})
 	}
+
 	serverNICs.Items = &items
 
 	return sdk.ServerEntities{

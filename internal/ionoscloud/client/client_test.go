@@ -38,26 +38,96 @@ const (
 )
 
 func TestNewClient(t *testing.T) {
-	w := "SET"
+	// taken from crypto/x509 test files
+	const rootPEM = `
+-----BEGIN CERTIFICATE-----
+MIIEBDCCAuygAwIBAgIDAjppMA0GCSqGSIb3DQEBBQUAMEIxCzAJBgNVBAYTAlVT
+MRYwFAYDVQQKEw1HZW9UcnVzdCBJbmMuMRswGQYDVQQDExJHZW9UcnVzdCBHbG9i
+YWwgQ0EwHhcNMTMwNDA1MTUxNTU1WhcNMTUwNDA0MTUxNTU1WjBJMQswCQYDVQQG
+EwJVUzETMBEGA1UEChMKR29vZ2xlIEluYzElMCMGA1UEAxMcR29vZ2xlIEludGVy
+bmV0IEF1dGhvcml0eSBHMjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+AJwqBHdc2FCROgajguDYUEi8iT/xGXAaiEZ+4I/F8YnOIe5a/mENtzJEiaB0C1NP
+VaTOgmKV7utZX8bhBYASxF6UP7xbSDj0U/ck5vuR6RXEz/RTDfRK/J9U3n2+oGtv
+h8DQUB8oMANA2ghzUWx//zo8pzcGjr1LEQTrfSTe5vn8MXH7lNVg8y5Kr0LSy+rE
+ahqyzFPdFUuLH8gZYR/Nnag+YyuENWllhMgZxUYi+FOVvuOAShDGKuy6lyARxzmZ
+EASg8GF6lSWMTlJ14rbtCMoU/M4iarNOz0YDl5cDfsCx3nuvRTPPuj5xt970JSXC
+DTWJnZ37DhF5iR43xa+OcmkCAwEAAaOB+zCB+DAfBgNVHSMEGDAWgBTAephojYn7
+qwVkDBF9qn1luMrMTjAdBgNVHQ4EFgQUSt0GFhu89mi1dvWBtrtiGrpagS8wEgYD
+VR0TAQH/BAgwBgEB/wIBADAOBgNVHQ8BAf8EBAMCAQYwOgYDVR0fBDMwMTAvoC2g
+K4YpaHR0cDovL2NybC5nZW90cnVzdC5jb20vY3Jscy9ndGdsb2JhbC5jcmwwPQYI
+KwYBBQUHAQEEMTAvMC0GCCsGAQUFBzABhiFodHRwOi8vZ3RnbG9iYWwtb2NzcC5n
+ZW90cnVzdC5jb20wFwYDVR0gBBAwDjAMBgorBgEEAdZ5AgUBMA0GCSqGSIb3DQEB
+BQUAA4IBAQA21waAESetKhSbOHezI6B1WLuxfoNCunLaHtiONgaX4PCVOzf9G0JY
+/iLIa704XtE7JW4S615ndkZAkNoUyHgN7ZVm2o6Gb4ChulYylYbc3GrKBIxbf/a/
+zG+FA1jDaFETzf3I93k9mTXwVqO94FntT0QJo544evZG0R0SnU++0ED8Vf4GXjza
+HFa9llF7b1cq26KqltyMdMKVvvBulRP/F/A8rLIQjcxz++iPAsbw+zOzlTvjwsto
+WHPbqCRiOwY1nQ2pM714A5AuTHhdUDqB1O6gyHA43LL5Z/qHQF1hwFGPa4NrzQU6
+yuGnBXj8ytqU0CwIPX4WecigUCAkVDNx
+-----END CERTIFICATE-----`
+
+	const set = "SET"
+
 	tests := []struct {
+		name       string
 		token      string
 		apiURL     string
+		caBundle   []byte
 		shouldPass bool
 	}{
-		{w, w, true},
-		{w, "", true},
-		{"", w, false},
+		{
+			"token set",
+			set,
+			"",
+			nil,
+			true,
+		},
+		{
+			"token and URL set",
+			set,
+			set,
+			nil,
+			true,
+		},
+		{
+			"token missing",
+			"",
+			set,
+			nil,
+			false,
+		},
+		{
+			"token and CA bundle set",
+			set,
+			"",
+			[]byte(rootPEM),
+			true,
+		},
+		{
+			"invalid CA bundle",
+			set,
+			"",
+			[]byte("invalid"),
+			false,
+		},
 	}
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("token=%s apiURL=%s (shouldPass=%t)",
-			tt.token, tt.apiURL, tt.shouldPass), func(t *testing.T) {
-			c, err := NewClient(tt.token, tt.apiURL)
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := NewClient(tt.token, tt.apiURL, tt.caBundle)
 			if tt.shouldPass {
 				require.NotNil(t, c, "NewClient returned a nil IonosCloudClient")
 				require.NoError(t, err, "NewClient returned an error")
 				cfg := c.API.GetConfig()
 				require.Equal(t, tt.token, cfg.Token, "token didn't match")
 				require.Equal(t, tt.apiURL, cfg.Host, "apiURL didn't match")
+				if tt.caBundle != nil {
+					require.NotNil(t, cfg.HTTPClient, "HTTP client is nil")
+					require.NotNil(t, cfg.HTTPClient.Transport, "HTTP client lacks a custom transport")
+					require.IsType(t, &http.Transport{}, cfg.HTTPClient.Transport, "transport is not an http.Transport")
+					require.NotNil(t, cfg.HTTPClient.Transport.(*http.Transport).TLSClientConfig, "TLSClientConfig is nil")
+					require.NotNil(t, cfg.HTTPClient.Transport.(*http.Transport).TLSClientConfig.RootCAs, "RootCAs is nil")
+				} else {
+					require.Equal(t, http.DefaultClient, cfg.HTTPClient, "HTTP client is not the default client")
+				}
 			} else {
 				require.Nil(t, c, "NewClient returned a non-nil client")
 				require.Error(t, err, "NewClient did not return an error")
@@ -83,7 +153,7 @@ func (s *IonosCloudClientTestSuite) SetupSuite() {
 	s.ctx = context.Background()
 
 	var err error
-	s.client, err = NewClient("token", "localhost")
+	s.client, err = NewClient("token", "localhost", nil)
 	s.NoError(err)
 
 	httpmock.Activate()

@@ -77,7 +77,8 @@ spec:
                           AdditionalNetworks defines the additional network configurations for the VM.
                           NOTE(lubedacht): We currently only support networks with DHCP enabled.
                         items:
-                          description: Network contains a network config.
+                          description: Network contains the config for additional
+                            LANs.
                           properties:
                             networkID:
                               description: |-
@@ -103,8 +104,11 @@ spec:
                         description: |-
                           CPUFamily defines the CPU architecture, which will be used for this VM.
                           Not all CPU architectures are available in all data centers.
+
+
+                          If not specified, the cloud will select a suitable CPU family
+                          based on the availability in the data center.
                         example: AMD_OPTERON
-                        minLength: 1
                         type: string
                       datacenterID:
                         description: DatacenterID is the ID of the data center where
@@ -138,22 +142,14 @@ spec:
                           image:
                             description: Image is the image to use for the VM.
                             properties:
-                              aliases:
-                                description: |-
-                                  Aliases is a list of image aliases to use for the VM.
-                                  TODO(lubedacht): Needs implementation.
-                                items:
-                                  type: string
-                                type: array
                               id:
                                 description: ID is the ID of the image to use for
                                   the VM.
+                                minLength: 1
                                 type: string
+                            required:
+                            - id
                             type: object
-                            x-kubernetes-validations:
-                            - message: either id or aliases must be set
-                              rule: has(self.id) && self.id != '' || self.aliases.size()
-                                > 0
                           name:
                             description: Name is the name of the volume
                             type: string
@@ -189,7 +185,6 @@ spec:
                           will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                         type: string
                     required:
-                    - cpuFamily
                     - datacenterID
                     - disk
                     type: object

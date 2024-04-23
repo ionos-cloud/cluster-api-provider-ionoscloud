@@ -146,14 +146,14 @@ func (s *ServiceTestSuite) SetupTest() {
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
 			MemoryMB:         4096,
-			CPUFamily:        "AMD_OPTERON",
+			CPUFamily:        ptr.To("AMD_OPTERON"),
 			Disk: &infrav1.Volume{
 				Name:             "test-machine-hdd",
 				DiskType:         infrav1.VolumeDiskTypeHDD,
 				SizeGB:           20,
 				AvailabilityZone: infrav1.AvailabilityZoneAuto,
 				Image: &infrav1.ImageSpec{
-					ID: ptr.To("3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
+					ID: "3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e",
 				},
 			},
 		},

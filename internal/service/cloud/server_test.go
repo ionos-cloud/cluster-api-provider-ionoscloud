@@ -96,8 +96,50 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 				Name:    ptr.To(s.service.serverName(s.infraMachine)),
 				VmState: ptr.To("RUNNING"),
 			},
+			Entities: &sdk.ServerEntities{
+				Nics: &sdk.Nics{
+					Items: &[]sdk.Nic{{
+						Properties: &sdk.NicProperties{
+							Name:          ptr.To(s.service.nicName(s.infraMachine)),
+							Dhcp:          ptr.To(true),
+							Lan:           ptr.To(int32(1)),
+							Ips:           ptr.To([]string{"198.51.100.10"}),
+							Ipv6CidrBlock: ptr.To("2001:db8:2c0:301::/64"),
+							Ipv6Ips:       ptr.To([]string{"2001:db8:2c0:301::1"}),
+						},
+					}},
+				},
+			},
 		},
 	}}, nil).Once()
+
+	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.False(requeue)
+
+	s.NotNil(s.machineScope.IonosMachine.Status.MachineNetworkInfo)
+	s.Equal([]string{"198.51.100.10"}, s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv4Addresses)
+	s.Equal([]string{"2001:db8:2c0:301::1"}, s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].IPv6Addresses)
+	s.Equal(int32(1), s.machineScope.IonosMachine.Status.MachineNetworkInfo.NICInfo[0].NetworkID)
+}
+
+func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
+	s.prepareReconcileServerRequestTest()
+	s.mockGetServerCreationRequest().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
+	s.mockListServers().Return(&sdk.Servers{Items: &[]sdk.Server{
+		{
+			Id: ptr.To(exampleServerID),
+			Metadata: &sdk.DatacenterElementMetadata{
+				State: ptr.To(sdk.Available),
+			},
+			Properties: &sdk.ServerProperties{
+				Name:    ptr.To(s.service.serverName(s.infraMachine)),
+				VmState: ptr.To(sdk.Available),
+			},
+		},
+	}}, nil).Once()
+
+	s.mockStartServer().Return("", nil)
 
 	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -330,6 +372,10 @@ func (s *serverSuite) mockCreateServer() *clienttest.MockClient_CreateServer_Cal
 		mock.Anything,
 		mock.Anything,
 	)
+}
+
+func (s *serverSuite) mockStartServer() *clienttest.MockClient_StartServer_Call {
+	return s.ionosClient.EXPECT().StartServer(s.ctx, s.machineScope.DatacenterID(), exampleServerID)
 }
 
 func (s *serverSuite) mockListLANs() *clienttest.MockClient_ListLANs_Call {

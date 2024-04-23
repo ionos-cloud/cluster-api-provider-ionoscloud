@@ -121,9 +121,12 @@ type IonosCloudMachineSpec struct {
 
 	// CPUFamily defines the CPU architecture, which will be used for this VM.
 	// Not all CPU architectures are available in all data centers.
+	//
+	// If not specified, the cloud will select a suitable CPU family
+	// based on the availability in the data center.
 	//+kubebuilder:example=AMD_OPTERON
-	//+kubebuilder:validation:MinLength=1
-	CPUFamily string `json:"cpuFamily"`
+	//+optional
+	CPUFamily *string `json:"cpuFamily,omitempty"`
 
 	// Disk defines the boot volume of the VM.
 	Disk *Volume `json:"disk"`
@@ -134,10 +137,11 @@ type IonosCloudMachineSpec struct {
 	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
 }
 
-// Networks contains a list of network configs.
+// Networks contains a list of additional LAN IDs
+// that should be attached to the VM.
 type Networks []Network
 
-// Network contains a network config.
+// Network contains the config for additional LANs.
 type Network struct {
 	// NetworkID represents an ID an existing LAN in the data center.
 	// This LAN will be excluded from the deletion process.
@@ -170,7 +174,6 @@ type Volume struct {
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	// Image is the image to use for the VM.
-	//+kubebuilder:validation:XValidation:rule="has(self.id) && self.id != '' || self.aliases.size() > 0",message="either id or aliases must be set"
 	//+required
 	Image *ImageSpec `json:"image"`
 }
@@ -178,12 +181,8 @@ type Volume struct {
 // ImageSpec defines the image to use for the VM.
 type ImageSpec struct {
 	// ID is the ID of the image to use for the VM.
-	//+optional
-	ID *string `json:"id,omitempty"`
-	// Aliases is a list of image aliases to use for the VM.
-	// TODO(lubedacht): Needs implementation.
-	//+optional
-	Aliases []string `json:"aliases,omitempty"`
+	//+kubebuilder:validation:MinLength=1
+	ID string `json:"id"`
 }
 
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
@@ -191,6 +190,10 @@ type IonosCloudMachineStatus struct {
 	// Ready indicates the VM has been provisioned and is ready.
 	//+optional
 	Ready bool `json:"ready"`
+
+	// MachineNetworkInfo contains information about the network configuration of the VM.
+	// This information is only available after the VM has been provisioned.
+	MachineNetworkInfo *MachineNetworkInfo `json:"machineNetworkInfo,omitempty"`
 
 	// FailureReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable
@@ -240,8 +243,35 @@ type IonosCloudMachineStatus struct {
 	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
 }
 
+// MachineNetworkInfo contains information about the network configuration of the VM.
+type MachineNetworkInfo struct {
+	// NICInfo holds information about the NICs, which are attached to the VM.
+	//+optional
+	NICInfo []NICInfo `json:"nicInfo,omitempty"`
+}
+
+// NICInfo provides information about the NIC of the VM.
+type NICInfo struct {
+	// IPv4Addresses contains the IPv4 addresses of the NIC.
+	IPv4Addresses []string `json:"ipv4Addresses"`
+
+	// IPv6Addresses contains the IPv6 addresses of the NIC.
+	IPv6Addresses []string `json:"ipv6Addresses"`
+
+	// NetworkID is the ID of the LAN to which the NIC is connected.
+	NetworkID int32 `json:"networkID"`
+
+	// Primary indicates whether the NIC is the primary NIC of the VM.
+	Primary bool `json:"primary"`
+}
+
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
+//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine is ready"
+//+kubebuilder:printcolumn:name="IPv4 Addresses",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].ipv4Addresses"
+//+kubebuilder:printcolumn:name="Machine Connected Networks",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].networkID"
+//+kubebuilder:printcolumn:name="IPv6 Addresses",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].ipv6Addresses",priority=1
 
 // IonosCloudMachine is the Schema for the ionoscloudmachines API.
 type IonosCloudMachine struct {
