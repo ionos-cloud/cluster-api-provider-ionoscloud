@@ -48,7 +48,7 @@ const (
 	// creating the bootstrap data secret and store it in the Cluster API Machine.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
 
-	// CloudResourceConfigAuto is a constant to indicate that the cloud resource should be managed by the.
+	// CloudResourceConfigAuto is a constant to indicate that the cloud resource should be managed by the
 	// Cluster API provider implementation.
 	CloudResourceConfigAuto = "AUTO"
 )

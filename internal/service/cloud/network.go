@@ -78,7 +78,7 @@ func (s *Service) ReconcileLAN(ctx context.Context, ms *scope.Machine) (requeue 
 		return false, err
 	}
 
-	// after creating the LAN, we want to requeue and let the request be finished
+	// After creating the LAN, we want to requeue and let the request be finished
 	return true, nil
 }
 
@@ -379,7 +379,7 @@ func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine,
 		return false, nil
 	}
 
-	// get the latest machine from the Failover Group, which is not the current one
+	// Get the latest machine from the Failover Group, which is not the current one
 	// in the scope, to swap the NIC UUID in the failover group.
 	machine, err := ms.FindLatestMachine(ctx, matchLabels)
 	if err != nil || machine == nil {
@@ -401,7 +401,7 @@ func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine,
 		return false, errors.New("unable to find primary NIC on server, but it was expected")
 	}
 
-	// assign the updated NIC to the failover group
+	// Assign the updated NIC to the failover group
 	ipFailoverConfig[index].NicUuid = &newNICID
 	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
 
@@ -525,7 +525,7 @@ func (s *Service) removeNICFromFailoverGroup(
 		return false, nil
 	}
 
-	// found the NIC, remove it from the failover group
+	// Found the NIC, remove it from the failover group
 	log.V(4).Info("Found NIC in failover group", "nicID", nicID)
 	ipFailoverConfig = append(ipFailoverConfig[:index], ipFailoverConfig[index+1:]...)
 	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}

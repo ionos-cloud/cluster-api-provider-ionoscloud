@@ -143,7 +143,7 @@ func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scop
 		return false, nil
 	}
 
-	// check if the IP block is currently in creation. We need to wait for it to be finished
+	// Check if the IP block is currently in creation. We need to wait for it to be finished
 	// before we can trigger the deletion.
 	ipBlock, request, err := scopedFindResource(ctx, ms, s.getFailoverIPBlock, s.getLatestFailoverIPBlockCreationRequest)
 	if err != nil {
@@ -199,8 +199,8 @@ func (s *Service) getFailoverIPBlock(ctx context.Context, ms *scope.Machine) (*s
 	return nil, nil
 }
 
-// getIPBlock finds the IP block that matches the expected name and location. An
-// error is returned if there are multiple IP blocks that match both the name and location.
+// getIPBlock finds the IP block that matches the expected name and location.
+// An error is returned if there are multiple IP blocks that match both the name and location.
 func (s *Service) getIPBlock(ctx context.Context, cs *scope.Cluster) (*sdk.IpBlock, error) {
 	ipBlock, err := s.getIPBlockByID(ctx, cs.IonosCluster.Status.ControlPlaneEndpointIPBlockID)
 	if ipBlock != nil || ignoreNotFound(err) != nil {

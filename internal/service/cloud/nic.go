@@ -51,7 +51,7 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, fai
 		return nil, err
 	}
 
-	// if the NIC already contains the failover IP address, we can return
+	// If the NIC already contains the failover IP address, we can return
 	if nicHasIP(nic, failoverIP) {
 		log.V(4).Info("Primary NIC contains failover IP address. Reconcile successful.")
 		return nic, nil
@@ -59,7 +59,7 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, fai
 
 	serverID := ptr.Deref(server.GetId(), "")
 	nicID := ptr.Deref(nic.GetId(), "")
-	// check if there is a pending patch request for the NIC
+	// Check if there is a pending patch request for the NIC
 	ri, err := s.getLatestNICPatchRequest(ctx, ms, serverID, nicID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to check for pending NIC patch request: %w", err)
@@ -123,7 +123,7 @@ func (s *Service) patchNIC(
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}
 
-	// set the current request in case the WaitForRequest function fails.
+	// Set the current request in case the WaitForRequest function fails.
 	ms.IonosMachine.SetCurrentRequest(http.MethodPatch, sdk.RequestStatusQueued, location)
 	log.V(4).Info("Successfully patched NIC", "location", location)
 	// In this case, we want to wait for the request to be finished as we need to configure the
