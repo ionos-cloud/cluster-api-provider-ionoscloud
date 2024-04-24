@@ -361,7 +361,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletion() {
 	s.mockDeleteIPBlockCall().Return(exampleRequestPath, nil).Once()
 
 	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
-	s.Nil(err)
+	s.NoError(err)
 	s.True(requeue)
 }
 
@@ -376,7 +376,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingCreation()
 	).Once()
 
 	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
-	s.Nil(err)
+	s.NoError(err)
 	s.True(requeue)
 }
 
@@ -387,13 +387,23 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingDeletion()
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{*ipBlock}}, nil).Once()
 	s.mockGetIPBlockByIDCall().Return(ipBlock, nil).Once()
 
-	deleteRequest := s.buildRequestWithName(s.service.failoverIPBlockName(s.machineScope), sdk.RequestStatusQueued, http.MethodDelete, exampleIPBlockID)
+	deleteRequest := s.buildRequestWithName(
+		s.service.failoverIPBlockName(s.machineScope),
+		sdk.RequestStatusQueued,
+		http.MethodDelete,
+		exampleIPBlockID,
+	)
+
 	s.mockGetRequestsCallDelete(exampleIPBlockID).Return([]sdk.Request{deleteRequest}, nil).Once()
 
 	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
-	s.Nil(err)
+	s.NoError(err)
 	s.True(requeue)
-	s.Equal(*deleteRequest.GetMetadata().GetRequestStatus().GetHref(), s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath)
+	s.Equal(
+		*deleteRequest.GetMetadata().GetRequestStatus().GetHref(),
+		s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath,
+	)
+
 	s.Equal(http.MethodDelete, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
 	s.Equal(sdk.RequestStatusQueued, s.machineScope.IonosMachine.Status.CurrentRequest.State)
 }
@@ -409,7 +419,7 @@ func (s *lanSuite) TestReconcileFailoverIPBlockDeletionDeletionFinished() {
 	s.mockDeleteIPBlockRequestCall(exampleIPBlockID).Return(deleteRequest, nil).Once()
 
 	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
-	s.Nil(err)
+	s.NoError(err)
 	s.False(requeue)
 	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest)
 }

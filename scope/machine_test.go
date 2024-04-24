@@ -106,7 +106,11 @@ func TestCountControlPlaneMachines(t *testing.T) {
 
 	scope.ClusterScope.Cluster.SetName("test-cluster")
 
-	count, err := scope.CountExistingMachines(context.Background(), client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""})
+	count, err := scope.CountExistingMachines(
+		context.Background(),
+		client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""},
+	)
+
 	require.NoError(t, err)
 	require.Equal(t, 0, count)
 
@@ -135,7 +139,11 @@ func TestCountControlPlaneMachines(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 6, count)
 
-	count, err = scope.CountExistingMachines(context.Background(), client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""})
+	count, err = scope.CountExistingMachines(
+		context.Background(),
+		client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""},
+	)
+
 	require.NoError(t, err)
 	require.Equal(t, 3, count)
 }

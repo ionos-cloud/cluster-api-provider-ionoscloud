@@ -145,7 +145,12 @@ func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scop
 
 	// Check if the IP block is currently in creation. We need to wait for it to be finished
 	// before we can trigger the deletion.
-	ipBlock, request, err := scopedFindResource(ctx, ms, s.getFailoverIPBlock, s.getLatestFailoverIPBlockCreationRequest)
+	ipBlock, request, err := scopedFindResource(
+		ctx,
+		ms,
+		s.getFailoverIPBlock,
+		s.getLatestFailoverIPBlockCreateRequest,
+	)
 	if err != nil {
 		return false, err
 	}
@@ -293,7 +298,12 @@ func (s *Service) reserveClusterIPBlock(ctx context.Context, cs *scope.Cluster) 
 
 func (s *Service) reserveMachineDeploymentFailoverIPBlock(ctx context.Context, ms *scope.Machine) error {
 	log := s.logger.WithName("reserveMachineDeploymentFailoverIPBlock")
-	return s.reserveIPBlock(ctx, s.failoverIPBlockName(ms), ms.ClusterScope.Location(), log, ms.IonosMachine.SetCurrentRequest)
+	return s.reserveIPBlock(
+		ctx, s.failoverIPBlockName(ms),
+		ms.ClusterScope.Location(),
+		log,
+		ms.IonosMachine.SetCurrentRequest,
+	)
 }
 
 func (s *Service) reserveIPBlock(
@@ -347,13 +357,23 @@ func (s *Service) getLatestIPBlockCreationRequest(ctx context.Context, cs *scope
 	return s.getLatestIPBlockRequestByNameAndLocation(ctx, http.MethodPost, s.ipBlockName(cs), cs.Location())
 }
 
-// getLatestFailoverIPBlockCreationRequest returns the latest failover IP block creation request.
-func (s *Service) getLatestFailoverIPBlockCreationRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
-	return s.getLatestIPBlockRequestByNameAndLocation(ctx, http.MethodPost, s.failoverIPBlockName(ms), ms.ClusterScope.Location())
+// getLatestFailoverIPBlockCreateRequest returns the latest failover IP block creation request.
+func (s *Service) getLatestFailoverIPBlockCreateRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
+	return s.getLatestIPBlockRequestByNameAndLocation(
+		ctx,
+		http.MethodPost,
+		s.failoverIPBlockName(ms),
+		ms.ClusterScope.Location(),
+	)
 }
 
 // getLatestIPBlockRequestByNameAndLocation returns the latest IP block creation request by a given name and location.
-func (s *Service) getLatestIPBlockRequestByNameAndLocation(ctx context.Context, method, ipBlockName, location string) (*requestInfo, error) {
+func (s *Service) getLatestIPBlockRequestByNameAndLocation(
+	ctx context.Context,
+	method,
+	ipBlockName,
+	location string,
+) (*requestInfo, error) {
 	return getMatchingRequest(
 		ctx,
 		s,
@@ -376,8 +396,11 @@ func (*Service) ipBlockName(cs *scope.Cluster) string {
 	return fmt.Sprintf("k8s-ipb-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
 }
 
-func (s *Service) failoverIPBlockName(ms *scope.Machine) string {
-	return fmt.Sprintf("k8s-fo-ipb-%s-%s", ms.IonosMachine.Namespace, ms.IonosMachine.Labels[clusterv1.MachineDeploymentNameLabel])
+func (*Service) failoverIPBlockName(ms *scope.Machine) string {
+	return fmt.Sprintf("k8s-fo-ipb-%s-%s",
+		ms.IonosMachine.Namespace,
+		ms.IonosMachine.Labels[clusterv1.MachineDeploymentNameLabel],
+	)
 }
 
 func ignoreErrUserSetIPNotFound(err error) error {

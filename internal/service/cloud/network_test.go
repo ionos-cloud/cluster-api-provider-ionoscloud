@@ -568,11 +568,17 @@ func (s *lanSuite) exampleLAN() sdk.Lan {
 }
 
 func (s *lanSuite) exampleIPBlockPostRequest(status string) []sdk.Request {
+	bodyContent := fmt.Sprintf(
+		`{"properties": { "location": "%s", "name": "%s" }}`,
+		s.clusterScope.Location(),
+		s.service.failoverIPBlockName(s.machineScope),
+	)
+
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPost,
 		url:        ipBlocksPath,
-		body:       fmt.Sprintf(`{"properties": { "location": "%s", "name": "%s" }}`, s.clusterScope.Location(), s.service.failoverIPBlockName(s.machineScope)),
+		body:       bodyContent,
 		href:       exampleRequestPath,
 		targetID:   exampleIPBlockID,
 		targetType: sdk.IPBLOCK,

@@ -124,7 +124,10 @@ func (m *Machine) CountExistingMachines(ctx context.Context, machineLabels clien
 
 // ListMachines returns a list of IonosCloudMachines in the same namespace and with the same cluster label.
 // With machineLabels, additional search labels can be provided.
-func (m *Machine) ListMachines(ctx context.Context, machineLabels client.MatchingLabels) ([]infrav1.IonosCloudMachine, error) {
+func (m *Machine) ListMachines(
+	ctx context.Context,
+	machineLabels client.MatchingLabels,
+) ([]infrav1.IonosCloudMachine, error) {
 	if machineLabels == nil {
 		machineLabels = client.MatchingLabels{}
 	}
@@ -144,7 +147,10 @@ func (m *Machine) ListMachines(ctx context.Context, machineLabels client.Matchin
 //
 // If there are zero or one control plane machines, the function will return nil,
 // otherwise the machine with the latest creation timestamp will be returned.
-func (m *Machine) FindLatestMachine(ctx context.Context, matchLabels client.MatchingLabels) (*infrav1.IonosCloudMachine, error) {
+func (m *Machine) FindLatestMachine(
+	ctx context.Context,
+	matchLabels client.MatchingLabels,
+) (*infrav1.IonosCloudMachine, error) {
 	if matchLabels == nil {
 		matchLabels = client.MatchingLabels{}
 	}

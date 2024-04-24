@@ -271,7 +271,10 @@ func (s *Service) ReconcileIPFailover(ctx context.Context, ms *scope.Machine) (r
 	return s.reconcileIPFailoverGroup(ctx, ms, nicID, failoverIP)
 }
 
-func (s *Service) retrieveFailoverIPForMachine(ctx context.Context, ms *scope.Machine) (requeue bool, failoverIP string, err error) {
+func (s *Service) retrieveFailoverIPForMachine(
+	ctx context.Context,
+	ms *scope.Machine,
+) (requeue bool, failoverIP string, err error) {
 	log := s.logger.WithName("retrieveFailoverIPForMachine")
 
 	if util.IsControlPlaneMachine(ms.Machine) {
@@ -280,13 +283,19 @@ func (s *Service) retrieveFailoverIPForMachine(ctx context.Context, ms *scope.Ma
 
 	failoverIP = ptr.Deref(ms.IonosMachine.Spec.NodeFailoverIP, "")
 	if failoverIP == "" {
-		return false, "", errors.New("failover IP contains an empty string. Provide either a valid IP address or 'AUTO")
+		const errorMessage = "failover IP contains an empty string. Provide either a valid IP address or 'AUTO"
+		return false, "", errors.New(errorMessage)
 	}
 
 	// AUTO means we have to reserve an IP address.
 	if failoverIP == infrav1.CloudResourceConfigAuto {
 		// Check if the IP block is already reserved.
-		ipBlock, info, err := scopedFindResource(ctx, ms, s.getFailoverIPBlock, s.getLatestFailoverIPBlockCreationRequest)
+		ipBlock, info, err := scopedFindResource(
+			ctx,
+			ms,
+			s.getFailoverIPBlock,
+			s.getLatestFailoverIPBlockCreateRequest,
+		)
 		if err != nil {
 			return false, "", err
 		}
@@ -320,7 +329,10 @@ func (s *Service) retrieveFailoverIPForMachine(ctx context.Context, ms *scope.Ma
 //
 // If the machine is the primary in the failover group, the NIC will be swapped with another machine,
 // otherwise the machine cannot be deleted, which is relevant for upgrading or downgrading the cluster.
-func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
+func (s *Service) ReconcileIPFailoverDeletion(
+	ctx context.Context,
+	ms *scope.Machine,
+) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileIPFailoverDeletion")
 
 	if !failoverRequired(ms) {
@@ -354,7 +366,11 @@ func (s *Service) ReconcileIPFailoverDeletion(ctx context.Context, ms *scope.Mac
 	}
 }
 
-func (s *Service) swapNICInFailoverGroup(ctx context.Context, ms *scope.Machine, matchLabels client.MatchingLabels) (requeue bool, err error) {
+func (s *Service) swapNICInFailoverGroup(
+	ctx context.Context,
+	ms *scope.Machine,
+	matchLabels client.MatchingLabels,
+) (requeue bool, err error) {
 	log := s.logger.WithName("swapNICInFailoverGroup")
 	nicID, err := s.getServerNICID(ctx, ms)
 	if err != nil {
