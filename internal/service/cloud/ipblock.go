@@ -356,7 +356,7 @@ func (s *Service) reserveIPBlock(
 ) error {
 	requestPath, err := s.ionosClient.ReserveIPBlock(ctx, ipBlockName, location, 1)
 	if err != nil {
-		return fmt.Errorf("failed to request the cloud for failover IP block reservation: %w", err)
+		return fmt.Errorf("failed to request the cloud for IP block reservation: %w", err)
 	}
 
 	setRequestStatusFunc(http.MethodPost, sdk.RequestStatusQueued, requestPath)
