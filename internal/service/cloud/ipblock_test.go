@@ -32,7 +32,7 @@ type ipBlockTestSuite struct {
 	ServiceTestSuite
 }
 
-func TestEndpointTestSuite(t *testing.T) {
+func TestIPBlockTestSuite(t *testing.T) {
 	suite.Run(t, new(ipBlockTestSuite))
 }
 
