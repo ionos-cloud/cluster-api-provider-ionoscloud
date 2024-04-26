@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"path"
 	"testing"
 	"time"
 
@@ -254,9 +253,18 @@ func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 	ipBlock := s.exampleIPBlock()
 
 	s.mockListIPBlocksCall().Return(nil, nil).Once()
-	s.mockCreateIPBlockRequestCall().Return(s.exampleIPBlockPostRequest(sdk.RequestStatusDone), nil).Once()
+	s.mockGetIPBlocksRequestsPostCall().Return(
+		[]sdk.Request{
+			s.buildIPBlockRequestWithName(
+				s.service.failoverIPBlockName(s.machineScope),
+				sdk.RequestStatusDone,
+				http.MethodPost,
+				"",
+			),
+		},
+		nil).Once()
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{ipBlock}}, nil).Once()
-	s.mockGetIPBlockCall(exampleIPBlockID).Return(&ipBlock, nil).Once()
+	s.mockGetIPBlockByIDCall(exampleIPBlockID).Return(&ipBlock, nil).Once()
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
@@ -280,7 +288,7 @@ func (s *lanSuite) TestReconcileIPFailoverReserveIPBlock() {
 	s.infraMachine.Spec.MachineFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 
 	s.mockListIPBlocksCall().Return(nil, nil).Once()
-	s.mockCreateIPBlockRequestCall().Return(nil, nil).Once()
+	s.mockGetIPBlocksRequestsPostCall().Return(nil, nil).Once()
 	s.mockReserveIPBlockCall(s.service.failoverIPBlockName(s.machineScope), s.clusterScope.Location()).
 		Return(exampleRequestPath, nil).Once()
 
@@ -567,37 +575,6 @@ func (s *lanSuite) exampleLAN() sdk.Lan {
 	}
 }
 
-func (s *lanSuite) exampleIPBlockPostRequest(status string) []sdk.Request {
-	bodyContent := fmt.Sprintf(
-		`{"properties": { "location": "%s", "name": "%s" }}`,
-		s.clusterScope.Location(),
-		s.service.failoverIPBlockName(s.machineScope),
-	)
-
-	opts := requestBuildOptions{
-		status:     status,
-		method:     http.MethodPost,
-		url:        ipBlocksPath,
-		body:       bodyContent,
-		href:       exampleRequestPath,
-		targetID:   exampleIPBlockID,
-		targetType: sdk.IPBLOCK,
-	}
-	return []sdk.Request{s.exampleRequest(opts)}
-}
-
-func (s *lanSuite) exampleIPBlockDeleteRequest(status string) []sdk.Request {
-	opts := requestBuildOptions{
-		status:     status,
-		method:     http.MethodDelete,
-		url:        path.Join(ipBlocksPath, exampleIPBlockID),
-		href:       exampleRequestPath,
-		targetID:   exampleIPBlockID,
-		targetType: sdk.IPBLOCK,
-	}
-	return []sdk.Request{s.exampleRequest(opts)}
-}
-
 func (s *lanSuite) examplePostRequest(status string) []sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
@@ -647,10 +624,6 @@ func (s *lanSuite) mockDeleteLANCall(id string) *clienttest.MockClient_DeleteLAN
 	return s.ionosClient.EXPECT().DeleteLAN(s.ctx, s.machineScope.DatacenterID(), id)
 }
 
-func (s *lanSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
-	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
-}
-
 func (s *lanSuite) mockPatchLANCall(props sdk.LanProperties) *clienttest.MockClient_PatchLAN_Call {
 	return s.ionosClient.EXPECT().PatchLAN(s.ctx, s.machineScope.DatacenterID(), exampleLANID, props)
 }
@@ -669,34 +642,6 @@ func (s *lanSuite) mockGetLANDeletionRequestsCall() *clienttest.MockClient_GetRe
 		GetRequests(s.ctx, http.MethodDelete, s.service.lanURL(s.machineScope.DatacenterID(), exampleLANID))
 }
 
-func (s *lanSuite) mockCreateIPBlockRequestCall() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, ipBlocksPath)
-}
-
-func (s *lanSuite) mockDeleteIPBlockRequestCall(ipBlockID string) *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, path.Join(ipBlocksPath, ipBlockID))
-}
-
-func (s *lanSuite) mockGetServerCall(serverID string) *clienttest.MockClient_GetServer_Call {
-	return s.ionosClient.EXPECT().GetServer(s.ctx, s.machineScope.DatacenterID(), serverID)
-}
-
 func (s *lanSuite) mockListServerCall() *clienttest.MockClient_ListServers_Call {
 	return s.ionosClient.EXPECT().ListServers(s.ctx, s.machineScope.DatacenterID())
-}
-
-func (s *lanSuite) mockWaitForRequestCall(requestURL string) *clienttest.MockClient_WaitForRequest_Call {
-	return s.ionosClient.EXPECT().WaitForRequest(s.ctx, requestURL)
-}
-
-func (s *lanSuite) mockListIPBlocksCall() *clienttest.MockClient_ListIPBlocks_Call {
-	return s.ionosClient.EXPECT().ListIPBlocks(s.ctx)
-}
-
-func (s *lanSuite) mockGetIPBlockCall(ipBlockID string) *clienttest.MockClient_GetIPBlock_Call {
-	return s.ionosClient.EXPECT().GetIPBlock(s.ctx, ipBlockID)
-}
-
-func (s *lanSuite) mockReserveIPBlockCall(name, location string) *clienttest.MockClient_ReserveIPBlock_Call {
-	return s.ionosClient.EXPECT().ReserveIPBlock(s.ctx, name, location, int32(1))
 }

@@ -18,6 +18,9 @@ package cloud
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"path"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -253,4 +256,55 @@ func (s *ServiceTestSuite) defaultServer(m *infrav1.IonosCloudMachine, ips ...st
 			},
 		},
 	}
+}
+
+func (s *ServiceTestSuite) buildIPBlockRequestWithName(name, status, method, id string) sdk.Request {
+	opts := requestBuildOptions{
+		status:     status,
+		method:     method,
+		url:        ipBlocksPath,
+		href:       exampleRequestPath,
+		targetType: sdk.IPBLOCK,
+	}
+	if id != "" {
+		opts.url = path.Join(opts.url, id)
+		opts.targetID = id
+	}
+	if method == http.MethodPost {
+		opts.body = fmt.Sprintf(`{"properties":{"location":"%s","name":"%s","size":1}}`,
+			s.clusterScope.Location(), name)
+	}
+	return s.exampleRequest(opts)
+}
+
+func (s *ServiceTestSuite) mockGetIPBlocksRequestsPostCall() *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, ipBlocksPath)
+}
+
+func (s *ServiceTestSuite) mockGetIPBlocksRequestsDeleteCall(id string) *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, path.Join(ipBlocksPath, id))
+}
+
+func (s *ServiceTestSuite) mockListIPBlocksCall() *clienttest.MockClient_ListIPBlocks_Call {
+	return s.ionosClient.EXPECT().ListIPBlocks(s.ctx)
+}
+
+func (s *ServiceTestSuite) mockGetIPBlockByIDCall(ipBlockID string) *clienttest.MockClient_GetIPBlock_Call {
+	return s.ionosClient.EXPECT().GetIPBlock(s.ctx, ipBlockID)
+}
+
+func (s *ServiceTestSuite) mockReserveIPBlockCall(name, location string) *clienttest.MockClient_ReserveIPBlock_Call {
+	return s.ionosClient.EXPECT().ReserveIPBlock(s.ctx, name, location, int32(1))
+}
+
+func (s *ServiceTestSuite) mockWaitForRequestCall(location string) *clienttest.MockClient_WaitForRequest_Call {
+	return s.ionosClient.EXPECT().WaitForRequest(s.ctx, location)
+}
+
+func (s *ServiceTestSuite) mockGetServerCall(serverID string) *clienttest.MockClient_GetServer_Call {
+	return s.ionosClient.EXPECT().GetServer(s.ctx, s.machineScope.DatacenterID(), serverID)
+}
+
+func (s *ServiceTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
+	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
 }
