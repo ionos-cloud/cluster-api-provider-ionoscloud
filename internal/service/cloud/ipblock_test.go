@@ -181,7 +181,7 @@ func (s *ipBlockTestSuite) TestDeleteIPBlockRequestSuccess() {
 
 func (s *ipBlockTestSuite) TestGetLatestIPBlockCreationRequestNoRequest() {
 	s.mockGetRequestsCallPost().Return(make([]sdk.Request, 0), nil).Once()
-	req, err := s.service.getLatestIPBlockCreationRequest(s.ctx, s.clusterScope)
+	req, err := s.service.getLatestControlPlaneEndpointIPBlockCreationRequest(s.ctx, s.clusterScope)
 	s.NoError(err)
 	s.Nil(req)
 }
@@ -190,7 +190,7 @@ func (s *ipBlockTestSuite) TestGetLatestIPBlockCreationRequestRequest() {
 	req := s.buildRequest(sdk.RequestStatusQueued, http.MethodPost, "")
 	reqs := []sdk.Request{req}
 	s.mockGetRequestsCallPost().Return(reqs, nil).Once()
-	info, err := s.service.getLatestIPBlockCreationRequest(s.ctx, s.clusterScope)
+	info, err := s.service.getLatestControlPlaneEndpointIPBlockCreationRequest(s.ctx, s.clusterScope)
 	s.NoError(err)
 	s.NotNil(info)
 }

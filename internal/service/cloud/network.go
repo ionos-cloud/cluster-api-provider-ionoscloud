@@ -348,7 +348,7 @@ func (s *Service) ReconcileIPFailoverDeletion(
 		matchLabels[clusterv1.MachineDeploymentNameLabel] = ms.IonosMachine.Labels[clusterv1.MachineDeploymentNameLabel]
 	}
 
-	count, err := ms.CountExistingMachines(ctx, matchLabels)
+	count, err := ms.CountMachines(ctx, matchLabels)
 
 	switch {
 	case err != nil:

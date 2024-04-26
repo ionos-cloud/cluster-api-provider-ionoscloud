@@ -100,13 +100,13 @@ func TestMachineHasFailedFailureReason(t *testing.T) {
 	require.True(t, scope.HasFailed())
 }
 
-func TestCountControlPlaneMachines(t *testing.T) {
+func TestCountMachinesWithControlPlaneLabel(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
 
 	scope.ClusterScope.Cluster.SetName("test-cluster")
 
-	count, err := scope.CountExistingMachines(
+	count, err := scope.CountMachines(
 		context.Background(),
 		client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""},
 	)
@@ -121,7 +121,7 @@ func TestCountControlPlaneMachines(t *testing.T) {
 
 	cpMachines := []string{"cp-test-1", "cp-test-2", "cp-test-3"}
 	for _, machine := range cpMachines {
-		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, cpLabels))
+		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, cpLabels, 0))
 		require.NoError(t, err)
 	}
 
@@ -131,15 +131,15 @@ func TestCountControlPlaneMachines(t *testing.T) {
 
 	workerMachines := []string{"worker-test-1", "worker-test-2", "worker-test-3"}
 	for _, machine := range workerMachines {
-		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, workerLabels))
+		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, workerLabels, 0))
 		require.NoError(t, err)
 	}
 
-	count, err = scope.CountExistingMachines(context.Background(), nil)
+	count, err = scope.CountMachines(context.Background(), nil)
 	require.NoError(t, err)
 	require.Equal(t, 6, count)
 
-	count, err = scope.CountExistingMachines(
+	count, err = scope.CountMachines(
 		context.Background(),
 		client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""},
 	)
@@ -148,7 +148,7 @@ func TestCountControlPlaneMachines(t *testing.T) {
 	require.Equal(t, 3, count)
 }
 
-func TestMachineFindLatestControlPlaneMachine(t *testing.T) {
+func TestMachineFindLatestMachineWithControlPlaneLabel(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
 
@@ -167,7 +167,7 @@ func TestMachineFindLatestControlPlaneMachine(t *testing.T) {
 
 	cpMachines := []string{"cp-test-1", "cp-test-2", "cp-test-3"}
 	for _, machine := range cpMachines {
-		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, cpLabels))
+		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, cpLabels, 0))
 		require.NoError(t, err)
 	}
 
@@ -185,12 +185,36 @@ func TestMachineFindLatestControlPlaneMachine(t *testing.T) {
 	require.Equal(t, "cp-test-2", latestMachine.Name)
 }
 
-func createMachineWithLabels(name string, labels map[string]string) *infrav1.IonosCloudMachine {
+func TestFindLatestMachineMachineIsReceiver(t *testing.T) {
+	scope, err := NewMachine(exampleParams(t))
+	require.NoError(t, err)
+
+	scope.ClusterScope.Cluster.SetName("test-cluster")
+	scope.IonosMachine.SetName("cp-test-1")
+
+	controlPlaneLabel := client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""}
+	cpLabels := map[string]string{
+		clusterv1.ClusterNameLabel:         scope.ClusterScope.Cluster.Name,
+		clusterv1.MachineControlPlaneLabel: "",
+	}
+
+	cpMachines := []string{"cp-test-2", "cp-test-1"}
+	for index, machine := range cpMachines {
+		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, cpLabels, time.Duration(index)*time.Minute))
+		require.NoError(t, err)
+	}
+
+	latestMachine, err := scope.FindLatestMachine(context.Background(), controlPlaneLabel)
+	require.NoError(t, err)
+	require.Nil(t, latestMachine)
+}
+
+func createMachineWithLabels(name string, labels map[string]string, offset time.Duration) *infrav1.IonosCloudMachine {
 	return &infrav1.IonosCloudMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              name,
 			Namespace:         metav1.NamespaceDefault,
-			CreationTimestamp: metav1.NewTime(time.Now()),
+			CreationTimestamp: metav1.NewTime(time.Now().Add(offset)),
 			Labels:            labels,
 		},
 	}

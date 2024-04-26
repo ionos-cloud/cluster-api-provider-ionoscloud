@@ -115,9 +115,9 @@ func (m *Machine) SetProviderID(id string) {
 	m.IonosMachine.Spec.ProviderID = ptr.To("ionos://" + id)
 }
 
-// CountExistingMachines returns the number of existing IonosCloudMachines in the same namespace
+// CountMachines returns the number of existing IonosCloudMachines in the same namespace
 // and with the same cluster label. With machineLabels, additional search labels can be provided.
-func (m *Machine) CountExistingMachines(ctx context.Context, machineLabels client.MatchingLabels) (int, error) {
+func (m *Machine) CountMachines(ctx context.Context, machineLabels client.MatchingLabels) (int, error) {
 	machines, err := m.ListMachines(ctx, machineLabels)
 	return len(machines), err
 }
@@ -142,11 +142,11 @@ func (m *Machine) ListMachines(
 	return machineList.Items, nil
 }
 
-// FindLatestMachine returns the latest control plane IonosCloudMachine in the same namespace
-// and with the same cluster label. If no control plane machine is found, nil is returned.
+// FindLatestMachine returns the latest IonosCloudMachine in the same namespace
+// and with the same cluster label. If no machine was found, nil is returned.
 //
-// If there are zero or one control plane machines, the function will return nil,
-// otherwise the machine with the latest creation timestamp will be returned.
+// Only machines, that are different to the receiver machine, are considered.
+// If the receiver machine is the only machine in the list, nil is returned.
 func (m *Machine) FindLatestMachine(
 	ctx context.Context,
 	matchLabels client.MatchingLabels,
@@ -172,6 +172,10 @@ func (m *Machine) FindLatestMachine(
 			latestMachine = machine
 		}
 	}
+	if latestMachine.Name == m.IonosMachine.Name {
+		return nil, nil
+	}
+	
 	return &latestMachine, nil
 }
 

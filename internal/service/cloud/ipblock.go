@@ -52,7 +52,7 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 	ipBlock, request, err := scopedFindResource(
 		ctx, cs,
 		s.getControlPlaneEndpointIPBlock,
-		s.getLatestIPBlockCreationRequest,
+		s.getLatestControlPlaneEndpointIPBlockCreationRequest,
 	)
 
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 	ipBlock, request, err := scopedFindResource(
 		ctx, cs,
 		s.getControlPlaneEndpointIPBlock,
-		s.getLatestIPBlockCreationRequest,
+		s.getLatestControlPlaneEndpointIPBlockCreationRequest,
 	)
 	// NOTE(gfariasalves): we ignore the error if it is a "user set IP not found" error, because it doesn't matter here.
 	// This error is only relevant when we are trying to create a new IP block. If it shows up here, it means that:
@@ -393,8 +393,11 @@ func (s *Service) deleteIPBlock(
 	return nil
 }
 
-// getLatestIPBlockCreationRequest returns the latest IP block creation request.
-func (s *Service) getLatestIPBlockCreationRequest(ctx context.Context, cs *scope.Cluster) (*requestInfo, error) {
+// getLatestControlPlaneEndpointIPBlockCreationRequest returns the latest IP block creation request.
+func (s *Service) getLatestControlPlaneEndpointIPBlockCreationRequest(
+	ctx context.Context,
+	cs *scope.Cluster,
+) (*requestInfo, error) {
 	return s.getLatestIPBlockRequestByNameAndLocation(ctx, http.MethodPost, s.ipBlockName(cs), cs.Location())
 }
 
