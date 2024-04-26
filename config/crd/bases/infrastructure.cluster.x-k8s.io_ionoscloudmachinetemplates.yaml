@@ -173,7 +173,7 @@ spec:
                         type: string
                         x-kubernetes-validations:
                         - message: nodeFailoverIP must be either 'AUTO' or a valid
-                            URL
+                            IPv4 address
                           rule: self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")
                       memoryMB:
                         default: 3072
