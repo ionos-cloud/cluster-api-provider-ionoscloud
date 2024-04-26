@@ -26,6 +26,7 @@ import (
 
 	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"k8s.io/apimachinery/pkg/util/sets"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -138,8 +139,9 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 
 // ReconcileFailoverIPBlockDeletion ensures that the IP block is deleted.
 func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
+	log := s.logger.WithName("ReconcileFailoverIPBlockDeletion")
 	if foIP := ms.IonosMachine.Spec.NodeFailoverIP; foIP == nil || *foIP != infrav1.CloudResourceConfigAuto {
-		// Config is not managed by the Cluster API provider, so there is nothing we have to do here.
+		log.V(4).Info("Failover IP block is not managed by the provider, skipping deletion", "failoverIP", foIP)
 		return false, nil
 	}
 
@@ -182,7 +184,37 @@ func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scop
 		}
 	}
 
+	// Check if IPBlock is still being used
+	lan, err := s.getLAN(ctx, ms)
+	if err != nil {
+		return false, err
+	}
+
+	ipSet := sets.New(ptr.Deref(ipBlock.GetProperties().GetIps(), []string{})...)
+
+	if shouldSkipIPBlockDeletion(lan, ipSet) {
+		log.V(4).Info("Failover IP block is still in use, skipping deletion")
+		return false, nil
+	}
+
 	return true, s.deleteFailoverIPBlock(ctx, ms, *ipBlock.GetId())
+}
+
+func shouldSkipIPBlockDeletion(lan *sdk.Lan, ipSet sets.Set[string]) bool {
+	if lan == nil {
+		return false
+	}
+
+	// Check if the failover IP is still in use
+	failoverConfigs := ptr.Deref(lan.GetProperties().GetIpFailover(), []sdk.IPFailover{})
+	for _, failoverConfig := range failoverConfigs {
+		ip := ptr.Deref(failoverConfig.GetIp(), unknownValue)
+		if ipSet.Has(ip) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s *Service) getFailoverIPBlock(ctx context.Context, ms *scope.Machine) (*sdk.IpBlock, error) {

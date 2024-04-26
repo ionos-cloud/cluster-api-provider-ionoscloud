@@ -359,10 +359,30 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletion() {
 	s.mockGetIPBlockByIDCall().Return(ipBlock, nil).Once()
 	s.mockGetRequestsCallDelete(exampleIPBlockID).Return(nil, nil).Once()
 	s.mockDeleteIPBlockCall().Return(exampleRequestPath, nil).Once()
+	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 
 	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.True(requeue)
+}
+
+func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionSkipped() {
+	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
+	lan := s.exampleLAN()
+	lan.Properties.IpFailover = &[]sdk.IPFailover{{
+		Ip:      ptr.To(exampleEndpointIP),
+		NicUuid: nil,
+	}}
+
+	s.mockListIPBlockCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{*ipBlock}}, nil).Once()
+	s.mockGetIPBlockByIDCall().Return(ipBlock, nil).Once()
+	s.mockGetRequestsCallDelete(exampleIPBlockID).Return(nil, nil).Once()
+	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
+
+	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.False(requeue)
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingCreation() {
@@ -452,6 +472,27 @@ func (s *ipBlockTestSuite) mockGetRequestsCallDelete(id string) *clienttest.Mock
 
 func (s *ipBlockTestSuite) buildRequest(status string, method, id string) sdk.Request {
 	return s.buildRequestWithName(s.service.ipBlockName(s.clusterScope), status, method, id)
+}
+
+func (s *ipBlockTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
+	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
+}
+
+func (s *ipBlockTestSuite) exampleLAN() sdk.Lan {
+	return sdk.Lan{
+		Id: ptr.To(exampleLANID),
+		Properties: &sdk.LanProperties{
+			Name: ptr.To(s.service.lanName(s.clusterScope.Cluster)),
+		},
+		Metadata: &sdk.DatacenterElementMetadata{
+			State: ptr.To(sdk.Available),
+		},
+		Entities: &sdk.LanEntities{
+			Nics: &sdk.LanNics{
+				Items: &[]sdk.Nic{},
+			},
+		},
+	}
 }
 
 func (s *ipBlockTestSuite) buildRequestWithName(name, status, method, id string) sdk.Request {
