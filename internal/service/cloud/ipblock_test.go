@@ -18,11 +18,11 @@ package cloud
 
 import (
 	"net/http"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"testing"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/suite"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
