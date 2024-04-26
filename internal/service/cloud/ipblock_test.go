@@ -50,7 +50,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockFuncMultipleMatches() {
 		},
 	}, nil).Once()
 	s.mockGetIPBlockByIDCall().Return(exampleIPBlock(), nil).Twice()
-	block, err := s.service.getIPBlock(s.ctx, s.clusterScope)
+	block, err := s.service.getControlPlaneEndpointIPBlock(s.ctx, s.clusterScope)
 	s.Error(err)
 	s.Nil(block)
 }
@@ -68,7 +68,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockFuncSingleMatch() {
 		},
 	}, nil).Once()
 	s.mockGetIPBlockByIDCall().Return(exampleIPBlock(), nil).Once()
-	block, err := s.service.getIPBlock(s.ctx, s.clusterScope)
+	block, err := s.service.getControlPlaneEndpointIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
 	s.NotNil(block)
 	s.Equal(exampleIPBlockName, *block.Properties.Name, "IP block name does not match")
@@ -111,7 +111,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockFuncUserSetIP() {
 			},
 		},
 	}, nil).Once()
-	block, err := s.service.getIPBlock(s.ctx, s.clusterScope)
+	block, err := s.service.getControlPlaneEndpointIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
 	s.Contains(*block.GetProperties().GetIps(), exampleEndpointIP)
 	s.Equal(sdk.Available, *block.Metadata.State, "IP block state does not match")
@@ -123,7 +123,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockPreviouslySetID() {
 		Id: ptr.To(exampleIPBlockID),
 	}, nil).Once()
 
-	block, err := s.service.getIPBlock(s.ctx, s.clusterScope)
+	block, err := s.service.getControlPlaneEndpointIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
 	s.Equal(exampleIPBlockID, *block.Id)
 }
@@ -134,7 +134,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockPreviouslySetIDNotFound() {
 	s.mockListIPBlockCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{},
 	}, nil).Once()
-	block, err := s.service.getIPBlock(s.ctx, s.clusterScope)
+	block, err := s.service.getControlPlaneEndpointIPBlock(s.ctx, s.clusterScope)
 	s.ErrorAs(err, &sdk.GenericOpenAPIError{})
 	s.Nil(block)
 }
@@ -150,7 +150,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockNoMatch() {
 			},
 		},
 	}, nil).Once()
-	block, err := s.service.getIPBlock(s.ctx, s.clusterScope)
+	block, err := s.service.getControlPlaneEndpointIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
 	s.Nil(block)
 }

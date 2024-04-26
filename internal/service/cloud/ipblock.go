@@ -49,7 +49,12 @@ var errUserSetIPNotFound = errors.New("could not find any IP block for the alrea
 func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.Cluster) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileControlPlaneEndpoint")
 
-	ipBlock, request, err := scopedFindResource(ctx, cs, s.getIPBlock, s.getLatestIPBlockCreationRequest)
+	ipBlock, request, err := scopedFindResource(
+		ctx, cs,
+		s.getControlPlaneEndpointIPBlock,
+		s.getLatestIPBlockCreationRequest,
+	)
+
 	if err != nil {
 		return false, err
 	}
@@ -91,7 +96,11 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 	log := s.logger.WithName("ReconcileControlPlaneEndpointDeletion")
 
 	// Try to retrieve the cluster IP Block or even check if it's currently still being created.
-	ipBlock, request, err := scopedFindResource(ctx, cs, s.getIPBlock, s.getLatestIPBlockCreationRequest)
+	ipBlock, request, err := scopedFindResource(
+		ctx, cs,
+		s.getControlPlaneEndpointIPBlock,
+		s.getLatestIPBlockCreationRequest,
+	)
 	// NOTE(gfariasalves): we ignore the error if it is a "user set IP not found" error, because it doesn't matter here.
 	// This error is only relevant when we are trying to create a new IP block. If it shows up here, it means that:
 	// a) this IP block was created by the user, and they have deleted it, or,
@@ -236,9 +245,9 @@ func (s *Service) getFailoverIPBlock(ctx context.Context, ms *scope.Machine) (*s
 	return nil, nil
 }
 
-// getIPBlock finds the IP block that matches the expected name and location.
+// getControlPlaneEndpointIPBlock finds the IP block that matches the expected name and location.
 // An error is returned if there are multiple IP blocks that match both the name and location.
-func (s *Service) getIPBlock(ctx context.Context, cs *scope.Cluster) (*sdk.IpBlock, error) {
+func (s *Service) getControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.Cluster) (*sdk.IpBlock, error) {
 	ipBlock, err := s.getIPBlockByID(ctx, cs.IonosCluster.Status.ControlPlaneEndpointIPBlockID)
 	if ipBlock != nil || ignoreNotFound(err) != nil {
 		return ipBlock, err
