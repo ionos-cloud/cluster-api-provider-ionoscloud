@@ -118,7 +118,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 
 	// NOTE: this check covers the case where customers have set the control plane endpoint IP themselves.
 	// If this is the case we don't request for the deletion of the IP block.
-	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), unknownValue) != s.ipBlockName(cs) {
+	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), unknownValue) != s.controlPlaneEndpointIPBlockName(cs) { //nolint:revive
 		log.Info("Control Plane Endpoint was created externally by the user. Skipping deletion")
 		return false, nil
 	}
@@ -260,7 +260,7 @@ func (s *Service) getControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.
 	}
 
 	var (
-		expectedName     = s.ipBlockName(cs)
+		expectedName     = s.controlPlaneEndpointIPBlockName(cs)
 		expectedLocation = cs.Location()
 		count            = 0
 		foundBlock       *sdk.IpBlock
@@ -334,15 +334,18 @@ func (s *Service) getIPBlockByID(ctx context.Context, ipBlockID string) (*sdk.Ip
 // reserveClusterIPBlock requests for the reservation of an IP block.
 func (s *Service) reserveClusterIPBlock(ctx context.Context, cs *scope.Cluster) error {
 	log := s.logger.WithName("reserveClusterIPBlock")
-	return s.reserveIPBlock(ctx, s.ipBlockName(cs), cs.Location(), log, cs.IonosCluster.SetCurrentClusterRequest)
+	return s.reserveIPBlock(
+		ctx, s.controlPlaneEndpointIPBlockName(cs),
+		cs.Location(), log,
+		cs.IonosCluster.SetCurrentClusterRequest,
+	)
 }
 
 func (s *Service) reserveMachineDeploymentFailoverIPBlock(ctx context.Context, ms *scope.Machine) error {
 	log := s.logger.WithName("reserveMachineDeploymentFailoverIPBlock")
 	return s.reserveIPBlock(
 		ctx, s.failoverIPBlockName(ms),
-		ms.ClusterScope.Location(),
-		log,
+		ms.ClusterScope.Location(), log,
 		ms.IonosMachine.SetCurrentRequest,
 	)
 }
@@ -398,7 +401,7 @@ func (s *Service) getLatestControlPlaneEndpointIPBlockCreationRequest(
 	ctx context.Context,
 	cs *scope.Cluster,
 ) (*requestInfo, error) {
-	return s.getLatestIPBlockRequestByNameAndLocation(ctx, http.MethodPost, s.ipBlockName(cs), cs.Location())
+	return s.getLatestIPBlockRequestByNameAndLocation(ctx, http.MethodPost, s.controlPlaneEndpointIPBlockName(cs), cs.Location())
 }
 
 // getLatestFailoverIPBlockCreateRequest returns the latest failover IP block creation request.
@@ -435,8 +438,8 @@ func (s *Service) getLatestIPBlockDeletionRequest(ctx context.Context, ipBlockID
 	return getMatchingRequest[*sdk.IpBlock](ctx, s, http.MethodDelete, path.Join(ipBlocksPath, ipBlockID))
 }
 
-// ipBlockName returns the name that should be used for cluster context resources.
-func (*Service) ipBlockName(cs *scope.Cluster) string {
+// controlPlaneEndpointIPBlockName returns the name that should be used for cluster context resources.
+func (*Service) controlPlaneEndpointIPBlockName(cs *scope.Cluster) string {
 	return fmt.Sprintf("k8s-ipb-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
 }
 

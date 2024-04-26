@@ -160,7 +160,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockNoMatch() {
 func (s *ipBlockTestSuite) TestReserveClusterIPBlockRequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockReserveIPBlockCall(
-		s.service.ipBlockName(s.clusterScope),
+		s.service.controlPlaneEndpointIPBlockName(s.clusterScope),
 		s.clusterScope.Location(),
 	).Return(requestPath, nil).Once()
 
@@ -294,7 +294,7 @@ func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointRequestNewIPBlock() 
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{}, nil).Once()
 	s.mockGetIPBlocksRequestsPostCall().Return([]sdk.Request{}, nil).Once()
 	s.mockReserveIPBlockCall(
-		s.service.ipBlockName(s.clusterScope),
+		s.service.controlPlaneEndpointIPBlockName(s.clusterScope),
 		s.clusterScope.Location(),
 	).Return(exampleRequestPath, nil).Once()
 
@@ -484,7 +484,7 @@ func (s *ipBlockTestSuite) mockDeleteIPBlockCall() *clienttest.MockClient_Delete
 }
 
 func (s *ipBlockTestSuite) buildRequest(status string, method, id string) sdk.Request {
-	return s.buildIPBlockRequestWithName(s.service.ipBlockName(s.clusterScope), status, method, id)
+	return s.buildIPBlockRequestWithName(s.service.controlPlaneEndpointIPBlockName(s.clusterScope), status, method, id)
 }
 
 func (s *ipBlockTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
