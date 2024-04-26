@@ -18,6 +18,7 @@ package cloud
 
 import (
 	"net/http"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"testing"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -156,7 +157,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockNoMatch() {
 	s.Nil(block)
 }
 
-func (s *ipBlockTestSuite) TestReserveIPBlockRequestSuccess() {
+func (s *ipBlockTestSuite) TestReserveClusterIPBlockRequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockReserveIPBlockCall(
 		s.service.ipBlockName(s.clusterScope),
@@ -166,10 +167,35 @@ func (s *ipBlockTestSuite) TestReserveIPBlockRequestSuccess() {
 	err := s.service.reserveClusterIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
 	req := s.clusterScope.IonosCluster.Status.CurrentClusterRequest
+	s.validateRequest(http.MethodPost, sdk.RequestStatusQueued, requestPath, req)
+}
+
+func (s *ipBlockTestSuite) TestReserveMachineDeploymentIPBlockRequestSuccess() {
+	requestPath := exampleRequestPath
+	labels := s.machineScope.IonosMachine.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+	labels[clusterv1.MachineDeploymentNameLabel] = "test-deployment"
+
+	s.mockReserveIPBlockCall(
+		s.service.failoverIPBlockName(s.machineScope),
+		s.clusterScope.Location(),
+	).Return(requestPath, nil).Once()
+
+	err := s.service.reserveMachineDeploymentFailoverIPBlock(s.ctx, s.machineScope)
+	s.NoError(err)
+	req := s.machineScope.IonosMachine.Status.CurrentRequest
+	s.validateRequest(http.MethodPost, sdk.RequestStatusQueued, requestPath, req)
+}
+
+func (s *ipBlockTestSuite) validateRequest(method, state, path string, req *infrav1.ProvisioningRequest) {
+	s.T().Helper()
+
 	s.NotNil(req)
-	s.Equal(http.MethodPost, req.Method)
-	s.Equal(sdk.RequestStatusQueued, req.State)
-	s.Equal(requestPath, req.RequestPath)
+	s.Equal(method, req.Method)
+	s.Equal(state, req.State)
+	s.Equal(path, req.RequestPath)
 }
 
 func (s *ipBlockTestSuite) TestDeleteIPBlockRequestSuccess() {
