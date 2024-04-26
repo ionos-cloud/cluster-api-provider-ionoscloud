@@ -143,6 +143,8 @@ type IonosCloudMachineSpec struct {
 	// MachineFailoverIP can be set to enable failover for VMs in the same MachineDeployment.
 	// It can be either set to an already reserved IPv4 address, or it can be set to "AUTO"
 	// which will automatically reserve an IPv4 address for the Failover Group.
+	//
+	// If the machine is a control plane machine, this field will not be taken into account.
 	//+kubebuilder:validation:XValidation:rule=`self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")`,message="nodeFailoverIP must be either 'AUTO' or a valid URL"
 	//+optional
 	MachineFailoverIP *string `json:"machineFailoverIP,omitempty"`
