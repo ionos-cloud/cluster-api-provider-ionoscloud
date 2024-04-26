@@ -148,8 +148,8 @@ spec:
               machineFailoverIP:
                 description: |-
                   MachineFailoverIP can be set to enable failover for VMs in the same MachineDeployment.
-                  It can be either set to an already reserved IP address, or it can be set to "AUTO"
-                  which will automatically reserve an IP address for the Failover Group.
+                  It can be either set to an already reserved IPv4 address, or it can be set to "AUTO"
+                  which will automatically reserve an IPv4 address for the Failover Group.
                 type: string
                 x-kubernetes-validations:
                 - message: nodeFailoverIP must be either 'AUTO' or a valid URL
