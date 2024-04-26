@@ -277,6 +277,23 @@ func (s *ServiceTestSuite) buildIPBlockRequestWithName(name, status, method, id 
 	return s.exampleRequest(opts)
 }
 
+func (s *ServiceTestSuite) exampleLAN() sdk.Lan {
+	return sdk.Lan{
+		Id: ptr.To(exampleLANID),
+		Properties: &sdk.LanProperties{
+			Name: ptr.To(s.service.lanName(s.clusterScope.Cluster)),
+		},
+		Metadata: &sdk.DatacenterElementMetadata{
+			State: ptr.To(sdk.Available),
+		},
+		Entities: &sdk.LanEntities{
+			Nics: &sdk.LanNics{
+				Items: &[]sdk.Nic{},
+			},
+		},
+	}
+}
+
 func (s *ServiceTestSuite) mockGetIPBlocksRequestsPostCall() *clienttest.MockClient_GetRequests_Call {
 	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, ipBlocksPath)
 }

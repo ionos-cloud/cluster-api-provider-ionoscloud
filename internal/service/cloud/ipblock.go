@@ -401,14 +401,17 @@ func (s *Service) getLatestControlPlaneEndpointIPBlockCreationRequest(
 	ctx context.Context,
 	cs *scope.Cluster,
 ) (*requestInfo, error) {
-	return s.getLatestIPBlockRequestByNameAndLocation(ctx, http.MethodPost, s.controlPlaneEndpointIPBlockName(cs), cs.Location())
+	return s.getLatestIPBlockRequestByNameAndLocation(
+		ctx, http.MethodPost,
+		s.controlPlaneEndpointIPBlockName(cs),
+		cs.Location(),
+	)
 }
 
 // getLatestFailoverIPBlockCreateRequest returns the latest failover IP block creation request.
 func (s *Service) getLatestFailoverIPBlockCreateRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
 	return s.getLatestIPBlockRequestByNameAndLocation(
-		ctx,
-		http.MethodPost,
+		ctx, http.MethodPost,
 		s.failoverIPBlockName(ms),
 		ms.ClusterScope.Location(),
 	)

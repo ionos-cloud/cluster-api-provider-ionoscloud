@@ -558,23 +558,6 @@ func (s *lanSuite) exampleIPBlock() sdk.IpBlock {
 	}
 }
 
-func (s *lanSuite) exampleLAN() sdk.Lan {
-	return sdk.Lan{
-		Id: ptr.To(exampleLANID),
-		Properties: &sdk.LanProperties{
-			Name: ptr.To(s.service.lanName(s.clusterScope.Cluster)),
-		},
-		Metadata: &sdk.DatacenterElementMetadata{
-			State: ptr.To(sdk.Available),
-		},
-		Entities: &sdk.LanEntities{
-			Nics: &sdk.LanNics{
-				Items: &[]sdk.Nic{},
-			},
-		},
-	}
-}
-
 func (s *lanSuite) examplePostRequest(status string) []sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,

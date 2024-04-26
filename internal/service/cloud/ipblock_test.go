@@ -491,23 +491,6 @@ func (s *ipBlockTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Ca
 	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
 }
 
-func (s *ipBlockTestSuite) exampleLAN() sdk.Lan {
-	return sdk.Lan{
-		Id: ptr.To(exampleLANID),
-		Properties: &sdk.LanProperties{
-			Name: ptr.To(s.service.lanName(s.clusterScope.Cluster)),
-		},
-		Metadata: &sdk.DatacenterElementMetadata{
-			State: ptr.To(sdk.Available),
-		},
-		Entities: &sdk.LanEntities{
-			Nics: &sdk.LanNics{
-				Items: &[]sdk.Nic{},
-			},
-		},
-	}
-}
-
 // exampleIPBlock returns a new sdk.IpBlock instance for testing. The IPs need to be set.
 func exampleIPBlock() *sdk.IpBlock {
 	return exampleIPBlockWithName(exampleIPBlockName)
