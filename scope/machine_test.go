@@ -200,7 +200,10 @@ func TestFindLatestMachineMachineIsReceiver(t *testing.T) {
 
 	cpMachines := []string{"cp-test-2", "cp-test-1"}
 	for index, machine := range cpMachines {
-		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, cpLabels, time.Duration(index)*time.Minute))
+		err = scope.client.Create(
+			context.Background(),
+			createMachineWithLabels(machine, cpLabels, time.Duration(index)*time.Minute),
+		)
 		require.NoError(t, err)
 	}
 

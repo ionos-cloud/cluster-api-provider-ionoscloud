@@ -175,7 +175,7 @@ func (m *Machine) FindLatestMachine(
 	if latestMachine.Name == m.IonosMachine.Name {
 		return nil, nil
 	}
-	
+
 	return &latestMachine, nil
 }
 
