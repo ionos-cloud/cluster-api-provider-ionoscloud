@@ -233,8 +233,8 @@ func (in *IonosCloudMachineSpec) DeepCopyInto(out *IonosCloudMachineSpec) {
 		*out = make(Networks, len(*in))
 		copy(*out, *in)
 	}
-	if in.NodeFailoverIP != nil {
-		in, out := &in.NodeFailoverIP, &out.NodeFailoverIP
+	if in.MachineFailoverIP != nil {
+		in, out := &in.MachineFailoverIP, &out.MachineFailoverIP
 		*out = new(string)
 		**out = **in
 	}

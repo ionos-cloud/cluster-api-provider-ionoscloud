@@ -247,7 +247,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
 func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 	const deploymentLabel = "test-deployment"
 	s.infraMachine.SetLabels(map[string]string{clusterv1.MachineDeploymentNameLabel: deploymentLabel})
-	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.MachineFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleWorkerFailoverIP)
 	testLAN := s.exampleLAN()
 
@@ -277,7 +277,7 @@ func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 func (s *lanSuite) TestReconcileIPFailoverReserveIPBlock() {
 	const deploymentLabel = "test-deployment"
 	s.infraMachine.SetLabels(map[string]string{clusterv1.MachineDeploymentNameLabel: deploymentLabel})
-	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.MachineFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 
 	s.mockListIPBlocksCall().Return(nil, nil).Once()
 	s.mockCreateIPBlockRequestCall().Return(nil, nil).Once()
@@ -389,7 +389,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionWorker() {
 	labels[clusterv1.MachineDeploymentNameLabel] = deploymentLabel
 	s.infraMachine.SetLabels(labels)
 
-	s.infraMachine.Spec.NodeFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.MachineFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleWorkerFailoverIP)
 
 	s.NoError(s.k8sClient.Update(s.ctx, s.infraMachine))

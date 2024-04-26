@@ -339,7 +339,35 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 		})
 	})
-
+	Context("MachineFailoverIP", func() {
+		It("should allow setting AUTO as the value", func() {
+			m := defaultMachine()
+			m.Spec.MachineFailoverIP = ptr.To(CloudResourceConfigAuto)
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.MachineFailoverIP).To(Equal(ptr.To(CloudResourceConfigAuto)))
+		})
+		It("should allow setting a valid IPv4 address", func() {
+			m := defaultMachine()
+			m.Spec.MachineFailoverIP = ptr.To("203.0.113.1")
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.MachineFailoverIP).To(Equal(ptr.To("203.0.113.1")))
+		})
+		It("should allow setting null", func() {
+			m := defaultMachine()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.MachineFailoverIP).To(BeNil())
+		})
+		It("should not allow setting an invalid IPv4 address", func() {
+			m := defaultMachine()
+			m.Spec.MachineFailoverIP = ptr.To("203.0.113.256")
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+		It("should require AUTO to be in capital letters", func() {
+			m := defaultMachine()
+			m.Spec.MachineFailoverIP = ptr.To("Auto")
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+	})
 	Context("Conditions", func() {
 		It("should correctly set and get the conditions", func() {
 			m := defaultMachine()

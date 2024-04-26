@@ -281,7 +281,7 @@ func (s *Service) retrieveFailoverIPForMachine(
 		return false, ms.ClusterScope.GetControlPlaneEndpoint().Host, nil
 	}
 
-	failoverIP = ptr.Deref(ms.IonosMachine.Spec.NodeFailoverIP, "")
+	failoverIP = ptr.Deref(ms.IonosMachine.Spec.MachineFailoverIP, "")
 	if failoverIP == "" {
 		const errorMessage = "failover IP contains an empty string. Provide either a valid IP address or 'AUTO"
 		return false, "", errors.New(errorMessage)
@@ -601,5 +601,5 @@ func (s *Service) patchLAN(ctx context.Context, ms *scope.Machine, lanID string,
 }
 
 func failoverRequired(ms *scope.Machine) bool {
-	return util.IsControlPlaneMachine(ms.Machine) || ms.IonosMachine.Spec.NodeFailoverIP != nil
+	return util.IsControlPlaneMachine(ms.Machine) || ms.IonosMachine.Spec.MachineFailoverIP != nil
 }

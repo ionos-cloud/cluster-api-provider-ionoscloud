@@ -145,6 +145,15 @@ spec:
                 required:
                 - image
                 type: object
+              machineFailoverIP:
+                description: |-
+                  MachineFailoverIP can be set to enable failover for VMs in the same MachineDeployment.
+                  It can be either set to an already reserved IP address, or it can be set to "AUTO"
+                  which will automatically reserve an IP address for the Failover Group.
+                type: string
+                x-kubernetes-validations:
+                - message: nodeFailoverIP must be either 'AUTO' or a valid URL
+                  rule: self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")
               memoryMB:
                 default: 3072
                 description: |-
@@ -155,12 +164,6 @@ spec:
                 minimum: 2048
                 multipleOf: 1024
                 type: integer
-              nodeFailoverIP:
-                description: |-
-                  NodeFailoverIP can be set to enable failover for VMs in the same MachineDeployment.
-                  It can be either set to an already reserved IP address, or it can be set to "AUTO"
-                  which will automatically reserve an IP address for the Failover Group.
-                type: string
               numCores:
                 default: 1
                 description: NumCores defines the number of cores for the VM.

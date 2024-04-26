@@ -140,11 +140,12 @@ type IonosCloudMachineSpec struct {
 	//+optional
 	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
 
-	// NodeFailoverIP can be set to enable failover for VMs in the same MachineDeployment.
+	// MachineFailoverIP can be set to enable failover for VMs in the same MachineDeployment.
 	// It can be either set to an already reserved IP address, or it can be set to "AUTO"
 	// which will automatically reserve an IP address for the Failover Group.
+	//+kubebuilder:validation:XValidation:rule=`self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")`,message="nodeFailoverIP must be either 'AUTO' or a valid URL"
 	//+optional
-	NodeFailoverIP *string `json:"nodeFailoverIP,omitempty"`
+	MachineFailoverIP *string `json:"machineFailoverIP,omitempty"`
 }
 
 // Networks contains a list of additional LAN IDs

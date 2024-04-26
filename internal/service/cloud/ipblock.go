@@ -140,7 +140,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 // ReconcileFailoverIPBlockDeletion ensures that the IP block is deleted.
 func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileFailoverIPBlockDeletion")
-	if foIP := ms.IonosMachine.Spec.NodeFailoverIP; foIP == nil || *foIP != infrav1.CloudResourceConfigAuto {
+	if foIP := ms.IonosMachine.Spec.MachineFailoverIP; foIP == nil || *foIP != infrav1.CloudResourceConfigAuto {
 		log.V(4).Info("Failover IP block is not managed by the provider, skipping deletion", "failoverIP", foIP)
 		return false, nil
 	}
