@@ -283,7 +283,7 @@ func (s *Service) retrieveFailoverIPForMachine(
 
 	failoverIP = ptr.Deref(ms.IonosMachine.Spec.MachineFailoverIP, "")
 	if failoverIP == "" {
-		const errorMessage = "failover IP contains an empty string. Provide either a valid IP address or 'AUTO"
+		const errorMessage = "failover IP contains an empty string. Provide either a valid IP address or 'AUTO'"
 		return false, "", errors.New(errorMessage)
 	}
 
@@ -325,7 +325,7 @@ func (s *Service) retrieveFailoverIPForMachine(
 }
 
 // ReconcileIPFailoverDeletion ensures the proper deletion of the IPFailover configuration.
-// If the machine is the last control plane machine, the entry in the IPFailover group will be removed.
+// If the machine is the last machine, the entry in the IPFailover group will be removed.
 //
 // If the machine is the primary in the failover group, the NIC will be swapped with another machine,
 // otherwise the machine cannot be deleted, which is relevant for upgrading or downgrading the cluster.
