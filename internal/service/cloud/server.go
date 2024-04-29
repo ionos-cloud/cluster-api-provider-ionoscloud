@@ -72,18 +72,9 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 		return true, nil
 	}
 
-	// Server is available
-	if !s.isServerAvailable(server) {
-		// server is still provisioning, checking again later
-		return true, nil
-	}
-
-	if vmState := getVMState(server); !isRunning(vmState) {
-		err := s.startServer(ctx, ms, *server.Id)
-		if err != nil {
-			log.Error(err, "Failed to start the server")
-			return true, err
-		}
+	requeue, err = s.ensureServerAvailable(ctx, ms, server)
+	if requeue || err != nil {
+		return requeue, err
 	}
 
 	// Attach the IPs from all NICs of the server to the status
@@ -156,6 +147,7 @@ func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machi
 	return false, nil
 }
 
+// isServerAvailable checks if the server is in state AVAILABLE.
 func (s *Service) isServerAvailable(server *sdk.Server) bool {
 	log := s.logger.WithName("isServerAvailable")
 	if state := getState(server); !isAvailable(state) {
@@ -163,6 +155,29 @@ func (s *Service) isServerAvailable(server *sdk.Server) bool {
 		return false
 	}
 	return true
+}
+
+// ensureServerAvailable checks the availability of the specified server.
+func (s *Service) ensureServerAvailable(ctx context.Context, ms *scope.Machine, server *sdk.Server) (bool, error) {
+	log := s.logger.WithName("ensureServerAvailable")
+
+	// Check if the server is available
+	if !s.isServerAvailable(server) {
+		// Server is still provisioning, checking again later
+		return true, nil
+	}
+
+	// Check the VM state; if not running, try to start it
+	if vmState := getVMState(server); !isRunning(vmState) {
+		err := s.startServer(ctx, ms, *server.Id)
+		if err != nil {
+			log.Error(err, "Failed to start the server")
+			return true, err
+		}
+	}
+
+	// Default return path when no conditions are met (server is available and running)
+	return false, nil
 }
 
 // getServerByServerID checks if the IonosCloudMachine has a provider ID set.
