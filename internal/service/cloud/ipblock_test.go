@@ -210,14 +210,14 @@ func (s *ipBlockTestSuite) TestDeleteIPBlockRequestSuccess() {
 	s.Equal(requestPath, req.RequestPath)
 }
 
-func (s *ipBlockTestSuite) TestGetLatestIPBlockCreationRequestNoRequest() {
+func (s *ipBlockTestSuite) TestGetLatestControlPlaneEndpointIPBlockCreationRequestNoRequest() {
 	s.mockGetIPBlocksRequestsPostCall().Return(make([]sdk.Request, 0), nil).Once()
 	req, err := s.service.getLatestControlPlaneEndpointIPBlockCreationRequest(s.ctx, s.clusterScope)
 	s.NoError(err)
 	s.Nil(req)
 }
 
-func (s *ipBlockTestSuite) TestGetLatestIPBlockCreationRequestRequest() {
+func (s *ipBlockTestSuite) TestGetLatestControlPlaneEndpointIPBlockCreationRequestSuccessfulRequest() {
 	req := s.buildRequest(sdk.RequestStatusQueued, http.MethodPost, "")
 	reqs := []sdk.Request{req}
 	s.mockGetIPBlocksRequestsPostCall().Return(reqs, nil).Once()
