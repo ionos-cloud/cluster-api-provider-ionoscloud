@@ -387,7 +387,7 @@ func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionRequestNewDe
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletion() {
-	s.infraMachine.Spec.MachineFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
 
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{*ipBlock}}, nil).Once()
@@ -402,7 +402,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletion() {
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionSkipped() {
-	s.infraMachine.Spec.MachineFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
 	lan := s.exampleLAN()
 	lan.Properties.IpFailover = &[]sdk.IPFailover{{
@@ -421,7 +421,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionSkipped() {
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingCreation() {
-	s.infraMachine.Spec.MachineFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 
 	s.mockListIPBlocksCall().Return(nil, nil).Once()
 	s.mockGetIPBlocksRequestsPostCall().Return([]sdk.Request{
@@ -436,7 +436,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingCreation()
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingDeletion() {
-	s.infraMachine.Spec.MachineFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
 
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{*ipBlock}}, nil).Once()
@@ -464,7 +464,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingDeletion()
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionDeletionFinished() {
-	s.infraMachine.Spec.MachineFailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
 
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{*ipBlock}}, nil).Once()
@@ -485,10 +485,6 @@ func (s *ipBlockTestSuite) mockDeleteIPBlockCall() *clienttest.MockClient_Delete
 
 func (s *ipBlockTestSuite) buildRequest(status string, method, id string) sdk.Request {
 	return s.buildIPBlockRequestWithName(s.service.controlPlaneEndpointIPBlockName(s.clusterScope), status, method, id)
-}
-
-func (s *ipBlockTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
-	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
 }
 
 // exampleIPBlock returns a new sdk.IpBlock instance for testing. The IPs need to be set.
