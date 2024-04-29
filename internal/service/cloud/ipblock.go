@@ -54,7 +54,6 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 		s.getControlPlaneEndpointIPBlock,
 		s.getLatestControlPlaneEndpointIPBlockCreationRequest,
 	)
-
 	if err != nil {
 		return false, err
 	}
