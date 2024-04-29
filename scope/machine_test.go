@@ -100,7 +100,7 @@ func TestMachineHasFailedFailureReason(t *testing.T) {
 	require.True(t, scope.HasFailed())
 }
 
-func TestCountMachinesWithControlPlaneLabel(t *testing.T) {
+func TestCountMachinesWithDifferentLabels(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
 

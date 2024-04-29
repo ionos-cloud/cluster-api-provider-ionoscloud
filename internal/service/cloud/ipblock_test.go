@@ -41,7 +41,7 @@ const (
 	exampleIPBlockName = "k8s-ipb-default-test-cluster"
 )
 
-func (s *ipBlockTestSuite) TestGetIPBlockFuncMultipleMatches() {
+func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockMultipleMatches() {
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{
 			*exampleIPBlock(),
@@ -54,7 +54,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockFuncMultipleMatches() {
 	s.Nil(block)
 }
 
-func (s *ipBlockTestSuite) TestGetIPBlockFuncSingleMatch() {
+func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockSingleMatch() {
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{
 			*exampleIPBlock(),
@@ -75,7 +75,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockFuncSingleMatch() {
 	s.Equal(sdk.Available, *block.Metadata.State, "IP block state does not match")
 }
 
-func (s *ipBlockTestSuite) TestGetIPBlockFuncUserSetIP() {
+func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockUserSetIP() {
 	s.clusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
 	name := ptr.To("random name")
 	location := ptr.To(exampleLocation)
@@ -116,7 +116,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockFuncUserSetIP() {
 	s.Equal(sdk.Available, *block.Metadata.State, "IP block state does not match")
 }
 
-func (s *ipBlockTestSuite) TestGetIPBlockPreviouslySetID() {
+func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockPreviouslySetID() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleIPBlockID
 	s.mockGetIPBlockByIDCall(exampleIPBlockID).Return(&sdk.IpBlock{
 		Id: ptr.To(exampleIPBlockID),
@@ -127,7 +127,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockPreviouslySetID() {
 	s.Equal(exampleIPBlockID, *block.Id)
 }
 
-func (s *ipBlockTestSuite) TestGetIPBlockPreviouslySetIDNotFound() {
+func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockPreviouslySetIDNotFound() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleIPBlockID
 	s.mockGetIPBlockByIDCall(exampleIPBlockID).Return(
 		nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404),
@@ -141,7 +141,7 @@ func (s *ipBlockTestSuite) TestGetIPBlockPreviouslySetIDNotFound() {
 	s.Nil(block)
 }
 
-func (s *ipBlockTestSuite) TestGetIPBlockNoMatch() {
+func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockNoMatch() {
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{
 			{
