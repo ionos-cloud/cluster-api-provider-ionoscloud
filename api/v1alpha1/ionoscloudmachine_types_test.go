@@ -367,6 +367,16 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			m.Spec.FailoverIP = "Auto"
 			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 		})
+		It("should be immutable", func() {
+			m := defaultMachine()
+			m.Spec.FailoverIP = "AUTO"
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.FailoverIP).To(Equal("AUTO"))
+			m.Spec.FailoverIP = "127.0.0.1"
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+			m.Spec.FailoverIP = ""
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+		})
 	})
 	Context("Conditions", func() {
 		It("should correctly set and get the conditions", func() {

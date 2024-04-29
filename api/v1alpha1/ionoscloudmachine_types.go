@@ -145,9 +145,10 @@ type IonosCloudMachineSpec struct {
 	// which will automatically reserve an IPv4 address for the Failover Group.
 	//
 	// If the machine is a control plane machine, this field will not be taken into account.
-	//+kubebuilder:validation:XValidation:rule=`self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")`,message="failoverIP must be either 'AUTO' or a valid IPv4 address"
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="failoverIP is immutable"
+	//+kubebuilder:validation:XValidation:rule=`self == "" || self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")`,message="failoverIP must be either 'AUTO' or a valid IPv4 address"
 	//+optional
-	FailoverIP string `json:"failoverIP,omitempty"`
+	FailoverIP string `json:"failoverIP"`
 }
 
 // Networks contains a list of additional LAN IDs
