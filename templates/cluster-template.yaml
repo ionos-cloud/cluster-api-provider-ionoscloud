@@ -208,6 +208,9 @@ spec:
       - /etc/kube-vip-prepare.sh
     postKubeadmCommands:
       - >
+        sed -i 's#path: /etc/kubernetes/super-admin.conf#path: /etc/kubernetes/admin.conf#' \
+        /etc/kubernetes/manifests/kube-vip.yaml
+      - >
         systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
         packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
       # TODO(jriedel-ionos): remove that if we have a CCM
