@@ -117,7 +117,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 
 	// NOTE: this check covers the case where customers have set the control plane endpoint IP themselves.
 	// If this is the case we don't request for the deletion of the IP block.
-	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), unknownValue) != s.controlPlaneEndpointIPBlockName(cs) { 
+	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), unknownValue) != s.controlPlaneEndpointIPBlockName(cs) {
 		log.Info("Control Plane Endpoint was created externally by the user. Skipping deletion")
 		return false, nil
 	}
