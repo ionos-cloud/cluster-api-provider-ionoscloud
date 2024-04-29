@@ -198,10 +198,10 @@ func (s *ipBlockTestSuite) validateRequest(method, state, path string, req *infr
 	s.Equal(path, req.RequestPath)
 }
 
-func (s *ipBlockTestSuite) TestDeleteIPBlockRequestSuccess() {
+func (s *ipBlockTestSuite) TestDeleteControlPlaneEndpointIPBlockRequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockDeleteIPBlockCall().Return(requestPath, nil).Once()
-	err := s.service.deleteClusterIPBlock(s.ctx, s.clusterScope, exampleIPBlockID)
+	err := s.service.deleteControlPlaneEndpointIPBlock(s.ctx, s.clusterScope, exampleIPBlockID)
 	s.NoError(err)
 	req := s.clusterScope.IonosCluster.Status.CurrentClusterRequest
 	s.NotNil(req)

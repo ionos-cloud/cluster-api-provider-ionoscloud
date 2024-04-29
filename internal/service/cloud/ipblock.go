@@ -141,7 +141,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 		return true, nil
 	}
 
-	err = s.deleteClusterIPBlock(ctx, cs, *ipBlock.Id)
+	err = s.deleteControlPlaneEndpointIPBlock(ctx, cs, *ipBlock.Id)
 	return err == nil, err
 }
 
@@ -369,9 +369,9 @@ func (s *Service) reserveIPBlock(
 	return nil
 }
 
-// deleteClusterIPBlock requests for the deletion of the IP block with the given ID.
-func (s *Service) deleteClusterIPBlock(ctx context.Context, cs *scope.Cluster, ipBlockID string) error {
-	log := s.logger.WithName("deleteClusterIPBlock")
+// deleteControlPlaneEndpointIPBlock requests for the deletion of the control plane IP block with the given ID.
+func (s *Service) deleteControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.Cluster, ipBlockID string) error {
+	log := s.logger.WithName("deleteControlPlaneEndpointIPBlock")
 	return s.deleteIPBlock(ctx, log, ipBlockID, cs.IonosCluster.SetCurrentClusterRequest)
 }
 
