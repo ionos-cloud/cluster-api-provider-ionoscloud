@@ -82,7 +82,7 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 	}
 
 	log.V(4).Info("No IP block was found. Creating new IP block")
-	if err := s.reserveClusterIPBlock(ctx, cs); err != nil {
+	if err := s.reserveControlPlaneEndpointIPBlock(ctx, cs); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -332,9 +332,9 @@ func (s *Service) getIPBlockByID(ctx context.Context, ipBlockID string) (*sdk.Ip
 	return ipBlock, nil
 }
 
-// reserveClusterIPBlock requests for the reservation of an IP block.
-func (s *Service) reserveClusterIPBlock(ctx context.Context, cs *scope.Cluster) error {
-	log := s.logger.WithName("reserveClusterIPBlock")
+// reserveControlPlaneEndpointIPBlock requests for the reservation of an IP block for the control plane.
+func (s *Service) reserveControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.Cluster) error {
+	log := s.logger.WithName("reserveControlPlaneEndpointIPBlock")
 	return s.reserveIPBlock(
 		ctx, s.controlPlaneEndpointIPBlockName(cs),
 		cs.Location(), log,

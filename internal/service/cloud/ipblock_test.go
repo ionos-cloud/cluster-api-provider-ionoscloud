@@ -157,14 +157,14 @@ func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockNoMatch() {
 	s.Nil(block)
 }
 
-func (s *ipBlockTestSuite) TestReserveClusterIPBlockRequestSuccess() {
+func (s *ipBlockTestSuite) TestReserveControlPlaneEndpointIPBlockRequestSuccess() {
 	requestPath := exampleRequestPath
 	s.mockReserveIPBlockCall(
 		s.service.controlPlaneEndpointIPBlockName(s.clusterScope),
 		s.clusterScope.Location(),
 	).Return(requestPath, nil).Once()
 
-	err := s.service.reserveClusterIPBlock(s.ctx, s.clusterScope)
+	err := s.service.reserveControlPlaneEndpointIPBlock(s.ctx, s.clusterScope)
 	s.NoError(err)
 	req := s.clusterScope.IonosCluster.Status.CurrentClusterRequest
 	s.validateRequest(http.MethodPost, sdk.RequestStatusQueued, requestPath, req)
