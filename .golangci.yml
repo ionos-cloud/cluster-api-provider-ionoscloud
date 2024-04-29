@@ -110,8 +110,7 @@ linters-settings:
         arguments:
           - 15
       - name: line-length-limit
-        arguments:
-          - 120
+        disabled: true
       - name: max-public-structs
         disabled: true
       - name: range-val-address

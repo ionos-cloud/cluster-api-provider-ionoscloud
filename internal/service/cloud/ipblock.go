@@ -117,7 +117,7 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 
 	// NOTE: this check covers the case where customers have set the control plane endpoint IP themselves.
 	// If this is the case we don't request for the deletion of the IP block.
-	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), unknownValue) != s.controlPlaneEndpointIPBlockName(cs) { //nolint:revive
+	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), unknownValue) != s.controlPlaneEndpointIPBlockName(cs) { 
 		log.Info("Control Plane Endpoint was created externally by the user. Skipping deletion")
 		return false, nil
 	}
@@ -148,8 +148,10 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 // ReconcileFailoverIPBlockDeletion ensures that the IP block is deleted.
 func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileFailoverIPBlockDeletion")
-	if foIP := ms.IonosMachine.Spec.FailoverIP; foIP == nil || *foIP != infrav1.CloudResourceConfigAuto {
-		log.V(4).Info("Failover IP block is not managed by the provider, skipping deletion", "failoverIP", foIP)
+	if ms.IonosMachine.Spec.FailoverIP != infrav1.CloudResourceConfigAuto {
+		log.V(4).Info("Failover IP block is not managed by the provider, skipping deletion",
+			"failoverIP", ms.IonosMachine.Spec.FailoverIP,
+		)
 		return false, nil
 	}
 
