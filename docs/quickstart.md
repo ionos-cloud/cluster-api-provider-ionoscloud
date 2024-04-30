@@ -26,7 +26,7 @@ to the official [Cluster API book](https://cluster-api.sigs.k8s.io/).
 In order to deploy a K8s cluster with CAPIC, you require the following:
 
 * A machine image, containing pre-installed, matching versions of `kubeadm` and `kubelet`. The machine image can be built with [image-builder](https://github.com/kubernetes-sigs/image-builder) and needs to be available at the
-location where the machine will be created on. For more informations, [check the custom image guide](custom-image.md).
+location where the machine will be created on. For more information, [check the custom image guide](custom-image.md).
 
 * `clusterctl`, which you can download it from Cluster API (CAPI) [releases](https://github.com/kubernetes-sigs/cluster-api/releases) on GitHub.
 
