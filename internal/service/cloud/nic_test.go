@@ -43,7 +43,7 @@ func TestNICSuite(t *testing.T) {
 
 func (s *nicSuite) TestNICName() {
 	nicName := s.service.nicName(s.infraMachine)
-	expected := "k8s-nic-" + s.infraMachine.Name
+	expected := "nic-" + s.infraMachine.Name
 	s.Equal(expected, nicName)
 }
 
