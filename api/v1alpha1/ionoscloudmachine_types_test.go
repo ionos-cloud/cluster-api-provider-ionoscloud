@@ -357,11 +357,17 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 			Expect(m.Spec.FailoverIP).To(Equal(""))
 		})
-		It("should not allow setting an invalid IPv4 address", func() {
+		DescribeTable("should not allow setting invalid IPv4 addresses", func(ip string) {
 			m := defaultMachine()
-			m.Spec.FailoverIP = "203.0.113.256"
+			m.Spec.FailoverIP = ip
 			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
-		})
+		},
+			Entry("IPv4 out of range", "203.0.113.256"),
+			Entry("IPv4 missing a block", "203.0.113"),
+			Entry("IPv4 ends on a dot", "203.0.113.255."),
+			Entry("IPv4 two dots", "203..0.113.255"),
+			Entry("IPv4 using commas", "203,0,113,255"),
+		)
 		It("should require AUTO to be in capital letters", func() {
 			m := defaultMachine()
 			m.Spec.FailoverIP = "Auto"
