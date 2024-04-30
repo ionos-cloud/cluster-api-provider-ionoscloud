@@ -281,7 +281,11 @@ func (s *Service) retrieveFailoverIPForMachine(
 		return false, ms.ClusterScope.GetControlPlaneEndpoint().Host, nil
 	}
 
-	failoverIP = ms.IonosMachine.Spec.FailoverIP
+	failoverIP = ptr.Deref(ms.IonosMachine.Spec.FailoverIP, "")
+	if failoverIP == "" {
+		const errorMessage = "failover IP contains an empty string. Provide either a valid IP address or 'AUTO'"
+		return false, "", errors.New(errorMessage)
+	}
 
 	// AUTO means we have to reserve an IP address.
 	if failoverIP == infrav1.CloudResourceConfigAuto {
@@ -597,5 +601,5 @@ func (s *Service) patchLAN(ctx context.Context, ms *scope.Machine, lanID string,
 }
 
 func failoverRequired(ms *scope.Machine) bool {
-	return util.IsControlPlaneMachine(ms.Machine) || ms.IonosMachine.Spec.FailoverIP != ""
+	return util.IsControlPlaneMachine(ms.Machine) || ms.IonosMachine.Spec.FailoverIP != nil
 }
