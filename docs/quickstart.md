@@ -16,6 +16,7 @@ to the official [Cluster API book](https://cluster-api.sigs.k8s.io/).
   * [Access the cluster](#access-the-cluster)
   * [Installing a CNI](#installing-a-cni)
   * [Cleaning a cluster](#cleaning-a-cluster)
+  * [Custom templates](#custom-templates)
   * [Observability](#observability)
     * [Diagnostics](#diagnostics)
   * [Useful Resources](#useful-resources)
@@ -24,10 +25,10 @@ to the official [Cluster API book](https://cluster-api.sigs.k8s.io/).
 
 In order to deploy a K8s cluster with CAPIC, you require the following:
 
-* A machine image, containing pre-installed, matching versions of `kubeadm` and kubelet. The machine image can be built with [image-builder](https://github.com/kubernetes-sigs/image-builder) and needs to be available at the
+* A machine image, containing pre-installed, matching versions of `kubeadm` and `kubelet`. The machine image can be built with [image-builder](https://github.com/kubernetes-sigs/image-builder) and needs to be available at the
 location where the machine will be created on. For more informations, [check the custom image guide](custom-image.md).
 
-* clusterctl, which you can download it from Cluster API (CAPI) [releases](https://github.com/kubernetes-sigs/cluster-api/releases) on GitHub.
+* `clusterctl`, which you can download it from Cluster API (CAPI) [releases](https://github.com/kubernetes-sigs/cluster-api/releases) on GitHub.
 
 * A Kubernetes cluster for running your CAPIC controller.
 
@@ -35,6 +36,10 @@ location where the machine will be created on. For more informations, [check the
 
 Before creating a Kubernetes cluster on IONOS Cloud, you must initialize a
 [management cluster](https://cluster-api.sigs.k8s.io/user/concepts#management-cluster) where CAPI and CAPIC controllers runs.
+
+```sh
+clusterctl init --infrastructure=ionoscloud
+```
 
 ### Environment variables
 
@@ -93,20 +98,20 @@ would be Debian 12's `ca-certificates` package.
 
 ### Create a workload cluster
 
-In order to create a new cluster, you need to generate a cluster manifest with clusterctl and then apply it with kubectl.
+In order to create a new cluster, you need to generate a cluster manifest with `clusterctl` and then apply it with `kubectl`.
 
 ```sh
 # Make sure you have the required environment variables set
-$ source envfile
+source envfile
 # Generate a cluster manifest
-$ clusterctl generate cluster ionos-quickstart \
+clusterctl generate cluster ionos-quickstart \
   --infrastructure ionoscloud \
   --kubernetes-version v1.29.2 \
   --control-plane-machine-count 3 \
   --worker-machine-count 3 > cluster.yaml
 
 # Create the workload cluster by applying the manifest
-$ kubectl apply -f cluster.yaml
+kubectl apply -f cluster.yaml
 ```
 
 ### Check the status of the cluster
@@ -142,17 +147,23 @@ TODO(gfariasalves): Add instructions about installing a CNI or available flavour
 
 ### Cleaning a cluster
 
+```sh
 kubectl delete cluster ionos-quickstart
+```
+
+### Custom Templates
 
 If you need anything specific that requires a more complex setup, we recommend to use custom templates:
 
-$ clusterctl generate custom-cluster ionos-quickstart \
-    --infrastructure ionoscloud \
-    --kubernetes-version v1.27.8 \
-    --control-plane-machine-count 1 \
-    --worker-machine-count 3 \
-    --from ~/workspace/custom-cluster-template.yaml > custom-cluster.yaml
-    
+```sh
+clusterctl generate custom-cluster ionos-quickstart \
+  --infrastructure ionoscloud \
+  --kubernetes-version v1.27.8 \
+  --control-plane-machine-count 1 \
+  --worker-machine-count 3 \
+  --from ~/workspace/custom-cluster-template.yaml > custom-cluster.yaml
+```
+
 ### Observability
 
 #### Diagnostics
