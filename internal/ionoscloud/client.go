@@ -26,21 +26,27 @@ import (
 // Client is an interface for abstracting Cloud API SDK, making it possible to create mocks for testing purposes.
 type Client interface {
 	// CreateServer creates a new server with provided properties in the specified data center.
-	CreateServer(ctx context.Context, datacenterID string, properties sdk.ServerProperties, entities sdk.ServerEntities) (
-		*sdk.Server, string, error)
+	CreateServer(ctx context.Context, datacenterID string, properties sdk.ServerProperties,
+		entities sdk.ServerEntities) (*sdk.Server, string, error)
 	// ListServers returns a list with the servers in the specified data center.
 	ListServers(ctx context.Context, datacenterID string) (*sdk.Servers, error)
 	// GetServer returns the server that matches the provided serverID in the specified data center.
 	GetServer(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error)
 	// DeleteServer deletes the server that matches the provided serverID in the specified data center.
 	DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error)
-	// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request path.
+	// StartServer starts the server that matches the provided serverID in the specified data center.
+	// Returning the location and an error if starting the server fails.
+	StartServer(ctx context.Context, datacenterID, serverID string) (string, error)
+	// CreateLAN creates a new LAN with the provided properties in the specified data center,
+	// returning the request path.
 	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost) (string, error)
-	// PatchLAN patches the LAN that matches lanID in the specified data center with the provided properties, returning the request location.
+	// PatchLAN patches the LAN that matches lanID in the specified data center with the provided properties,
+	// returning the request location.
 	PatchLAN(ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties) (string, error)
 	// ListLANs returns a list of LANs in the specified data center.
 	ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error)
-	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request path.
+	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center,
+	// returning the request path.
 	DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error)
 	// ReserveIPBlock reserves an IP block with the provided properties in the specified location.
 	ReserveIPBlock(ctx context.Context, name, location string, size int32) (requestPath string, err error)

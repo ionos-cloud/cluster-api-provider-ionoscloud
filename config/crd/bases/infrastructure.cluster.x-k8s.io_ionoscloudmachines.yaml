@@ -14,7 +14,26 @@ spec:
     singular: ionoscloudmachine
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Cluster
+      jsonPath: .metadata.labels['cluster\.x-k8s\.io/cluster-name']
+      name: Cluster
+      type: string
+    - description: Machine is ready
+      jsonPath: .status.ready
+      name: Ready
+      type: string
+    - jsonPath: .status.machineNetworkInfo.nicInfo[*].ipv4Addresses
+      name: IPv4 Addresses
+      type: string
+    - jsonPath: .status.machineNetworkInfo.nicInfo[*].networkID
+      name: Machine Connected Networks
+      type: string
+    - jsonPath: .status.machineNetworkInfo.nicInfo[*].ipv6Addresses
+      name: IPv6 Addresses
+      priority: 1
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: IonosCloudMachine is the Schema for the ionoscloudmachines API.
@@ -44,7 +63,7 @@ spec:
                   AdditionalNetworks defines the additional network configurations for the VM.
                   NOTE(lubedacht): We currently only support networks with DHCP enabled.
                 items:
-                  description: Network contains a network config.
+                  description: Network contains the config for additional LANs.
                   properties:
                     networkID:
                       description: |-
@@ -108,21 +127,13 @@ spec:
                   image:
                     description: Image is the image to use for the VM.
                     properties:
-                      aliases:
-                        description: |-
-                          Aliases is a list of image aliases to use for the VM.
-                          TODO(lubedacht): Needs implementation.
-                        items:
-                          type: string
-                        type: array
                       id:
                         description: ID is the ID of the image to use for the VM.
+                        minLength: 1
                         type: string
+                    required:
+                    - id
                     type: object
-                    x-kubernetes-validations:
-                    - message: either id or aliases must be set
-                      rule: has(self.id) && self.id != '' || self.aliases.size() >
-                        0
                   name:
                     description: Name is the name of the volume
                     type: string
@@ -134,6 +145,20 @@ spec:
                 required:
                 - image
                 type: object
+              failoverIP:
+                description: |-
+                  FailoverIP can be set to enable failover for VMs in the same MachineDeployment.
+                  It can be either set to an already reserved IPv4 address, or it can be set to "AUTO"
+                  which will automatically reserve an IPv4 address for the Failover Group.
+
+
+                  If the machine is a control plane machine, this field will not be taken into account.
+                type: string
+                x-kubernetes-validations:
+                - message: failoverIP is immutable
+                  rule: self == oldSelf
+                - message: failoverIP must be either 'AUTO' or a valid IPv4 address
+                  rule: self == "" || self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")
               memoryMB:
                 default: 3072
                 description: |-
@@ -273,6 +298,47 @@ spec:
                   can be added as events to the IonosCloudMachine object and/or logged in the
                   controller's output.
                 type: string
+              machineNetworkInfo:
+                description: |-
+                  MachineNetworkInfo contains information about the network configuration of the VM.
+                  This information is only available after the VM has been provisioned.
+                properties:
+                  nicInfo:
+                    description: NICInfo holds information about the NICs, which are
+                      attached to the VM.
+                    items:
+                      description: NICInfo provides information about the NIC of the
+                        VM.
+                      properties:
+                        ipv4Addresses:
+                          description: IPv4Addresses contains the IPv4 addresses of
+                            the NIC.
+                          items:
+                            type: string
+                          type: array
+                        ipv6Addresses:
+                          description: IPv6Addresses contains the IPv6 addresses of
+                            the NIC.
+                          items:
+                            type: string
+                          type: array
+                        networkID:
+                          description: NetworkID is the ID of the LAN to which the
+                            NIC is connected.
+                          format: int32
+                          type: integer
+                        primary:
+                          description: Primary indicates whether the NIC is the primary
+                            NIC of the VM.
+                          type: boolean
+                      required:
+                      - ipv4Addresses
+                      - ipv6Addresses
+                      - networkID
+                      - primary
+                      type: object
+                    type: array
+                type: object
               ready:
                 description: Ready indicates the VM has been provisioned and is ready.
                 type: boolean

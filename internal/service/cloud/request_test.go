@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
@@ -113,7 +113,9 @@ func (s *getRequestStatusSuite) TestGetRequestStatus() {
 	s.Empty(message, messageEmptyText)
 }
 
-func (s *getRequestStatusSuite) mockCheckRequestStatusCall(requestURL string) *clienttest.MockClient_CheckRequestStatus_Call {
+func (s *getRequestStatusSuite) mockCheckRequestStatusCall(
+	requestURL string,
+) *clienttest.MockClient_CheckRequestStatus_Call {
 	return s.ionosClient.EXPECT().CheckRequestStatus(s.ctx, requestURL)
 }
 
@@ -130,7 +132,7 @@ func (s *getMatchingRequestSuite) examplePostRequest(href, status string) sdk.Re
 	opts := requestBuildOptions{
 		status:     status,
 		method:     http.MethodPost,
-		url:        fmt.Sprintf("%s/?depth=10", baseTestURL),
+		url:        baseTestURL + "/?depth=10",
 		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName(s.clusterScope.Cluster)),
 		href:       href,
 		targetID:   "1",
@@ -157,7 +159,7 @@ func (s *getMatchingRequestSuite) TestMatching() {
 
 	// req2 has a mismatch in its URL
 	req2 := s.examplePostRequest("req2", sdk.RequestStatusQueued)
-	*req2.Properties.Url = fmt.Sprintf("%s/action?depth=10", baseTestURL)
+	*req2.Properties.Url = baseTestURL + "/action?depth=10"
 
 	// req3 doesn't fulfill the matcher function
 	req3 := s.examplePostRequest("req3", sdk.RequestStatusQueued)

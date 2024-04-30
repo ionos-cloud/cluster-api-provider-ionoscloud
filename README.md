@@ -47,8 +47,6 @@ Managed Clusters follow their own [Kubernetes version support policy](https://do
 
 For more information on Kubernetes version support, see the [Cluster API book](https://cluster-api.sigs.k8s.io/reference/versions.html).
 
-------
-
 ## Documentation
 
 Documentation can be found in the `/docs` directory, and the [index is here](docs/README.md).

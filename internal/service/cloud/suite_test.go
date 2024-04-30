@@ -18,6 +18,9 @@ package cloud
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"path"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -32,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	clienttest "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -47,6 +50,8 @@ import (
 const (
 	// The expected endpoint IP.
 	exampleEndpointIP = "203.0.113.1"
+	// Used when we expect the worker node to implement failover.
+	exampleWorkerFailoverIP = "203.0.113.2"
 	// Used when we actually expect the endpoint IP but receive this instead.
 	exampleUnexpectedIP = "203.0.113.10"
 	// Used to test cases where a LAN already contains configurations with other IP addresses
@@ -153,7 +158,7 @@ func (s *ServiceTestSuite) SetupTest() {
 				SizeGB:           20,
 				AvailabilityZone: infrav1.AvailabilityZoneAuto,
 				Image: &infrav1.ImageSpec{
-					ID: ptr.To("3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e"),
+					ID: "3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e",
 				},
 			},
 		},
@@ -202,7 +207,7 @@ type requestBuildOptions struct {
 	targetType sdk.Type
 }
 
-func (s *ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request {
+func (*ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request {
 	req := sdk.Request{
 		Id: &opts.requestID,
 		Metadata: &sdk.RequestMetadata{
@@ -251,4 +256,72 @@ func (s *ServiceTestSuite) defaultServer(m *infrav1.IonosCloudMachine, ips ...st
 			},
 		},
 	}
+}
+
+func (s *ServiceTestSuite) buildIPBlockRequestWithName(name, status, method, id string) sdk.Request {
+	opts := requestBuildOptions{
+		status:     status,
+		method:     method,
+		url:        ipBlocksPath,
+		href:       exampleRequestPath,
+		targetType: sdk.IPBLOCK,
+	}
+	if id != "" {
+		opts.url = path.Join(opts.url, id)
+		opts.targetID = id
+	}
+	if method == http.MethodPost {
+		opts.body = fmt.Sprintf(`{"properties":{"location":"%s","name":"%s","size":1}}`,
+			s.clusterScope.Location(), name)
+	}
+	return s.exampleRequest(opts)
+}
+
+func (s *ServiceTestSuite) exampleLAN() sdk.Lan {
+	return sdk.Lan{
+		Id: ptr.To(exampleLANID),
+		Properties: &sdk.LanProperties{
+			Name: ptr.To(s.service.lanName(s.clusterScope.Cluster)),
+		},
+		Metadata: &sdk.DatacenterElementMetadata{
+			State: ptr.To(sdk.Available),
+		},
+		Entities: &sdk.LanEntities{
+			Nics: &sdk.LanNics{
+				Items: &[]sdk.Nic{},
+			},
+		},
+	}
+}
+
+func (s *ServiceTestSuite) mockGetIPBlocksRequestsPostCall() *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, ipBlocksPath)
+}
+
+func (s *ServiceTestSuite) mockGetIPBlocksRequestsDeleteCall(id string) *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, path.Join(ipBlocksPath, id))
+}
+
+func (s *ServiceTestSuite) mockListIPBlocksCall() *clienttest.MockClient_ListIPBlocks_Call {
+	return s.ionosClient.EXPECT().ListIPBlocks(s.ctx)
+}
+
+func (s *ServiceTestSuite) mockGetIPBlockByIDCall(ipBlockID string) *clienttest.MockClient_GetIPBlock_Call {
+	return s.ionosClient.EXPECT().GetIPBlock(s.ctx, ipBlockID)
+}
+
+func (s *ServiceTestSuite) mockReserveIPBlockCall(name, location string) *clienttest.MockClient_ReserveIPBlock_Call {
+	return s.ionosClient.EXPECT().ReserveIPBlock(s.ctx, name, location, int32(1))
+}
+
+func (s *ServiceTestSuite) mockWaitForRequestCall(location string) *clienttest.MockClient_WaitForRequest_Call {
+	return s.ionosClient.EXPECT().WaitForRequest(s.ctx, location)
+}
+
+func (s *ServiceTestSuite) mockGetServerCall(serverID string) *clienttest.MockClient_GetServer_Call {
+	return s.ionosClient.EXPECT().GetServer(s.ctx, s.machineScope.DatacenterID(), serverID)
+}
+
+func (s *ServiceTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
+	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
 }

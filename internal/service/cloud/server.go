@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"path"
 	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -46,8 +45,8 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 	secret, err := ms.GetBootstrapDataSecret(ctx, s.logger)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// secret not available yet
-			// just log the error and resume reconciliation.
+			// Secret not available yet.
+			// Just log the error and resume reconciliation.
 			log.Info("Bootstrap secret not available yet", "error", err)
 			return false, nil
 		}
@@ -66,10 +65,24 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 	if server != nil {
 		// Server is available
 
-		if !s.isServerAvailable(server) {
-			// server is still provisioning, checking again later
+		if !s.isServerAvailable(ms, server) {
+			// Server is still provisioning, checking again later
 			return true, nil
 		}
+
+		// Attach the IPs from all NICs of the server to the status
+		netInfo := &infrav1.MachineNetworkInfo{NICInfo: make([]infrav1.NICInfo, 0)}
+
+		for _, nic := range ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{}) {
+			netInfo.NICInfo = append(netInfo.NICInfo, infrav1.NICInfo{
+				IPv4Addresses: ptr.Deref(nic.GetProperties().GetIps(), []string{}),
+				IPv6Addresses: ptr.Deref(nic.GetProperties().GetIpv6Ips(), []string{}),
+				NetworkID:     ptr.Deref(nic.GetProperties().GetLan(), 0),
+				Primary:       s.isPrimaryNIC(ms.IonosMachine, &nic),
+			})
+		}
+
+		ms.IonosMachine.Status.MachineNetworkInfo = netInfo
 
 		log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
 		// server exists and is available.
@@ -133,24 +146,26 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 }
 
 // FinalizeMachineProvisioning marks the machine as provisioned.
-func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
+func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
 	ms.IonosMachine.Status.Ready = true
 	conditions.MarkTrue(ms.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil
 }
 
-func (s *Service) isServerAvailable(server *sdk.Server) bool {
+func (s *Service) isServerAvailable(ms *scope.Machine, server *sdk.Server) bool {
 	log := s.logger.WithName("isServerAvailable")
 	if state := getState(server); !isAvailable(state) {
 		log.Info("Server is not available yet", "state", state)
 		return false
 	}
 
-	// TODO ensure server is started
 	if vmState := getVMState(server); !isRunning(vmState) {
-		log.Info("Server is not running yet", "state", vmState)
-		// TODO start server
-		return false
+		err := s.startServer(context.Background(), ms.DatacenterID(), *server.Id)
+		if err != nil {
+			log.Error(err, "Failed to start the server")
+			return false
+		}
+		return true
 	}
 
 	return true
@@ -226,6 +241,20 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, serverID 
 	return nil
 }
 
+func (s *Service) startServer(ctx context.Context, datacenterID, serverID string) error {
+	log := s.logger.WithName("startServer")
+
+	log.V(4).Info("Starting server", "serverID", serverID)
+	requestLocation, err := s.ionosClient.StartServer(ctx, datacenterID, serverID)
+	if err != nil {
+		return fmt.Errorf("failed to request server start: %w", err)
+	}
+
+	log.Info("Successfully requested for server start", "location", requestLocation)
+	log.V(4).Info("Done starting server")
+	return nil
+}
+
 func (s *Service) getLatestServerCreationRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
 	return getMatchingRequest(
 		ctx,
@@ -236,7 +265,9 @@ func (s *Service) getLatestServerCreationRequest(ctx context.Context, ms *scope.
 	)
 }
 
-func (s *Service) getLatestServerDeletionRequest(ctx context.Context, datacenterID, serverID string) (*requestInfo, error) {
+func (s *Service) getLatestServerDeletionRequest(
+	ctx context.Context, datacenterID, serverID string,
+) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Server](
 		ctx,
 		s,
@@ -297,7 +328,9 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 }
 
 // buildServerProperties returns the server properties for the expected cloud server resource.
-func (s *Service) buildServerProperties(ms *scope.Machine, machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerProperties {
+func (s *Service) buildServerProperties(
+	ms *scope.Machine, machineSpec *infrav1.IonosCloudMachineSpec,
+) sdk.ServerProperties {
 	props := sdk.ServerProperties{
 		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
 		Cores:            &machineSpec.NumCores,
@@ -328,10 +361,8 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		},
 	}
 
-	bootVolume.Properties.ImageAlias = ptr.To(strings.Join(machineSpec.Disk.Image.Aliases, ","))
-	if machineSpec.Disk.Image.ID != nil {
-		bootVolume.Properties.Image = machineSpec.Disk.Image.ID
-		bootVolume.Properties.ImageAlias = nil // we don't want to use the aliases if we have an ID provided
+	if machineSpec.Disk.Image.ID != "" {
+		bootVolume.Properties.Image = &machineSpec.Disk.Image.ID
 	}
 
 	serverVolumes := sdk.AttachedVolumes{
@@ -352,13 +383,15 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		},
 	}
 
-	// Attach server to additional LANs
+	// Attach server to additional LANs if any.
 	items := *serverNICs.Items
+
 	for _, nic := range ms.IonosMachine.Spec.AdditionalNetworks {
 		items = append(items, sdk.Nic{Properties: &sdk.NicProperties{
 			Lan: &nic.NetworkID,
 		}})
 	}
+
 	serverNICs.Items = &items
 
 	return sdk.ServerEntities{
@@ -381,18 +414,18 @@ func (s *Service) renderUserData(ms *scope.Machine, input string) string {
 	return base64.StdEncoding.EncodeToString([]byte(input))
 }
 
-func (s *Service) serversURL(datacenterID string) string {
+func (*Service) serversURL(datacenterID string) string {
 	return path.Join("datacenters", datacenterID, "servers")
 }
 
 // serverName returns a formatted name for the expected cloud server resource.
-func (s *Service) serverName(m *infrav1.IonosCloudMachine) string {
+func (*Service) serverName(m *infrav1.IonosCloudMachine) string {
 	return fmt.Sprintf(
 		"k8s-%s-%s",
 		m.Namespace,
 		m.Name)
 }
 
-func (s *Service) volumeName(m *infrav1.IonosCloudMachine) string {
+func (*Service) volumeName(m *infrav1.IonosCloudMachine) string {
 	return fmt.Sprintf("k8s-vol-%s-%s", m.Namespace, m.Name)
 }

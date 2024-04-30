@@ -64,6 +64,8 @@ lint: ## Run lint.
 
 .PHONY: lint-fix
 lint-fix: ## Fix linter problems.
+	# gci collides with gofumpt. But if we run gci before gofumpt, this will solve the issue.
+	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml --enable-only gci --fix
 	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml --fix
 
 .PHONY: vet
@@ -71,7 +73,7 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: unit-test lint-fix vet integration-test ## Run tests.
+test: unit-test vet integration-test ## Run tests.
 
 .PHONY: unit-test
 unit-test: generate mocks ## Run unit tests.
@@ -222,3 +224,28 @@ verify-gen: manifests generate ## Verify that the generated files are up to date
 
 .PHONY: verify
 verify: verify-gen verify-tidy ## Run all verifications.
+
+
+##@ Release
+## --------------------------------------
+## Release
+## --------------------------------------
+
+REPOSITORY ?= ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud
+RELEASE_DIR ?= out
+RELEASE_VERSION ?= v0.0.1
+
+.PHONY: release-manifests
+RELEASE_MANIFEST_SOURCE_BASE ?= config/default
+release-manifests: $(KUSTOMIZE) ## Create kustomized release manifest in $RELEASE_DIR (defaults to out).
+	@mkdir -p $(RELEASE_DIR)
+	cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
+	## change the image tag to the release version
+	cd $(RELEASE_MANIFEST_SOURCE_BASE) && $(KUSTOMIZE) edit set image $(REPOSITORY):$(RELEASE_VERSION)
+	## generate the release manifest
+	$(KUSTOMIZE) build $(RELEASE_MANIFEST_SOURCE_BASE) > $(RELEASE_DIR)/infrastructure-components.yaml
+
+.PHONY: release-templates
+release-templates: ## Generate release templates
+	@mkdir -p $(RELEASE_DIR)
+	cp templates/cluster-template*.yaml $(RELEASE_DIR)/

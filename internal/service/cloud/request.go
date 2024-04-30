@@ -32,7 +32,9 @@ import (
 
 // GetRequestStatus returns the status of a request for a given request URL.
 // If the request contains a message, it is also returned.
-func (s *Service) GetRequestStatus(ctx context.Context, requestURL string) (requestStatus string, statusMessage string, err error) {
+func (s *Service) GetRequestStatus(
+	ctx context.Context, requestURL string,
+) (requestStatus string, statusMessage string, err error) {
 	status, err := s.ionosClient.CheckRequestStatus(ctx, requestURL)
 	if err != nil {
 		return "", "", fmt.Errorf("unable to retrieve the request status: %w", err)
@@ -81,7 +83,7 @@ type nameHolder interface {
 // The sdk resources provide a Properties field which in turn contains a Name field.
 // A compile time check will validate, if the generic types fulfill the interface constraints.
 func matchByName[T propertiesHolder[U], U nameHolder](name string) matcherFunc[T] {
-	return func(resource T, request sdk.Request) bool {
+	return func(resource T, _ sdk.Request) bool {
 		properties := resource.GetProperties()
 		if util.IsNil(properties) {
 			return false
