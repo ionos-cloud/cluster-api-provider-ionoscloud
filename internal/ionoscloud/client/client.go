@@ -19,8 +19,11 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"time"
 
@@ -43,12 +46,27 @@ type IonosCloudClient struct {
 var _ ionoscloud.Client = &IonosCloudClient{}
 
 // NewClient instantiates a usable IonosCloudClient.
-// The client needs a token to work. Basic auth is not be supported.
-func NewClient(token, apiURL string) (*IonosCloudClient, error) {
+// The client needs a token to work. Basic auth is not supported.
+// Passing a CA bundle is optional.
+func NewClient(token, apiURL string, caBundle []byte) (*IonosCloudClient, error) {
 	if token == "" {
 		return nil, errors.New("token must be set")
 	}
 	cfg := sdk.NewConfiguration("", "", token, apiURL)
+
+	if len(caBundle) > 0 {
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caBundle) {
+			return nil, errors.New("failed to read trusted CA certificates bundle")
+		}
+
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.TLSClientConfig = &tls.Config{ //#nosec G402 # Use Go's default MinVersion
+			RootCAs: caCertPool,
+		}
+		cfg.HTTPClient = &http.Client{Transport: transport}
+	}
+
 	apiClient := sdk.NewAPIClient(cfg)
 	return &IonosCloudClient{
 		API: apiClient,
@@ -177,7 +195,8 @@ func (c *IonosCloudClient) StartServer(ctx context.Context, datacenterID, server
 	return "", errLocationHeaderEmpty
 }
 
-// CreateLAN creates a new LAN with the provided properties in the specified data center, returning the request location.
+// CreateLAN creates a new LAN with the provided properties in the specified data center,
+// returning the request location.
 func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost,
 ) (string, error) {
 	if datacenterID == "" {
@@ -196,8 +215,11 @@ func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, p
 	return "", errLocationHeaderEmpty
 }
 
-// PatchLAN patches the LAN that matches lanID in the specified data center with the provided properties, returning the request location.
-func (c *IonosCloudClient) PatchLAN(ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties) (string, error) {
+// PatchLAN patches the LAN that matches lanID in the specified data center
+// with the provided properties, returning the request location.
+func (c *IonosCloudClient) PatchLAN(
+	ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties,
+) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
 	}
@@ -230,7 +252,8 @@ func (c *IonosCloudClient) ListLANs(ctx context.Context, datacenterID string) (*
 	return &lans, nil
 }
 
-// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center, returning the request location.
+// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center,
+// returning the request location.
 func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
@@ -250,7 +273,9 @@ func (c *IonosCloudClient) DeleteLAN(ctx context.Context, datacenterID, lanID st
 
 // ReserveIPBlock reserves an IP block with the provided properties in the specified location, returning the request
 // path.
-func (c *IonosCloudClient) ReserveIPBlock(ctx context.Context, name, location string, size int32) (requestPath string, err error) {
+func (c *IonosCloudClient) ReserveIPBlock(
+	ctx context.Context, name, location string, size int32,
+) (requestPath string, err error) {
 	if location == "" {
 		return "", errors.New("location must be set")
 	}
@@ -378,7 +403,9 @@ func (c *IonosCloudClient) WaitForRequest(ctx context.Context, requestURL string
 }
 
 // PatchNIC updates the NIC identified by nicID with the provided properties.
-func (c *IonosCloudClient) PatchNIC(ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties) (string, error) {
+func (c *IonosCloudClient) PatchNIC(
+	ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties,
+) (string, error) {
 	if err := validateNICParameters(datacenterID, serverID, nicID); err != nil {
 		return "", err
 	}

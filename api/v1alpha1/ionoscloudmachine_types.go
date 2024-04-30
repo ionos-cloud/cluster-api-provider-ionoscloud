@@ -47,6 +47,10 @@ const (
 	// WaitingForBootstrapDataReason (Severity=Info) indicates that the bootstrap provider has not yet finished
 	// creating the bootstrap data secret and store it in the Cluster API Machine.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
+
+	// CloudResourceConfigAuto is a constant to indicate that the cloud resource should be managed by the
+	// Cluster API provider implementation.
+	CloudResourceConfigAuto = "AUTO"
 )
 
 // VolumeDiskType specifies the type of  hard disk.
@@ -135,6 +139,16 @@ type IonosCloudMachineSpec struct {
 	// NOTE(lubedacht): We currently only support networks with DHCP enabled.
 	//+optional
 	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
+
+	// FailoverIP can be set to enable failover for VMs in the same MachineDeployment.
+	// It can be either set to an already reserved IPv4 address, or it can be set to "AUTO"
+	// which will automatically reserve an IPv4 address for the Failover Group.
+	//
+	// If the machine is a control plane machine, this field will not be taken into account.
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="failoverIP is immutable"
+	//+kubebuilder:validation:XValidation:rule=`self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")`,message="failoverIP must be either 'AUTO' or a valid IPv4 address"
+	//+optional
+	FailoverIP *string `json:"failoverIP,omitempty"`
 }
 
 // Networks contains a list of additional LAN IDs

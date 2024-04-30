@@ -95,7 +95,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				m.Spec.ProviderID = &providerID
 				Expect(m.ExtractServerID()).To(Equal(want))
 			},
-				Entry("valid ID", "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
+				Entry("valid ID", "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
+					"ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
 				Entry("invalid provider name", "ionoscloud://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
 				Entry("typo in provider name", "ions://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
 				Entry("no provider name", "://ee090ff2-1eef-48ec-a246-a51a33aa4f3a", ""),
@@ -338,18 +339,64 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 		})
 	})
-
+	Context("FailoverIP", func() {
+		It("should allow setting AUTO as the value", func() {
+			m := defaultMachine()
+			m.Spec.FailoverIP = ptr.To(CloudResourceConfigAuto)
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.FailoverIP).To(Equal(ptr.To(CloudResourceConfigAuto)))
+		})
+		It("should allow setting a valid IPv4 address", func() {
+			m := defaultMachine()
+			m.Spec.FailoverIP = ptr.To("203.0.113.1")
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.FailoverIP).To(Equal(ptr.To("203.0.113.1")))
+		})
+		It("should allow setting null", func() {
+			m := defaultMachine()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.FailoverIP).To(BeNil())
+		})
+		DescribeTable("should not allow setting invalid IPv4 addresses", func(ip string) {
+			m := defaultMachine()
+			m.Spec.FailoverIP = &ip
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		},
+			Entry("IPv4 out of range", "203.0.113.256"),
+			Entry("IPv4 missing a block", "203.0.113"),
+			Entry("IPv4 ends on a dot", "203.0.113.255."),
+			Entry("IPv4 two dots", "203..0.113.255"),
+			Entry("IPv4 using commas", "203,0,113,255"),
+		)
+		It("should require AUTO to be in capital letters", func() {
+			m := defaultMachine()
+			m.Spec.FailoverIP = ptr.To("Auto")
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+		It("should be immutable", func() {
+			m := defaultMachine()
+			m.Spec.FailoverIP = ptr.To(CloudResourceConfigAuto)
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.FailoverIP).To(Equal(ptr.To(CloudResourceConfigAuto)))
+			m.Spec.FailoverIP = ptr.To("127.0.0.1")
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+			m.Spec.FailoverIP = ptr.To("")
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+		})
+	})
 	Context("Conditions", func() {
 		It("should correctly set and get the conditions", func() {
 			m := defaultMachine()
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+			Expect(k8sClient.Get(
+				context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			// Calls SetConditions with required fields
 			conditions.MarkTrue(m, MachineProvisionedCondition)
 
 			Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
-			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+			Expect(k8sClient.Get(context.Background(),
+				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			machineConditions := m.GetConditions()
 			Expect(machineConditions).To(HaveLen(1))
@@ -361,7 +408,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		It("should correctly set and get the status", func() {
 			m := defaultMachine()
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+			Expect(k8sClient.Get(context.Background(),
+				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			m.Status.Ready = true
 			conditions.MarkTrue(m, MachineProvisionedCondition)
@@ -387,7 +435,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			want := *m.DeepCopy()
 
 			Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
-			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
+			Expect(k8sClient.Get(context.Background(),
+				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			// Gomega matcher seems to have issues with comparing the dates.
 			diff := cmp.Diff(want.Status, m.Status)

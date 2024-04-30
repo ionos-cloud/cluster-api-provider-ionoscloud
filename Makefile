@@ -64,6 +64,8 @@ lint: ## Run lint.
 
 .PHONY: lint-fix
 lint-fix: ## Fix linter problems.
+	# gci collides with gofumpt. But if we run gci before gofumpt, this will solve the issue.
+	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml --enable-only gci --fix
 	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml --fix
 
 .PHONY: vet
@@ -71,7 +73,7 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: unit-test lint-fix vet integration-test ## Run tests.
+test: unit-test vet integration-test ## Run tests.
 
 .PHONY: unit-test
 unit-test: generate mocks ## Run unit tests.

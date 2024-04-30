@@ -45,8 +45,8 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 	secret, err := ms.GetBootstrapDataSecret(ctx, s.logger)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// secret not available yet
-			// just log the error and resume reconciliation.
+			// Secret not available yet.
+			// Just log the error and resume reconciliation.
 			log.Info("Bootstrap secret not available yet", "error", err)
 			return false, nil
 		}
@@ -67,7 +67,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 		log.V(4).Info("No server was found. Creating new server")
 		if err := s.createServer(ctx, secret, ms); err != nil {
 			return false, err
-		}
+    }
 		log.V(4).Info("Successfully initiated server creation")
 		return true, nil
 	}
@@ -141,7 +141,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 }
 
 // FinalizeMachineProvisioning marks the machine as provisioned.
-func (s *Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
+func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
 	ms.IonosMachine.Status.Ready = true
 	conditions.MarkTrue(ms.IonosMachine, infrav1.MachineProvisionedCondition)
 	return false, nil
@@ -222,7 +222,7 @@ func (s *Service) getServer(ctx context.Context, ms *scope.Machine) (*sdk.Server
 	items := ptr.Deref(serverList.Items, []sdk.Server{})
 	// find servers with the expected name
 	for _, server := range items {
-		if server.HasProperties() && *server.Properties.Name == s.serverName(ms.IonosMachine) {
+		if server.HasProperties() && *server.Properties.Name == ms.IonosMachine.Name {
 			// if the server was found, we set the provider ID and return it
 			ms.SetProviderID(ptr.Deref(server.Id, ""))
 			return &server, nil
@@ -271,11 +271,13 @@ func (s *Service) getLatestServerCreationRequest(ctx context.Context, ms *scope.
 		s,
 		http.MethodPost,
 		path.Join("datacenters", ms.DatacenterID(), "servers"),
-		matchByName[*sdk.Server, *sdk.ServerProperties](s.serverName(ms.IonosMachine)),
+		matchByName[*sdk.Server, *sdk.ServerProperties](ms.IonosMachine.Name),
 	)
 }
 
-func (s *Service) getLatestServerDeletionRequest(ctx context.Context, datacenterID, serverID string) (*requestInfo, error) {
+func (s *Service) getLatestServerDeletionRequest(
+	ctx context.Context, datacenterID, serverID string,
+) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Server](
 		ctx,
 		s,
@@ -336,11 +338,13 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 }
 
 // buildServerProperties returns the server properties for the expected cloud server resource.
-func (s *Service) buildServerProperties(ms *scope.Machine, machineSpec *infrav1.IonosCloudMachineSpec) sdk.ServerProperties {
+func (*Service) buildServerProperties(
+	ms *scope.Machine, machineSpec *infrav1.IonosCloudMachineSpec,
+) sdk.ServerProperties {
 	props := sdk.ServerProperties{
 		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
 		Cores:            &machineSpec.NumCores,
-		Name:             ptr.To(s.serverName(ms.IonosMachine)),
+		Name:             ptr.To(ms.IonosMachine.Name),
 		Ram:              &machineSpec.MemoryMB,
 		CpuFamily:        machineSpec.CPUFamily,
 	}
@@ -406,32 +410,21 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	}
 }
 
-func (s *Service) renderUserData(ms *scope.Machine, input string) string {
-	// TODO(lubedacht) update user data to include needed information
-	// 	VNC and hostname
-
+func (*Service) renderUserData(ms *scope.Machine, input string) string {
 	const bootCmdFormat = `bootcmd:
   - echo %[1]s > /etc/hostname
   - hostname %[1]s
 `
-	bootCmdString := fmt.Sprintf(bootCmdFormat, s.serverName(ms.IonosMachine))
+	bootCmdString := fmt.Sprintf(bootCmdFormat, ms.IonosMachine.Name)
 	input = fmt.Sprintf("%s\n%s", input, bootCmdString)
 
 	return base64.StdEncoding.EncodeToString([]byte(input))
 }
 
-func (s *Service) serversURL(datacenterID string) string {
+func (*Service) serversURL(datacenterID string) string {
 	return path.Join("datacenters", datacenterID, "servers")
 }
 
-// serverName returns a formatted name for the expected cloud server resource.
-func (s *Service) serverName(m *infrav1.IonosCloudMachine) string {
-	return fmt.Sprintf(
-		"k8s-%s-%s",
-		m.Namespace,
-		m.Name)
-}
-
-func (s *Service) volumeName(m *infrav1.IonosCloudMachine) string {
-	return fmt.Sprintf("k8s-vol-%s-%s", m.Namespace, m.Name)
+func (*Service) volumeName(m *infrav1.IonosCloudMachine) string {
+	return "vol-" + m.Name
 }

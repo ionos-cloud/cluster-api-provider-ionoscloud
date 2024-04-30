@@ -30,12 +30,12 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-func (s *Service) nicURL(ms *scope.Machine, serverID, nicID string) string {
+func (*Service) nicURL(ms *scope.Machine, serverID, nicID string) string {
 	return path.Join("datacenters", ms.DatacenterID(), "servers", serverID, "nics", nicID)
 }
 
-// reconcileNICConfig ensures that the primary NIC contains the endpoint IP address.
-func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, endpointIP string) (*sdk.Nic, error) {
+// reconcileNICConfig ensures that the primary NIC contains the provided failover IP address.
+func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, failoverIP string) (*sdk.Nic, error) {
 	log := s.logger.WithName("reconcileNICConfig")
 
 	log.V(4).Info("Reconciling NIC config")
@@ -45,21 +45,21 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, end
 		return nil, err
 	}
 
-	// Find the primary NIC and ensure that the endpoint IP address is added to the NIC.
+	// Find the primary NIC and ensure that the failover IP address is added to the NIC.
 	nic, err := s.findPrimaryNIC(ms.IonosMachine, server)
 	if err != nil {
 		return nil, err
 	}
 
-	// if the NIC already contains the endpoint IP address, we can return
-	if nicHasIP(nic, endpointIP) {
-		log.V(4).Info("Primary NIC contains endpoint IP address. Reconcile successful.")
+	// If the NIC already contains the failover IP address, we can return
+	if nicHasIP(nic, failoverIP) {
+		log.V(4).Info("Primary NIC contains failover IP address. Reconcile successful.")
 		return nic, nil
 	}
 
 	serverID := ptr.Deref(server.GetId(), "")
 	nicID := ptr.Deref(nic.GetId(), "")
-	// check if there is a pending patch request for the NIC
+	// Check if there is a pending patch request for the NIC
 	ri, err := s.getLatestNICPatchRequest(ctx, ms, serverID, nicID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to check for pending NIC patch request: %w", err)
@@ -75,9 +75,9 @@ func (s *Service) reconcileNICConfig(ctx context.Context, ms *scope.Machine, end
 		return nic, nil
 	}
 
-	log.V(4).Info("Unable to find endpoint IP address in primary NIC. Patching NIC.")
+	log.V(4).Info("Unable to find failover IP address in primary NIC. Patching NIC.")
 	nicIPs := ptr.Deref(nic.GetProperties().GetIps(), []string{})
-	nicIPs = append(nicIPs, endpointIP)
+	nicIPs = append(nicIPs, failoverIP)
 
 	if err := s.patchNIC(ctx, ms, serverID, nic, sdk.NicProperties{Ips: &nicIPs}); err != nil {
 		return nil, err
@@ -110,7 +110,9 @@ func (s *Service) isPrimaryNIC(m *infrav1.IonosCloudMachine, nic *sdk.Nic) bool 
 	return false
 }
 
-func (s *Service) patchNIC(ctx context.Context, ms *scope.Machine, serverID string, nic *sdk.Nic, props sdk.NicProperties) error {
+func (s *Service) patchNIC(
+	ctx context.Context, ms *scope.Machine, serverID string, nic *sdk.Nic, props sdk.NicProperties,
+) error {
 	log := s.logger.WithName("patchNIC")
 
 	nicID := ptr.Deref(nic.GetId(), "")
@@ -121,7 +123,7 @@ func (s *Service) patchNIC(ctx context.Context, ms *scope.Machine, serverID stri
 		return fmt.Errorf("failed to patch NIC %s: %w", nicID, err)
 	}
 
-	// set the current request in case the WaitForRequest function fails.
+	// Set the current request in case the WaitForRequest function fails.
 	ms.IonosMachine.SetCurrentRequest(http.MethodPatch, sdk.RequestStatusQueued, location)
 	log.V(4).Info("Successfully patched NIC", "location", location)
 	// In this case, we want to wait for the request to be finished as we need to configure the
@@ -129,7 +131,9 @@ func (s *Service) patchNIC(ctx context.Context, ms *scope.Machine, serverID stri
 	return s.ionosClient.WaitForRequest(ctx, location)
 }
 
-func (s *Service) getLatestNICPatchRequest(ctx context.Context, ms *scope.Machine, serverID string, nicID string) (*requestInfo, error) {
+func (s *Service) getLatestNICPatchRequest(
+	ctx context.Context, ms *scope.Machine, serverID string, nicID string,
+) (*requestInfo, error) {
 	return getMatchingRequest[sdk.Nic](
 		ctx,
 		s,
@@ -144,6 +148,6 @@ func nicHasIP(nic *sdk.Nic, expectedIP string) bool {
 	return slices.Contains(ips, expectedIP)
 }
 
-func (s *Service) nicName(m *infrav1.IonosCloudMachine) string {
-	return fmt.Sprintf("k8s-nic-%s-%s", m.Namespace, m.Name)
+func (*Service) nicName(m *infrav1.IonosCloudMachine) string {
+	return "nic-" + m.Name
 }

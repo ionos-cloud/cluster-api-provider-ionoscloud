@@ -127,7 +127,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 	}
 
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("could not create machine service")
+		return ctrl.Result{}, errors.New("could not create machine service")
 	}
 	if !ionosCloudMachine.ObjectMeta.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, machineScope, cloudService)
@@ -136,7 +136,9 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 	return r.reconcileNormal(ctx, cloudService, machineScope)
 }
 
-func (r *IonosCloudMachineReconciler) reconcileNormal(ctx context.Context, cloudService *cloud.Service, machineScope *scope.Machine) (ctrl.Result, error) {
+func (r *IonosCloudMachineReconciler) reconcileNormal(
+	ctx context.Context, cloudService *cloud.Service, machineScope *scope.Machine,
+) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(4).Info("Reconciling IonosCloudMachine")
 
@@ -192,7 +194,9 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(ctx context.Context, cloud
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.Machine, cloudService *cloud.Service) (ctrl.Result, error) {
+func (r *IonosCloudMachineReconciler) reconcileDelete(
+	ctx context.Context, machineScope *scope.Machine, cloudService *cloud.Service,
+) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
@@ -221,6 +225,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machi
 		{"ReconcileIPFailoverDeletion", cloudService.ReconcileIPFailoverDeletion},
 		{"ReconcileServerDeletion", cloudService.ReconcileServerDeletion},
 		{"ReconcileLANDeletion", cloudService.ReconcileLANDeletion},
+		{"ReconcileFailoverIPBlockDeletion", cloudService.ReconcileFailoverIPBlockDeletion},
 	}
 
 	for _, step := range reconcileSequence {
@@ -244,7 +249,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(ctx context.Context, machi
 //   - Queued, Running => Requeue the current request
 //   - Failed => Log the error and continue also apply the same logic as in Done.
 //   - Done => Clear request from the status and continue reconciliation.
-func (r *IonosCloudMachineReconciler) checkRequestStates(
+func (*IonosCloudMachineReconciler) checkRequestStates(
 	ctx context.Context,
 	machineScope *scope.Machine,
 	cloudService *cloud.Service,
@@ -288,7 +293,7 @@ func (r *IonosCloudMachineReconciler) checkRequestStates(
 	return requeue, retErr
 }
 
-func (r *IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
+func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
 	log := ctrl.LoggerFrom(ctx)
 	// Make sure the infrastructure is ready.
 	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
@@ -324,7 +329,8 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&infrav1.IonosCloudMachine{}).
 		Watches(
 			&clusterv1.Machine{},
-			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind(infrav1.IonosCloudMachineType)))).
+			handler.EnqueueRequestsFromMapFunc(
+				util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind(infrav1.IonosCloudMachineType)))).
 		Complete(reconcile.AsReconciler[*infrav1.IonosCloudMachine](r.Client, r))
 }
 
