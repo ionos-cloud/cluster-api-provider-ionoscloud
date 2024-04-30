@@ -4,23 +4,6 @@ This is a guide on how to use the Cluster API Provider for IONOS Cloud (CAPIC) t
 on IONOS Cloud. To learn more about the Cluster API, please refer 
 to the official [Cluster API book](https://cluster-api.sigs.k8s.io/).
 
-## Table of Contents
-
-* [Usage](#usage)
-  * [Dependencies](#dependencies)
-  * [Initialize the management cluster](#initialize-the-management-cluster)
-  * [Environment variables](#environment-variables)
-  * [Credential Secret Structure](#credential-secret-structure)
-  * [Create a workload cluster](#create-a-workload-cluster)
-  * [Check the status of the cluster](#check-the-status-of-the-cluster)
-  * [Access the cluster](#access-the-cluster)
-  * [Installing a CNI](#installing-a-cni)
-  * [Cleaning a cluster](#cleaning-a-cluster)
-  * [Custom templates](#custom-templates)
-  * [Observability](#observability)
-    * [Diagnostics](#diagnostics)
-  * [Useful Resources](#useful-resources)
-
 ## Dependencies
 
 In order to deploy a K8s cluster with CAPIC, you require the following:
