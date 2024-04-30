@@ -67,7 +67,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 		log.V(4).Info("No server was found. Creating new server")
 		if err := s.createServer(ctx, secret, ms); err != nil {
 			return false, err
-    }
+		}
 		log.V(4).Info("Successfully initiated server creation")
 		return true, nil
 	}

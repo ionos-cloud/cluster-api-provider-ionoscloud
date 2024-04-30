@@ -135,7 +135,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
 				State: ptr.To(sdk.Available),
 			},
 			Properties: &sdk.ServerProperties{
-				Name:    ptr.To(s.service.serverName(s.infraMachine)),
+				Name:    ptr.To(s.infraMachine.Name),
 				VmState: ptr.To("SHUTOFF"),
 			},
 		},
