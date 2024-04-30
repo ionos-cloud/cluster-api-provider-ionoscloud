@@ -37,7 +37,7 @@ import (
 // lanName returns the name of the cluster LAN.
 func (*Service) lanName(c *clusterv1.Cluster) string {
 	return fmt.Sprintf(
-		"k8s-lan-%s-%s",
+		"lan-%s-%s",
 		c.Namespace,
 		c.Name)
 }

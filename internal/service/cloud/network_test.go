@@ -47,7 +47,7 @@ func TestLANSuite(t *testing.T) {
 }
 
 func (s *lanSuite) TestNetworkLANName() {
-	s.Equal("k8s-lan-default-test-cluster", s.service.lanName(s.clusterScope.Cluster))
+	s.Equal("lan-default-test-cluster", s.service.lanName(s.clusterScope.Cluster))
 }
 
 func (s *lanSuite) TestLANURL() {
