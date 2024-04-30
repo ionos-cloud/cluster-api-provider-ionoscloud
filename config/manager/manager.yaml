@@ -126,5 +126,3 @@ spec:
       protocol: TCP
       port: 8443
       targetPort: diagnostics
-
-

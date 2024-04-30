@@ -11,10 +11,7 @@ rules:
   indentation:
     spaces: consistent
     indent-sequences: consistent
-  # we can only choose from true or false. since we have files containing
-  # several documents, we explicitly require document-starts
-  document-start:
-    present: true
+    level: warning
   comments:
     min-spaces-from-content: 1
   # comments-indentation linting has unwanted edgecases:
