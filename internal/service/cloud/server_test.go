@@ -40,9 +40,10 @@ func TestServerSuite(t *testing.T) {
 	suite.Run(t, new(serverSuite))
 }
 
-func (s *serverSuite) TestServerName() {
-	serverName := s.service.serverName(s.infraMachine)
-	s.Equal("k8s-default-test-machine", serverName)
+func (s *serverSuite) TestVolumeName() {
+	volumeName := s.service.volumeName(s.infraMachine)
+	expected := "vol-" + s.infraMachine.Name
+	s.Equal(expected, volumeName)
 }
 
 func (s *serverSuite) TestReconcileServerNoBootstrapSecret() {
@@ -74,7 +75,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateBusy() {
 				State: ptr.To(sdk.Busy),
 			},
 			Properties: &sdk.ServerProperties{
-				Name: ptr.To(s.service.serverName(s.infraMachine)),
+				Name: ptr.To(s.infraMachine.Name),
 			},
 		},
 	}}, nil).Once()
@@ -93,7 +94,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 				State: ptr.To(sdk.Available),
 			},
 			Properties: &sdk.ServerProperties{
-				Name:    ptr.To(s.service.serverName(s.infraMachine)),
+				Name:    ptr.To(s.infraMachine.Name),
 				VmState: ptr.To("RUNNING"),
 			},
 			Entities: &sdk.ServerEntities{
@@ -134,7 +135,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
 				State: ptr.To(sdk.Available),
 			},
 			Properties: &sdk.ServerProperties{
-				Name:    ptr.To(s.service.serverName(s.infraMachine)),
+				Name:    ptr.To(s.infraMachine.Name),
 				VmState: ptr.To(sdk.Available),
 			},
 		},
@@ -314,12 +315,11 @@ func (s *serverSuite) TestGetServerWithProviderIDNotFound() {
 }
 
 func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
-	serverName := s.service.serverName(s.infraMachine)
 	s.machineScope.IonosMachine.Spec.ProviderID = nil
 	s.mockListServersCall().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
 			Properties: &sdk.ServerProperties{
-				Name: ptr.To(serverName),
+				Name: ptr.To(s.infraMachine.Name),
 			},
 		},
 	}}, nil)
@@ -396,7 +396,7 @@ func (s *serverSuite) examplePostRequest(status string) sdk.Request {
 		status:     status,
 		method:     http.MethodPost,
 		url:        s.service.serversURL(s.machineScope.DatacenterID()),
-		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.serverName(s.infraMachine)),
+		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.infraMachine.Name),
 		href:       exampleRequestPath,
 		targetID:   exampleServerID,
 		targetType: sdk.SERVER,
