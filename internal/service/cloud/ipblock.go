@@ -444,11 +444,11 @@ func (s *Service) getLatestIPBlockDeletionRequest(ctx context.Context, ipBlockID
 
 // controlPlaneEndpointIPBlockName returns the name that should be used for cluster context resources.
 func (*Service) controlPlaneEndpointIPBlockName(cs *scope.Cluster) string {
-	return fmt.Sprintf("k8s-ipb-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
+	return fmt.Sprintf("ipb-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
 }
 
 func (*Service) failoverIPBlockName(ms *scope.Machine) string {
-	return fmt.Sprintf("k8s-fo-ipb-%s-%s",
+	return fmt.Sprintf("fo-ipb-%s-%s",
 		ms.IonosMachine.Namespace,
 		ms.IonosMachine.Labels[clusterv1.MachineDeploymentNameLabel],
 	)
