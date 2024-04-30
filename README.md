@@ -27,7 +27,7 @@ hybrid deployments of Kubernetes.
 
 ## Quick Start
 
-Check out the [Cluster API Quick Start][quickstart] to create your first Kubernetes cluster on Azure using Cluster API.
+Check out the [Cluster API Quick Start](docs/quickstart.md) to create your first Kubernetes cluster on IONOS Cloud using Cluster API.
 
 ## Getting Help
 
@@ -76,8 +76,7 @@ that the only people who can get things done around here are the "maintainers".
 <!-- References -->
 
 [slack]: https://kubernetes.slack.com/messages/???
-[good_first_issue]: https://github.com/kubernetes-sigs/cluster-api-provider-ionoscloud/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22
-[bug_report]: https://github.com/kubernetes-sigs/cluster-api-provider-ionoscloud/issues/new?template=bug_report.md
+[good_first_issue]: https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22
+[bug_report]: https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/issues/new?template=bug_report.md
 [feature_request]: https://github.com/kubernetes-sigs/cluster-api-provider-ionoscloud/issues/new?template=feature_request.md
-[cluster_api]: https://github.com/kubernetes-sigs/cluster-api
-[quickstart]: https://cluster-api.sigs.k8s.io/user/quick-start.html
+[cluster_api]: https://github.com/ionos-cloud/cluster-api
