@@ -42,7 +42,14 @@ func TestServerSuite(t *testing.T) {
 
 func (s *serverSuite) TestServerName() {
 	serverName := s.service.serverName(s.infraMachine)
-	s.Equal("k8s-default-test-machine", serverName)
+	expected := "k8s-" + s.infraMachine.Name
+	s.Equal(expected, serverName)
+}
+
+func (s *serverSuite) TestVolumeName() {
+	volumeName := s.service.volumeName(s.infraMachine)
+	expected := "k8s-vol-" + s.infraMachine.Name
+	s.Equal(expected, volumeName)
 }
 
 func (s *serverSuite) TestReconcileServerNoBootstrapSecret() {

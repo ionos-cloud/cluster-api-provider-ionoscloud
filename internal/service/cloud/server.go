@@ -420,12 +420,9 @@ func (*Service) serversURL(datacenterID string) string {
 
 // serverName returns a formatted name for the expected cloud server resource.
 func (*Service) serverName(m *infrav1.IonosCloudMachine) string {
-	return fmt.Sprintf(
-		"k8s-%s-%s",
-		m.Namespace,
-		m.Name)
+	return "k8s-" + m.Name
 }
 
 func (*Service) volumeName(m *infrav1.IonosCloudMachine) string {
-	return fmt.Sprintf("k8s-vol-%s-%s", m.Namespace, m.Name)
+	return "k8s-vol-" + m.Name
 }

@@ -41,6 +41,12 @@ func TestNICSuite(t *testing.T) {
 	suite.Run(t, new(nicSuite))
 }
 
+func (s *nicSuite) TestNICName() {
+	nicName := s.service.nicName(s.infraMachine)
+	expected := "k8s-nic-" + s.infraMachine.Name
+	s.Equal(expected, nicName)
+}
+
 func (s *nicSuite) TestReconcileNICConfig() {
 	s.mockGetServerCall(exampleServerID).Return(s.defaultServer(s.infraMachine, exampleDHCPIP), nil).Once()
 

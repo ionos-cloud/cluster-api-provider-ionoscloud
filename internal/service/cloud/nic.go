@@ -149,5 +149,5 @@ func nicHasIP(nic *sdk.Nic, expectedIP string) bool {
 }
 
 func (*Service) nicName(m *infrav1.IonosCloudMachine) string {
-	return fmt.Sprintf("k8s-nic-%s-%s", m.Namespace, m.Name)
+	return "k8s-nic-" + m.Name
 }
