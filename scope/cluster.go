@@ -21,6 +21,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/netip"
+	"slices"
 	"time"
 
 	"k8s.io/client-go/util/retry"
@@ -32,9 +35,17 @@ import (
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 )
 
+// resolver is able to look up IP addresses from a given host name.
+// The net.Resolver type (found at net.DefaultResolver) implements this interface.
+// This is intended for testing.
+type resolver interface {
+	LookupNetIP(ctx context.Context, network, host string) ([]netip.Addr, error)
+}
+
 // Cluster defines a basic cluster context for primary use in IonosCloudClusterReconciler.
 type Cluster struct {
 	patchHelper  *patch.Helper
+	resolver     resolver
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
 }
@@ -70,6 +81,7 @@ func NewCluster(params ClusterParams) (*Cluster, error) {
 		Cluster:      params.Cluster,
 		IonosCluster: params.IonosCluster,
 		patchHelper:  helper,
+		resolver:     net.DefaultResolver,
 	}
 
 	return clusterScope, nil
@@ -78,6 +90,30 @@ func NewCluster(params ClusterParams) (*Cluster, error) {
 // GetControlPlaneEndpoint returns the endpoint for the IonosCloudCluster.
 func (c *Cluster) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
 	return c.IonosCluster.Spec.ControlPlaneEndpoint
+}
+
+// GetControlPlaneEndpointIP returns the endpoint IP for the IonosCloudCluster.
+// If the endpoint host is unset (neither an IP nor an FQDN), it will return an empty string.
+func (c *Cluster) GetControlPlaneEndpointIP(ctx context.Context) (string, error) {
+	host := c.GetControlPlaneEndpoint().Host
+	if host == "" {
+		return "", nil
+	}
+
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.String(), nil
+	}
+
+	// If the host is not an IP, try to resolve it.
+	ips, err := c.resolver.LookupNetIP(ctx, "ip4", host)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve control plane endpoint IP: %w", err)
+	}
+
+	// Sort IPs to deal with random order intended for load balancing.
+	slices.SortFunc(ips, func(a, b netip.Addr) int { return a.Compare(b) })
+
+	return ips[0].String(), nil
 }
 
 // SetControlPlaneEndpointIPBlockID sets the IP block ID in the IonosCloudCluster status.
