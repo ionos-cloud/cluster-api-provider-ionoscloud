@@ -375,9 +375,9 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		})
 		It("should be immutable", func() {
 			m := defaultMachine()
-			m.Spec.FailoverIP = ptr.To("AUTO")
+			m.Spec.FailoverIP = ptr.To(CloudResourceConfigAuto)
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(m.Spec.FailoverIP).To(Equal(ptr.To("AUTO")))
+			Expect(m.Spec.FailoverIP).To(Equal(ptr.To(CloudResourceConfigAuto)))
 			m.Spec.FailoverIP = ptr.To("127.0.0.1")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 			m.Spec.FailoverIP = ptr.To("")
