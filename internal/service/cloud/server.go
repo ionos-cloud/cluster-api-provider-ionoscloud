@@ -45,8 +45,8 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 	secret, err := ms.GetBootstrapDataSecret(ctx, s.logger)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// secret not available yet
-			// just log the error and resume reconciliation.
+			// Secret not available yet.
+			// Just log the error and resume reconciliation.
 			log.Info("Bootstrap secret not available yet", "error", err)
 			return false, nil
 		}
@@ -66,7 +66,7 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 		// Server is available
 
 		if !s.isServerAvailable(ms, server) {
-			// server is still provisioning, checking again later
+			// Server is still provisioning, checking again later
 			return true, nil
 		}
 

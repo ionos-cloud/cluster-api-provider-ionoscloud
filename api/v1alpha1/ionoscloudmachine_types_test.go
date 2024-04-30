@@ -339,7 +339,51 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			})
 		})
 	})
-
+	Context("FailoverIP", func() {
+		It("should allow setting AUTO as the value", func() {
+			m := defaultMachine()
+			m.Spec.FailoverIP = CloudResourceConfigAuto
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.FailoverIP).To(Equal(CloudResourceConfigAuto))
+		})
+		It("should allow setting a valid IPv4 address", func() {
+			m := defaultMachine()
+			m.Spec.FailoverIP = "203.0.113.1"
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.FailoverIP).To(Equal("203.0.113.1"))
+		})
+		It("should allow setting empty string", func() {
+			m := defaultMachine()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.FailoverIP).To(Equal(""))
+		})
+		DescribeTable("should not allow setting invalid IPv4 addresses", func(ip string) {
+			m := defaultMachine()
+			m.Spec.FailoverIP = ip
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		},
+			Entry("IPv4 out of range", "203.0.113.256"),
+			Entry("IPv4 missing a block", "203.0.113"),
+			Entry("IPv4 ends on a dot", "203.0.113.255."),
+			Entry("IPv4 two dots", "203..0.113.255"),
+			Entry("IPv4 using commas", "203,0,113,255"),
+		)
+		It("should require AUTO to be in capital letters", func() {
+			m := defaultMachine()
+			m.Spec.FailoverIP = "Auto"
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+		It("should be immutable", func() {
+			m := defaultMachine()
+			m.Spec.FailoverIP = "AUTO"
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.FailoverIP).To(Equal("AUTO"))
+			m.Spec.FailoverIP = "127.0.0.1"
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+			m.Spec.FailoverIP = ""
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+		})
+	})
 	Context("Conditions", func() {
 		It("should correctly set and get the conditions", func() {
 			m := defaultMachine()
