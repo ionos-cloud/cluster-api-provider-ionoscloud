@@ -19,13 +19,13 @@ package controller
 import (
 	"context"
 	"fmt"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"time"
 
 	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	icc "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
