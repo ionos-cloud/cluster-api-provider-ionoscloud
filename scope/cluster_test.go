@@ -18,6 +18,8 @@ package scope
 
 import (
 	"context"
+	"net"
+	"net/netip"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -84,7 +86,81 @@ func TestNewClusterMissingParams(t *testing.T) {
 				params, err := NewCluster(test.params)
 				require.NoError(t, err)
 				require.NotNil(t, params)
+				require.Equal(t, net.DefaultResolver, params.resolver)
 			}
+		})
+	}
+}
+
+type mockResolver struct {
+	addrs map[string][]netip.Addr
+}
+
+func (m *mockResolver) LookupNetIP(_ context.Context, _, host string) ([]netip.Addr, error) {
+	return m.addrs[host], nil
+}
+
+func resolvesTo(ips ...string) []netip.Addr {
+	res := make([]netip.Addr, 0, len(ips))
+	for _, ip := range ips {
+		res = append(res, netip.MustParseAddr(ip))
+	}
+	return res
+}
+
+func TestCluster_GetControlPlaneEndpointIP(t *testing.T) {
+	tests := []struct {
+		name     string
+		host     string
+		resolver resolver
+		want     string
+	}{
+		{
+			name: "host empty",
+			host: "",
+			want: "",
+		},
+		{
+			name: "host is IP",
+			host: "127.0.0.1",
+			want: "127.0.0.1",
+		},
+		{
+			name: "host is FQDN with single IP",
+			host: "localhost",
+			resolver: &mockResolver{
+				addrs: map[string][]netip.Addr{
+					"localhost": resolvesTo("127.0.0.1"),
+				},
+			},
+			want: "127.0.0.1",
+		},
+		{
+			name: "host is FQDN with multiple IPs",
+			host: "example.org",
+			resolver: &mockResolver{
+				addrs: map[string][]netip.Addr{
+					"example.org": resolvesTo("2.3.4.5", "1.2.3.4"),
+				},
+			},
+			want: "1.2.3.4",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Cluster{
+				resolver: tt.resolver,
+				IonosCluster: &infrav1.IonosCloudCluster{
+					Spec: infrav1.IonosCloudClusterSpec{
+						ControlPlaneEndpoint: clusterv1.APIEndpoint{
+							Host: tt.host,
+						},
+					},
+				},
+			}
+			got, err := c.GetControlPlaneEndpointIP(context.Background())
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

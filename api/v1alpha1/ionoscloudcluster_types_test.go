@@ -73,6 +73,11 @@ var _ = Describe("IonosCloudCluster", func() {
 		It("should allow creating valid clusters", func() {
 			Expect(k8sClient.Create(context.Background(), defaultCluster())).To(Succeed())
 		})
+		It("should work with a FQDN controlplane endpoint", func() {
+			cluster := defaultCluster()
+			cluster.Spec.ControlPlaneEndpoint.Host = "example.org"
+			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+		})
 		It("should not allow creating clusters with empty credential secret", func() {
 			cluster := defaultCluster()
 			cluster.Spec.CredentialsRef.Name = ""

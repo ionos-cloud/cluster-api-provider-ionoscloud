@@ -278,7 +278,8 @@ func (s *Service) retrieveFailoverIPForMachine(
 	log := s.logger.WithName("retrieveFailoverIPForMachine")
 
 	if util.IsControlPlaneMachine(ms.Machine) {
-		return false, ms.ClusterScope.GetControlPlaneEndpoint().Host, nil
+		ip, err := ms.ClusterScope.GetControlPlaneEndpointIP(ctx)
+		return false, ip, err
 	}
 
 	failoverIP = ptr.Deref(ms.IonosMachine.Spec.FailoverIP, "")
