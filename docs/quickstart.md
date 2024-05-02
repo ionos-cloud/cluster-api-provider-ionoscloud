@@ -11,14 +11,14 @@ In order to deploy a K8s cluster with CAPIC, you require the following:
 * A machine image, containing pre-installed, matching versions of `kubeadm` and `kubelet`. The machine image can be built with [image-builder](https://github.com/kubernetes-sigs/image-builder) and needs to be available at the
 location where the machine will be created on. For more information, [check the custom image guide](custom-image.md).
 
-* `clusterctl`, which you can download it from Cluster API (CAPI) [releases](https://github.com/kubernetes-sigs/cluster-api/releases) on GitHub.
+* `clusterctl`, which you can download from Cluster API (CAPI) [releases](https://github.com/kubernetes-sigs/cluster-api/releases) on GitHub.
 
 * A Kubernetes cluster for running your CAPIC controller.
 
 ### Initialize the management cluster
 
 Before creating a Kubernetes cluster on IONOS Cloud, you must initialize a
-[management cluster](https://cluster-api.sigs.k8s.io/user/concepts#management-cluster) where CAPI and CAPIC controllers runs.
+[management cluster](https://cluster-api.sigs.k8s.io/user/concepts#management-cluster) where CAPI and CAPIC controllers run.
 
 ```sh
 clusterctl init --infrastructure=ionoscloud
@@ -84,8 +84,6 @@ would be Debian 12's `ca-certificates` package.
 In order to create a new cluster, you need to generate a cluster manifest with `clusterctl` and then apply it with `kubectl`.
 
 ```sh
-# Make sure you have the required environment variables set
-source envfile
 # Generate a cluster manifest
 clusterctl generate cluster ionos-quickstart \
   --infrastructure ionoscloud \
@@ -140,7 +138,6 @@ If you need anything specific that requires a more complex setup, we recommend t
 
 ```sh
 clusterctl generate custom-cluster ionos-quickstart \
-  --infrastructure ionoscloud \
   --kubernetes-version v1.27.8 \
   --control-plane-machine-count 1 \
   --worker-machine-count 3 \

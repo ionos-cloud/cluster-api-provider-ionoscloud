@@ -1,6 +1,6 @@
 # Developing Cluster API Provider IONOS Cloud
 
-This document describes how to use kind and Tilt for a simplified workflow that offers easy deployments and rapid iterative builds.
+This document describes how to use `kind` and `Tilt` for a simplified workflow that offers easy deployments and rapid iterative builds.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ This document describes how to use kind and Tilt for a simplified workflow that 
 
 ### Create a kind cluster
 
-A script to create a KIND cluster along with a local Docker registry and the correct mounts to run CAPD is included in the cluster-api repo `hack/` folder.
+A script to create a `kind` cluster along with a local Docker registry and the correct mounts to run CAPD is included in the cluster-api repo `hack/` folder.
 
 To create a pre-configured cluster run:
 
@@ -46,8 +46,8 @@ allowed_contexts:
 - minikube
 kustomize_substitutions: {}
 extra_args:
-- ionoscloud:
-  - "--v=4"
+  ionoscloud:
+    - "--v=4"
 ```
 
 Note: You're developing the provider, so you might as well want to debug it. For this you might want to add the following to the file above:

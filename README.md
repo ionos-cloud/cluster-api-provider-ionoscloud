@@ -12,7 +12,7 @@
 <a href="https://goreportcard.com/report/ionos-cloud/cluster-api-provider-ionoscloud">
 <img src="https://goreportcard.com/badge/ionos-cloud/cluster-api-provider-ionoscloud"></a>
 <!-- join kubernetes slack channel for cluster-api-provider-ionos-cloud -->
-<a href="https://kubernetes.slack.com/messages/???">
+<!-- <a href="https://kubernetes.slack.com/messages/TBD"> -->
 <img src="https://img.shields.io/badge/join%20slack-%23cluster--api--ionoscloud-003d8f?logo=slack"></a>
 </p>
 
@@ -20,18 +20,18 @@ Kubernetes-native declarative infrastructure for IONOS Cloud.
 
 ## What is the Cluster API Provider IONOS Cloud
 
-The [Cluster API][cluster_api] brings declarative, Kubernetes-style APIs to cluster creation, configuration and management.
+[Cluster API][cluster_api] brings declarative, Kubernetes-style APIs to cluster creation, configuration and management.
 
-The API itself is shared across multiple cloud providers allowing for true IONOS Cloud
-hybrid deployments of Kubernetes.
+"This API works with many different cloud services, allowing you to mix and match
+different environments easily when using Kubernetes with IONOS Cloud."
 
 ## Quick Start
 
-Check out the [Cluster API Quick Start](docs/quickstart.md) to create your first Kubernetes cluster on IONOS Cloud using Cluster API.
+Check out the [Cluster API Quick Start](docs/quickstart.md) to create your first Kubernetes cluster.
 
-## Getting Help
+<!-- ## Getting Help
 
-If you need help with CAPIC, please visit the [#cluster-api-ionoscloud][slack] channel on Slack or open a [GitHub issue](CONTRIBUTING.md).
+If you need help with CAPIC, please visit the [#cluster-api-ionoscloud][slack] channel on Slack or open a [GitHub issue](CONTRIBUTING.md). -->
 
 ## Compatibility
 
@@ -41,10 +41,6 @@ If you need help with CAPIC, please visit the [#cluster-api-ionoscloud][slack] c
 
 The IONOS Cloud provider is able to install and manage the [versions of Kubernetes supported by the Cluster API (CAPI) project](https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions).
 
-#### Managed Clusters
-
-Managed Clusters follow their own [Kubernetes version support policy](https://docs.ionos.com/cloud/containers/managed-kubernetes/overview/managed-k8s-schedule). Please use the IONOS Cloud DCD or ionosctl CLI to find the versions supported in your cluster's location.
-
 For more information on Kubernetes version support, see the [Cluster API book](https://cluster-api.sigs.k8s.io/reference/versions.html).
 
 ## Documentation
@@ -53,12 +49,12 @@ Documentation can be found in the `/docs` directory, and the [index is here](doc
 
 ## Getting involved and contributing
 
-Are you interested in contributing to cluster-api-provider-ionoscloud? We, the
-maintainers and community, would love your suggestions, contributions, and help!
+Are you interested in contributing to cluster-api-provider-ionoscloud? We
+maintainers and community would love your suggestions, contributions, and help!
 Also, the maintainers can be contacted at any time to learn more about how to get
 involved.
 
-To set up your environment checkout the [development guide](docs/development.md).
+To set up for your environment, check out the [development guide](docs/development.md).
 
 In the interest of getting more new people involved, we tag issues with
 [`good first issue`][good_first_issue].
@@ -73,7 +69,7 @@ that the only people who can get things done around here are the "maintainers".
 
 <!-- References -->
 
-[slack]: https://kubernetes.slack.com/messages/???
+<!-- [slack]: https://kubernetes.slack.com/messages/??? -->
 [good_first_issue]: https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22
 [bug_report]: https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/issues/new?template=bug_report.md
 [feature_request]: https://github.com/kubernetes-sigs/cluster-api-provider-ionoscloud/issues/new?template=feature_request.md

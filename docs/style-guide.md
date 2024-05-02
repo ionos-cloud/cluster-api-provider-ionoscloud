@@ -1,10 +1,10 @@
-# Coding guide lines
+# Coding guidelines
 
 This page collects common comments made during reviews. This is a laundry list of common mistakes, not a comprehensive style guide.
 
 ## Previous work
 
-Sticking to the following two guidelines will greatly increase your reviewers’ happiness levels:
+Sticking to the following three guidelines will greatly increase your reviewers’ happiness levels:
 
 - https://go.dev/doc/effective_go
 - https://tip.golang.org/doc/comment
@@ -18,7 +18,7 @@ In addition to that, we compiled a list of a few more things that are quite comm
 - Be consistent, concise and check your own work.
 - “TODO” and “NOTE” comments should have an issue ID.
 - Spelling and grammars matters.
-- Commits must be squashed before merging and should have a short and long description separated by an empty newline.
+- PRs must be squashed before merging and should have a short and long description separated by an empty newline.
 - Use correct variable and import alias names.
 - Wrap errors with fmt.Errorf(“...%w”, err) and compare them via errors.Is.
 - Contexts must be passed down the call stack and should be the first argument.
@@ -129,7 +129,7 @@ Context
 - If you need a context in tests, use context.Background().
 - When mocking calls, try to be precise. mock.Anything is fine for complicated data structures we don't care too much about (e.g. contexts), but don't overuse it.
 - github.com/stretchr/testify has lots of convenient functions. Use them. There’s more than Equal(). Same goes for gomega/ginkgo. An IDE might help you find those helpers. 
-- Use testify’s require instead of assert if all assertions afterwards would fail anyway and don't provide more insights for debugging the test. Test setup code (like writing files or initializing data) SHOULD use require instead of ignoring errors.
+- Use testify’s require instead of assert if all assertions afterwards would fail anyway and don't provide more insights for debugging the test. Test setup code (like writing files or initializing data) MUST use require instead of ignoring errors.
 - Tests that do repetitive setup SHOULD use the suite package.
 - If your test suite only has a single test, then there might be no reason to use a suite at all.
 - Tests SHOULD make use of t.Cleanup() for tear down steps. It is not widely used yet, but we should gradually migrate.

@@ -3,19 +3,18 @@
 
 First off, thanks for taking the time to contribute! ❤️
 
-All types of contributions are encouraged and valued. See the
-[Table of Contents](#table-of-contents) for different ways to help and detail
-about how this project handles them. Please make sure to read the relevant
+All types of contributions are encouraged and valued. See the  
+[Table of Contents](#table-of-contents) for information on how you can help us improve. Please make sure to read the relevant
 section before making your contribution. It will make it a lot easier for us
 maintainers and smooth out the experience for all involved. The community
 looks forward to your contributions. 🎉
 
-> And if you like the project, but just don't have time to contribute, that's
-fine. There are other easy ways to support the project and show your
+> And if you like our work, but just don't have time to contribute, that's
+fine. There are other easy ways to support us and show your
 appreciation, which we would also be very happy about:
 > - Star the project
 > - Tweet about it
-> - Refer this project in your project's readme
+> - Refer it in your documentation
 > - Mention the project at local meetups and tell your friends/colleagues
 
 ## Table of Contents
@@ -30,7 +29,7 @@ appreciation, which we would also be very happy about:
 ## Code of Conduct
 
 This project and everyone participating in it is governed by the
-[Cluster API Provider IONOS Cloud Code of Conduct](./CODE_OF_CONDUCT.md).
+[Kubernetes Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ## I Have a Question
 
@@ -50,7 +49,7 @@ the following:
 - Provide as much context as you can about what you're running into.
 - Provide project and platform versions (K8s Cluster version, CAPI version etc).
 
-We will then take care of the issue as soon as possible.
+We will get back to you as soon as possible.  
 
 ## I Want To Contribute
 
