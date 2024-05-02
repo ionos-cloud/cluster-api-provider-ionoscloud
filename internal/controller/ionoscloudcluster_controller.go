@@ -194,7 +194,7 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 		}
 	}
-	if err := removeCredentialFinalizer(ctx, r.Client, clusterScope.IonosCluster); err != nil {
+	if err := removeCredentialsFinalizer(ctx, r.Client, clusterScope.IonosCluster); err != nil {
 		log.Error(err, "unable to remove finalizer from IonosCloudCluster")
 		return ctrl.Result{}, err
 	}

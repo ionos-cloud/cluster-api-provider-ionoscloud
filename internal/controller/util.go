@@ -120,8 +120,8 @@ func ensureSecretControlledByCluster(
 	return nil
 }
 
-// removeCredentialFinalizer removes the finalizer from the credential secret.
-func removeCredentialFinalizer(ctx context.Context, c client.Client, cluster *infrav1.IonosCloudCluster) error {
+// removeCredentialsFinalizer removes the finalizer from the credential secret.
+func removeCredentialsFinalizer(ctx context.Context, c client.Client, cluster *infrav1.IonosCloudCluster) error {
 	secretKey := client.ObjectKey{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Spec.CredentialsRef.Name,
