@@ -14,8 +14,8 @@ fine. There are other easy ways to support us and show your
 appreciation, which we would also be very happy about:
 > - Star the project
 > - Tweet about it
-> - Refer it in your documentation
-> - Mention the project at local meetups and tell your friends/colleagues
+> - Refer to it in your documentation
+> - Mention it at local meetups and tell your friends/colleagues
 
 ## Table of Contents
 

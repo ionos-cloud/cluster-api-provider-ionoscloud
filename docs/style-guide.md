@@ -41,15 +41,15 @@ In addition to that, we compiled a list of a few more things that are quite comm
 ## General code stuff
 
 - Consistency, it also applies here.
-- When leaving TODO comments in the code, make sure you add the related issue to it, e.g.
+- When leaving TODO comments in the code, make sure you add your name to it, e.g.
     ```go
     func foo() {
-        // TODO(#999, this should be done later)
+        // TODO(emustermann, this should be done later)
     }
     ```
-- Longer comments that are more than just normal code comments SHOULD be marked as a NOTE, again with the issue:
+- Longer comments that are more than just normal code comments SHOULD be marked as a NOTE, again with the name:
     ```go
-    // NOTE(#1000): Lorem ipsum dolor sit amet, consetetur
+    // NOTE(emustermann): Lorem ipsum dolor sit amet, consetetur
     // sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore
     // magna aliquyam erat, sed diam voluptua. 
     // At vero eos et accusam et justo duo dolores et ea rebum.
