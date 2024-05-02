@@ -31,7 +31,7 @@ metadata:
   name: "${CLUSTER_NAME}"
 spec:
   controlPlaneEndpoint:
-    host: ${CONTROL_PLANE_ENDPOINT_IP}
+    host: ${CONTROL_PLANE_ENDPOINT_HOST:-${CONTROL_PLANE_ENDPOINT_IP}}
     port: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
   location: ${CONTROL_PLANE_ENDPOINT_LOCATION}
   contractNumber: "${IONOSCLOUD_CONTRACT_NUMBER}"

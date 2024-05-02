@@ -37,7 +37,7 @@ import (
 // lanName returns the name of the cluster LAN.
 func (*Service) lanName(c *clusterv1.Cluster) string {
 	return fmt.Sprintf(
-		"k8s-lan-%s-%s",
+		"lan-%s-%s",
 		c.Namespace,
 		c.Name)
 }
@@ -278,10 +278,15 @@ func (s *Service) retrieveFailoverIPForMachine(
 	log := s.logger.WithName("retrieveFailoverIPForMachine")
 
 	if util.IsControlPlaneMachine(ms.Machine) {
-		return false, ms.ClusterScope.GetControlPlaneEndpoint().Host, nil
+		ip, err := ms.ClusterScope.GetControlPlaneEndpointIP(ctx)
+		return false, ip, err
 	}
 
-	failoverIP = ms.IonosMachine.Spec.FailoverIP
+	failoverIP = ptr.Deref(ms.IonosMachine.Spec.FailoverIP, "")
+	if failoverIP == "" {
+		const errorMessage = "failover IP contains an empty string. Provide either a valid IP address or 'AUTO'"
+		return false, "", errors.New(errorMessage)
+	}
 
 	// AUTO means we have to reserve an IP address.
 	if failoverIP == infrav1.CloudResourceConfigAuto {
@@ -597,5 +602,5 @@ func (s *Service) patchLAN(ctx context.Context, ms *scope.Machine, lanID string,
 }
 
 func failoverRequired(ms *scope.Machine) bool {
-	return util.IsControlPlaneMachine(ms.Machine) || ms.IonosMachine.Spec.FailoverIP != ""
+	return util.IsControlPlaneMachine(ms.Machine) || ms.IonosMachine.Spec.FailoverIP != nil
 }

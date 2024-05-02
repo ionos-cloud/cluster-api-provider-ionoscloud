@@ -60,19 +60,23 @@ clusterctl init --infrastructure=ionoscloud
 CAPIC requires several environment variables to be set in order to create a Kubernetes cluster on IONOS Cloud.
 
 ```env
-## -- Cloud specific environment variables -- ##
+## -- Cloud-specific environment variables -- ##
 IONOS_TOKEN                                 # The token of the IONOS Cloud account.
-IONOS_API_URL                               # The API URL of the IONOS Cloud account.
-                                            #   Defaults to https://api.ionos.com/cloudapi/v6
+IONOS_API_URL                               # The API URL of the IONOS Cloud account (optional).
+                                            #   Defaults to https://api.ionos.com/cloudapi/v6.
 
-## -- Cluster API related environment variables -- ##
-CONTROL_PLANE_ENDPOINT_IP                   # The IP address of the control plane endpoint.        
-CONTROL_PLANE_ENDPOINT_PORT                 # The port of the control plane endpoint.
+## -- Cluster API-related environment variables -- ##
+CONTROL_PLANE_ENDPOINT_HOST                 # The control plane endpoint host (optional).
+                                            #   If it's not an IP but an FQDN, the provider must be able to resolve it
+                                            #   to the value for CONTROL_PLANE_ENDPOINT_IP.
+CONTROL_PLANE_ENDPOINT_IP                   # The IPv4 address of the control plane endpoint.
+CONTROL_PLANE_ENDPOINT_PORT                 # The port of the control plane endpoint (optional).
+                                            #   Defaults to 6443.
 CONTROL_PLANE_ENDPOINT_LOCATION             # The location of the control plane endpoint.
 CLUSTER_NAME                                # The name of the cluster.
 KUBERNETES_VERSION                          # The version of Kubernetes to be installed (can also be set via clusterctl).
 
-## -- Kubernetes Cluster related environment variables -- ##
+## -- Kubernetes Cluster-related environment variables -- ##
 IONOSCLOUD_CONTRACT_NUMBER                  # The contract number of the IONOS Cloud contract.
 IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluster should be created.
 IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores.

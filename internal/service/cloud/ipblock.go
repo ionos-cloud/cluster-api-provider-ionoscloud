@@ -148,10 +148,8 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 // ReconcileFailoverIPBlockDeletion ensures that the IP block is deleted.
 func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileFailoverIPBlockDeletion")
-	if ms.IonosMachine.Spec.FailoverIP != infrav1.CloudResourceConfigAuto {
-		log.V(4).Info("Failover IP block is not managed by the provider, skipping deletion",
-			"failoverIP", ms.IonosMachine.Spec.FailoverIP,
-		)
+	if foIP := ms.IonosMachine.Spec.FailoverIP; foIP == nil || *foIP != infrav1.CloudResourceConfigAuto {
+		log.V(4).Info("Failover IP block is not managed by the provider, skipping deletion", "failoverIP", foIP)
 		return false, nil
 	}
 
@@ -253,11 +251,17 @@ func (s *Service) getControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.
 	if ipBlock != nil || ignoreNotFound(err) != nil {
 		return ipBlock, err
 	}
+	notFoundError := err
 
 	s.logger.Info("IP block not found by ID, trying to find by listing IP blocks instead")
-	blocks, listErr := s.apiWithDepth(listIPBlocksDepth).ListIPBlocks(ctx)
-	if listErr != nil {
-		return nil, fmt.Errorf("failed to list IP blocks: %w", listErr)
+	blocks, err := s.apiWithDepth(listIPBlocksDepth).ListIPBlocks(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list IP blocks: %w", err)
+	}
+
+	controlPlaneEndpointIP, err := cs.GetControlPlaneEndpointIP(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var (
@@ -277,7 +281,7 @@ func (s *Service) getControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.
 			if err != nil {
 				return nil, err
 			}
-		case s.checkIfUserSetBlock(cs, props):
+		case s.checkIfUserSetBlock(controlPlaneEndpointIP, props):
 			// NOTE: this is for when customers set IPs for the control plane endpoint themselves.
 			foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block)
 			if err != nil {
@@ -287,11 +291,11 @@ func (s *Service) getControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.
 		}
 		if count > 1 {
 			return nil, fmt.Errorf(
-				"cannot determine IP block for Control Plane Endpoint as there are multiple IP blocks with the name %s",
+				"cannot determine IP block for Control Plane Endpoint, as there are multiple IP blocks with the name %s",
 				expectedName)
 		}
 	}
-	if count == 0 && cs.GetControlPlaneEndpoint().Host != "" {
+	if count == 0 && controlPlaneEndpointIP != "" {
 		return nil, errUserSetIPNotFound
 	}
 	if foundBlock != nil {
@@ -299,13 +303,12 @@ func (s *Service) getControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.
 	}
 	// if we still can't find an IP block we return the potential
 	// initial not found error.
-	return nil, err
+	return nil, notFoundError
 }
 
-func (*Service) checkIfUserSetBlock(cs *scope.Cluster, props *sdk.IpBlockProperties) bool {
-	ip := cs.GetControlPlaneEndpoint().Host
+func (*Service) checkIfUserSetBlock(controlPlaneEndpointIP string, props *sdk.IpBlockProperties) bool {
 	ips := ptr.Deref(props.GetIps(), nil)
-	return ip != "" && slices.Contains(ips, ip)
+	return controlPlaneEndpointIP != "" && slices.Contains(ips, controlPlaneEndpointIP)
 }
 
 // cloudAPIStateInconsistencyWorkaround is a workaround for a bug where the API returns different states for the same
@@ -322,7 +325,7 @@ func (s *Service) cloudAPIStateInconsistencyWorkaround(ctx context.Context, bloc
 
 func (s *Service) getIPBlockByID(ctx context.Context, ipBlockID string) (*sdk.IpBlock, error) {
 	if ipBlockID == "" {
-		s.logger.Info("Could not find any IP block by ID as the provider ID is not set.")
+		s.logger.Info("Could not find any IP block by ID, as the provider ID is not set.")
 		return nil, nil
 	}
 	ipBlock, err := s.ionosClient.GetIPBlock(ctx, ipBlockID)
@@ -444,11 +447,11 @@ func (s *Service) getLatestIPBlockDeletionRequest(ctx context.Context, ipBlockID
 
 // controlPlaneEndpointIPBlockName returns the name that should be used for cluster context resources.
 func (*Service) controlPlaneEndpointIPBlockName(cs *scope.Cluster) string {
-	return fmt.Sprintf("k8s-ipb-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
+	return fmt.Sprintf("ipb-%s-%s", cs.Cluster.Namespace, cs.Cluster.Name)
 }
 
 func (*Service) failoverIPBlockName(ms *scope.Machine) string {
-	return fmt.Sprintf("k8s-fo-ipb-%s-%s",
+	return fmt.Sprintf("fo-ipb-%s-%s",
 		ms.IonosMachine.Namespace,
 		ms.IonosMachine.Labels[clusterv1.MachineDeploymentNameLabel],
 	)
