@@ -41,3 +41,6 @@ cluster.yaml
 
 # release
 out/
+
+#testing stuff
+clusterctl-settings.json

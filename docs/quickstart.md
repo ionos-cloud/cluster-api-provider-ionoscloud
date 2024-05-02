@@ -128,7 +128,10 @@ $ kubectl apply -f cluster.yaml
 
 ### Next steps
 
-TODO
+#### Cloud Controller Manager installation
+
+For installation of the [Cloud Controller Manager (CCM) | https://kubernetes.io/docs/concepts/architecture/cloud-controller/]
+please refer to the [CCM documentation](./cloud-controller-manager.md).
 
 ### Observability
 

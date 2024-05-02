@@ -199,6 +199,29 @@ spec:
         path: /etc/ie-csi/cfg.json
         permissions: '0644'
 
+      - content: |
+          #!/bin/bash
+          set -e
+          
+          # Nothing to do for kubernetes < v1.29
+          KUBEADM_MINOR="$(kubeadm version -o short | cut -d '.' -f 2)"
+          if [[ "$KUBEADM_MINOR" -lt "29" ]]; then
+            exit 0
+          fi
+          
+          NODE_IPv4_ADDRESS=$(ip -j addr show dev ens6 | jq -r '.[].addr_info[] | select(.family == "inet") | select(.scope=="global") | select(.dynamic) | .local')
+          if [[ $NODE_IPv4_ADDRESS ]]; then
+            sed -i '$ s/$/ --node-ip '"$NODE_IPv4_ADDRESS"'/' /etc/default/kubelet
+          fi
+          # IPv6 currently not set, the ip is not set then this runs. Needs to be waited for.
+          NODE_IPv6_ADDRESS=$(ip -j addr show dev ens6 | jq -r '.[].addr_info[] | select(.family == "inet6") | select(.scope=="global") | .local')
+          if [[ $NODE_IPv6_ADDRESS ]]; then
+            sed -i '$ s/$/ --node-ip '"$NODE_IPv6_ADDRESS"'/' /etc/default/kubelet
+          fi
+        owner: root:root
+        path: /etc/set-node-ip.sh
+        permissions: '0700'
+
     preKubeadmCommands:
       - systemctl restart systemd-networkd.service systemd-modules-load.service systemd-journald containerd
       # disable swap
@@ -206,6 +229,8 @@ spec:
       - sed -i '/ swap / s/^/#/' /etc/fstab
       - sysctl --system
       - /etc/kube-vip-prepare.sh
+      # workaround 1.29 IP issue
+      - /etc/set-node-ip.sh
     postKubeadmCommands:
       - >
         sed -i 's#path: /etc/kubernetes/super-admin.conf#path: /etc/kubernetes/admin.conf#' \
@@ -214,6 +239,8 @@ spec:
         systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
         packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
       # TODO(jriedel-ionos): remove that if we have a CCM
+      # INFO(schegi-ionos): We decided to not remove this for now, since removing this would require the ccm to be installed for cluster-api
+      # to continue after the first node.
       - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
       - >
         kubectl --kubeconfig /etc/kubernetes/kubelet.conf
@@ -229,6 +256,9 @@ spec:
     joinConfiguration:
       nodeRegistration:
         criSocket: unix:///run/containerd/containerd.sock
+        kubeletExtraArgs:
+          # use cloud-provider: external when using a CCM
+          cloud-provider: ""
   version: "${KUBERNETES_VERSION}"
 ---
 kind: IonosCloudMachineTemplate
@@ -348,6 +378,8 @@ spec:
           systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
           packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
         # TODO(jriedel-ionos): remove that if we have a CCM
+        # INFO(schegi-ionos): We decided to not remove this for now, since removing this would require the ccm to be
+        # installed for cluster-api to continue after the first node.
         - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
         - >
           kubectl --kubeconfig /etc/kubernetes/kubelet.conf
