@@ -20,10 +20,11 @@ Kubernetes-native declarative infrastructure for IONOS Cloud.
 
 ## What is the Cluster API Provider IONOS Cloud
 
-[Cluster API][cluster_api] brings declarative, Kubernetes-style APIs to cluster creation, configuration and management.
+The Cluster API Provider IONOS Cloud makes declarative provisioning of multiple Kubernetes clusters through Cluster API on IONOS Cloud infrastructure possible.
 
-"This API works with many different cloud services, allowing you to mix and match
-different environments easily when using Kubernetes with IONOS Cloud."
+[Cluster API][cluster_api] is a Kubernetes sub-project focused on providing declarative APIs and tooling to simplify provisioning, upgrading, and operating multiple Kubernetes clusters.
+
+Started by the Kubernetes Special Interest Group (SIG) Cluster Lifecycle, the Cluster API project uses Kubernetes-style APIs and patterns to automate cluster lifecycle management for platform operators. The supporting infrastructure, like virtual machines, networks, load balancers, and VPCs, as well as the Kubernetes cluster configuration are all defined in the same way that application developers operate deploying and managing their workloads. This enables consistent and repeatable cluster deployments across a wide variety of infrastructure environments.
 
 ## Quick Start
 
