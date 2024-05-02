@@ -34,6 +34,7 @@ import (
 
 // Cluster defines a basic cluster context for primary use in IonosCloudClusterReconciler.
 type Cluster struct {
+	client       client.Client
 	patchHelper  *patch.Helper
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
@@ -67,6 +68,7 @@ func NewCluster(params ClusterParams) (*Cluster, error) {
 	}
 
 	clusterScope := &Cluster{
+		client:       params.Client,
 		Cluster:      params.Cluster,
 		IonosCluster: params.IonosCluster,
 		patchHelper:  helper,
@@ -83,6 +85,26 @@ func (c *Cluster) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
 // SetControlPlaneEndpointIPBlockID sets the IP block ID in the IonosCloudCluster status.
 func (c *Cluster) SetControlPlaneEndpointIPBlockID(id string) {
 	c.IonosCluster.Status.ControlPlaneEndpointIPBlockID = id
+}
+
+// ListMachinesForCluster returns a list of IonosCloudMachines in the same namespace and with the same cluster label.
+// With machineLabels, additional search labels can be provided.
+func (c *Cluster) ListMachinesForCluster(
+	ctx context.Context,
+	machineLabels client.MatchingLabels,
+) ([]infrav1.IonosCloudMachine, error) {
+	if machineLabels == nil {
+		machineLabels = client.MatchingLabels{}
+	}
+
+	machineLabels[clusterv1.ClusterNameLabel] = c.Cluster.Name
+	listOpts := []client.ListOption{client.InNamespace(c.Cluster.Namespace), machineLabels}
+
+	machineList := &infrav1.IonosCloudMachineList{}
+	if err := c.client.List(ctx, machineList, listOpts...); err != nil {
+		return nil, err
+	}
+	return machineList.Items, nil
 }
 
 // Location is a shortcut for getting the location used by the IONOS Cloud cluster IP block.

@@ -27,6 +27,10 @@ const (
 	// associated with the IonosCloudCluster before removing it from the API server.
 	ClusterFinalizer = "ionoscloudcluster.infrastructure.cluster.x-k8s.io"
 
+	// ClusterCredentialFinalizer allows cleanup of resources, which are
+	// associated with the IonosCloudCluster credentials before removing it from the API server.
+	ClusterCredentialFinalizer = ClusterFinalizer + "/credentials"
+
 	// IonosCloudClusterReady is the condition for the IonosCloudCluster, which indicates that the cluster is ready.
 	IonosCloudClusterReady clusterv1.ConditionType = "ClusterReady"
 

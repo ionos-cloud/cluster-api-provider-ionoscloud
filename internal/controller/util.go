@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -80,6 +81,10 @@ func createServiceFromCluster(
 		return nil, err
 	}
 
+	if err := ensureSecretControlledByCluster(ctx, c, cluster, &authSecret); err != nil {
+		return nil, err
+	}
+
 	token := string(authSecret.Data["token"])
 	apiURL := string(authSecret.Data["apiURL"])
 	caBundle := authSecret.Data["caBundle"]
@@ -90,4 +95,44 @@ func createServiceFromCluster(
 	}
 
 	return cloud.NewService(ionosClient, log)
+}
+
+// ensureSecretControlledByCluster ensures that the secrets will contain a finalizer and a controller reference.
+// The secret should only be deleted when there are no resources left in the IONOS Cloud environment.
+func ensureSecretControlledByCluster(
+	ctx context.Context, c client.Client,
+	cluster *infrav1.IonosCloudCluster,
+	secret *corev1.Secret,
+) error {
+	requireUpdate := controllerutil.AddFinalizer(secret, infrav1.ClusterCredentialFinalizer)
+
+	if !controllerutil.HasControllerReference(secret) {
+		if err := controllerutil.SetControllerReference(cluster, secret, c.Scheme()); err != nil {
+			return err
+		}
+		requireUpdate = true
+	}
+
+	if requireUpdate {
+		return c.Update(ctx, secret)
+	}
+
+	return nil
+}
+
+// removeCredentialFinalizer removes the finalizer from the credential secret.
+func removeCredentialFinalizer(ctx context.Context, c client.Client, cluster *infrav1.IonosCloudCluster) error {
+	secretKey := client.ObjectKey{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Spec.CredentialsRef.Name,
+	}
+	var secret corev1.Secret
+
+	if err := c.Get(ctx, secretKey, &secret); err != nil {
+		// If the secret does not exist anymore, there is nothing we can do.
+		return client.IgnoreNotFound(err)
+	}
+
+	controllerutil.RemoveFinalizer(&secret, infrav1.ClusterCredentialFinalizer)
+	return c.Update(ctx, &secret)
 }
