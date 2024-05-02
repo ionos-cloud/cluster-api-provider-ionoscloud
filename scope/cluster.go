@@ -100,7 +100,7 @@ func (c *Cluster) GetControlPlaneEndpointIP(ctx context.Context) (string, error)
 		return "", nil
 	}
 
-	if ip := net.ParseIP(host); ip != nil {
+	if ip, err := netip.ParseAddr(host); err == nil {
 		return ip.String(), nil
 	}
 
