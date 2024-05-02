@@ -95,7 +95,7 @@ func TestMachineHasFailedFailureMessage(t *testing.T) {
 func TestMachineHasFailedFailureReason(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
-	scope.IonosMachine.Status.FailureReason = capierrors.MachineStatusErrorPtr("¯\\_(ツ)_/¯")
+	scope.IonosMachine.Status.FailureReason = (*capierrors.MachineStatusError)(ptr.To("¯\\_(ツ)_/¯"))
 	require.True(t, scope.HasFailed())
 }
 
