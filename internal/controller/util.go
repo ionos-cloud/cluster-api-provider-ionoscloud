@@ -104,7 +104,7 @@ func ensureSecretControlledByCluster(
 	cluster *infrav1.IonosCloudCluster,
 	secret *corev1.Secret,
 ) error {
-	requireUpdate := controllerutil.AddFinalizer(secret, infrav1.ClusterCredentialFinalizer)
+	requireUpdate := controllerutil.AddFinalizer(secret, infrav1.ClusterCredentialsFinalizer)
 
 	if !controllerutil.HasControllerReference(secret) {
 		if err := controllerutil.SetControllerReference(cluster, secret, c.Scheme()); err != nil {
@@ -133,6 +133,6 @@ func removeCredentialFinalizer(ctx context.Context, c client.Client, cluster *in
 		return client.IgnoreNotFound(err)
 	}
 
-	controllerutil.RemoveFinalizer(&secret, infrav1.ClusterCredentialFinalizer)
+	controllerutil.RemoveFinalizer(&secret, infrav1.ClusterCredentialsFinalizer)
 	return c.Update(ctx, &secret)
 }
