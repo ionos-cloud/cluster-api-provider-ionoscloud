@@ -20,6 +20,15 @@ location where the machine will be created on. For more information, [check the 
 Before creating a Kubernetes cluster on IONOS Cloud, you must initialize a
 [management cluster](https://cluster-api.sigs.k8s.io/user/concepts#management-cluster) where CAPI and CAPIC controllers run.
 
+First, we need to add the IONOS Cloud provider to clusterctl config file `~/.cluster-api/clusterctl.yaml`:
+
+```yaml
+providers:
+- name: ionoscloud
+  url: https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/releases/latest/infrastructure-components.yaml
+  type: InfrastructureProvider
+```
+
 ```sh
 clusterctl init --infrastructure=ionoscloud
 ```
