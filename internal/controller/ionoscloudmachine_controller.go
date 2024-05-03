@@ -153,7 +153,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 
 	if controllerutil.AddFinalizer(machineScope.IonosMachine, infrav1.MachineFinalizer) {
 		if err := machineScope.PatchObject(); err != nil {
-			log.Error(err, "unable to update finalizer on object")
+			err = fmt.Errorf("unable to update finalizer on object: %w", err)
 			return ctrl.Result{}, err
 		}
 	}

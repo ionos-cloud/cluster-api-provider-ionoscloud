@@ -122,12 +122,12 @@ func (m *Machine) CountMachines(ctx context.Context, machineLabels client.Matchi
 	return len(machines), err
 }
 
-// ListMachines is a convenience wrapper function for the Cluster.ListMachinesForCluster function.
+// ListMachines is a convenience wrapper function for the Cluster.ListMachines function.
 func (m *Machine) ListMachines(
 	ctx context.Context,
 	machineLabels client.MatchingLabels,
 ) ([]infrav1.IonosCloudMachine, error) {
-	return m.ClusterScope.ListMachinesForCluster(ctx, machineLabels)
+	return m.ClusterScope.ListMachines(ctx, machineLabels)
 }
 
 // FindLatestMachine returns the latest IonosCloudMachine in the same namespace
@@ -139,7 +139,7 @@ func (m *Machine) FindLatestMachine(
 	ctx context.Context,
 	matchLabels client.MatchingLabels,
 ) (*infrav1.IonosCloudMachine, error) {
-	machines, err := m.ClusterScope.ListMachinesForCluster(ctx, matchLabels)
+	machines, err := m.ClusterScope.ListMachines(ctx, matchLabels)
 	if err != nil {
 		return nil, err
 	}

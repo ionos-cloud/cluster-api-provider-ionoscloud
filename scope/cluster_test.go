@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -165,7 +166,7 @@ func TestCluster_GetControlPlaneEndpointIP(t *testing.T) {
 	}
 }
 
-func TestClusterListMachinesForCluster(t *testing.T) {
+func TestClusterListMachines(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, infrav1.AddToScheme(scheme))
 
@@ -184,7 +185,7 @@ func TestClusterListMachinesForCluster(t *testing.T) {
 		name           string
 		initialObjects []client.Object
 		searchLabels   client.MatchingLabels
-		expectedNames  map[string]struct{}
+		expectedNames  sets.Set[string]
 	}{{
 		name: "List all machines for a cluster",
 		initialObjects: []client.Object{
@@ -193,7 +194,7 @@ func TestClusterListMachinesForCluster(t *testing.T) {
 			buildMachineWithLabel("machine-3", makeLabels(clusterName, nil)),
 		},
 		searchLabels: client.MatchingLabels{},
-		expectedNames: map[string]struct{}{
+		expectedNames: sets.Set[string]{
 			"machine-1": {},
 			"machine-2": {},
 			"machine-3": {},
@@ -208,7 +209,7 @@ func TestClusterListMachinesForCluster(t *testing.T) {
 		searchLabels: client.MatchingLabels{
 			"foo": "bar",
 		},
-		expectedNames: map[string]struct{}{
+		expectedNames: sets.Set[string]{
 			"machine-1": {},
 			"machine-2": {},
 		},
@@ -220,7 +221,7 @@ func TestClusterListMachinesForCluster(t *testing.T) {
 			buildMachineWithLabel("machine-3", makeLabels(clusterName, map[string]string{"foo": "notbar"})),
 		},
 		searchLabels:  makeLabels(clusterName, map[string]string{"foo": "bar"}),
-		expectedNames: map[string]struct{}{},
+		expectedNames: sets.Set[string]{},
 	}}
 
 	for _, test := range tests {
@@ -255,7 +256,7 @@ func TestClusterListMachinesForCluster(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, cs)
 
-			machines, err := cs.ListMachinesForCluster(context.Background(), test.searchLabels)
+			machines, err := cs.ListMachines(context.Background(), test.searchLabels)
 			require.NoError(t, err)
 			require.Len(t, machines, len(test.expectedNames))
 

@@ -171,9 +171,8 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	machines, err := clusterScope.ListMachinesForCluster(ctx, nil)
+	machines, err := clusterScope.ListMachines(ctx, nil)
 	if err != nil {
-		log.Error(err, "unable to list machines for cluster")
 		return ctrl.Result{}, err
 	}
 
@@ -195,7 +194,6 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 		}
 	}
 	if err := removeCredentialsFinalizer(ctx, r.Client, clusterScope.IonosCluster); err != nil {
-		log.Error(err, "unable to remove finalizer from IonosCloudCluster")
 		return ctrl.Result{}, err
 	}
 	controllerutil.RemoveFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)

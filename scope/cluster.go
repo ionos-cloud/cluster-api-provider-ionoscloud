@@ -123,9 +123,9 @@ func (c *Cluster) SetControlPlaneEndpointIPBlockID(id string) {
 	c.IonosCluster.Status.ControlPlaneEndpointIPBlockID = id
 }
 
-// ListMachinesForCluster returns a list of IonosCloudMachines in the same namespace and with the same cluster label.
+// ListMachines returns a list of IonosCloudMachines in the same namespace and with the same cluster label.
 // With machineLabels, additional search labels can be provided.
-func (c *Cluster) ListMachinesForCluster(
+func (c *Cluster) ListMachines(
 	ctx context.Context,
 	machineLabels client.MatchingLabels,
 ) ([]infrav1.IonosCloudMachine, error) {
