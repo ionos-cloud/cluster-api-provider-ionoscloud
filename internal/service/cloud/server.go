@@ -69,6 +69,8 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 			return false, err
 		}
 		log.V(4).Info("Successfully initiated server creation")
+		// If we reach this point, we want to requeue as the request is not processed yet,
+		// and we will check for the status again later.
 		return true, nil
 	}
 
@@ -174,6 +176,9 @@ func (s *Service) ensureServerAvailable(ctx context.Context, ms *scope.Machine, 
 			log.Error(err, "Failed to start the server")
 			return true, err
 		}
+		// If we reach this point, we want to requeue as the request is not processed yet,
+		// and we will check for the status again later.
+		return true, nil
 	}
 
 	// Default return path when no conditions are met (server is available and running)
