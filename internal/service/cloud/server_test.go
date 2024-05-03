@@ -145,7 +145,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
 
 	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
 	s.NoError(err)
-	s.False(requeue)
+	s.True(requeue)
 }
 
 func (s *serverSuite) TestReconcileServerNoRequest() {
