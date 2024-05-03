@@ -171,8 +171,15 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	// TODO(lubedacht): check if there are any more machine CRs existing.
-	// If there are requeue with an offset.
+	machines, err := clusterScope.ListMachines(ctx, nil)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if len(machines) > 0 {
+		log.Info("Waiting for all IonosCloudMachines to be deleted", "remaining", len(machines))
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
+	}
 
 	reconcileSequence := []serviceReconcileStep[scope.Cluster]{
 		{"ReconcileControlPlaneEndpointDeletion", cloudService.ReconcileControlPlaneEndpointDeletion},
@@ -185,6 +192,9 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 		}
+	}
+	if err := removeCredentialsFinalizer(ctx, r.Client, clusterScope.IonosCluster); err != nil {
+		return ctrl.Result{}, err
 	}
 	controllerutil.RemoveFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
 	return ctrl.Result{}, nil

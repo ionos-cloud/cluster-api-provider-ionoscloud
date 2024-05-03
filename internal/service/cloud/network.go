@@ -443,7 +443,7 @@ func (s *Service) getServerNICID(ctx context.Context, ms *scope.Machine) (string
 			log.Info("Server was not found or already deleted.")
 			return "", nil
 		}
-		log.Error(err, "Unable to retrieve server")
+		err = fmt.Errorf("unable to retrieve server %w", err)
 		return "", err
 	}
 
