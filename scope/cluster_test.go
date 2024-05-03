@@ -193,12 +193,8 @@ func TestClusterListMachines(t *testing.T) {
 			buildMachineWithLabel("machine-2", makeLabels(clusterName, nil)),
 			buildMachineWithLabel("machine-3", makeLabels(clusterName, nil)),
 		},
-		searchLabels: client.MatchingLabels{},
-		expectedNames: sets.Set[string]{
-			"machine-1": {},
-			"machine-2": {},
-			"machine-3": {},
-		},
+		searchLabels:  client.MatchingLabels{},
+		expectedNames: sets.New("machine-1", "machine-2", "machine-3"),
 	}, {
 		name: "List only machines with specific labels",
 		initialObjects: []client.Object{
@@ -209,10 +205,7 @@ func TestClusterListMachines(t *testing.T) {
 		searchLabels: client.MatchingLabels{
 			"foo": "bar",
 		},
-		expectedNames: sets.Set[string]{
-			"machine-1": {},
-			"machine-2": {},
-		},
+		expectedNames: sets.New("machine-1", "machine-2"),
 	}, {
 		name: "List no machines",
 		initialObjects: []client.Object{
@@ -221,7 +214,7 @@ func TestClusterListMachines(t *testing.T) {
 			buildMachineWithLabel("machine-3", makeLabels(clusterName, map[string]string{"foo": "notbar"})),
 		},
 		searchLabels:  makeLabels(clusterName, map[string]string{"foo": "bar"}),
-		expectedNames: sets.Set[string]{},
+		expectedNames: sets.New[string](),
 	}}
 
 	for _, test := range tests {
