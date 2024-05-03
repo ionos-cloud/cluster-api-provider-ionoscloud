@@ -62,43 +62,40 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 		return true, nil
 	}
 
-	if server != nil {
-		// Server is available
-
-		if !s.isServerAvailable(ms, server) {
-			// Server is still provisioning, checking again later
-			return true, nil
+	if server == nil {
+		// Server does not exist yet, create it
+		log.V(4).Info("No server was found. Creating new server")
+		if err := s.createServer(ctx, secret, ms); err != nil {
+			return false, err
 		}
-
-		// Attach the IPs from all NICs of the server to the status
-		netInfo := &infrav1.MachineNetworkInfo{NICInfo: make([]infrav1.NICInfo, 0)}
-
-		for _, nic := range ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{}) {
-			netInfo.NICInfo = append(netInfo.NICInfo, infrav1.NICInfo{
-				IPv4Addresses: ptr.Deref(nic.GetProperties().GetIps(), []string{}),
-				IPv6Addresses: ptr.Deref(nic.GetProperties().GetIpv6Ips(), []string{}),
-				NetworkID:     ptr.Deref(nic.GetProperties().GetLan(), 0),
-				Primary:       s.isPrimaryNIC(ms.IonosMachine, &nic),
-			})
-		}
-
-		ms.IonosMachine.Status.MachineNetworkInfo = netInfo
-
-		log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
-		// server exists and is available.
-		return false, nil
+		log.V(4).Info("Successfully initiated server creation")
+		// If we reach this point, we want to requeue as the request is not processed yet,
+		// and we will check for the status again later.
+		return true, nil
 	}
 
-	// server does not exist yet, create it
-	log.V(4).Info("No server was found. Creating new server")
-	if err := s.createServer(ctx, secret, ms); err != nil {
-		return false, err
+	requeue, err = s.ensureServerAvailable(ctx, ms, server)
+	if requeue || err != nil {
+		return requeue, err
 	}
 
-	log.V(4).Info("successfully finished reconciling server")
-	// If we reach this point, we want to requeue as the request is not processed yet,
-	// and we will check for the status again later.
-	return true, nil
+	// Attach the IPs from all NICs of the server to the status
+	netInfo := &infrav1.MachineNetworkInfo{NICInfo: make([]infrav1.NICInfo, 0)}
+
+	for _, nic := range ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{}) {
+		netInfo.NICInfo = append(netInfo.NICInfo, infrav1.NICInfo{
+			IPv4Addresses: ptr.Deref(nic.GetProperties().GetIps(), []string{}),
+			IPv6Addresses: ptr.Deref(nic.GetProperties().GetIpv6Ips(), []string{}),
+			NetworkID:     ptr.Deref(nic.GetProperties().GetLan(), 0),
+			Primary:       s.isPrimaryNIC(ms.IonosMachine, &nic),
+		})
+	}
+
+	ms.IonosMachine.Status.MachineNetworkInfo = netInfo
+
+	log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
+	// server exists and is available.
+	return false, nil
 }
 
 // ReconcileServerDeletion ensures the server is deleted.
@@ -152,23 +149,40 @@ func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine
 	return false, nil
 }
 
-func (s *Service) isServerAvailable(ms *scope.Machine, server *sdk.Server) bool {
+// isServerAvailable checks if the server is in state AVAILABLE.
+func (s *Service) isServerAvailable(server *sdk.Server) bool {
 	log := s.logger.WithName("isServerAvailable")
 	if state := getState(server); !isAvailable(state) {
 		log.Info("Server is not available yet", "state", state)
 		return false
 	}
+	return true
+}
 
-	if vmState := getVMState(server); !isRunning(vmState) {
-		err := s.startServer(context.Background(), ms.DatacenterID(), *server.Id)
-		if err != nil {
-			log.Error(err, "Failed to start the server")
-			return false
-		}
-		return true
+// ensureServerAvailable checks the availability of the specified server.
+func (s *Service) ensureServerAvailable(ctx context.Context, ms *scope.Machine, server *sdk.Server) (bool, error) {
+	log := s.logger.WithName("ensureServerAvailable")
+
+	// Check if the server is available
+	if !s.isServerAvailable(server) {
+		// Server is still provisioning, checking again later
+		return true, nil
 	}
 
-	return true
+	// Check the VM state; if not running, try to start it
+	if vmState := getVMState(server); !isRunning(vmState) {
+		err := s.startServer(ctx, ms, *server.Id)
+		if err != nil {
+			log.Error(err, "Failed to start the server")
+			return true, err
+		}
+		// If we reach this point, we want to requeue as the request is not processed yet,
+		// and we will check for the status again later.
+		return true, nil
+	}
+
+	// Default return path when no conditions are met (server is available and running)
+	return false, nil
 }
 
 // getServerByServerID checks if the IonosCloudMachine has a provider ID set.
@@ -241,17 +255,18 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, serverID 
 	return nil
 }
 
-func (s *Service) startServer(ctx context.Context, datacenterID, serverID string) error {
+func (s *Service) startServer(ctx context.Context, ms *scope.Machine, serverID string) error {
 	log := s.logger.WithName("startServer")
 
 	log.V(4).Info("Starting server", "serverID", serverID)
-	requestLocation, err := s.ionosClient.StartServer(ctx, datacenterID, serverID)
+	requestLocation, err := s.ionosClient.StartServer(ctx, ms.DatacenterID(), serverID)
 	if err != nil {
 		return fmt.Errorf("failed to request server start: %w", err)
 	}
 
 	log.Info("Successfully requested for server start", "location", requestLocation)
-	log.V(4).Info("Done starting server")
+	ms.IonosMachine.SetCurrentRequest(http.MethodPost, sdk.RequestStatusQueued, requestLocation)
+
 	return nil
 }
 
