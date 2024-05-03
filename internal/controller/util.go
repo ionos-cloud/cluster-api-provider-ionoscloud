@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -104,23 +105,24 @@ func ensureSecretControlledByCluster(
 	cluster *infrav1.IonosCloudCluster,
 	secret *corev1.Secret,
 ) error {
-	requireUpdate := controllerutil.AddFinalizer(secret, infrav1.ClusterCredentialsFinalizer)
+	old := secret.DeepCopy()
 
-	if !controllerutil.HasControllerReference(secret) {
-		if err := controllerutil.SetControllerReference(cluster, secret, c.Scheme()); err != nil {
-			return err
-		}
-		requireUpdate = true
+	finalizerAdded := controllerutil.AddFinalizer(secret, infrav1.ClusterCredentialsFinalizer)
+	// We want to allow using the secret in multiple clusters.
+	// Kubernetes only allows us to have one controller reference.
+	if err := controllerutil.SetOwnerReference(cluster, secret, c.Scheme()); err != nil {
+		return err
 	}
 
-	if requireUpdate {
+	if finalizerAdded || !cmp.Equal(old.GetObjectMeta(), secret.GetObjectMeta()) {
 		return c.Update(ctx, secret)
 	}
 
 	return nil
 }
 
-// removeCredentialsFinalizer removes the finalizer from the credential secret.
+// removeCredentialsFinalizer removes the finalizer from the credentials secret when the secret has the only one owner
+// reference left, as the secret can be reused by multiple clusters.
 func removeCredentialsFinalizer(ctx context.Context, c client.Client, cluster *infrav1.IonosCloudCluster) error {
 	secretKey := client.ObjectKey{
 		Namespace: cluster.Namespace,
@@ -131,6 +133,12 @@ func removeCredentialsFinalizer(ctx context.Context, c client.Client, cluster *i
 	if err := c.Get(ctx, secretKey, &secret); err != nil {
 		// If the secret does not exist anymore, there is nothing we can do.
 		return client.IgnoreNotFound(err)
+	}
+
+	if len(secret.GetOwnerReferences()) > 1 {
+		// The secret is owned by more than one resource.
+		// Therefore, we don't want to remove the finalizer.
+		return nil
 	}
 
 	controllerutil.RemoveFinalizer(&secret, infrav1.ClusterCredentialsFinalizer)
