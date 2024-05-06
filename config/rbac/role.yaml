@@ -22,6 +22,7 @@ rules:
   verbs:
   - get
   - list
+  - update
   - watch
 - apiGroups:
   - authentication.k8s.io
@@ -104,4 +105,10 @@ rules:
   verbs:
   - get
   - patch
+  - update
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - secrets/finalizers
+  verbs:
   - update
