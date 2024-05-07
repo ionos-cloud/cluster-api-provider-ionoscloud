@@ -11,10 +11,3 @@ jobs:
           go-version-file: go.mod
       - name: Run tests
         run: "make test"
-
-      # TODO(lubedacht) include later
-      # - name: SonarCloud Scan
-      #   uses: SonarSource/sonarcloud-github-action@v2.0.2
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

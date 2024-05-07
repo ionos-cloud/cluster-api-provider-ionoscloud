@@ -37,10 +37,12 @@ func exampleParams(t *testing.T) MachineParams {
 	if err := infrav1.AddToScheme(scheme.Scheme); err != nil {
 		require.NoError(t, err, "could not construct params")
 	}
+	cl := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 	return MachineParams{
-		Client:  fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
+		Client:  cl,
 		Machine: &clusterv1.Machine{},
 		ClusterScope: &Cluster{
+			client:  cl,
 			Cluster: &clusterv1.Cluster{},
 		},
 		IonosMachine: &infrav1.IonosCloudMachine{},
@@ -96,7 +98,7 @@ func TestMachineHasFailedFailureMessage(t *testing.T) {
 func TestMachineHasFailedFailureReason(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
-	scope.IonosMachine.Status.FailureReason = capierrors.MachineStatusErrorPtr("¯\\_(ツ)_/¯")
+	scope.IonosMachine.Status.FailureReason = (*capierrors.MachineStatusError)(ptr.To("¯\\_(ツ)_/¯"))
 	require.True(t, scope.HasFailed())
 }
 

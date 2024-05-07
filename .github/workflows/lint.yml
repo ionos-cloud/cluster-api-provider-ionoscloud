@@ -17,15 +17,14 @@ jobs:
       - name: Run lint
         run: "make lint"
 
-  # TODO(lubedacht) include later
-  # yamllint:
-  #   name: yamllint
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: ibiqlik/action-yamllint@v3
-  #       with:
-  #         format: github
+  yamllint:
+     name: yamllint
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
+       - uses: ibiqlik/action-yamllint@v3
+         with:
+           format: github
 
   actionlint:
     name: actionlint
