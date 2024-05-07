@@ -11,9 +11,12 @@
 <!-- goreportcard badge -->
 <a href="https://goreportcard.com/report/ionos-cloud/cluster-api-provider-ionoscloud">
 <img src="https://goreportcard.com/badge/ionos-cloud/cluster-api-provider-ionoscloud"></a>
+<!-- sonarcloud badge -->
+<a href="https://sonarcloud.io/summary/new_code?id=ionos-cloud_cluster-api-provider-ionoscloud">
+<img src="https://sonarcloud.io/api/project_badges/measure?project=ionos-cloud_cluster-api-provider-ionoscloud&metric=alert_status&token=61ea2f753f2b2a3ed9a2cf966248fdd57d7f6ebd" alt="Quality Gate Status"></a>
 <!-- join kubernetes slack channel for cluster-api-provider-ionos-cloud -->
 <!-- <a href="https://kubernetes.slack.com/messages/TBD"> -->
-<img src="https://img.shields.io/badge/join%20slack-%23cluster--api--ionoscloud-003d8f?logo=slack"></a>
+<!-- <img src="https://img.shields.io/badge/join%20slack-%23cluster--api--ionoscloud-003d8f?logo=slack"></a> -->
 </p>
 
 Kubernetes-native declarative infrastructure for IONOS Cloud.
@@ -50,8 +53,8 @@ Documentation can be found in the `/docs` directory, and the [index is here](doc
 
 ## Getting involved and contributing
 
-Are you interested in contributing to cluster-api-provider-ionoscloud? We
-maintainers and community would love your suggestions, contributions, and help!
+Are you interested in contributing to cluster-api-provider-ionoscloud? We, the
+maintainers and the community, would love your suggestions, contributions, and help!
 Also, the maintainers can be contacted at any time to learn more about how to get
 involved.
 
