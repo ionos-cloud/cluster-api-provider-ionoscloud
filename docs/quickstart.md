@@ -139,7 +139,9 @@ KUBECONFIG=ionos-quickstart.kubeconfig kubectl get nodes
 
 TODO(gfariasalves): Add instructions about installing a CNI or available flavours
 
-### Cleaning a cluster
+### Cleanup
+
+**Note: Deleting a cluster will also delete any associated volumes that have been attached to the servers**
 
 ```sh
 kubectl delete cluster ionos-quickstart
