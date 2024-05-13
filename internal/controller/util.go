@@ -98,8 +98,8 @@ func createServiceFromCluster(
 	return cloud.NewService(ionosClient, log)
 }
 
-// ensureSecretControlledByCluster ensures that the secrets will contain a finalizer and a controller reference.
-// The secret should only be deleted when there are no resources left in the IONOS Cloud environment.
+// ensureSecretControlledByCluster ensures that the secrets will contain a finalizer and an owner reference.
+// The secret will be deleted automatically with its last owner.
 func ensureSecretControlledByCluster(
 	ctx context.Context, c client.Client,
 	cluster *infrav1.IonosCloudCluster,
@@ -109,7 +109,7 @@ func ensureSecretControlledByCluster(
 
 	finalizerAdded := controllerutil.AddFinalizer(secret, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))
 	// We want to allow using the secret in multiple clusters.
-	// Kubernetes only allows us to have one controller reference.
+	// Using owner references because Kubernetes only allows us to have one controller reference.
 	if err := controllerutil.SetOwnerReference(cluster, secret, c.Scheme()); err != nil {
 		return err
 	}
