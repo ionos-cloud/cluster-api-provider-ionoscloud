@@ -138,7 +138,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 		}
 	}
 
-	err = s.deleteServer(ctx, ms, *server.Id)
+	err = s.deleteServer(ctx, ms, server)
 	return err == nil, err
 }
 
@@ -239,11 +239,31 @@ func (s *Service) getServer(ctx context.Context, ms *scope.Machine) (*sdk.Server
 	return nil, err
 }
 
-func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, serverID string) error {
+func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, server *sdk.Server) error {
 	log := s.logger.WithName("deleteServer")
 
-	log.V(4).Info("Deleting server", "serverID", serverID)
-	requestLocation, err := s.ionosClient.DeleteServer(ctx, ms.DatacenterID(), serverID)
+	serverID := ptr.Deref(server.GetId(), "")
+
+	deleteVolumes := ms.ClusterScope.IsDeleted()
+	bootVolumeID := server.GetProperties().GetBootVolume().GetId()
+	if !deleteVolumes && bootVolumeID != nil {
+		// We need to make sure to only delete volumes if the cluster is being deleted.
+		// Otherwise, all volumes, which are currently being managed by the CSI will be deleted during
+		// any operation that deletes the server.
+		// In this case we only delete the boot volume and allow the CSI to manage the rest.
+
+		requestLocation, err := s.ionosClient.DeleteVolume(ctx, ms.DatacenterID(), *bootVolumeID)
+		if err != nil {
+			return fmt.Errorf("failed to request boot volume deletion: %w", err)
+		}
+
+		ms.IonosMachine.SetCurrentRequest(http.MethodDelete, sdk.RequestStatusQueued, requestLocation)
+		log.V(4).Info("Successfully requested for boot volume deletion", "location", requestLocation)
+		return nil
+	}
+
+	log.V(4).Info("Deleting server", "serverID", serverID, "deleteVolumes", deleteVolumes)
+	requestLocation, err := s.ionosClient.DeleteServer(ctx, ms.DatacenterID(), serverID, deleteVolumes)
 	if err != nil {
 		return fmt.Errorf("failed to request server deletion: %w", err)
 	}

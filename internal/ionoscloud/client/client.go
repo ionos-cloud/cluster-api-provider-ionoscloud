@@ -152,7 +152,7 @@ func (c *IonosCloudClient) GetServer(ctx context.Context, datacenterID, serverID
 }
 
 // DeleteServer deletes the server that matches the provided serverID in the specified data center.
-func (c *IonosCloudClient) DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error) {
+func (c *IonosCloudClient) DeleteServer(ctx context.Context, datacenterID, serverID string, deleteVolumes bool) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
 	}
@@ -161,7 +161,7 @@ func (c *IonosCloudClient) DeleteServer(ctx context.Context, datacenterID, serve
 	}
 	req, err := c.API.ServersApi.
 		DatacentersServersDelete(ctx, datacenterID, serverID).
-		DeleteVolumes(true).
+		DeleteVolumes(deleteVolumes).
 		Execute()
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
@@ -189,6 +189,28 @@ func (c *IonosCloudClient) StartServer(ctx context.Context, datacenterID, server
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
 	if location := req.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
+}
+
+// DeleteVolume deletes the volume that matches the provided volumeID in the specified data center.
+func (c *IonosCloudClient) DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+
+	if volumeID == "" {
+		return "", errVolumeIDIsEmpty
+	}
+
+	resp, err := c.API.VolumesApi.DatacentersVolumesDelete(ctx, datacenterID, volumeID).Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	if location := resp.Header.Get(locationHeaderKey); location != "" {
 		return location, nil
 	}
 
