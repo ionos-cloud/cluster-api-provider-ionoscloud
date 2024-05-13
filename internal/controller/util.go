@@ -121,8 +121,7 @@ func ensureSecretControlledByCluster(
 	return nil
 }
 
-// removeCredentialsFinalizer removes the finalizer from the credentials secret when the secret has the only one owner
-// reference left, as the secret can be reused by multiple clusters.
+// removeCredentialsFinalizer removes the cluster-specific finalizer from the credentials secret.
 func removeCredentialsFinalizer(ctx context.Context, c client.Client, cluster *infrav1.IonosCloudCluster) error {
 	secretKey := client.ObjectKey{
 		Namespace: cluster.Namespace,
