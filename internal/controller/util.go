@@ -98,7 +98,7 @@ func createServiceFromCluster(
 	return cloud.NewService(ionosClient, log)
 }
 
-// ensureSecretControlledByCluster ensures that the secrets will contain a finalizer and an owner reference.
+// ensureSecretControlledByCluster ensures that the secrets will contain a cluster-specific finalizer and an owner reference.
 // The secret will be deleted automatically with its last owner.
 func ensureSecretControlledByCluster(
 	ctx context.Context, c client.Client,
