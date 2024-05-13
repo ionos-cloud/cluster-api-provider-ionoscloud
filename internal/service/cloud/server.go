@@ -248,9 +248,8 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, server *s
 	bootVolumeID := server.GetProperties().GetBootVolume().GetId()
 	if !deleteVolumes && bootVolumeID != nil {
 		// We need to make sure to only delete volumes if the cluster is being deleted.
-		// Otherwise, all volumes, which are currently being managed by the CSI will be deleted during
-		// any operation that deletes the server.
-		// In this case we only delete the boot volume and allow the CSI to manage the rest.
+		// If a node is being replaced, we only delete the boot volume and keep all other volumes.
+		// The CSI will take care of re-attaching the existing volumes to the new node.
 
 		requestLocation, err := s.ionosClient.DeleteVolume(ctx, ms.DatacenterID(), *bootVolumeID)
 		if err != nil {
