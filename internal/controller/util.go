@@ -107,14 +107,14 @@ func ensureSecretControlledByCluster(
 ) error {
 	old := secret.DeepCopy()
 
-	controllerutil.AddFinalizer(secret, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))
+	finalizerAdded := controllerutil.AddFinalizer(secret, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))
 	// We want to allow using the secret in multiple clusters.
 	// Kubernetes only allows us to have one controller reference.
 	if err := controllerutil.SetOwnerReference(cluster, secret, c.Scheme()); err != nil {
 		return err
 	}
 
-	if !cmp.Equal(old.GetObjectMeta(), secret.GetObjectMeta()) {
+	if finalizerAdded || !cmp.Equal(old.GetOwnerReferences(), secret.GetOwnerReferences()) {
 		return c.Update(ctx, secret)
 	}
 
