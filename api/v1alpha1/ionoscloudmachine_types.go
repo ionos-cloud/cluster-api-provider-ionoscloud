@@ -281,6 +281,7 @@ type NICInfo struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:path=ionoscloudmachines,scope=Namespaced,categories=cluster-api;ionos,shortName=icm
 //+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
 //+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine is ready"
 //+kubebuilder:printcolumn:name="IPv4 Addresses",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].ipv4Addresses"
