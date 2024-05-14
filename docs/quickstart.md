@@ -29,6 +29,8 @@ providers:
   type: InfrastructureProvider
 ```
 
+If `XDG_CONFIG_HOME` is set the configuration should be written to `$XDG_CONFIG_HOME/cluster-api/clusterctl.yaml`.
+
 ```sh
 clusterctl init --infrastructure=ionoscloud
 ```
