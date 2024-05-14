@@ -56,8 +56,10 @@ KUBERNETES_VERSION                          # The version of Kubernetes to be in
 ## -- Kubernetes Cluster-related environment variables -- ##
 IONOSCLOUD_CONTRACT_NUMBER                  # The contract number of the IONOS Cloud contract.
 IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluster should be created.
-IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores.
-IONOSCLOUD_MACHINE_MEMORY_MB                # The memory in MB.
+IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores (optional).
+                                            #   Defaults to 4 for control plane and 2 for worker nodes.
+IONOSCLOUD_MACHINE_MEMORY_MB                # The memory in MB (optional).
+                                            #   Defaults to 8192 for control plane and 4096 for worker nodes.
 IONOSCLOUD_MACHINE_IMAGE_ID                 # The image ID.
 IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used.
 ```
