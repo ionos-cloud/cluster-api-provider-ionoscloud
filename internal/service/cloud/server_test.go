@@ -193,14 +193,68 @@ func (s *serverSuite) TestReconcileServerDeletion() {
 	reqLocation := "delete/location"
 
 	s.mockGetServerDeletionRequestCall(exampleServerID).Return(nil, nil)
-	s.mockDeleteServerCall(exampleServerID).Return(reqLocation, nil)
+	s.mockDeleteServerCall(exampleServerID, false).Return(reqLocation, nil)
 
 	res, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
+	s.validateSuccessfulDeletionResponse(res, err, reqLocation)
+}
+
+func (s *serverSuite) TestReconcileServerDeletionDeleteBootVolume() {
+	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+		Id: ptr.To(exampleServerID),
+		Properties: &sdk.ServerProperties{
+			BootVolume: &sdk.ResourceReference{
+				Id: ptr.To(exampleBootVolumeID),
+			},
+		},
+	}, nil).Once()
+
+	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+		Id: ptr.To(exampleServerID),
+	}, nil).Once()
+
+	reqLocationVolume := "delete/location/volume"
+	reqLocationServer := "delete/location/server"
+
+	s.mockDeleteVolumeCall(exampleBootVolumeID).Return(reqLocationVolume, nil).Once()
+
+	s.mockGetServerDeletionRequestCall(exampleServerID).Return(nil, nil)
+	s.mockDeleteServerCall(exampleServerID, false).Return(reqLocationServer, nil)
+
+	res, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
+	s.validateSuccessfulDeletionResponse(res, err, reqLocationVolume)
+
+	res, err = s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
+	s.validateSuccessfulDeletionResponse(res, err, reqLocationServer)
+}
+
+func (s *serverSuite) TestReconcileServerDeletionDeleteAllVolumes() {
+	s.clusterScope.Cluster.DeletionTimestamp = ptr.To(metav1.Now())
+	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+		Id: ptr.To(exampleServerID),
+		Properties: &sdk.ServerProperties{
+			BootVolume: &sdk.ResourceReference{
+				Id: ptr.To(exampleBootVolumeID),
+			},
+		},
+	}, nil).Once()
+
+	reqLocation := "delete/location"
+	s.mockGetServerDeletionRequestCall(exampleServerID).Return(nil, nil)
+	s.mockDeleteServerCall(exampleServerID, true).Return(reqLocation, nil)
+
+	res, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
+	s.validateSuccessfulDeletionResponse(res, err, reqLocation)
+}
+
+func (s *serverSuite) validateSuccessfulDeletionResponse(success bool, err error, requestLocation string) {
+	s.T().Helper()
+
 	s.NoError(err)
-	s.True(res)
+	s.True(success)
 	s.NotNil(s.machineScope.IonosMachine.Status.CurrentRequest)
 	s.Equal(http.MethodDelete, s.machineScope.IonosMachine.Status.CurrentRequest.Method)
-	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, reqLocation)
+	s.Equal(s.machineScope.IonosMachine.Status.CurrentRequest.RequestPath, requestLocation)
 }
 
 func (s *serverSuite) TestReconcileServerDeletionServerNotFound() {
@@ -281,7 +335,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
 	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusFailed, exampleServerID)
 
 	s.mockGetServerDeletionRequestCall(exampleServerID).Return([]sdk.Request{exampleRequest}, nil)
-	s.mockDeleteServerCall(exampleServerID).Return("delete/triggered", nil)
+	s.mockDeleteServerCall(exampleServerID, false).Return("delete/triggered", nil)
 
 	res, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -352,8 +406,12 @@ func (s *serverSuite) mockListServersCall() *clienttest.MockClient_ListServers_C
 	return s.ionosClient.EXPECT().ListServers(s.ctx, s.machineScope.DatacenterID())
 }
 
-func (s *serverSuite) mockDeleteServerCall(serverID string) *clienttest.MockClient_DeleteServer_Call {
-	return s.ionosClient.EXPECT().DeleteServer(s.ctx, s.machineScope.DatacenterID(), serverID)
+func (s *serverSuite) mockDeleteVolumeCall(volumeID string) *clienttest.MockClient_DeleteVolume_Call {
+	return s.ionosClient.EXPECT().DeleteVolume(s.ctx, s.machineScope.DatacenterID(), volumeID)
+}
+
+func (s *serverSuite) mockDeleteServerCall(serverID string, deleteVolumes bool) *clienttest.MockClient_DeleteServer_Call {
+	return s.ionosClient.EXPECT().DeleteServer(s.ctx, s.machineScope.DatacenterID(), serverID, deleteVolumes)
 }
 
 func (s *serverSuite) mockGetServerCreationRequestCall() *clienttest.MockClient_GetRequests_Call {

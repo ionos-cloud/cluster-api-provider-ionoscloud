@@ -148,6 +148,11 @@ func (c *Cluster) Location() string {
 	return c.IonosCluster.Spec.Location
 }
 
+// IsDeleted checks if the cluster was requested for deletion.
+func (c *Cluster) IsDeleted() bool {
+	return !c.Cluster.DeletionTimestamp.IsZero() || !c.IonosCluster.DeletionTimestamp.IsZero()
+}
+
 // PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
 func (c *Cluster) PatchObject() error {

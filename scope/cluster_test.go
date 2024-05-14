@@ -260,6 +260,63 @@ func TestClusterListMachines(t *testing.T) {
 	}
 }
 
+func TestClusterIsDeleted(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, infrav1.AddToScheme(scheme))
+	cl := fake.NewClientBuilder().WithScheme(scheme).Build()
+
+	now := metav1.Now()
+
+	tests := []struct {
+		name         string
+		cluster      *clusterv1.Cluster
+		ionosCluster *infrav1.IonosCloudCluster
+		want         bool
+	}{
+		{
+			name:         "cluster is not deleted",
+			cluster:      &clusterv1.Cluster{},
+			ionosCluster: &infrav1.IonosCloudCluster{},
+			want:         false,
+		},
+		{
+			name:         "cluster is deleted with only cluster deletion timestamp",
+			cluster:      &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &now}},
+			ionosCluster: &infrav1.IonosCloudCluster{},
+			want:         true,
+		},
+		{
+			name:         "cluster is deleted with only ionos cluster deletion timestamp",
+			cluster:      &clusterv1.Cluster{},
+			ionosCluster: &infrav1.IonosCloudCluster{ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &now}},
+			want:         true,
+		},
+		{
+			name:         "cluster is deleted with both deletion timestamps",
+			cluster:      &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &now}},
+			ionosCluster: &infrav1.IonosCloudCluster{ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &now}},
+			want:         true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			params := ClusterParams{
+				Client:       cl,
+				Cluster:      test.cluster,
+				IonosCluster: test.ionosCluster,
+			}
+
+			c, err := NewCluster(params)
+			require.NoError(t, err)
+			require.NotNil(t, c)
+
+			got := c.IsDeleted()
+			require.Equal(t, test.want, got)
+		})
+	}
+}
+
 func buildMachineWithLabel(name string, labels map[string]string) *infrav1.IonosCloudMachine {
 	return &infrav1.IonosCloudMachine{
 		ObjectMeta: metav1.ObjectMeta{
