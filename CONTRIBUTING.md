@@ -34,7 +34,7 @@ This project and everyone participating in it is governed by the
 ## I Have a Question
 
 > If you want to ask a question, we assume that you have read the
-available [Documentation](./docs/README.md).
+available [Documentation](./README.md).
 
 Before you ask a question, it is best to search for existing
 [Issues](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/issues)
@@ -68,7 +68,7 @@ report. Please complete the following steps in advance to help us fix any potent
 
 - Make sure that you are using the latest version.
 - Determine if your bug is really a bug and not an error on your side e.g. using incompatible
-environment components/versions (Make sure that you have read the [documentation](./docs/README.md).
+environment components/versions (Make sure that you have read the [documentation](./README.md).
 If you are looking for support, you might want to check [this section](#i-have-a-question)).
 - To see if other users have experienced (and potentially already solved) the same issue you are
 having, check if there is not already a bug report existing for your bug or error in the
@@ -120,7 +120,7 @@ and the community to understand your suggestion and find related suggestions.
 #### Before Submitting an Enhancement
 
 - Make sure that you are using the latest version.
-- Read the [documentation](./docs/README.md) carefully and find out if
+- Read the [documentation](./README.md) carefully and find out if
 the functionality is already covered, maybe by an individual configuration.
 - Perform a [search](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/issues)
 to see if the enhancement has already been suggested. If it has, add a comment
@@ -145,8 +145,8 @@ You may also want to point out the other projects that solved it better and whic
 
 ### Your First Contribution
 
-Check how to set up your development environment, our style guide and how to create a pull
-request at (./docs/Development.md)
+Refer to the [docs](./docs) on how to set up your development environment, our style guide and how to create a pull
+request.
 
 ## Attribution
 This guide is based on the [contributing-gen](https://github.com/bttger/contributing-gen)
