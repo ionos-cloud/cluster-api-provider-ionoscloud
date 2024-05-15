@@ -49,7 +49,7 @@ For more information on Kubernetes version support, see the [Cluster API book](h
 
 ## Documentation
 
-Documentation can be found in the `/docs` directory, and the [index is here](docs/README.md).
+Documentation can be found in the `/docs` directory, and the [index is here](docs/).
 
 ## Getting involved and contributing
 
@@ -77,4 +77,4 @@ that the only people who can get things done around here are the "maintainers".
 [good_first_issue]: https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22
 [bug_report]: https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/issues/new?template=bug_report.md
 [feature_request]: https://github.com/kubernetes-sigs/cluster-api-provider-ionoscloud/issues/new?template=feature_request.md
-[cluster_api]: https://github.com/ionos-cloud/cluster-api
+[cluster_api]: https://github.com/kubernetes-sigs/cluster-api

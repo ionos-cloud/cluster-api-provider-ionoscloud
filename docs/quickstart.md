@@ -29,6 +29,8 @@ providers:
   type: InfrastructureProvider
 ```
 
+If `XDG_CONFIG_HOME` is set the configuration should be written to `$XDG_CONFIG_HOME/cluster-api/clusterctl.yaml`.
+
 ```sh
 clusterctl init --infrastructure=ionoscloud
 ```
@@ -41,8 +43,6 @@ CAPIC requires several environment variables to be set in order to create a Kube
 ```env
 ## -- Cloud-specific environment variables -- ##
 IONOS_TOKEN                                 # The token of the IONOS Cloud account.
-IONOS_API_URL                               # The API URL of the IONOS Cloud account (optional).
-                                            #   Defaults to https://api.ionos.com/cloudapi/v6.
 
 ## -- Cluster API-related environment variables -- ##
 CONTROL_PLANE_ENDPOINT_HOST                 # The control plane endpoint host (optional).
@@ -58,8 +58,10 @@ KUBERNETES_VERSION                          # The version of Kubernetes to be in
 ## -- Kubernetes Cluster-related environment variables -- ##
 IONOSCLOUD_CONTRACT_NUMBER                  # The contract number of the IONOS Cloud contract.
 IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluster should be created.
-IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores.
-IONOSCLOUD_MACHINE_MEMORY_MB                # The memory in MB.
+IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores (optional).
+                                            #   Defaults to 4 for control plane and 2 for worker nodes.
+IONOSCLOUD_MACHINE_MEMORY_MB                # The memory in MB (optional).
+                                            #   Defaults to 8192 for control plane and 4096 for worker nodes.
 IONOSCLOUD_MACHINE_IMAGE_ID                 # The image ID.
 IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used.
 ```
@@ -77,20 +79,7 @@ metadata:
 type: Opaque
 stringData:
   token: "Token-Goes-Here"
-  apiURL: "https://api.ionos.com/cloudapi/v6"
-  caBundle: |
-    -----BEGIN CERTIFICATE-----
-    d293LCBtdWNoIGJhc2U2NCwgc3VjaCBhd2Vzb21lIQ==
-    ...
-    -----END CERTIFICATE-----
 ```
-
-Notes:
-
-- The `apiURL` field is optional and defaults to `https://api.ionos.com/cloudapi/v6` if no value was provided.
-- The `caBundle` field is optional. It can be used to provide a custom PEM-encoded CA bundle used to validate the
-IONOS Cloud API TLS certificate. If unset, the system's root CA set is used. In case of our provided Dockerfile that
-would be Debian 12's `ca-certificates` package.
 
 ### Create a workload cluster
 
