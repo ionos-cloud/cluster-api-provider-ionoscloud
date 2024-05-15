@@ -10,7 +10,7 @@ spec:
   names:
     categories:
     - cluster-api
-    - ionos
+    - ionoscloud
     kind: IonosCloudCluster
     listKind: IonosCloudClusterList
     plural: ionoscloudclusters
