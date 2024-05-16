@@ -141,6 +141,47 @@ for detailed installation instructions.
 kubectl delete cluster ionos-quickstart
 ```
 
+## Cluster templates
+
+We provide various templates for creating clusters. Some of these templates provide you with a CNI already.
+
+For templates using `CNIs` you're required to create `ConfigMaps` to make `ClusterResourceSets` available.
+
+We provide the following templates:
+
+| Flavor         | Template File                          | CRS File                      |
+|----------------|----------------------------------------|-------------------------------|
+| calico         | templates/cluster-template-calico.yaml | templates/crs/cni/calico.yaml |
+| default        | templates/cluster-template.yaml        | -                             |
+
+
+#### Flavor with Calico CNI
+Before this cluster can be deployed, `calico` needs to be configured. As a first step we
+need to generate a manifest. Simply use our makefile:
+
+```
+make crs-calico
+
+```
+Now install the ConfigMap into your k8s:
+
+```
+kubectl create cm calico  --from-file=data=templates/crs/cni/calico.yaml
+```
+
+Now, you can create a cluster using the cilium flavor:
+
+```bash
+$ clusterctl generate cluster dev-calico \
+--infrastructure ionoscloud \
+--kubernetes-version v1.28.6 \
+--control-plane-machine-count 1 \
+--worker-machine-count 3 \
+--flavor calico > cluster.yaml
+
+$ kubectl apply -f cluster.yaml
+```
+
 ### Custom Templates
 
 If you need anything specific that requires a more complex setup, we recommend to use custom templates:
