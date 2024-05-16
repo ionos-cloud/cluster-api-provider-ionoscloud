@@ -125,9 +125,16 @@ KUBECONFIG=ionos-quickstart.kubeconfig kubectl get nodes
 
 ### Installing a CNI
 
-<!-- TODO(gfariasalves): Add instructions about installing a CNI or available flavours -->
+You may use our provided flavors for generating cluster with CNI, please refer to the [Cluster templates](#cluster-templates) section.
 
-### Installing a Cloud Controller Manager
+Or if your cluster does not have a CNI, you can install one manually. For example, to install Calico:
+
+```sh
+make crs-calico
+kubectl apply -f templates/crs/cni/calico.yaml
+```
+
+### Installing the Cloud Controller Manager
 
 We provide a helm chart for the Cloud Controller Manager for IONOS Cloud.
 Refer to its [README](https://github.com/ionos-cloud/cloud-provider-ionoscloud/tree/main/charts/ionoscloud-cloud-controller-manager/README.md)
@@ -146,6 +153,14 @@ kubectl delete cluster ionos-quickstart
 We provide various templates for creating clusters. Some of these templates provide you with a CNI already.
 
 For templates using `CNIs` you're required to create `ConfigMaps` to make `ClusterResourceSets` available.
+
+To enable `ClusterResourceSets` feature,
+you need to set the following environment variable before doing `clusterctl init`:
+
+```bash
+# This enables the ClusterResourceSet feature that we are using to deploy CNI
+export EXP_CLUSTER_RESOURCE_SET="true"
+```
 
 We provide the following templates:
 
