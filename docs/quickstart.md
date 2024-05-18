@@ -56,7 +56,6 @@ CLUSTER_NAME                                # The name of the cluster.
 KUBERNETES_VERSION                          # The version of Kubernetes to be installed (can also be set via clusterctl).
 
 ## -- Kubernetes Cluster-related environment variables -- ##
-IONOSCLOUD_CONTRACT_NUMBER                  # The contract number of the IONOS Cloud contract.
 IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluster should be created.
 IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores (optional).
                                             #   Defaults to 4 for control plane and 2 for worker nodes.

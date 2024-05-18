@@ -44,10 +44,6 @@ type IonosCloudClusterSpec struct {
 	// provider-provided block IP into the kube-vip manifest.
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 
-	// Contract number is the contract number of the IONOS Cloud account.
-	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
-	ContractNumber string `json:"contractNumber"`
-
 	// Location is the location where the data centers should be located.
 	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
 	//+kubebuilder:example=de/txl

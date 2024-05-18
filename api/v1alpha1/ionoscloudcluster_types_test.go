@@ -56,7 +56,6 @@ func defaultCluster() *IonosCloudCluster {
 				Host: exampleIP,
 				Port: 5678,
 			},
-			ContractNumber: "12345678",
 			Location:       "de/txl",
 			CredentialsRef: corev1.LocalObjectReference{Name: "secret-name"},
 		},
@@ -87,15 +86,6 @@ var _ = Describe("IonosCloudCluster", func() {
 	})
 
 	Context("Update", func() {
-		It("should not allow changing the contract number", func() {
-			cluster := defaultCluster()
-			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
-
-			cluster.Spec.ContractNumber = newValueStr
-			Expect(k8sClient.Update(context.Background(), cluster)).
-				Should(MatchError(ContainSubstring("contractNumber is immutable")))
-		})
-
 		It("should not allow changing the location", func() {
 			cluster := defaultCluster()
 			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())

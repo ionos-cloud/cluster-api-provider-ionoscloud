@@ -119,8 +119,7 @@ func (s *ServiceTestSuite) SetupTest() {
 			},
 		},
 		Spec: infrav1.IonosCloudClusterSpec{
-			ContractNumber: "12345678",
-			Location:       "de/txl",
+			Location: "de/txl",
 		},
 		Status: infrav1.IonosCloudClusterStatus{},
 	}
