@@ -74,6 +74,9 @@ func (v VolumeDiskType) String() string {
 // AvailabilityZone is the availability zone where different cloud resources are created in.
 type AvailabilityZone string
 
+// ServerType specifies the type of server.
+type ServerType string
+
 const (
 	// AvailabilityZoneAuto automatically selects an availability zone.
 	AvailabilityZoneAuto AvailabilityZone = "AUTO"
@@ -83,6 +86,9 @@ const (
 	AvailabilityZoneTwo AvailabilityZone = "ZONE_2"
 	// AvailabilityZoneThree zone 3.
 	AvailabilityZoneThree AvailabilityZone = "ZONE_3"
+
+	ServerTypeEnterprise = "ENTERPRISE"
+	ServerTypeVCpu       = "VCPU"
 )
 
 // String returns the string representation of the AvailabilityZone.
@@ -149,6 +155,13 @@ type IonosCloudMachineSpec struct {
 	//+kubebuilder:validation:XValidation:rule=`self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")`,message="failoverIP must be either 'AUTO' or a valid IPv4 address"
 	//+optional
 	FailoverIP *string `json:"failoverIP,omitempty"`
+
+	// Type is the server type of the VM. Can be either ENTERPRISE or VCPU.
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="type is immutable"
+	//+kubebuilder:validation:Enum=ENTERPRISE;VCPU
+	//+kubebuilder:default=ENTERPRISE
+	//+optional
+	Type ServerType `json:"type"`
 }
 
 // Networks contains a list of additional LAN IDs
