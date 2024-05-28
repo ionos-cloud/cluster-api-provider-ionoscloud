@@ -28,6 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
@@ -148,10 +149,10 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
 	s.True(requeue)
 }
 
-func (s *serverSuite) TestReconcileServerNoRequest() {
+func (s *serverSuite) TestReconcileEnterpriseServerNoRequest() {
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
-	s.mockCreateServerCall().Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
+	s.mockCreateServerCall(infrav1.ServerTypeEnterprise).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To("1"),
 		Properties: &sdk.LanProperties{
@@ -160,6 +161,25 @@ func (s *serverSuite) TestReconcileServerNoRequest() {
 		},
 	}}}, nil)
 
+	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
+	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
+	s.NoError(err)
+	s.True(requeue)
+}
+
+func (s *serverSuite) TestReconcileVCPUServerNoRequest() {
+	s.prepareReconcileServerRequestTest()
+	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
+	s.mockCreateServerCall(infrav1.ServerTypeVCpu).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
+	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+		Id: ptr.To("1"),
+		Properties: &sdk.LanProperties{
+			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
+			Public: ptr.To(true),
+		},
+	}}}, nil)
+
+	s.infraMachine.Spec.Type = infrav1.ServerTypeVCpu
 	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
 	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
 	s.NoError(err)
@@ -424,11 +444,11 @@ func (s *serverSuite) mockGetServerDeletionRequestCall(serverID string) *clientt
 		http.MethodDelete, path.Join(s.service.serversURL(s.machineScope.DatacenterID()), serverID))
 }
 
-func (s *serverSuite) mockCreateServerCall() *clienttest.MockClient_CreateServer_Call {
+func (s *serverSuite) mockCreateServerCall(serverType infrav1.ServerType) *clienttest.MockClient_CreateServer_Call {
 	return s.ionosClient.EXPECT().CreateServer(
 		s.ctx,
 		s.machineScope.DatacenterID(),
-		mock.Anything,
+		mock.MatchedBy(hasServerType(serverType)),
 		mock.Anything,
 	)
 }
@@ -460,4 +480,10 @@ func (s *serverSuite) examplePostRequest(status string) sdk.Request {
 		targetType: sdk.SERVER,
 	}
 	return s.exampleRequest(opts)
+}
+
+func hasServerType(serverType infrav1.ServerType) func(properties sdk.ServerProperties) bool {
+	return func(properties sdk.ServerProperties) bool {
+		return ptr.Deref(properties.Type, "") == serverType.String()
+	}
 }
