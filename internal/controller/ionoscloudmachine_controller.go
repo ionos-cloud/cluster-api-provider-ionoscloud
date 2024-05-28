@@ -29,19 +29,36 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-// IonosCloudMachineReconciler reconciles a IonosCloudMachine object.
-type IonosCloudMachineReconciler struct {
+// ionosCloudMachineReconciler reconciles a IonosCloudMachine object.
+type ionosCloudMachineReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	scheme *runtime.Scheme
+	locker *locker.Locker
+}
+
+// RegisterIonosCloudMachineReconciler creates an ionosCloudMachineReconciler and registers it with the manager.
+func RegisterIonosCloudMachineReconciler(mgr ctrl.Manager, options controller.Options) error {
+	return newIonosCloudMachineReconciler(mgr).setupWithManager(mgr, options)
+}
+
+func newIonosCloudMachineReconciler(mgr ctrl.Manager) *ionosCloudMachineReconciler {
+	r := &ionosCloudMachineReconciler{
+		Client: mgr.GetClient(),
+		scheme: mgr.GetScheme(),
+		locker: locker.New(),
+	}
+	return r
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines,verbs=get;list;watch;create;update;patch;delete
@@ -52,7 +69,7 @@ type IonosCloudMachineReconciler struct {
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;update
 //+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
-func (r *IonosCloudMachineReconciler) Reconcile(
+func (r *ionosCloudMachineReconciler) Reconcile(
 	ctx context.Context,
 	ionosCloudMachine *infrav1.IonosCloudMachine,
 ) (_ ctrl.Result, retErr error) {
@@ -95,6 +112,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 		Machine:      machine,
 		ClusterScope: clusterScope,
 		IonosMachine: ionosCloudMachine,
+		Locker:       r.locker,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
@@ -127,7 +145,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 	return r.reconcileNormal(ctx, cloudService, machineScope)
 }
 
-func (r *IonosCloudMachineReconciler) reconcileNormal(
+func (r *ionosCloudMachineReconciler) reconcileNormal(
 	ctx context.Context, cloudService *cloud.Service, machineScope *scope.Machine,
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -164,7 +182,6 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
 	reconcileSequence := []serviceReconcileStep[scope.Machine]{
 		{"ReconcileLAN", cloudService.ReconcileLAN},
 		{"ReconcileServer", cloudService.ReconcileServer},
@@ -185,15 +202,11 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudMachineReconciler) reconcileDelete(
+func (r *ionosCloudMachineReconciler) reconcileDelete(
 	ctx context.Context, machineScope *scope.Machine, cloudService *cloud.Service,
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	// TODO(piepmatz): This is not thread-safe, but needs to be. Add locking.
-	//  Moreover, should only be attempted if it's the last machine using that LAN. We should check that our machines
-	//  at least, but need to accept that users added their own infrastructure into our LAN (in that case a LAN deletion
-	//  attempt will be denied with HTTP 422).
 	requeue, err := r.checkRequestStates(ctx, machineScope, cloudService)
 	if err != nil {
 		// In case the request state cannot be determined, we want to continue with the
@@ -240,7 +253,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 //   - Queued, Running => Requeue the current request
 //   - Failed => Log the error and continue also apply the same logic as in Done.
 //   - Done => Clear request from the status and continue reconciliation.
-func (*IonosCloudMachineReconciler) checkRequestStates(
+func (*ionosCloudMachineReconciler) checkRequestStates(
 	ctx context.Context,
 	machineScope *scope.Machine,
 	cloudService *cloud.Service,
@@ -284,7 +297,7 @@ func (*IonosCloudMachineReconciler) checkRequestStates(
 	return requeue, retErr
 }
 
-func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
+func (*ionosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
 	log := ctrl.LoggerFrom(ctx)
 	// Make sure the infrastructure is ready.
 	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
@@ -314,9 +327,10 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	return true
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
+// setupWithManager sets up the controller with the Manager.
+func (r *ionosCloudMachineReconciler) setupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
 		For(&infrav1.IonosCloudMachine{}).
 		Watches(
 			&clusterv1.Machine{},
@@ -325,7 +339,7 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(reconcile.AsReconciler[*infrav1.IonosCloudMachine](r.Client, r))
 }
 
-func (r *IonosCloudMachineReconciler) getClusterScope(
+func (r *ionosCloudMachineReconciler) getClusterScope(
 	ctx context.Context, cluster *clusterv1.Cluster, ionosCloudMachine *infrav1.IonosCloudMachine,
 ) (*scope.Cluster, error) {
 	var clusterScope *scope.Cluster

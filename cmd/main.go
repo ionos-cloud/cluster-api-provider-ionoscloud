@@ -30,10 +30,11 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/controller"
+	iccontroller "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/controller"
 )
 
 var (
@@ -42,6 +43,9 @@ var (
 	healthProbeAddr      string
 	enableLeaderElection bool
 	diagnosticOptions    = flags.DiagnosticsOptions{}
+
+	icClusterConcurrency int
+	icMachineConcurrency int
 )
 
 func init() {
@@ -86,17 +90,18 @@ func main() {
 
 	ctx := ctrl.SetupSignalHandler()
 
-	if err = (&controller.IonosCloudClusterReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(ctx, mgr); err != nil {
+	if err = iccontroller.RegisterIonosCloudClusterReconciler(
+		ctx,
+		mgr,
+		controller.Options{MaxConcurrentReconciles: icClusterConcurrency},
+	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudCluster")
 		os.Exit(1)
 	}
-	if err = (&controller.IonosCloudMachineReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = iccontroller.RegisterIonosCloudMachineReconciler(
+		mgr,
+		controller.Options{MaxConcurrentReconciles: icMachineConcurrency},
+	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
 		os.Exit(1)
 	}
@@ -128,4 +133,8 @@ func initFlags() {
 	pflag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	pflag.IntVar(&icClusterConcurrency, "ionoscloud-cluster-concurrency", 1,
+		"Number of IonosCloudClusters to process simultaneously")
+	pflag.IntVar(&icMachineConcurrency, "ionoscloud-machine-concurrency", 1,
+		"Number of IonosCloudMachines to process simultaneously")
 }

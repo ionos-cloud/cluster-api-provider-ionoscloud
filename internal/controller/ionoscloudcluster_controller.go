@@ -34,6 +34,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -43,10 +44,27 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-// IonosCloudClusterReconciler reconciles a IonosCloudCluster object.
-type IonosCloudClusterReconciler struct {
+// ionosCloudClusterReconciler reconciles a IonosCloudCluster object.
+type ionosCloudClusterReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	scheme *runtime.Scheme
+}
+
+// RegisterIonosCloudClusterReconciler creates an ionosCloudClusterReconciler and registers it with the manager.
+func RegisterIonosCloudClusterReconciler(
+	ctx context.Context,
+	mgr ctrl.Manager,
+	options controller.Options,
+) error {
+	return newIonosCloudClusterReconciler(mgr).setupWithManager(ctx, mgr, options)
+}
+
+func newIonosCloudClusterReconciler(mgr ctrl.Manager) *ionosCloudClusterReconciler {
+	r := &ionosCloudClusterReconciler{
+		Client: mgr.GetClient(),
+		scheme: mgr.GetScheme(),
+	}
+	return r
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudclusters,verbs=get;list;watch;create;update;patch;delete
@@ -62,7 +80,7 @@ type IonosCloudClusterReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.0/pkg/reconcile
-func (r *IonosCloudClusterReconciler) Reconcile(
+func (r *ionosCloudClusterReconciler) Reconcile(
 	ctx context.Context,
 	ionosCloudCluster *infrav1.IonosCloudCluster,
 ) (_ ctrl.Result, retErr error) {
@@ -116,7 +134,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(
 	return r.reconcileNormal(ctx, clusterScope, cloudService)
 }
 
-func (r *IonosCloudClusterReconciler) reconcileNormal(
+func (r *ionosCloudClusterReconciler) reconcileNormal(
 	ctx context.Context,
 	clusterScope *scope.Cluster,
 	cloudService *cloud.Service,
@@ -153,7 +171,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudClusterReconciler) reconcileDelete(
+func (r *ionosCloudClusterReconciler) reconcileDelete(
 	ctx context.Context, clusterScope *scope.Cluster, cloudService *cloud.Service,
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -202,7 +220,7 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 	return ctrl.Result{}, nil
 }
 
-func (*IonosCloudClusterReconciler) checkRequestStatus(
+func (*ionosCloudClusterReconciler) checkRequestStatus(
 	ctx context.Context, clusterScope *scope.Cluster, cloudService *cloud.Service,
 ) (requeue bool, retErr error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -223,9 +241,14 @@ func (*IonosCloudClusterReconciler) checkRequestStatus(
 	return requeue, retErr
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *IonosCloudClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+// setupWithManager sets up the controller with the Manager.
+func (r *ionosCloudClusterReconciler) setupWithManager(
+	ctx context.Context,
+	mgr ctrl.Manager,
+	options controller.Options,
+) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
 		For(&infrav1.IonosCloudCluster{}).
 		WithEventFilter(predicates.ResourceNotPaused(ctrl.LoggerFrom(ctx))).
 		Watches(&clusterv1.Cluster{},
