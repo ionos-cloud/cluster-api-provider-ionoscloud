@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
@@ -38,6 +39,7 @@ import (
 type Machine struct {
 	client      client.Client
 	patchHelper *patch.Helper
+	Locker      *locker.Locker
 
 	Machine      *clusterv1.Machine
 	IonosMachine *infrav1.IonosCloudMachine
@@ -51,6 +53,7 @@ type MachineParams struct {
 	Machine      *clusterv1.Machine
 	ClusterScope *Cluster
 	IonosMachine *infrav1.IonosCloudMachine
+	Locker       *locker.Locker
 }
 
 // NewMachine creates a new Machine using the provided params.
@@ -67,6 +70,9 @@ func NewMachine(params MachineParams) (*Machine, error) {
 	if params.ClusterScope == nil {
 		return nil, errors.New("machine scope params need a IONOS Cloud cluster scope")
 	}
+	if params.Locker == nil {
+		return nil, errors.New("machine scope params need a locker")
+	}
 
 	helper, err := patch.NewHelper(params.IonosMachine, params.Client)
 	if err != nil {
@@ -75,6 +81,7 @@ func NewMachine(params MachineParams) (*Machine, error) {
 	return &Machine{
 		client:       params.Client,
 		patchHelper:  helper,
+		Locker:       params.Locker,
 		Machine:      params.Machine,
 		ClusterScope: params.ClusterScope,
 		IonosMachine: params.IonosMachine,

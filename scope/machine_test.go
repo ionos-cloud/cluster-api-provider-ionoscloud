@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
@@ -46,6 +47,7 @@ func exampleParams(t *testing.T) MachineParams {
 			Cluster: &clusterv1.Cluster{},
 		},
 		IonosMachine: &infrav1.IonosCloudMachine{},
+		Locker:       locker.New(),
 	}
 }
 
@@ -83,6 +85,14 @@ func TestMachineParamsNilIonosMachineShouldFail(t *testing.T) {
 func TestMachineParamsNilClusterScopeShouldFail(t *testing.T) {
 	params := exampleParams(t)
 	params.ClusterScope = nil
+	scope, err := NewMachine(params)
+	require.Nil(t, scope, "returned machine scope should be nil")
+	require.Error(t, err)
+}
+
+func TestMachineParamsNilLockerShouldFail(t *testing.T) {
+	params := exampleParams(t)
+	params.Locker = nil
 	scope, err := NewMachine(params)
 	require.Nil(t, scope, "returned machine scope should be nil")
 	require.Error(t, err)

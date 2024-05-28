@@ -36,6 +36,7 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -189,6 +190,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		Machine:      s.capiMachine,
 		ClusterScope: s.clusterScope,
 		IonosMachine: s.infraMachine,
+		Locker:       locker.New(),
 	})
 	s.NoError(err, "failed to create machine scope")
 

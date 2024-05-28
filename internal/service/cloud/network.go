@@ -42,6 +42,13 @@ func (*Service) lanName(c *clusterv1.Cluster) string {
 		c.Name)
 }
 
+func (*Service) lanLockKey(ms *scope.Machine) string {
+	// LANs are shared across machines within a datacenter, so need to be locked when performing write operations during
+	// concurrent machine reconciliations.
+	// Their datacenter scope fits well to be part of the key used for locking the LAN.
+	return "dc/" + ms.DatacenterID() + "/lan"
+}
+
 func (*Service) lanURL(datacenterID, id string) string {
 	return path.Join("datacenters", datacenterID, "lans", id)
 }
@@ -53,6 +60,12 @@ func (*Service) lansURL(datacenterID string) string {
 // ReconcileLAN ensures the cluster LAN exist, creating one if it doesn't.
 func (s *Service) ReconcileLAN(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileLAN")
+
+	lockKey := s.lanLockKey(ms)
+	if err := ms.Locker.Lock(ctx, lockKey); err != nil {
+		return false, err
+	}
+	defer ms.Locker.Unlock(lockKey)
 
 	lan, request, err := scopedFindResource(ctx, ms, s.getLAN, s.getLatestLANCreationRequest)
 	if err != nil {
@@ -86,6 +99,12 @@ func (s *Service) ReconcileLAN(ctx context.Context, ms *scope.Machine) (requeue 
 // uses it) otherwise.
 func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileLANDeletion")
+
+	lockKey := s.lanLockKey(ms)
+	if err := ms.Locker.Lock(ctx, lockKey); err != nil {
+		return false, err
+	}
+	defer ms.Locker.Unlock(lockKey)
 
 	// Try to retrieve the cluster LAN or even check if it's currently still being created.
 	lan, request, err := scopedFindResource(ctx, ms, s.getLAN, s.getLatestLANCreationRequest)
@@ -290,6 +309,12 @@ func (s *Service) retrieveFailoverIPForMachine(
 
 	// AUTO means we have to reserve an IP address.
 	if failoverIP == infrav1.CloudResourceConfigAuto {
+		lockKey := s.failoverIPBlockLockKey(ms)
+		if err := ms.Locker.Lock(ctx, lockKey); err != nil {
+			return false, "", err
+		}
+		defer ms.Locker.Unlock(lockKey)
+
 		// Check if the IP block is already reserved.
 		ipBlock, info, err := scopedFindResource(
 			ctx,
@@ -377,6 +402,12 @@ func (s *Service) swapNICInFailoverGroup(
 	if err != nil {
 		return false, err
 	}
+
+	lockKey := s.lanLockKey(ms)
+	if err := ms.Locker.Lock(ctx, lockKey); err != nil {
+		return false, err
+	}
+	defer ms.Locker.Unlock(lockKey)
 
 	lan, failoverConfig := &sdk.Lan{}, &[]sdk.IPFailover{}
 	if requeue, err := s.retrieveLANFailoverConfig(ctx, ms, lan, failoverConfig); err != nil || requeue {
@@ -469,6 +500,12 @@ func (s *Service) reconcileIPFailoverGroup(
 
 	// Add the NIC to the failover group of the LAN
 
+	lockKey := s.lanLockKey(ms)
+	if err := ms.Locker.Lock(ctx, lockKey); err != nil {
+		return false, err
+	}
+	defer ms.Locker.Unlock(lockKey)
+
 	lan, failoverConfig := &sdk.Lan{}, &[]sdk.IPFailover{}
 	if requeue, err := s.retrieveLANFailoverConfig(ctx, ms, lan, failoverConfig); err != nil || requeue {
 		return requeue, err
@@ -523,6 +560,12 @@ func (s *Service) removeNICFromFailoverGroup(
 	ctx context.Context, ms *scope.Machine, nicID string,
 ) (requeue bool, err error) {
 	log := s.logger.WithName("removeNICFromFailoverGroup")
+
+	lockKey := s.lanLockKey(ms)
+	if err := ms.Locker.Lock(ctx, lockKey); err != nil {
+		return false, err
+	}
+	defer ms.Locker.Unlock(lockKey)
 
 	lan, failoverConfig := &sdk.Lan{}, &[]sdk.IPFailover{}
 	if requeue, err := s.retrieveLANFailoverConfig(ctx, ms, lan, failoverConfig); err != nil || requeue {
