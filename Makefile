@@ -119,9 +119,20 @@ run: manifests generate lint-fix vet ## Run a controller from your host.
 docker-build: ## Build docker image with the manager.
 	$(CONTAINER_TOOL) build -t ${IMG} .
 
+E2E_IMG ?= ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e
+
+.PHONY: docker-build-e2e
+docker-build-e2e:
+    # please ensure the generated image name matches image names used in the E2E_CONF_FILE;
+	$(CONTAINER_TOOL) build -t ${E2E_IMG} .
+
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
+
+.PHONY: docker-push-e2e
+docker-push-e2e: docker-build-e2e
+	$(CONTAINER_TOOL) push ${E2E_IMG}
 
 # PLATFORMS defines the target platforms for the manager image be built to provide support to multiple
 # architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
@@ -249,3 +260,42 @@ release-manifests: $(KUSTOMIZE) ## Create kustomized release manifest in $RELEAS
 release-templates: ## Generate release templates
 	@mkdir -p $(RELEASE_DIR)
 	cp templates/cluster-template*.yaml $(RELEASE_DIR)/
+
+
+#
+# Directories.
+#
+# Full directory of where the Makefile resides
+ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+TEST_DIR := test
+ARTIFACTS ?= ${ROOT_DIR}/_artifacts
+
+##@ End-to-End Tests
+
+E2E_CONF_FILE ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/config/ionoscloud.yaml
+SKIP_RESOURCE_CLEANUP ?= false
+USE_EXISTING_CLUSTER ?= false
+
+GINKGO_POLL_PROGRESS_AFTER ?= 10m
+GINKGO_POLL_PROGRESS_INTERVAL ?= 1m
+GINKGO_NODES ?= 1
+GINKGO_FOCUS ?=
+GINKGO_TIMEOUT ?= 2h
+GINKGO_NOCOLOR ?= false
+
+GINKGO_SKIP ?=
+# to set multiple ginkgo skip flags, if any
+ifneq ($(strip $(GINKGO_SKIP)),)
+_SKIP_ARGS := $(foreach arg,$(strip $(GINKGO_SKIP)),-skip="$(arg)")
+endif
+
+.PHONY: test-e2e
+test-e2e: $(GINKGO) ## Run the end-to-end tests
+	CGO_ENABLED=1 go run github.com/onsi/ginkgo/v2/ginkgo -v --trace \
+ 		-poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
+		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" \
+		$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
+		--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(ROOT_DIR)/$(TEST_DIR)/e2e -- \
+	    -e2e.artifacts-folder="$(ARTIFACTS)" \
+	    -e2e.config="$(E2E_CONF_FILE)" \
+	    -e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) -e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER)
