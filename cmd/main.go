@@ -133,8 +133,8 @@ func initFlags() {
 	pflag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	pflag.IntVar(&icClusterConcurrency, "ionoscloud-cluster-concurrency", 1,
+	pflag.IntVar(&icClusterConcurrency, "ionoscloudcluster-concurrency", 1,
 		"Number of IonosCloudClusters to process simultaneously")
-	pflag.IntVar(&icMachineConcurrency, "ionoscloud-machine-concurrency", 1,
+	pflag.IntVar(&icMachineConcurrency, "ionoscloudmachine-concurrency", 1,
 		"Number of IonosCloudMachines to process simultaneously")
 }
