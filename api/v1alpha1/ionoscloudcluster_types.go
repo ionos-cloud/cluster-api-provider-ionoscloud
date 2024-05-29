@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"sync"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -33,6 +35,10 @@ const (
 	// IonosCloudClusterKind is the string resource kind of the IonosCloudCluster resource.
 	IonosCloudClusterKind = "IonosCloudCluster"
 )
+
+// currentRequestByDatacenterMutex is used to synchronize access to the
+// IonosCloudCluster.Status.CurrentRequestByDatacenter map.
+var currentRequestByDatacenterMutex sync.RWMutex
 
 // IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
 type IonosCloudClusterSpec struct {
@@ -66,6 +72,7 @@ type IonosCloudClusterStatus struct {
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
 	// CurrentRequestByDatacenter maps data center IDs to a pending provisioning request made during reconciliation.
+	// Use the provided getters and setters to access and modify this map to ensure thread safety.
 	//+optional
 	CurrentRequestByDatacenter map[string]ProvisioningRequest `json:"currentRequest,omitempty"`
 
@@ -117,9 +124,20 @@ func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
 	i.Status.Conditions = conditions
 }
 
+// GetCurrentRequestByDatacenter returns the current provisioning request for the given data center and a boolean
+// indicating if it exists.
+func (i *IonosCloudCluster) GetCurrentRequestByDatacenter(datacenterID string) (ProvisioningRequest, bool) {
+	currentRequestByDatacenterMutex.RLock()
+	defer currentRequestByDatacenterMutex.RUnlock()
+	req, ok := i.Status.CurrentRequestByDatacenter[datacenterID]
+	return req, ok
+}
+
 // SetCurrentRequestByDatacenter sets the current provisioning request for the given data center.
 // This function makes sure that the map is initialized before setting the request.
 func (i *IonosCloudCluster) SetCurrentRequestByDatacenter(datacenterID, method, status, requestPath string) {
+	currentRequestByDatacenterMutex.Lock()
+	defer currentRequestByDatacenterMutex.Unlock()
 	if i.Status.CurrentRequestByDatacenter == nil {
 		i.Status.CurrentRequestByDatacenter = map[string]ProvisioningRequest{}
 	}
@@ -132,6 +150,8 @@ func (i *IonosCloudCluster) SetCurrentRequestByDatacenter(datacenterID, method, 
 
 // DeleteCurrentRequestByDatacenter deletes the current provisioning request for the given data center.
 func (i *IonosCloudCluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
+	currentRequestByDatacenterMutex.Lock()
+	defer currentRequestByDatacenterMutex.Unlock()
 	delete(i.Status.CurrentRequestByDatacenter, datacenterID)
 }
 

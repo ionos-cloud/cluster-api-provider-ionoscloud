@@ -259,9 +259,9 @@ func (*ionosCloudMachineReconciler) checkRequestStates(
 	cloudService *cloud.Service,
 ) (requeue bool, retErr error) {
 	log := ctrl.LoggerFrom(ctx)
-	// check cluster wide request
+	// check cluster-wide request
 	ionosCluster := machineScope.ClusterScope.IonosCluster
-	if req, exists := ionosCluster.Status.CurrentRequestByDatacenter[machineScope.DatacenterID()]; exists {
+	if req, exists := ionosCluster.GetCurrentRequestByDatacenter(machineScope.DatacenterID()); exists {
 		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
 		if err != nil {
 			retErr = fmt.Errorf("could not get request status: %w", err)

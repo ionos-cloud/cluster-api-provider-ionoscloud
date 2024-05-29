@@ -138,7 +138,9 @@ var _ = Describe("IonosCloudCluster", func() {
 			fetched := &IonosCloudCluster{}
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
 			Expect(fetched.Status.Ready).To(BeFalse())
+			currentRequestByDatacenterMutex.RLock()
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
+			currentRequestByDatacenterMutex.RUnlock()
 			Expect(fetched.Status.Conditions).To(BeEmpty())
 
 			By("retrieving the cluster and setting the status")
@@ -157,8 +159,12 @@ var _ = Describe("IonosCloudCluster", func() {
 
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
 			Expect(fetched.Status.Ready).To(BeTrue())
+			currentRequestByDatacenterMutex.RLock()
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(HaveLen(1))
-			Expect(fetched.Status.CurrentRequestByDatacenter["123"]).To(Equal(wantProvisionRequest))
+			currentRequestByDatacenterMutex.RUnlock()
+			gotProvisionRequest, exists := fetched.GetCurrentRequestByDatacenter("123")
+			Expect(exists).To(BeTrue())
+			Expect(gotProvisionRequest).To(Equal(wantProvisionRequest))
 			Expect(fetched.Status.Conditions).To(HaveLen(1))
 			Expect(conditions.IsTrue(fetched, clusterv1.ReadyCondition)).To(BeTrue())
 
@@ -167,7 +173,9 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
 
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
+			currentRequestByDatacenterMutex.RLock()
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
+			currentRequestByDatacenterMutex.RUnlock()
 		})
 	})
 })
