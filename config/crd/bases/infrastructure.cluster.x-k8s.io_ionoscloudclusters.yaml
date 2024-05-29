@@ -209,9 +209,8 @@ spec:
                   - method
                   - requestPath
                   type: object
-                description: |-
-                  CurrentRequestByDatacenter maps data center IDs to a pending provisioning request made during reconciliation.
-                  Use the provided getters and setters to access and modify this map to ensure thread safety.
+                description: CurrentRequestByDatacenter maps data center IDs to a
+                  pending provisioning request made during reconciliation.
                 type: object
               ready:
                 description: Ready indicates that the cluster is ready.
