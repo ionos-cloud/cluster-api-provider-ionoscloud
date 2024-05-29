@@ -41,6 +41,7 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -48,6 +49,7 @@ import (
 type ionosCloudClusterReconciler struct {
 	client.Client
 	scheme *runtime.Scheme
+	locker *locker.Locker
 }
 
 // RegisterIonosCloudClusterReconciler creates an ionosCloudClusterReconciler and registers it with the manager.
@@ -63,6 +65,7 @@ func newIonosCloudClusterReconciler(mgr ctrl.Manager) *ionosCloudClusterReconcil
 	r := &ionosCloudClusterReconciler{
 		Client: mgr.GetClient(),
 		scheme: mgr.GetScheme(),
+		locker: locker.New(),
 	}
 	return r
 }

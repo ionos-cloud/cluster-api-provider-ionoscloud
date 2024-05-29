@@ -182,6 +182,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		Client:       s.k8sClient,
 		Cluster:      s.capiCluster,
 		IonosCluster: s.infraCluster,
+		Locker:       locker.New(),
 	})
 	s.NoError(err, "failed to create cluster scope")
 

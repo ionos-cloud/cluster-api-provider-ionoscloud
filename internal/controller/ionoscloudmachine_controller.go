@@ -260,8 +260,7 @@ func (*ionosCloudMachineReconciler) checkRequestStates(
 ) (requeue bool, retErr error) {
 	log := ctrl.LoggerFrom(ctx)
 	// check cluster-wide request
-	ionosCluster := machineScope.ClusterScope.IonosCluster
-	if req, exists := ionosCluster.GetCurrentRequestByDatacenter(machineScope.DatacenterID()); exists {
+	if req, exists := machineScope.ClusterScope.GetCurrentRequestByDatacenter(machineScope.DatacenterID()); exists {
 		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
 		if err != nil {
 			retErr = fmt.Errorf("could not get request status: %w", err)
@@ -269,7 +268,7 @@ func (*ionosCloudMachineReconciler) checkRequestStates(
 			requeue, retErr = withStatus(status, message, &log,
 				func() error {
 					// remove the request from the status and patch the cluster
-					ionosCluster.DeleteCurrentRequestByDatacenter(machineScope.DatacenterID())
+					machineScope.ClusterScope.DeleteCurrentRequestByDatacenter(machineScope.DatacenterID())
 					return machineScope.ClusterScope.PatchObject()
 				},
 			)

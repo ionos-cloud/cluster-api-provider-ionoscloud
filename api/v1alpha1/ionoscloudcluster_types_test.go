@@ -138,9 +138,7 @@ var _ = Describe("IonosCloudCluster", func() {
 			fetched := &IonosCloudCluster{}
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
 			Expect(fetched.Status.Ready).To(BeFalse())
-			currentRequestByDatacenterMutex.RLock()
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
-			currentRequestByDatacenterMutex.RUnlock()
 			Expect(fetched.Status.Conditions).To(BeEmpty())
 
 			By("retrieving the cluster and setting the status")
@@ -150,8 +148,7 @@ var _ = Describe("IonosCloudCluster", func() {
 				RequestPath: "/path/to/resource",
 				State:       "QUEUED",
 			}
-			fetched.SetCurrentRequestByDatacenter("123",
-				wantProvisionRequest.Method, wantProvisionRequest.State, wantProvisionRequest.RequestPath)
+			fetched.Status.CurrentRequestByDatacenter["123"] = wantProvisionRequest
 			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
 
 			By("updating the cluster status")
@@ -159,23 +156,17 @@ var _ = Describe("IonosCloudCluster", func() {
 
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
 			Expect(fetched.Status.Ready).To(BeTrue())
-			currentRequestByDatacenterMutex.RLock()
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(HaveLen(1))
-			currentRequestByDatacenterMutex.RUnlock()
-			gotProvisionRequest, exists := fetched.GetCurrentRequestByDatacenter("123")
-			Expect(exists).To(BeTrue())
-			Expect(gotProvisionRequest).To(Equal(wantProvisionRequest))
+			Expect(fetched.Status.CurrentRequestByDatacenter["123"]).To(Equal(wantProvisionRequest))
 			Expect(fetched.Status.Conditions).To(HaveLen(1))
 			Expect(conditions.IsTrue(fetched, clusterv1.ReadyCondition)).To(BeTrue())
 
 			By("Removing the entry from the status again")
-			fetched.DeleteCurrentRequestByDatacenter("123")
+			delete(fetched.Status.CurrentRequestByDatacenter, "123")
 			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
 
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
-			currentRequestByDatacenterMutex.RLock()
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
-			currentRequestByDatacenterMutex.RUnlock()
 		})
 	})
 })

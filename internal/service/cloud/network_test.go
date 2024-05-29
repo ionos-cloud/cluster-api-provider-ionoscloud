@@ -62,7 +62,7 @@ func (s *lanSuite) TestLANURLs() {
 func (s *lanSuite) TestNetworkCreateLANSuccessful() {
 	s.mockCreateLANCall().Return(exampleRequestPath, nil).Once()
 	s.NoError(s.service.createLAN(s.ctx, s.machineScope))
-	req, exists := s.infraCluster.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
+	req, exists := s.clusterScope.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
 	s.True(exists, "request should be stored in status")
 	s.Equal(exampleRequestPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodPost, req.Method, "request method should be stored in status")
@@ -72,7 +72,7 @@ func (s *lanSuite) TestNetworkCreateLANSuccessful() {
 func (s *lanSuite) TestNetworkDeleteLANSuccessful() {
 	s.mockDeleteLANCall(exampleLANID).Return(exampleRequestPath, nil).Once()
 	s.NoError(s.service.deleteLAN(s.ctx, s.machineScope, exampleLANID))
-	req, exists := s.infraCluster.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
+	req, exists := s.clusterScope.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
 	s.True(exists, "request should be stored in status")
 	s.Equal(exampleRequestPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodDelete, req.Method, "request method should be stored in status")
@@ -103,10 +103,10 @@ func (s *lanSuite) TestNetworkGetLANErrorNotUnique() {
 }
 
 func (s *lanSuite) TestNetworkRemoveLANPendingRequestFromClusterSuccessful() {
-	s.infraCluster.SetCurrentRequestByDatacenter(s.machineScope.DatacenterID(), http.MethodDelete, sdk.RequestStatusQueued,
+	s.clusterScope.SetCurrentRequestByDatacenter(s.machineScope.DatacenterID(), http.MethodDelete, sdk.RequestStatusQueued,
 		exampleRequestPath)
 	s.NoError(s.service.removeLANPendingRequestFromCluster(s.machineScope))
-	_, exists := s.infraCluster.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
+	_, exists := s.clusterScope.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
 	s.False(exists, "request should be removed from status")
 }
 
@@ -164,7 +164,7 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsHasOth
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.False(requeue)
-	_, exists := s.infraCluster.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
+	_, exists := s.clusterScope.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
 	s.False(exists)
 }
 
@@ -191,7 +191,7 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANDoesNotExist() {
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.False(requeue)
-	_, exists := s.infraCluster.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
+	_, exists := s.clusterScope.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
 	s.False(exists)
 }
 

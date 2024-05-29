@@ -77,6 +77,7 @@ func (lwc *lockWithCounter) count() int32 {
 }
 
 // Lock locks the given key. Returns after acquiring lock or when given context is done.
+// The only errors it can return stem from the context being done.
 func (l *Locker) Lock(ctx context.Context, key string) error {
 	l.mu.Lock()
 

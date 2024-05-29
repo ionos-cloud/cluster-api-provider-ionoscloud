@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 )
 
 func TestNewClusterMissingParams(t *testing.T) {
@@ -38,41 +39,60 @@ func TestNewClusterMissingParams(t *testing.T) {
 	require.NoError(t, infrav1.AddToScheme(scheme))
 	cl := fake.NewClientBuilder().WithScheme(scheme).Build()
 
+	completeParams := func() ClusterParams {
+		return ClusterParams{
+			Client:       cl,
+			Cluster:      &clusterv1.Cluster{},
+			IonosCluster: &infrav1.IonosCloudCluster{},
+			Locker:       locker.New(),
+		}
+	}
+
 	tests := []struct {
 		name    string
-		params  ClusterParams
+		params  func() ClusterParams
 		wantErr bool
 	}{
 		{
 			name: "all present",
-			params: ClusterParams{
-				Client:       cl,
-				Cluster:      &clusterv1.Cluster{},
-				IonosCluster: &infrav1.IonosCloudCluster{},
+			params: func() ClusterParams {
+				return completeParams()
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing client",
-			params: ClusterParams{
-				Cluster:      &clusterv1.Cluster{},
-				IonosCluster: &infrav1.IonosCloudCluster{},
+			params: func() ClusterParams {
+				params := completeParams()
+				params.Client = nil
+				return params
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing cluster",
-			params: ClusterParams{
-				Client:       cl,
-				IonosCluster: &infrav1.IonosCloudCluster{},
+			params: func() ClusterParams {
+				params := completeParams()
+				params.Cluster = nil
+				return params
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing IONOS cluster",
-			params: ClusterParams{
-				Client:  cl,
-				Cluster: &clusterv1.Cluster{},
+			params: func() ClusterParams {
+				params := completeParams()
+				params.IonosCluster = nil
+				return params
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing locker",
+			params: func() ClusterParams {
+				params := completeParams()
+				params.Locker = nil
+				return params
 			},
 			wantErr: true,
 		},
@@ -80,11 +100,10 @@ func TestNewClusterMissingParams(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			params, err := NewCluster(test.params())
 			if test.wantErr {
-				_, err := NewCluster(test.params)
 				require.Error(t, err)
 			} else {
-				params, err := NewCluster(test.params)
 				require.NoError(t, err)
 				require.NotNil(t, params)
 				require.Equal(t, net.DefaultResolver, params.resolver)
@@ -220,6 +239,7 @@ func TestClusterListMachines(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			params := ClusterParams{
+				Locker: locker.New(),
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      clusterName,
@@ -305,6 +325,7 @@ func TestClusterIsDeleted(t *testing.T) {
 				Client:       cl,
 				Cluster:      test.cluster,
 				IonosCluster: test.ionosCluster,
+				Locker:       locker.New(),
 			}
 
 			c, err := NewCluster(params)
