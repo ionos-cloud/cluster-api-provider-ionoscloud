@@ -1,8 +1,13 @@
 ---
+# Cluster object with
+# - Reference to the KubeadmControlPlane object
+# - the label cni=${CLUSTER_NAME}-crs-0, so the cluster can be selected by the ClusterResourceSet.
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: "${CLUSTER_NAME}"
+  labels:
+    cni: "${CLUSTER_NAME}-crs-0"
 spec:
   clusterNetwork:
     pods:
@@ -23,7 +28,6 @@ metadata:
 type: Opaque
 stringData:
   token: "${IONOS_TOKEN}"
-  apiURL: "${IONOS_API_URL:-https://api.ionos.com/cloudapi/v6}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: IonosCloudCluster
@@ -34,7 +38,6 @@ spec:
     host: ${CONTROL_PLANE_ENDPOINT_HOST:-${CONTROL_PLANE_ENDPOINT_IP}}
     port: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
   location: ${CONTROL_PLANE_ENDPOINT_LOCATION}
-  contractNumber: "${IONOSCLOUD_CONTRACT_NUMBER}"
   credentialsRef:
     name: "${CLUSTER_NAME}-credentials"
 ---
@@ -239,8 +242,8 @@ spec:
   template:
     spec:
       datacenterID: ${IONOSCLOUD_DATACENTER_ID}
-      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES}
-      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES:-4}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB:-8192}
       disk:
         image:
           id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
@@ -279,8 +282,8 @@ spec:
   template:
     spec:
       datacenterID: ${IONOSCLOUD_DATACENTER_ID}
-      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES}
-      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES:-2}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB:-4096}
       disk:
         image:
           id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
@@ -359,3 +362,26 @@ spec:
             # use cloud-provider: external when using a CCM
             cloud-provider: ""
           criSocket: unix:///run/containerd/containerd.sock
+---
+# ConfigMap object referenced by the ClusterResourceSet object and with
+# the CNI resource defined in the test config file
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "cni-${CLUSTER_NAME}-crs-0"
+data: ${CNI_RESOURCES}
+---
+# ClusterResourceSet object with
+# a selector that targets all the Cluster with label cni=${CLUSTER_NAME}-crs-0
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name:  "${CLUSTER_NAME}-crs-0"
+spec:
+  strategy: ApplyOnce
+  clusterSelector:
+    matchLabels:
+      cni: "${CLUSTER_NAME}-crs-0"
+  resources:
+    - name: "cni-${CLUSTER_NAME}-crs-0"
+      kind: ConfigMap

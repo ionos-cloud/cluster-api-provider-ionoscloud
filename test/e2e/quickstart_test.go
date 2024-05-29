@@ -5,6 +5,7 @@ package e2e
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+	clusterctlcluster "sigs.k8s.io/cluster-api/cmd/clusterctl/client/cluster"
 	"sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 
@@ -23,27 +24,35 @@ var _ = Describe("When following the Cluster API quick-start", func() {
 			InfrastructureProvider: ptr.To(infrastructureProvider),
 			PostMachinesProvisioned: func(proxy framework.ClusterProxy, namespace, clusterName string) {
 				// This check ensures that owner references are resilient - i.e. correctly re-reconciled - when removed.
-				framework.ValidateOwnerReferencesResilience(ctx, proxy, namespace, clusterName,
+				framework.ValidateOwnerReferencesResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
 					framework.CoreOwnerReferenceAssertion,
+					helpers.ExpOwnerReferenceAssertions,
 					helpers.IonosCloudInfraOwnerReferenceAssertions,
 					framework.KubeadmBootstrapOwnerReferenceAssertions,
 					framework.KubeadmControlPlaneOwnerReferenceAssertions,
-					framework.KubernetesReferenceAssertions,
+					helpers.KubernetesReferenceAssertions,
 				)
 				// This check ensures that owner references are correctly updated to the correct apiVersion.
-				framework.ValidateOwnerReferencesOnUpdate(ctx, proxy, namespace, clusterName,
+				framework.ValidateOwnerReferencesOnUpdate(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
 					framework.CoreOwnerReferenceAssertion,
+					helpers.ExpOwnerReferenceAssertions,
 					helpers.IonosCloudInfraOwnerReferenceAssertions,
 					framework.KubeadmBootstrapOwnerReferenceAssertions,
 					framework.KubeadmControlPlaneOwnerReferenceAssertions,
-					framework.KubernetesReferenceAssertions,
+					helpers.KubernetesReferenceAssertions,
 				)
 				// This check ensures that finalizers are resilient - i.e. correctly re-reconciled - when removed.
-				framework.ValidateFinalizersResilience(ctx, proxy, namespace, clusterName,
+				framework.ValidateFinalizersResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
 					framework.CoreFinalizersAssertion,
 					framework.KubeadmControlPlaneFinalizersAssertion,
 					helpers.IonosCloudInfraFinalizersAssertion,
+					helpers.ExpFinalizersAssertion,
 				)
+				// NOTE(gfariasalves): Should we add some custom validation for the credentials secret?
+
+				// This check ensures that the resourceVersions are stable, i.e. it verifies there are no
+				// continuous reconciles when everything should be stable.
+				framework.ValidateResourceVersionStable(ctx, proxy, namespace, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName))
 			},
 		}
 	})

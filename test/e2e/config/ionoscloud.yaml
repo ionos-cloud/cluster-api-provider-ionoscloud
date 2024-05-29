@@ -55,13 +55,24 @@ variables:
   # allowing the same e2e config file to be re-used in different Prow jobs e.g. each one with a K8s version permutation.
   # The following Kubernetes versions should be the latest versions with already published kindest/node images.
   # This avoids building node images in the default case which improves the test duration significantly.
-  KUBERNETES_VERSION_MANAGEMENT: "v1.30.0"
-  KUBERNETES_VERSION: "v1.30.0"
+  KUBERNETES_VERSION_MANAGEMENT: "v1.29.2"
+  KUBERNETES_VERSION: "v1.29.2"
 #  IONOS_TOKEN: "${IONOS_TOKEN:-}"
   CNI: "./data/cni/calico.yaml"
   CLUSTER_NAME: "e2e-cluster-${RANDOM}"
 #  CONTROL_PLANE_ENDPOINT_IP: "${CONTROL_PLANE_ENDPOINT_IP:-}"
-  IONOSCLOUD_MACHINE_IMAGE_ID: "fd212368-0883-11ef-bd99-229bb3119020"
+  # Enabling the feature flags by setting the env variables.
+  # Note: EXP_CLUSTER_RESOURCE_SET is enabled per default with CAPI v1.7.0.
+  # We still have to enable them here for clusterctl upgrade tests that use older versions.
+  EXP_CLUSTER_RESOURCE_SET: "true"
+  IONOSCLOUD_MACHINE_IMAGE_ID: ""
+  IONOS_TOKEN: ""
+  IONOSCLOUD_DATACENTER_ID: ""
+  IONOSCLOUD_MACHINE_MEMORY_MB: ""
+  IONOSCLOUD_MACHINE_NUM_CORES: ""
+  IONOSCLOUD_MACHINE_SSH_KEYS: ""
+  CONTROL_PLANE_ENDPOINT_IP: ""
+  CONTROL_PLANE_ENDPOINT_LOCATION: ""
 
 
 intervals:
