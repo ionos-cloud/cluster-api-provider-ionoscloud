@@ -46,7 +46,9 @@ func (*Service) lanLockKey(ms *scope.Machine) string {
 	// LANs are shared across machines within a datacenter, so need to be locked when performing write operations during
 	// concurrent machine reconciliations.
 	// Their datacenter scope fits well to be part of the key used for locking the LAN.
-	return "dc/" + ms.DatacenterID() + "/lan"
+	// To not interfere with other clusters having resources in the same datacenter, the cluster is also part of the
+	// key.
+	return "cluster/" + string(ms.ClusterScope.Cluster.UID) + "/dc/" + ms.DatacenterID() + "/lan"
 }
 
 func (*Service) lanURL(datacenterID, id string) string {
