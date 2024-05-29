@@ -22,7 +22,7 @@ make deps-qemu
 ### Build the image
 
 Before we can build the image, we have to set the k8s version we want to build the image for.   
-If you don't specify the version, the latest version, -2, will be used. If the latest is, e.g., 1.30, then 1.28 will be used.   
+By default, images will be built with current latest version - 2, e.g. if latest is 1.30.X then 1.28.X will be used.
 
 For example for k8s version `1.28.3`:
 
@@ -47,7 +47,8 @@ qemu-img convert -O qcow2 <image> "<image>.qcow2"
 ### Upload image to IONOS Cloud
 
 You can now upload the qcow2 image to IONOS Cloud via:   
-**NOTE: You have to use basic auth (username:password). Token authentication is not working with FTP.**
+> [!IMPORTANT]
+> You have to use basic auth (username:password). Token authentication is not working with FTP.
 ```sh
 ionosctl img upload -l txl -i <image>
 ```
