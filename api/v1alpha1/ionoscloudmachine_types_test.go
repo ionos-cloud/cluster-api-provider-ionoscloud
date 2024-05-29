@@ -400,7 +400,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		It("should fail if cpuFamily is set and type is VCPU", func() {
 			m := defaultMachine()
 			m.Spec.CPUFamily = ptr.To("some-cpu-family")
-			m.Spec.Type = ServerTypeVCpu
+			m.Spec.Type = ServerTypeVCPU
 			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 		})
 		DescribeTable("should work for value",
@@ -412,7 +412,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				Expect(m.Spec.Type).To(Equal(serverType))
 			},
 			Entry("ENTERPRISE", ServerTypeEnterprise),
-			Entry("VCPU", ServerTypeVCpu),
+			Entry("VCPU", ServerTypeVCPU),
 		)
 	})
 	Context("Conditions", func() {

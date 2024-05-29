@@ -96,8 +96,8 @@ type ServerType string
 const (
 	// ServerTypeEnterprise server of type ENTERPRISE.
 	ServerTypeEnterprise ServerType = "ENTERPRISE"
-	// ServerTypeVCpu server of type VCPU.
-	ServerTypeVCpu ServerType = "VCPU"
+	// ServerTypeVCPU server of type VCPU.
+	ServerTypeVCPU ServerType = "VCPU"
 )
 
 // String returns the string representation of the ServerType.

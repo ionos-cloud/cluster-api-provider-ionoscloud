@@ -170,7 +170,7 @@ func (s *serverSuite) TestReconcileEnterpriseServerNoRequest() {
 func (s *serverSuite) TestReconcileVCPUServerNoRequest() {
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
-	s.mockCreateServerCall(infrav1.ServerTypeVCpu).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
+	s.mockCreateServerCall(infrav1.ServerTypeVCPU).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To("1"),
 		Properties: &sdk.LanProperties{
@@ -179,7 +179,7 @@ func (s *serverSuite) TestReconcileVCPUServerNoRequest() {
 		},
 	}}}, nil)
 
-	s.infraMachine.Spec.Type = infrav1.ServerTypeVCpu
+	s.infraMachine.Spec.Type = infrav1.ServerTypeVCPU
 	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
 	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
 	s.NoError(err)
