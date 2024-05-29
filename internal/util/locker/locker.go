@@ -80,13 +80,11 @@ func (lwc *lockWithCounter) count() int32 {
 func (l *Locker) Lock(ctx context.Context, key string) error {
 	l.mu.Lock()
 
-	select {
-	case <-ctx.Done():
+	if err := ctx.Err(); err != nil {
 		// ctx becoming done has "happened before" acquiring the lock, whether it became done before the call began or
 		// while we were waiting for the mutex. We prefer to fail even if we could acquire the mutex without blocking.
 		l.mu.Unlock()
-		return ctx.Err()
-	default:
+		return err
 	}
 
 	lwc, exists := l.locks[key]
