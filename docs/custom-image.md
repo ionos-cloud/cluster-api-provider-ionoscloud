@@ -21,7 +21,9 @@ make deps-qemu
 
 ### Build the image
 
-Before we can build the image, we have to set the k8s version we want to build the image for.
+Before we can build the image, we have to set the k8s version we want to build the image for.   
+If you don't specify the version, the latest version, -2, will be used. If the latest is, e.g., 1.30, then 1.28 will be used.   
+
 For example for k8s version `1.28.3`:
 ```
 export PACKER_FLAGS="--var 'kubernetes_rpm_version=1.28.3' --var 'kubernetes_semver=v1.28.3' --var 'kubernetes_series=v1.28' --var 'kubernetes_deb_version=1.28.3-1.1'"
