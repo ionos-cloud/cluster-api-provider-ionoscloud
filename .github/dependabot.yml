@@ -5,6 +5,8 @@ updates:
   directory: "/"
   schedule:
     interval: "daily"
+  commit-message:
+    prefix: ":seedling:"
   groups:
     kubernetes:
       patterns:
@@ -16,8 +18,12 @@ updates:
   directory: "/"
   schedule:
     interval: "weekly"
+  commit-message:
+    prefix: ":seedling:"
 
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
     interval: "daily"
+  commit-message:
+    prefix: ":seedling:"

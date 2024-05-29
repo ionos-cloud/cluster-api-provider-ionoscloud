@@ -8,9 +8,14 @@ metadata:
 spec:
   group: infrastructure.cluster.x-k8s.io
   names:
+    categories:
+    - cluster-api
+    - ionoscloud
     kind: IonosCloudMachine
     listKind: IonosCloudMachineList
     plural: ionoscloudmachines
+    shortNames:
+    - icm
     singular: ionoscloudmachine
   scope: Namespaced
   versions:

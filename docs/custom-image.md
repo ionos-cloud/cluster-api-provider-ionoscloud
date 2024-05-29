@@ -58,7 +58,21 @@ You can also do that via Cloud API:
 ionosctl img update --image-id <image-id> --cloudinit V1 --licence-type LINUX
 ```
 
+### Enabling disk serial exposure
+
+The disk serial number is required for dynamic volume provisioning plugins like a CSI driver to function properly.
+User provided images do not have this enabled by default
+
+Currently it's only possible to enable this using the REST API:
+
+```sh
+curl -H "Authorization: Bearer <JWT>" -H "Content-Type: application/json" -X PATCH \
+    https://api.ionos.com/cloudapi/v6/images/<image-id> -d '{"exposeSerial": true}'
+```
+
+**NOTE**: All VMs that were created with the image before enabling the feature will need to be rebuilt in order for it to take effect.
+
 Now, you can copy the ID of your image and set it as the `IONOSCLOUD_MACHINE_IMAGE_ID` environment variable. Your custom image will then be used.
 
-> [!IMPORTANT]  
-> Please ensure to update the Kubernetes version in your environment file (envfile) if it changes, including `KUBERNETES_VERSION` and `KUBERNETES_VERSION_SHORT`.
+> [!IMPORTANT]
+> Please ensure to update the KUBERNETES_VERSION in your environment file (envfile) if it changes.

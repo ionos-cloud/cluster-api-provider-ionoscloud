@@ -27,10 +27,6 @@ const (
 	// associated with the IonosCloudCluster before removing it from the API server.
 	ClusterFinalizer = "ionoscloudcluster.infrastructure.cluster.x-k8s.io"
 
-	// ClusterCredentialsFinalizer allows cleanup of resources, which are
-	// associated with the IonosCloudCluster credentials before removing it from the API server.
-	ClusterCredentialsFinalizer = ClusterFinalizer + "/credentials"
-
 	// IonosCloudClusterReady is the condition for the IonosCloudCluster, which indicates that the cluster is ready.
 	IonosCloudClusterReady clusterv1.ConditionType = "ClusterReady"
 
@@ -47,10 +43,6 @@ type IonosCloudClusterSpec struct {
 	// TODO(gfariasalves): as of now, IP must be provided by the user as we still don't insert the
 	// provider-provided block IP into the kube-vip manifest.
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
-
-	// Contract number is the contract number of the IONOS Cloud account.
-	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
-	ContractNumber string `json:"contractNumber"`
 
 	// Location is the location where the data centers should be located.
 	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
@@ -88,6 +80,7 @@ type IonosCloudClusterStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:path=ionoscloudclusters,scope=Namespaced,categories=cluster-api;ionoscloud,shortName=icc
 //+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
 //+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Cluster infrastructure is ready"
 //+kubebuilder:printcolumn:name="Endpoint",type="string",JSONPath=".spec.controlPlaneEndpoint",description="API Endpoint"
