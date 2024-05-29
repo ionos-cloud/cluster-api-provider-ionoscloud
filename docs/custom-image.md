@@ -46,7 +46,8 @@ qemu-img convert -O qcow2 <image> "<image>.qcow2"
 
 ### Upload image to IONOS Cloud
 
-You can now upload the qcow2 image to IONOS Cloud via:
+You can now upload the qcow2 image to IONOS Cloud via:   
+**NOTE: You have to use basic auth (username:password). Token authentication is not working with FTP.**
 ```sh
 ionosctl img upload -l txl -i <image>
 ```
