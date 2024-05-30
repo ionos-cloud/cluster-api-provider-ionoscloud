@@ -90,7 +90,7 @@ func main() {
 
 	ctx := ctrl.SetupSignalHandler()
 
-	if err = iccontroller.RegisterIonosCloudClusterReconciler(
+	if err = iccontroller.NewIonosCloudClusterReconciler(mgr).SetupWithManager(
 		ctx,
 		mgr,
 		controller.Options{MaxConcurrentReconciles: icClusterConcurrency},
@@ -98,7 +98,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudCluster")
 		os.Exit(1)
 	}
-	if err = iccontroller.RegisterIonosCloudMachineReconciler(
+	if err = iccontroller.NewIonosCloudMachineReconciler(mgr).SetupWithManager(
 		mgr,
 		controller.Options{MaxConcurrentReconciles: icMachineConcurrency},
 	); err != nil {

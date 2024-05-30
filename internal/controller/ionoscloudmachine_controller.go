@@ -40,20 +40,15 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-// ionosCloudMachineReconciler reconciles a IonosCloudMachine object.
-type ionosCloudMachineReconciler struct {
+// IonosCloudMachineReconciler reconciles a IonosCloudMachine object.
+type IonosCloudMachineReconciler struct {
 	client.Client
 	scheme *runtime.Scheme
 	locker *locker.Locker
 }
 
-// RegisterIonosCloudMachineReconciler creates an ionosCloudMachineReconciler and registers it with the manager.
-func RegisterIonosCloudMachineReconciler(mgr ctrl.Manager, options controller.Options) error {
-	return newIonosCloudMachineReconciler(mgr).setupWithManager(mgr, options)
-}
-
-func newIonosCloudMachineReconciler(mgr ctrl.Manager) *ionosCloudMachineReconciler {
-	r := &ionosCloudMachineReconciler{
+func NewIonosCloudMachineReconciler(mgr ctrl.Manager) *IonosCloudMachineReconciler {
+	r := &IonosCloudMachineReconciler{
 		Client: mgr.GetClient(),
 		scheme: mgr.GetScheme(),
 		locker: locker.New(),
@@ -69,7 +64,7 @@ func newIonosCloudMachineReconciler(mgr ctrl.Manager) *ionosCloudMachineReconcil
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;update
 //+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
-func (r *ionosCloudMachineReconciler) Reconcile(
+func (r *IonosCloudMachineReconciler) Reconcile(
 	ctx context.Context,
 	ionosCloudMachine *infrav1.IonosCloudMachine,
 ) (_ ctrl.Result, retErr error) {
@@ -145,7 +140,7 @@ func (r *ionosCloudMachineReconciler) Reconcile(
 	return r.reconcileNormal(ctx, cloudService, machineScope)
 }
 
-func (r *ionosCloudMachineReconciler) reconcileNormal(
+func (r *IonosCloudMachineReconciler) reconcileNormal(
 	ctx context.Context, cloudService *cloud.Service, machineScope *scope.Machine,
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -202,7 +197,7 @@ func (r *ionosCloudMachineReconciler) reconcileNormal(
 	return ctrl.Result{}, nil
 }
 
-func (r *ionosCloudMachineReconciler) reconcileDelete(
+func (r *IonosCloudMachineReconciler) reconcileDelete(
 	ctx context.Context, machineScope *scope.Machine, cloudService *cloud.Service,
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -253,7 +248,7 @@ func (r *ionosCloudMachineReconciler) reconcileDelete(
 //   - Queued, Running => Requeue the current request
 //   - Failed => Log the error and continue also apply the same logic as in Done.
 //   - Done => Clear request from the status and continue reconciliation.
-func (*ionosCloudMachineReconciler) checkRequestStates(
+func (*IonosCloudMachineReconciler) checkRequestStates(
 	ctx context.Context,
 	machineScope *scope.Machine,
 	cloudService *cloud.Service,
@@ -296,7 +291,7 @@ func (*ionosCloudMachineReconciler) checkRequestStates(
 	return requeue, retErr
 }
 
-func (*ionosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
+func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
 	log := ctrl.LoggerFrom(ctx)
 	// Make sure the infrastructure is ready.
 	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
@@ -326,8 +321,8 @@ func (*ionosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	return true
 }
 
-// setupWithManager sets up the controller with the Manager.
-func (r *ionosCloudMachineReconciler) setupWithManager(mgr ctrl.Manager, options controller.Options) error {
+// SetupWithManager sets up the controller with the Manager.
+func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.IonosCloudMachine{}).
@@ -338,7 +333,7 @@ func (r *ionosCloudMachineReconciler) setupWithManager(mgr ctrl.Manager, options
 		Complete(reconcile.AsReconciler[*infrav1.IonosCloudMachine](r.Client, r))
 }
 
-func (r *ionosCloudMachineReconciler) getClusterScope(
+func (r *IonosCloudMachineReconciler) getClusterScope(
 	ctx context.Context, cluster *clusterv1.Cluster, ionosCloudMachine *infrav1.IonosCloudMachine,
 ) (*scope.Cluster, error) {
 	var clusterScope *scope.Cluster
