@@ -127,6 +127,12 @@ KUBECONFIG=ionos-quickstart.kubeconfig kubectl get nodes
 
 <!-- TODO(gfariasalves): Add instructions about installing a CNI or available flavours -->
 
+### Installing a Cloud Controller Manager
+
+We provide a helm chart for the Cloud Controller Manager for IONOS Cloud.
+Refer to its [README](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/tree/main/charts/ionoscloud-cloud-controller-manager/README.md)
+for detailed installation instructions.
+
 ### Cleanup
 
 **Note: Deleting a cluster will also delete any associated volumes that have been attached to the servers**
@@ -146,12 +152,6 @@ clusterctl generate custom-cluster ionos-quickstart \
   --worker-machine-count 3 \
   --from ~/workspace/custom-cluster-template.yaml > custom-cluster.yaml
 ```
-
-#### Cloud Controller Manager installation
-
-We provide a helm chart for the Cloud Controller Manager for IONOS Cloud.
-Refer to its [README](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/tree/main/charts/ionoscloud-cloud-controller-manager/README.md)
-for detailed installation instructions.
 
 ### Observability
 
