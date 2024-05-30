@@ -57,31 +57,29 @@ variables:
   # This avoids building node images in the default case which improves the test duration significantly.
   KUBERNETES_VERSION_MANAGEMENT: "v1.29.2"
   KUBERNETES_VERSION: "v1.29.2"
-#  IONOS_TOKEN: "${IONOS_TOKEN:-}"
   CNI: "./data/cni/calico.yaml"
+  KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   CLUSTER_NAME: "e2e-cluster-${RANDOM}"
-#  CONTROL_PLANE_ENDPOINT_IP: "${CONTROL_PLANE_ENDPOINT_IP:-}"
   # Enabling the feature flags by setting the env variables.
   # Note: EXP_CLUSTER_RESOURCE_SET is enabled per default with CAPI v1.7.0.
   # We still have to enable them here for clusterctl upgrade tests that use older versions.
   EXP_CLUSTER_RESOURCE_SET: "true"
-  IONOSCLOUD_MACHINE_IMAGE_ID: ""
-  IONOS_TOKEN: ""
-  IONOSCLOUD_DATACENTER_ID: ""
   IONOSCLOUD_MACHINE_MEMORY_MB: ""
   IONOSCLOUD_MACHINE_NUM_CORES: ""
   IONOSCLOUD_MACHINE_SSH_KEYS: ""
+  IONOS_TOKEN: ""
+  IONOSCLOUD_DATACENTER_ID: ""
   CONTROL_PLANE_ENDPOINT_IP: ""
   CONTROL_PLANE_ENDPOINT_LOCATION: ""
-
+  IONOSCLOUD_MACHINE_IMAGE_ID: ""
 
 intervals:
   default/wait-controllers: [ "20m", "10s" ]
   default/wait-cluster: [ "20m", "10s" ]
-  default/wait-control-plane: [ "10m", "10s" ]
+  default/wait-control-plane: [ "20m", "10s" ]
   default/wait-worker-nodes: [ "20m", "10s" ]
-  default/wait-delete-cluster: [ "3m", "10s" ]
-  default/wait-nodes-ready: ["10m", "10s"]
-  scale/wait-cluster: ["10m", "10s"]
+  default/wait-delete-cluster: [ "20m", "10s" ]
+  default/wait-nodes-ready: ["20m", "10s"]
+  scale/wait-cluster: ["20m", "10s"]
   scale/wait-control-plane: ["20m", "10s"]
   scale/wait-worker-nodes: ["20m", "10s"]

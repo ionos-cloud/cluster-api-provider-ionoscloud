@@ -266,7 +266,7 @@ func dumpBootstrapClusterLogs() {
 		err := clusterLogCollector.CollectMachineLog(
 			ctx,
 			bootstrapClusterProxy.GetClient(),
-			// The bootstrap cluster is not expected to be a CAPI cluster, so in order to re-use the logCollector,
+			// The bootstrap cluster is not expected to be a CAPI cluster, so in order to reuse the logCollector,
 			// we create a fake machine that wraps the node.
 			// NOTE: This assumes a naming convention between machine and nodes, which e.g. applies to the bootstrap
 			// clusters generated with kind. This might not work if you are using an existing bootstrap cluster

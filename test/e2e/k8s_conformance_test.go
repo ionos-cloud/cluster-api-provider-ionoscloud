@@ -20,18 +20,19 @@ limitations under the License.
 package e2e
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
+	capie2e "sigs.k8s.io/cluster-api/test/e2e"
 )
 
-// Test suite constants for e2e config variables.
-const (
-	CNIPath                     = "CNI"
-	CNIResources                = "CNI_RESOURCES"
-	KubernetesVersionManagement = "KUBERNETES_VERSION_MANAGEMENT"
-)
-
-func Byf(format string, a ...interface{}) {
-	By(fmt.Sprintf(format, a...))
-}
+var _ = Describe("When testing K8S conformance [Conformance]", func() {
+	// Note: This installs a cluster based on KUBERNETES_VERSION and runs conformance tests.
+	capie2e.K8SConformanceSpec(ctx, func() capie2e.K8SConformanceSpecInput {
+		return capie2e.K8SConformanceSpecInput{
+			E2EConfig:             e2eConfig,
+			ClusterctlConfigPath:  clusterctlConfigPath,
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ArtifactFolder:        artifactFolder,
+			SkipCleanup:           skipCleanup,
+		}
+	})
+})
