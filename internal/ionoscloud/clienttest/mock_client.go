@@ -338,9 +338,9 @@ func (_c *MockClient_DeleteLAN_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
-// DeleteServer provides a mock function with given fields: ctx, datacenterID, serverID
-func (_m *MockClient) DeleteServer(ctx context.Context, datacenterID string, serverID string) (string, error) {
-	ret := _m.Called(ctx, datacenterID, serverID)
+// DeleteServer provides a mock function with given fields: ctx, datacenterID, serverID, deleteVolumes
+func (_m *MockClient) DeleteServer(ctx context.Context, datacenterID string, serverID string, deleteVolumes bool) (string, error) {
+	ret := _m.Called(ctx, datacenterID, serverID, deleteVolumes)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteServer")
@@ -348,17 +348,17 @@ func (_m *MockClient) DeleteServer(ctx context.Context, datacenterID string, ser
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
-		return rf(ctx, datacenterID, serverID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool) (string, error)); ok {
+		return rf(ctx, datacenterID, serverID, deleteVolumes)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
-		r0 = rf(ctx, datacenterID, serverID)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool) string); ok {
+		r0 = rf(ctx, datacenterID, serverID, deleteVolumes)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, datacenterID, serverID)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, bool) error); ok {
+		r1 = rf(ctx, datacenterID, serverID, deleteVolumes)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -375,13 +375,14 @@ type MockClient_DeleteServer_Call struct {
 //   - ctx context.Context
 //   - datacenterID string
 //   - serverID string
-func (_e *MockClient_Expecter) DeleteServer(ctx interface{}, datacenterID interface{}, serverID interface{}) *MockClient_DeleteServer_Call {
-	return &MockClient_DeleteServer_Call{Call: _e.mock.On("DeleteServer", ctx, datacenterID, serverID)}
+//   - deleteVolumes bool
+func (_e *MockClient_Expecter) DeleteServer(ctx interface{}, datacenterID interface{}, serverID interface{}, deleteVolumes interface{}) *MockClient_DeleteServer_Call {
+	return &MockClient_DeleteServer_Call{Call: _e.mock.On("DeleteServer", ctx, datacenterID, serverID, deleteVolumes)}
 }
 
-func (_c *MockClient_DeleteServer_Call) Run(run func(ctx context.Context, datacenterID string, serverID string)) *MockClient_DeleteServer_Call {
+func (_c *MockClient_DeleteServer_Call) Run(run func(ctx context.Context, datacenterID string, serverID string, deleteVolumes bool)) *MockClient_DeleteServer_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(bool))
 	})
 	return _c
 }
@@ -391,7 +392,65 @@ func (_c *MockClient_DeleteServer_Call) Return(_a0 string, _a1 error) *MockClien
 	return _c
 }
 
-func (_c *MockClient_DeleteServer_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DeleteServer_Call {
+func (_c *MockClient_DeleteServer_Call) RunAndReturn(run func(context.Context, string, string, bool) (string, error)) *MockClient_DeleteServer_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteVolume provides a mock function with given fields: ctx, datacenterID, volumeID
+func (_m *MockClient) DeleteVolume(ctx context.Context, datacenterID string, volumeID string) (string, error) {
+	ret := _m.Called(ctx, datacenterID, volumeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteVolume")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+		return rf(ctx, datacenterID, volumeID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+		r0 = rf(ctx, datacenterID, volumeID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, datacenterID, volumeID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_DeleteVolume_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteVolume'
+type MockClient_DeleteVolume_Call struct {
+	*mock.Call
+}
+
+// DeleteVolume is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - volumeID string
+func (_e *MockClient_Expecter) DeleteVolume(ctx interface{}, datacenterID interface{}, volumeID interface{}) *MockClient_DeleteVolume_Call {
+	return &MockClient_DeleteVolume_Call{Call: _e.mock.On("DeleteVolume", ctx, datacenterID, volumeID)}
+}
+
+func (_c *MockClient_DeleteVolume_Call) Run(run func(ctx context.Context, datacenterID string, volumeID string)) *MockClient_DeleteVolume_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_DeleteVolume_Call) Return(_a0 string, _a1 error) *MockClient_DeleteVolume_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_DeleteVolume_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DeleteVolume_Call {
 	_c.Call.Return(run)
 	return _c
 }

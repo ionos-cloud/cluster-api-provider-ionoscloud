@@ -33,10 +33,12 @@ type Client interface {
 	// GetServer returns the server that matches the provided serverID in the specified data center.
 	GetServer(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error)
 	// DeleteServer deletes the server that matches the provided serverID in the specified data center.
-	DeleteServer(ctx context.Context, datacenterID, serverID string) (string, error)
+	DeleteServer(ctx context.Context, datacenterID, serverID string, deleteVolumes bool) (string, error)
 	// StartServer starts the server that matches the provided serverID in the specified data center.
 	// Returning the location and an error if starting the server fails.
 	StartServer(ctx context.Context, datacenterID, serverID string) (string, error)
+	// DeleteVolume deletes the volume that matches the provided volumeID in the specified data center.
+	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
 	// CreateLAN creates a new LAN with the provided properties in the specified data center,
 	// returning the request path.
 	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost) (string, error)

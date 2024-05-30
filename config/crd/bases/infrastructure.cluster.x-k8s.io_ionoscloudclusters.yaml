@@ -8,9 +8,14 @@ metadata:
 spec:
   group: infrastructure.cluster.x-k8s.io
   names:
+    categories:
+    - cluster-api
+    - ionoscloud
     kind: IonosCloudCluster
     listKind: IonosCloudClusterList
     plural: ionoscloudclusters
+    shortNames:
+    - icc
     singular: ionoscloudcluster
   scope: Namespaced
   versions:
@@ -52,13 +57,6 @@ spec:
           spec:
             description: IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
             properties:
-              contractNumber:
-                description: Contract number is the contract number of the IONOS Cloud
-                  account.
-                type: string
-                x-kubernetes-validations:
-                - message: contractNumber is immutable
-                  rule: self == oldSelf
               controlPlaneEndpoint:
                 description: |-
                   ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
@@ -108,7 +106,6 @@ spec:
                 - message: location is immutable
                   rule: self == oldSelf
             required:
-            - contractNumber
             - credentialsRef
             - location
             type: object

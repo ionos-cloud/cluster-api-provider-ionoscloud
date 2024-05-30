@@ -2,8 +2,6 @@
 
 ## Why?
 
----
-
 You might want to use `clusterctl init` to install your provider. If you are in your development phase, 
 you cannot yet make use of that, as per default `clusterctl` will only try to find providers hardcoded in its source code.
 Therefore, you will have to write a configuration file which will point `clusterctl` to the URLs 
@@ -18,8 +16,6 @@ set up the IONOS Cluster API provider on a Kubernetes cluster
 using `clusterctl init`
 
 ## Guide
-
----
 
 In order for clusterctl to make use of local providers, we need some kind of contract files, which we have to make available. These are:
 `metadata.yaml` and `*-components.yaml`

@@ -49,18 +49,9 @@ type IonosCloudMachineReconciler struct {
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines/finalizers,verbs=update
 
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
-//+kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;update
 //+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the IonosCloudMachine object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.0/pkg/reconcile
 func (r *IonosCloudMachineReconciler) Reconcile(
 	ctx context.Context,
 	ionosCloudMachine *infrav1.IonosCloudMachine,
@@ -153,7 +144,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 
 	if controllerutil.AddFinalizer(machineScope.IonosMachine, infrav1.MachineFinalizer) {
 		if err := machineScope.PatchObject(); err != nil {
-			log.Error(err, "unable to update finalizer on object")
+			err = fmt.Errorf("unable to update finalizer on object: %w", err)
 			return ctrl.Result{}, err
 		}
 	}

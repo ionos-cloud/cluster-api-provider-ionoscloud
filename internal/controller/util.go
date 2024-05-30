@@ -22,9 +22,11 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-cmp/cmp"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	icc "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/client"
@@ -80,6 +82,10 @@ func createServiceFromCluster(
 		return nil, err
 	}
 
+	if err := ensureSecretControlledByCluster(ctx, c, cluster, &authSecret); err != nil {
+		return nil, err
+	}
+
 	token := string(authSecret.Data["token"])
 	apiURL := string(authSecret.Data["apiURL"])
 	caBundle := authSecret.Data["caBundle"]
@@ -90,4 +96,44 @@ func createServiceFromCluster(
 	}
 
 	return cloud.NewService(ionosClient, log)
+}
+
+// ensureSecretControlledByCluster ensures that the secrets will contain a cluster-specific finalizer and an owner reference.
+// The secret will be deleted automatically with its last owner.
+func ensureSecretControlledByCluster(
+	ctx context.Context, c client.Client,
+	cluster *infrav1.IonosCloudCluster,
+	secret *corev1.Secret,
+) error {
+	old := secret.DeepCopy()
+
+	finalizerAdded := controllerutil.AddFinalizer(secret, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))
+	// We want to allow using the secret in multiple clusters.
+	// Using owner references because Kubernetes only allows us to have one controller reference.
+	if err := controllerutil.SetOwnerReference(cluster, secret, c.Scheme()); err != nil {
+		return err
+	}
+
+	if finalizerAdded || !cmp.Equal(old.GetOwnerReferences(), secret.GetOwnerReferences()) {
+		return c.Update(ctx, secret)
+	}
+
+	return nil
+}
+
+// removeCredentialsFinalizer removes the cluster-specific finalizer from the credentials secret.
+func removeCredentialsFinalizer(ctx context.Context, c client.Client, cluster *infrav1.IonosCloudCluster) error {
+	secretKey := client.ObjectKey{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Spec.CredentialsRef.Name,
+	}
+	var secret corev1.Secret
+
+	if err := c.Get(ctx, secretKey, &secret); err != nil {
+		// If the secret does not exist anymore, there is nothing we can do.
+		return client.IgnoreNotFound(err)
+	}
+
+	controllerutil.RemoveFinalizer(&secret, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))
+	return c.Update(ctx, &secret)
 }

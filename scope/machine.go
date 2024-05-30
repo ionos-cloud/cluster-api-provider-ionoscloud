@@ -122,24 +122,12 @@ func (m *Machine) CountMachines(ctx context.Context, machineLabels client.Matchi
 	return len(machines), err
 }
 
-// ListMachines returns a list of IonosCloudMachines in the same namespace and with the same cluster label.
-// With machineLabels, additional search labels can be provided.
+// ListMachines is a convenience wrapper function for the Cluster.ListMachines function.
 func (m *Machine) ListMachines(
 	ctx context.Context,
 	machineLabels client.MatchingLabels,
 ) ([]infrav1.IonosCloudMachine, error) {
-	if machineLabels == nil {
-		machineLabels = client.MatchingLabels{}
-	}
-
-	machineLabels[clusterv1.ClusterNameLabel] = m.ClusterScope.Cluster.Name
-	listOpts := []client.ListOption{client.InNamespace(m.IonosMachine.Namespace), machineLabels}
-
-	machineList := &infrav1.IonosCloudMachineList{}
-	if err := m.client.List(ctx, machineList, listOpts...); err != nil {
-		return nil, err
-	}
-	return machineList.Items, nil
+	return m.ClusterScope.ListMachines(ctx, machineLabels)
 }
 
 // FindLatestMachine returns the latest IonosCloudMachine in the same namespace
@@ -151,23 +139,17 @@ func (m *Machine) FindLatestMachine(
 	ctx context.Context,
 	matchLabels client.MatchingLabels,
 ) (*infrav1.IonosCloudMachine, error) {
-	if matchLabels == nil {
-		matchLabels = client.MatchingLabels{}
-	}
-
-	matchLabels[clusterv1.ClusterNameLabel] = m.ClusterScope.Cluster.Name
-	listOpts := []client.ListOption{client.InNamespace(m.IonosMachine.Namespace), matchLabels}
-
-	machineList := &infrav1.IonosCloudMachineList{}
-	if err := m.client.List(ctx, machineList, listOpts...); err != nil {
+	machines, err := m.ClusterScope.ListMachines(ctx, matchLabels)
+	if err != nil {
 		return nil, err
 	}
-	if len(machineList.Items) <= 1 {
+
+	if len(machines) <= 1 {
 		return nil, nil
 	}
 
-	latestMachine := machineList.Items[0]
-	for _, machine := range machineList.Items {
+	latestMachine := machines[0]
+	for _, machine := range machines {
 		if !machine.CreationTimestamp.Before(&latestMachine.CreationTimestamp) && machine.Name != m.IonosMachine.Name {
 			latestMachine = machine
 		}

@@ -44,10 +44,6 @@ type IonosCloudClusterSpec struct {
 	// provider-provided block IP into the kube-vip manifest.
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 
-	// Contract number is the contract number of the IONOS Cloud account.
-	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="contractNumber is immutable"
-	ContractNumber string `json:"contractNumber"`
-
 	// Location is the location where the data centers should be located.
 	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
 	//+kubebuilder:example=de/txl
@@ -84,6 +80,7 @@ type IonosCloudClusterStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:path=ionoscloudclusters,scope=Namespaced,categories=cluster-api;ionoscloud,shortName=icc
 //+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
 //+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Cluster infrastructure is ready"
 //+kubebuilder:printcolumn:name="Endpoint",type="string",JSONPath=".spec.controlPlaneEndpoint",description="API Endpoint"

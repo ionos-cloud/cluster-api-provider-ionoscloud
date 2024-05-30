@@ -27,6 +27,7 @@ Dockerfile.cross
 env
 envfile
 .envfile
+.envrc
 
 # editor and IDE paraphernalia
 .idea
