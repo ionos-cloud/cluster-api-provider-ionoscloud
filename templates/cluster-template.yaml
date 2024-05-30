@@ -236,7 +236,6 @@ spec:
       - >
         systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
         packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
-      # TODO(jriedel-ionos): remove that if we have a CCM
       # INFO(schegi-ionos): We decided to not remove this for now, since removing this would require the ccm to be installed for cluster-api
       # to continue after the first node.
       - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
@@ -375,7 +374,6 @@ spec:
         - >
           systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
           packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
-        # TODO(jriedel-ionos): remove that if we have a CCM
         # INFO(schegi-ionos): We decided to not remove this for now, since removing this would require the ccm to be
         # installed for cluster-api to continue after the first node.
         - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')

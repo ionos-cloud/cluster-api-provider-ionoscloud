@@ -125,7 +125,7 @@ KUBECONFIG=ionos-quickstart.kubeconfig kubectl get nodes
 
 ### Installing a CNI
 
-TODO(gfariasalves): Add instructions about installing a CNI or available flavours
+<!-- TODO(gfariasalves): Add instructions about installing a CNI or available flavours -->
 
 ### Cleanup
 
@@ -146,10 +146,12 @@ clusterctl generate custom-cluster ionos-quickstart \
   --worker-machine-count 3 \
   --from ~/workspace/custom-cluster-template.yaml > custom-cluster.yaml
 ```
-#### Cloud Controller Manager integration
 
-For installation of the [Cloud Controller Manager (CCM) | https://kubernetes.io/docs/concepts/architecture/cloud-controller/]
-please refer to the [CCM documentation](./cloud-controller-manager.md).
+#### Cloud Controller Manager installation
+
+We provide a helm chart for the Cloud Controller Manager for IONOS Cloud.
+Refer to its [README](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/tree/main/charts/ionoscloud-cloud-controller-manager/README.md)
+for detailed installation instructions.
 
 ### Observability
 
