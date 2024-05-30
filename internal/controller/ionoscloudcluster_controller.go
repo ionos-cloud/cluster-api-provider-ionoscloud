@@ -52,6 +52,7 @@ type IonosCloudClusterReconciler struct {
 	locker *locker.Locker
 }
 
+// NewIonosCloudClusterReconciler creates a new IonosCloudClusterReconciler.
 func NewIonosCloudClusterReconciler(mgr ctrl.Manager) *IonosCloudClusterReconciler {
 	r := &IonosCloudClusterReconciler{
 		Client: mgr.GetClient(),

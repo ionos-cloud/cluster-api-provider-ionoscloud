@@ -47,6 +47,7 @@ type IonosCloudMachineReconciler struct {
 	locker *locker.Locker
 }
 
+// NewIonosCloudMachineReconciler creates a new IonosCloudMachineReconciler.
 func NewIonosCloudMachineReconciler(mgr ctrl.Manager) *IonosCloudMachineReconciler {
 	r := &IonosCloudMachineReconciler{
 		Client: mgr.GetClient(),
