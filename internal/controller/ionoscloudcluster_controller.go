@@ -108,6 +108,7 @@ func (r *ionosCloudClusterReconciler) Reconcile(
 		Client:       r.Client,
 		Cluster:      cluster,
 		IonosCluster: ionosCloudCluster,
+		Locker:       r.locker,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to create scope %w", err)
