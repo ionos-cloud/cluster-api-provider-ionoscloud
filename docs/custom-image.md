@@ -9,6 +9,8 @@ If you take a look at the [book](https://image-builder.sigs.k8s.io/capi/provider
 - Packer version >= 1.6.0
 - Goss plugin for Packer version >= 1.2.0
 - Ansible version >= 2.10.0
+- Qemu plugin for Packer version >= 1.1.0
+
 
 First, clone the repo `git clone git@github.com:kubernetes-sigs/image-builder.git`   
 The build prerequisites for using image-builder for building raw images are managed by running:
@@ -18,6 +20,15 @@ make deps-qemu
 ```
 
 ### Build the image
+
+Before we can build the image, we have to set the k8s version we want to build the image for.   
+By default, images will be built with current latest version - 2, e.g. if latest is 1.30.X then 1.28.X will be used.
+
+For example for k8s version `1.28.3`:
+
+```sh
+export PACKER_FLAGS="--var 'kubernetes_rpm_version=1.28.3' --var 'kubernetes_semver=v1.28.3' --var 'kubernetes_series=v1.28' --var 'kubernetes_deb_version=1.28.3-1.1'"
+```
 
 Now you can build the image:
 ```sh
@@ -35,7 +46,9 @@ qemu-img convert -O qcow2 <image> "<image>.qcow2"
 
 ### Upload image to IONOS Cloud
 
-You can now upload the qcow2 image to IONOS Cloud via:
+You can now upload the qcow2 image to IONOS Cloud via:   
+> [!IMPORTANT]
+> You have to use basic auth (username:password). Token authentication is not working with FTP.
 ```sh
 ionosctl img upload -l txl -i <image>
 ```
