@@ -184,7 +184,7 @@ Now install the ConfigMap into your k8s:
 kubectl create cm calico  --from-file=data=templates/crs/cni/calico.yaml
 ```
 
-Now, you can create a cluster using the cilium flavor:
+Now, you can create a cluster using the calico flavor:
 
 ```bash
 $ clusterctl generate cluster dev-calico \
