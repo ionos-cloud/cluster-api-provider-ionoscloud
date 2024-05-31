@@ -161,6 +161,7 @@ func (s *ServiceTestSuite) SetupTest() {
 					ID: "3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e",
 				},
 			},
+			Type: infrav1.ServerTypeEnterprise,
 		},
 		Status: infrav1.IonosCloudMachineStatus{},
 	}
