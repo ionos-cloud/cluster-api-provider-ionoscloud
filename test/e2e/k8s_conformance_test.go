@@ -24,7 +24,7 @@ import (
 	capie2e "sigs.k8s.io/cluster-api/test/e2e"
 )
 
-var _ = Describe("When testing K8S conformance [Conformance]", func() {
+var _ = Describe("When testing K8S conformance", Label("Conformance"), func() {
 	// Note: This installs a cluster based on KUBERNETES_VERSION and runs conformance tests.
 	capie2e.K8SConformanceSpec(ctx, func() capie2e.K8SConformanceSpecInput {
 		return capie2e.K8SConformanceSpecInput{
