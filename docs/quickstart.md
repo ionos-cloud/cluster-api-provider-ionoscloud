@@ -172,7 +172,7 @@ We provide the following templates:
 
 #### Flavor with Calico CNI
 Before this cluster can be deployed, `calico` needs to be configured. As a first step we
-need to generate a manifest. Simply use our makefile:
+need to generate a manifest. Simply use our Makefile:
 
 ```
 make crs-calico
