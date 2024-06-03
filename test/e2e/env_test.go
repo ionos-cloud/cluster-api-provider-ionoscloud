@@ -40,7 +40,6 @@ import (
 // TODO(gfariasalves-ionos): Remove IP block reservation and deletion after automatic IP Block reservation is working.
 
 const (
-	defaultLocation         = "de/txl"
 	apiLocationHeaderKey    = "Location"
 	apiCallErrWrapper       = "request to Cloud API has failed: %w"
 	apiNoLocationErrMessage = "request to Cloud API did not return the request URL"
@@ -59,24 +58,35 @@ type ionosCloudEnv struct {
 
 func (e *ionosCloudEnv) setup() {
 	var err error
+
 	token := os.Getenv(sdk.IonosTokenEnvVar)
 	Expect(token).ToNot(BeEmpty(), "Please set the IONOS_TOKEN environment variable")
 	e.api = sdk.NewAPIClient(sdk.NewConfigurationFromEnv())
 	Expect(err).ToNot(HaveOccurred(), "Failed to create IONOS Cloud API client")
 
+	location := os.Getenv("CONTROL_PLANE_ENDPOINT_LOCATION")
+
 	By("Creating a datacenter")
 	dcName := fmt.Sprintf("%s-%s", "e2e-test", uuid.New().String())
-	datacenterID, dcRequest, err := e.createDatacenter(ctx, dcName, defaultLocation, "")
+	datacenterID, dcRequest, err := e.createDatacenter(ctx, dcName, location, "")
+	Expect(datacenterID).ToNot(BeEmpty())
+	Expect(dcRequest).ToNot(BeEmpty())
 	Expect(err).ToNot(HaveOccurred())
-	Expect(e.api.WaitForRequest(ctx, dcRequest)).ToNot(HaveOccurred(), "Failed waiting for datacenter creation")
+	_, err = e.api.WaitForRequest(ctx, dcRequest)
+	Expect(err).ToNot(HaveOccurred(), "Failed waiting for datacenter creation")
 	e.datacenterID = datacenterID
+	Expect(os.Setenv("IONOSCLOUD_DATACENTER_ID", e.datacenterID)).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
 
 	By("Reserving an IP block")
 	ipbName := fmt.Sprintf("%s-%s", "e2e-test", uuid.New().String())
-	ipBlock, ipbRequest, err := e.reserveIPBlock(ctx, ipbName, defaultLocation, 1)
+	ipBlock, ipbRequest, err := e.reserveIPBlock(ctx, ipbName, location, 1)
 	Expect(err).ToNot(HaveOccurred())
-	Expect(e.api.WaitForRequest(ctx, ipbRequest)).ToNot(HaveOccurred(), "Failed waiting for IP block reservation")
+	Expect(ipBlock).ToNot(BeNil())
+	Expect(ipbRequest).ToNot(BeEmpty())
+	_, err = e.api.WaitForRequest(ctx, ipbRequest)
+	Expect(err).ToNot(HaveOccurred(), "Failed waiting for IP block reservation")
 	e.ipBlock = ipBlock
+	Expect(os.Setenv("CONTROL_PLANE_ENDPOINT_IP", (*e.ipBlock.Properties.Ips)[0])).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
 
 }
 
