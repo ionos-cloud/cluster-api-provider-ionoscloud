@@ -22,10 +22,11 @@ jobs:
           snap install kubectl --classic
           snap install kustomize
 
-      - name: Set up dependencies
-        run: make deps
-
       - name: Run e2e tests
+        env:
+            IONOS_TOKEN: ${{ secrets.IONOS_TOKEN }}
+            IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
+            CONTROL_PLANE_ENDPOINT_LOCATION: ${{ vars.CONTROL_PLANE_ENDPOINT_LOCATION }}
         run: make GINKGO_LABEL="!Conformance" test-e2e
 
       - name: Redact sensitive data
