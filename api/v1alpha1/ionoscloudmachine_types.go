@@ -90,6 +90,21 @@ func (a AvailabilityZone) String() string {
 	return string(a)
 }
 
+// ServerType is the type of server which is created (ENTERPRISE or VCPU).
+type ServerType string
+
+const (
+	// ServerTypeEnterprise server of type ENTERPRISE.
+	ServerTypeEnterprise ServerType = "ENTERPRISE"
+	// ServerTypeVCPU server of type VCPU.
+	ServerTypeVCPU ServerType = "VCPU"
+)
+
+// String returns the string representation of the ServerType.
+func (a ServerType) String() string {
+	return string(a)
+}
+
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
 type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
@@ -149,6 +164,13 @@ type IonosCloudMachineSpec struct {
 	//+kubebuilder:validation:XValidation:rule=`self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")`,message="failoverIP must be either 'AUTO' or a valid IPv4 address"
 	//+optional
 	FailoverIP *string `json:"failoverIP,omitempty"`
+
+	// Type is the server type of the VM. Can be either ENTERPRISE or VCPU.
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="type is immutable"
+	//+kubebuilder:validation:Enum=ENTERPRISE;VCPU
+	//+kubebuilder:default=ENTERPRISE
+	//+optional
+	Type ServerType `json:"type,omitempty"`
 }
 
 // Networks contains a list of additional LAN IDs
@@ -293,6 +315,7 @@ type IonosCloudMachine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	//+kubebuilder:validation:XValidation:rule="self.type != 'VCPU' || !has(self.cpuFamily)",message="cpuFamily must not be specified when using VCPU"
 	Spec   IonosCloudMachineSpec   `json:"spec,omitempty"`
 	Status IonosCloudMachineStatus `json:"status,omitempty"`
 }

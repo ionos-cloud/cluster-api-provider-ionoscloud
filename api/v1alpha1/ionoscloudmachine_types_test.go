@@ -280,7 +280,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 					Expect(m.Spec.Disk.SizeGB).To(Equal(want))
 				})
 			})
-			Context("Type", func() {
+			Context("DiskType", func() {
 				It("should default to HDD", func() {
 					m := defaultMachine()
 					// because DiskType is a string, setting the value as "" is the same as not setting anything
@@ -383,6 +383,37 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			m.Spec.FailoverIP = ptr.To("")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 		})
+	})
+	Context("ServerType", func() {
+		It("should default to ENTERPRISE", func() {
+			m := defaultMachine()
+			// because Type is a string, setting the value as "" is the same as not setting anything
+			m.Spec.Type = ""
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.Type).To(Equal(ServerTypeEnterprise))
+		})
+		It("should fail if not part of the enum", func() {
+			m := defaultMachine()
+			m.Spec.Type = "this-should-fail"
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+		It("should fail if cpuFamily is set and type is VCPU", func() {
+			m := defaultMachine()
+			m.Spec.CPUFamily = ptr.To("some-cpu-family")
+			m.Spec.Type = ServerTypeVCPU
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+		DescribeTable("should work for value",
+			func(serverType ServerType) {
+				m := defaultMachine()
+				m.Spec.Type = serverType
+				m.Spec.CPUFamily = nil
+				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+				Expect(m.Spec.Type).To(Equal(serverType))
+			},
+			Entry("ENTERPRISE", ServerTypeEnterprise),
+			Entry("VCPU", ServerTypeVCPU),
+		)
 	})
 	Context("Conditions", func() {
 		It("should correctly set and get the conditions", func() {

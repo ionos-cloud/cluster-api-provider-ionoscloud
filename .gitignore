@@ -43,4 +43,9 @@ cluster.yaml
 # release
 out/
 
+# e2e tests
 _artifacts/
+
+# testing stuff
+clusterctl-settings.json
+

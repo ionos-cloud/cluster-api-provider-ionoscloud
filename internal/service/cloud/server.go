@@ -371,6 +371,7 @@ func (*Service) buildServerProperties(
 		Name:             ptr.To(ms.IonosMachine.Name),
 		Ram:              &machineSpec.MemoryMB,
 		CpuFamily:        machineSpec.CPUFamily,
+		Type:             ptr.To(machineSpec.Type.String()),
 	}
 
 	return props

@@ -125,7 +125,13 @@ KUBECONFIG=ionos-quickstart.kubeconfig kubectl get nodes
 
 ### Installing a CNI
 
-TODO(gfariasalves): Add instructions about installing a CNI or available flavours
+<!-- TODO(gfariasalves): Add instructions about installing a CNI or available flavours -->
+
+### Installing a Cloud Controller Manager
+
+We provide a helm chart for the Cloud Controller Manager for IONOS Cloud.
+Refer to its [README](https://github.com/ionos-cloud/cloud-provider-ionoscloud/tree/main/charts/ionoscloud-cloud-controller-manager/README.md)
+for detailed installation instructions.
 
 ### Cleanup
 

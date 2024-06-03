@@ -185,10 +185,24 @@ spec:
                   ProviderID is the IONOS Cloud provider ID
                   will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                 type: string
+              type:
+                default: ENTERPRISE
+                description: Type is the server type of the VM. Can be either ENTERPRISE
+                  or VCPU.
+                enum:
+                - ENTERPRISE
+                - VCPU
+                type: string
+                x-kubernetes-validations:
+                - message: type is immutable
+                  rule: self == oldSelf
             required:
             - datacenterID
             - disk
             type: object
+            x-kubernetes-validations:
+            - message: cpuFamily must not be specified when using VCPU
+              rule: self.type != 'VCPU' || !has(self.cpuFamily)
           status:
             description: IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
             properties:
