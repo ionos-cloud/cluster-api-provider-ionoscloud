@@ -65,7 +65,7 @@ spec:
         content: |
           # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
           # hardening guide.
-          KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+          KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,gss-curve25519-sha256-,gss-group16-sha512-
           Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
           MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
           HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
@@ -243,6 +243,10 @@ spec:
         kubectl --kubeconfig /etc/kubernetes/kubelet.conf
         patch node $(hostname)
         --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
+      - rm /etc/ssh/ssh_host_*
+      - ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+      - ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+      - systemctl restart sshd
     initConfiguration:
       localAPIEndpoint:
         bindPort: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
@@ -336,7 +340,7 @@ spec:
           content: |
             # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
             # hardening guide.
-            KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+            KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,gss-curve25519-sha256-,gss-group16-sha512-
             Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
             MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
             HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
@@ -381,6 +385,10 @@ spec:
           kubectl --kubeconfig /etc/kubernetes/kubelet.conf
           patch node $(hostname)
           --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
+        - rm /etc/ssh/ssh_host_*
+        - ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+        - ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+        - systemctl restart sshd
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
