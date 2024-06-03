@@ -12,8 +12,8 @@ spec:
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     variables:
-    - name: sshKey
-      value: '${VSPHERE_SSH_AUTHORIZED_KEY}'
+    - name: sshKeys
+      value: '${IONOSCLOUD_MACHINE_SSH_KEYS}'
     - name: controlPlaneIpAddr
       value: ${CONTROL_PLANE_ENDPOINT_IP}
     - name: controlPlanePort
