@@ -19,10 +19,11 @@ jobs:
 
       - name: Install kubectl and kustomize
         run: |
-          snap install kubectl --classic
-          snap install kustomize
+          sudo snap install kubectl --classic
+          sudo snap install kustomize
 
       - name: Run e2e tests
+        environment: E2E
         env:
             IONOS_TOKEN: ${{ secrets.IONOS_TOKEN }}
             IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
@@ -30,12 +31,12 @@ jobs:
         run: make GINKGO_LABEL="!Conformance" test-e2e
 
       - name: Redact sensitive data
-        if: always()
+        id: sanitize
         run: ./hack/scripts/remove-sensitive-data-from-artifacts.sh
 
       - name : Upload artifacts
         uses: actions/upload-artifact@v4
-        if: always()
+        needs: sanitize
         with:
           name: logs
           path: _artifacts
