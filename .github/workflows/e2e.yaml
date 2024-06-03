@@ -8,35 +8,35 @@ on:
       - main
 jobs:
   e2e:
-      runs-on: ubuntu-latest
-      environment: E2E
-      steps:
-      - uses: actions/checkout@v4
+    runs-on: ubuntu-latest
+    environment: E2E
+    env:
+      IONOS_TOKEN: ${{ secrets.IONOS_TOKEN }}
+      IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
+      CONTROL_PLANE_ENDPOINT_LOCATION: ${{ vars.CONTROL_PLANE_ENDPOINT_LOCATION }}
+    steps:
+    - uses: actions/checkout@v4
 
-      - name: Setup Go environment
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.22
+    - name: Setup Go environment
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.22
 
-      - name: Install kubectl and kustomize
-        run: |
-          sudo snap install kubectl --classic
-          sudo snap install kustomize
+    - name: Install kubectl and kustomize
+      run: |
+        sudo snap install kubectl --classic
+        sudo snap install kustomize
 
-      - name: Run e2e tests
-        env:
-            IONOS_TOKEN: ${{ secrets.IONOS_TOKEN }}
-            IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
-            CONTROL_PLANE_ENDPOINT_LOCATION: ${{ vars.CONTROL_PLANE_ENDPOINT_LOCATION }}
-        run: make GINKGO_LABEL="!Conformance" test-e2e
+    - name: Run e2e tests
+      run: make GINKGO_LABEL="!Conformance" test-e2e
 
-      - name: Redact sensitive data
-        id: sanitize
-        run: ./hack/scripts/remove-sensitive-data-from-artifacts.sh
+    - name: Redact sensitive data
+      id: sanitize
+      run: ./hack/scripts/remove-sensitive-data-from-artifacts.sh
 
-      - name : Upload artifacts
-        uses: actions/upload-artifact@v4
-        if: steps.sanitize.outcome == 'success'
-        with:
-          name: logs
-          path: _artifacts
+    - name : Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: steps.sanitize.outcome == 'success'
+      with:
+        name: logs
+        path: _artifacts
