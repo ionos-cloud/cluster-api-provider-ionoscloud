@@ -64,6 +64,20 @@ func defaultMachine() *IonosCloudMachine {
 	}
 }
 
+func setInvalidPoolRef(m *IonosCloudMachine, poolType string, kind, apiGroup, name string) {
+	ref := &corev1.TypedLocalObjectReference{
+		APIGroup: ptr.To(apiGroup),
+		Kind:     kind,
+		Name:     name,
+	}
+	switch poolType {
+	case "IPv6":
+		m.Spec.AdditionalNetworks[0].IPv6PoolRef = ref
+	case "IPv4":
+		m.Spec.AdditionalNetworks[0].IPv4PoolRef = ref
+	}
+}
+
 var _ = Describe("IonosCloudMachine Tests", func() {
 	AfterEach(func() {
 		m := &IonosCloudMachine{
@@ -337,6 +351,43 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				m.Spec.AdditionalNetworks[0].NetworkID = -1
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
+			DescribeTable("should allow IPv4PoolRef.Kind GlobalInClusterIPPool and InClusterIPPool", func(kind string) {
+				m := defaultMachine()
+				m.Spec.AdditionalNetworks[0].IPv4PoolRef = &corev1.TypedLocalObjectReference{
+					APIGroup: ptr.To("ipam.cluster.x-k8s.io"),
+					Kind:     kind,
+					Name:     "ipv4-pool",
+				}
+				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			},
+				Entry("GlobalInClusterIPPool", "GlobalInClusterIPPool"),
+				Entry("InClusterIPPool", "InClusterIPPool"),
+			)
+			DescribeTable("should allow IPv6PoolRef.Kind GlobalInClusterIPPool and InClusterIPPool", func(kind string) {
+				m := defaultMachine()
+				m.Spec.AdditionalNetworks[0].IPv6PoolRef = &corev1.TypedLocalObjectReference{
+					APIGroup: ptr.To("ipam.cluster.x-k8s.io"),
+					Kind:     kind,
+					Name:     "ipv6-pool",
+				}
+				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			},
+				Entry("GlobalInClusterIPPool", "GlobalInClusterIPPool"),
+				Entry("InClusterIPPool", "InClusterIPPool"),
+			)
+			DescribeTable("must not allow invalid pool references",
+				func(poolType, kind, apiGroup, name string) {
+					m := defaultMachine()
+					setInvalidPoolRef(m, poolType, kind, apiGroup, name)
+					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+				},
+				Entry("invalid IPv6PoolRef with invalid kind", "IPv6", "SomeOtherIPPoolKind", "ipam.cluster.x-k8s.io", "ipv6-pool"),
+				Entry("invalid IPv6PoolRef with invalid apiGroup", "IPv6", "InClusterIPPool", "SomeWrongAPIGroup", "ipv6-pool"),
+				Entry("invalid IPv6PoolRef with empty name", "IPv6", "InClusterIPPool", "ipam.cluster.x-k8s.io", ""),
+				Entry("invalid IPv4PoolRef with invalid kind", "IPv4", "SomeOtherIPPoolKind", "ipam.cluster.x-k8s.io", "ipv4-pool"),
+				Entry("invalid IPv4PoolRef with invalid apiGroup", "IPv4", "InClusterIPPool", "SomeWrongAPIGroup", "ipv4-pool"),
+				Entry("invalid IPv4PoolRef with empty name", "IPv4", "InClusterIPPool", "ipam.cluster.x-k8s.io", ""),
+			)
 		})
 	})
 	Context("FailoverIP", func() {
