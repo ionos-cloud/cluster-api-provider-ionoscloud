@@ -9,6 +9,7 @@ on:
 jobs:
   e2e:
       runs-on: ubuntu-latest
+      environment: E2E
       steps:
       - uses: actions/checkout@v4
 
@@ -23,7 +24,6 @@ jobs:
           sudo snap install kustomize
 
       - name: Run e2e tests
-        environment: E2E
         env:
             IONOS_TOKEN: ${{ secrets.IONOS_TOKEN }}
             IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
@@ -36,7 +36,7 @@ jobs:
 
       - name : Upload artifacts
         uses: actions/upload-artifact@v4
-        needs: sanitize
+        if: steps.sanitize.outcome == 'success'
         with:
           name: logs
           path: _artifacts
