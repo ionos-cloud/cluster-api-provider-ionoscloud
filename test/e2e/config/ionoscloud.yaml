@@ -1,42 +1,43 @@
 images:
-  - name: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e
+  - name: controller:dev
+
 providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: "{go://sigs.k8s.io/cluster-api@v1.6}"
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.6}/core-components.yaml"
+    - name: "{go://sigs.k8s.io/cluster-api@v1.7}"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.7}/core-components.yaml"
       type: url
       contract: v1beta1
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8443
       files:
-        - sourcePath: "../data/shared/v1.6/metadata.yaml"
+        - sourcePath: "../data/shared/v1.7/metadata.yaml"
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: "{go://sigs.k8s.io/cluster-api@v1.6}"
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.6}/bootstrap-components.yaml"
+    - name: "{go://sigs.k8s.io/cluster-api@v1.7}"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.7}/bootstrap-components.yaml"
       type: url
       contract: v1beta1
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8443
       files:
-        - sourcePath: "../data/shared/v1.6/metadata.yaml"
+        - sourcePath: "../data/shared/v1.7/metadata.yaml"
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-      - name: "{go://sigs.k8s.io/cluster-api@v1.6}"
-        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.6}/control-plane-components.yaml"
+      - name: "{go://sigs.k8s.io/cluster-api@v1.7}"
+        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/{go://sigs.k8s.io/cluster-api@v1.7}/control-plane-components.yaml"
         type: url
         contract: v1beta1
         replacements:
           - old: --metrics-addr=127.0.0.1:8080
             new: --metrics-addr=:8443
         files:
-          - sourcePath: "../data/shared/v1.6/metadata.yaml"
+          - sourcePath: "../data/shared/v1.7/metadata.yaml"
   - name: ionoscloud
     type: InfrastructureProvider
     versions:
@@ -44,7 +45,11 @@ providers:
         value: "../../../config/default"
         replacements:
           - old: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:dev
-            new: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e
+            # NOTE(gfariasalves): If we leave only controller:dev, clusterctl init will complain about the image name
+            #   not following the canonical format. Other than that, the tag cannot be changed to :latest, otherwise
+            #   the image will be pulled from the internet (even if it is already present in the local registry) and
+            #   the tests will fail as it was never published.
+            new: docker.io/library/controller:dev
           - old: "--leader-elect"
             new: "--leader-elect\n        - --insecure-diagnostics"
         files:

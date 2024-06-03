@@ -27,6 +27,9 @@ jobs:
         sudo snap install kubectl --classic
         sudo snap install kustomize
 
+    - name: Build image
+      run: make docker-build
+
     - name: Run e2e tests
       run: make GINKGO_LABEL="!Conformance" test-e2e
 
