@@ -1,4 +1,4 @@
-name: end-to-end tests
+name: End-to-end tests
 on:
   pull_request:
     branches:
@@ -40,7 +40,6 @@ jobs:
 
     - name : Upload artifacts
       uses: actions/upload-artifact@v4
-      if: steps.sanitize.outcome == 'success'
       with:
         name: logs
         path: _artifacts
