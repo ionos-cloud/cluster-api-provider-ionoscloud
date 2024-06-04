@@ -96,11 +96,12 @@ func (e *ionosCloudEnv) teardown() {
 
 func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (requestID string, _ error) {
 	if location == "" {
-		return "", errors.New("defaultLocation must be set")
+		return "", errors.New("location must be set")
 	}
-	name := fmt.Sprintf("%s-%s", "e2e-test", uuid.New().String())
+	name := fmt.Sprintf("%s-%s", "capic-e2e-test", uuid.New().String())
 	description := "used in a CACIC E2E test run"
 	if os.Getenv("CI") == "true" {
+		name = fmt.Sprintf("%s-%s", "capic-e2e-test", os.Getenv("GITHUB_RUN_ID"))
 		description = fmt.Sprintf("CI run URL: %s", e.githubCIRunURL())
 	}
 
@@ -213,7 +214,7 @@ func (e *ionosCloudEnv) waitForDeletionRequests(ctx context.Context, datacenterR
 
 // githubCIRunURL returns the URL of the current GitHub CI run.
 func (e *ionosCloudEnv) githubCIRunURL() string {
-	return fmt.Sprintf("https://%s/%s/actions/runs/%s",
+	return fmt.Sprintf("%s/%s/actions/runs/%s",
 		os.Getenv("GITHUB_SERVER_URL"),
 		os.Getenv("GITHUB_REPOSITORY"),
 		os.Getenv("GITHUB_RUN_ID"))
