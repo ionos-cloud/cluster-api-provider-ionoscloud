@@ -152,9 +152,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	By("Initializing the bootstrap cluster")
 	initBootstrapCluster()
 
-	//By("Creating the credentials secret to be used by the provider")
-	//createCredentialsSecret()
-
 	return []byte(
 		strings.Join([]string{
 			artifactFolder,
@@ -176,19 +173,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	e2eConfig = loadE2EConfig(configPath)
 	bootstrapClusterProxy = framework.NewClusterProxy("bootstrap", kubeconfigPath, initScheme(), framework.WithMachineLogCollector(framework.DockerLogCollector{}))
 })
-
-//func createCredentialsSecret() {
-//	k8sClient := bootstrapClusterProxy.GetClient()
-//	secret := &corev1.Secret{
-//		ObjectMeta: metav1.ObjectMeta{
-//			Name: "ionoscloud-credentials",
-//		},
-//		StringData: map[string]string{
-//			"token": cloudEnv.token,
-//		},
-//	}
-//	Expect(k8sClient.Create(ctx, secret)).ToNot(HaveOccurred(), "could not create credentials secret")
-//}
 
 // Using a SynchronizedAfterSuite for controlling how to delete resources shared across ParallelNodes (~ginkgo threads).
 // The bootstrap cluster is shared across all the tests, so it should be deleted only after all ParallelNodes completes.
