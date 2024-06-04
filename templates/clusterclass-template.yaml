@@ -166,7 +166,7 @@ spec:
   - name: workerMachineType
     definitions:
     - selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: IonosCloudMachineTemplate
         matchResources:
           machineDeploymentClass:
@@ -177,18 +177,18 @@ spec:
         path: /spec/template/spec/numCores
         valueFrom:
           variable: workerNumCores
-     - op: add
+      - op: add
         path: /spec/template/spec/memoryMB
         valueFrom:
           variable: workerMemoryMB
-     - op: add
-       path: /spec/template/spec/disk/image/id
-       valueFrom:
-         variable: workerImageID
+      - op: add
+        path: /spec/template/spec/disk/image/id
+        valueFrom:
+          variable: workerImageID
   - name: controlPlaneMachineType
     definitions:
     - selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: IonosCloudMachineTemplate
         matchResources:
           controlPlane: true
@@ -197,14 +197,14 @@ spec:
         path: /spec/template/spec/numCores
         valueFrom:
           variable: controlePlaneNumCores
-     - op: add
+      - op: add
         path: /spec/template/spec/memoryMB
         valueFrom:
           variable: controlePlaneMemoryMB
-     - op: add
-       path: /spec/template/spec/disk/image/id
-       valueFrom:
-         variable: controlePlaneImageID
+      - op: add
+        path: /spec/template/spec/disk/image/id
+        valueFrom:
+          variable: controlePlaneImageID
   - definitions:
     - jsonPatches:
       - op: add
@@ -380,7 +380,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: ImageID for the control plane machines.
-        type: integer
+        type: string
   - metadata: {}
     name: workerNumCores
     required: true
@@ -401,7 +401,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: ImageID for the worker machines.
-        type: integer
+        type: string
   - metadata: {}
     name: credsSecretName
     required: true
