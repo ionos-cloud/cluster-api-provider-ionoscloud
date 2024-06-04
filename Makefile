@@ -271,17 +271,16 @@ GINKGO_NODES ?= 1
 GINKGO_FOCUS ?=
 GINKGO_TIMEOUT ?= 2h
 GINKGO_NOCOLOR ?= false
+GINKGO_LABEL ?=
 
 GINKGO_SKIP ?=
-# to set multiple ginkgo skip flags, if any
+# To set multiple ginkgo skip flags, if any
 ifneq ($(strip $(GINKGO_SKIP)),)
 _SKIP_ARGS := $(foreach arg,$(strip $(GINKGO_SKIP)),-skip="$(arg)")
 endif
 
-GINKGO_LABEL ?=
-
 .PHONY: test-e2e
-test-e2e: $(GINKGO) ## Run the end-to-end tests
+test-e2e: ## Run the end-to-end tests
 	CGO_ENABLED=1 go run github.com/onsi/ginkgo/v2/ginkgo -v --trace \
  		-poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 		-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" \
