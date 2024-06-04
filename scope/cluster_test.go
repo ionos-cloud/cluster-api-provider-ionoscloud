@@ -20,8 +20,11 @@ import (
 	"context"
 	"net"
 	"net/netip"
+	"strconv"
+	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -346,4 +349,52 @@ func buildMachineWithLabel(name string, labels map[string]string) *infrav1.Ionos
 			Labels:    labels,
 		},
 	}
+}
+
+func TestCurrentRequestByDatacenterAccessors(t *testing.T) {
+	cluster := &Cluster{
+		Cluster: &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				UID: "uid",
+			},
+		},
+		IonosCluster: &infrav1.IonosCloudCluster{},
+		Locker:       locker.New(),
+	}
+
+	// If there is a concurrency issue, it will very likely become visible here.
+	var wg sync.WaitGroup
+	for i := 0; i <= 10_000; i++ {
+		wg.Add(1)
+		go func(t *testing.T, id string) {
+			defer wg.Done()
+
+			req, exists := cluster.GetCurrentRequestByDatacenter(id)
+			assert.False(t, exists)
+			assert.Zero(t, req)
+
+			cluster.SetCurrentRequestByDatacenter(id, "method", "status", "requestPath")
+
+			req, exists = cluster.GetCurrentRequestByDatacenter(id)
+			assert.True(t, exists)
+			assert.Equal(t, "method", req.Method)
+			assert.Equal(t, "status", req.State)
+			assert.Equal(t, "requestPath", req.RequestPath)
+
+			cluster.DeleteCurrentRequestByDatacenter(id)
+
+			req, exists = cluster.GetCurrentRequestByDatacenter(id)
+			assert.False(t, exists)
+			assert.Zero(t, req)
+		}(t, strconv.Itoa(i))
+	}
+
+	wg.Wait()
+
+	lockKey := cluster.currentRequestByDatacenterLockKey()
+	require.Equal(t, "uid/currentRequestByDatacenter", lockKey)
+
+	_ = cluster.Locker.Lock(context.Background(), lockKey)
+	require.Empty(t, cluster.IonosCluster.Status.CurrentRequestByDatacenter)
+	cluster.Locker.Unlock(lockKey)
 }
