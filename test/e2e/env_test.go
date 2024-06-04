@@ -31,8 +31,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
-
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 // NOTE(gfariasalves-ionos): This file exists to avoid having to use Terraform to create the resources needed for the tests,
@@ -40,9 +38,10 @@ import (
 // TODO(gfariasalves-ionos): Remove IP block reservation and deletion after automatic IP Block reservation is working.
 
 const (
-	apiLocationHeaderKey    = "Location"
 	apiCallErrWrapper       = "request to Cloud API has failed: %w"
 	apiNoLocationErrMessage = "request to Cloud API did not return the request URL"
+
+	apiLocationHeaderKey = "Location"
 )
 
 var (
@@ -66,56 +65,45 @@ func (e *ionosCloudEnv) setup() {
 
 	location := os.Getenv("CONTROL_PLANE_ENDPOINT_LOCATION")
 
-	By("Creating a datacenter")
-	dcName := fmt.Sprintf("%s-%s", "e2e-test", uuid.New().String())
-	datacenterID, dcRequest, err := e.createDatacenter(ctx, dcName, location, "")
-	Expect(err).ToNot(HaveOccurred())
-	Expect(datacenterID).ToNot(BeEmpty())
-	Expect(dcRequest).ToNot(BeEmpty())
-	_, err = e.api.WaitForRequest(ctx, dcRequest)
-	Expect(err).ToNot(HaveOccurred(), "Failed waiting for datacenter creation")
-	e.datacenterID = datacenterID
-	Expect(os.Setenv("IONOSCLOUD_DATACENTER_ID", e.datacenterID)).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
+	By("Requesting a data center")
+	dcRequest, err := e.createDatacenter(ctx, location)
+	Expect(err).ToNot(HaveOccurred(), "Failed requesting data center creation")
 
-	By("Reserving an IP block")
-	ipbName := fmt.Sprintf("%s-%s", "e2e-test", uuid.New().String())
-	ipBlock, ipbRequest, err := e.reserveIPBlock(ctx, ipbName, location, 1)
-	Expect(err).ToNot(HaveOccurred())
-	Expect(ipBlock).ToNot(BeNil())
-	Expect(ipbRequest).ToNot(BeEmpty())
-	_, err = e.api.WaitForRequest(ctx, ipbRequest)
-	Expect(err).ToNot(HaveOccurred(), "Failed waiting for IP block reservation")
-	e.ipBlock = ipBlock
-	Expect(os.Setenv("CONTROL_PLANE_ENDPOINT_IP", (*e.ipBlock.Properties.Ips)[0])).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
+	By("Requesting an IP block")
+	ipbRequest, err := e.reserveIPBlock(ctx, location, 1)
+	Expect(err).ToNot(HaveOccurred(), "Failed requesting IP block reservation")
 
+	By("Waiting for requests to complete")
+	Expect(e.waitForCreationRequests(ctx, dcRequest, ipbRequest)).ToNot(HaveOccurred(), "Failed waiting for requests to complete")
 }
 
 func (e *ionosCloudEnv) teardown() {
 	if !skipCleanup {
 		By("Deleting environment resources")
-		if e.datacenterID != "" {
-			By("Deleting the datacenter")
-			deleted, err := e.api.WaitForDeletion(ctx, e.deleteDatacenter(ctx), e.datacenterID)
-			Expect(err).ToNot(HaveOccurred(), "Failed asking to delete data center")
-			Expect(deleted).To(BeTrue(), fmt.Sprintf("Failed deleting data center %s", e.datacenterID))
-		}
-		if e.ipBlock != nil {
-			By("Deleting the IP Block")
-			deleted, err := e.api.WaitForDeletion(ctx, e.deleteIPBlock(ctx), ptr.Deref(e.ipBlock.Id, ""))
-			Expect(err).ToNot(HaveOccurred(), "Failed asking to delete IP Block")
-			Expect(deleted).To(BeTrue(), fmt.Sprintf("Failed deleting IP block %s", *e.ipBlock.Id))
-		}
+
+		By("Requesting the deletion of the data center")
+		datacenterRequest, err := e.deleteDatacenter(ctx)
+		Expect(err).ToNot(HaveOccurred(), "Failed asking to delete data center")
+
+		By("Requesting the deletion of the IP Block")
+		ipBlockRequest, err := e.deleteIPBlock(ctx)
+		Expect(err).ToNot(HaveOccurred(), "Failed asking to delete IP Block")
+
+		By("Waiting for deletion requests to complete")
+		Expect(e.waitForDeletionRequests(ctx, datacenterRequest, ipBlockRequest)).ToNot(HaveOccurred(), "Failed waiting for deletion requests to complete")
 	}
 }
 
-// createDatacenter creates a new data center with the provided name, defaultLocation and description, returning its id and request path.
-func (e *ionosCloudEnv) createDatacenter(ctx context.Context, name, location, description string) (datacenterID, requestID string, _ error) {
-	if name == "" {
-		return "", "", errors.New("name must be set")
-	}
+func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (requestID string, _ error) {
 	if location == "" {
-		return "", "", errors.New("defaultLocation must be set")
+		return "", errors.New("defaultLocation must be set")
 	}
+	name := fmt.Sprintf("%s-%s", "e2e-test", uuid.New().String())
+	description := "used in a CACIC E2E test run"
+	if os.Getenv("CI") == "true" {
+		description = fmt.Sprintf("CI run URL: %s", e.githubCIRunURL())
+	}
+
 	datacenter := sdk.Datacenter{
 		Properties: &sdk.DatacenterProperties{
 			Name:        &name,
@@ -123,66 +111,110 @@ func (e *ionosCloudEnv) createDatacenter(ctx context.Context, name, location, de
 			Description: &description,
 		},
 	}
-	datacenter, req, err := e.api.DataCentersApi.DatacentersPost(ctx).Datacenter(datacenter).Execute()
+	datacenter, res, err := e.api.DataCentersApi.DatacentersPost(ctx).Datacenter(datacenter).Execute()
 	if err != nil {
-		return "", "", fmt.Errorf("request to Cloud API has failed: %w", err)
+		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
 	if datacenter.Id == nil {
-		return "", "", errors.New("request to Cloud API did not return the data center")
+		return "", fmt.Errorf(apiCallErrWrapper, errors.New("request to Cloud API did not return the data center"))
 	}
-	if requestLocation := req.Header.Get("Location"); requestLocation != "" {
-		return *datacenter.Id, requestLocation, nil
+	e.datacenterID = *datacenter.Id
+	Expect(os.Setenv("IONOSCLOUD_DATACENTER_ID", e.datacenterID)).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
+	if requestLocation := res.Header.Get(apiLocationHeaderKey); requestLocation != "" {
+		return requestLocation, nil
 	}
-	return "", "", errors.New("request to Cloud API did not return the request URL")
+	return "", errLocationHeaderEmpty
 }
 
-// deleteDatacenter returns a function that deletes the data center that matches the provided id.
-func (e *ionosCloudEnv) deleteDatacenter(ctx context.Context) func(*sdk.APIClient, string) (*sdk.APIResponse, error) {
-	return func(_ *sdk.APIClient, datacenterID string) (*sdk.APIResponse, error) {
-		if datacenterID == "" {
-			return nil, errors.New("data center ID must be set")
-		}
-		return e.api.DataCentersApi.DatacentersDelete(ctx, datacenterID).Execute()
+// deleteDatacenter requests the deletion of the data center that matches the provided id.
+func (e *ionosCloudEnv) deleteDatacenter(ctx context.Context) (requestLocation string, _ error) {
+	res, err := e.api.DataCentersApi.DatacentersDelete(ctx, e.datacenterID).Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
+	if requestLocation := res.Header.Get(apiLocationHeaderKey); requestLocation != "" {
+		return requestLocation, nil
+	}
+	return "", errLocationHeaderEmpty
 }
 
-// reserveIPBlock reserves an IP block with the provided properties in the specified defaultLocation, returning the IP
-// block and the request path.
-func (e *ionosCloudEnv) reserveIPBlock(
-	ctx context.Context, name, location string, size int32,
-) (_ *sdk.IpBlock, requestID string, _ error) {
-	if location == "" {
-		return nil, "", errors.New("defaultLocation must be set")
+func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, size int32) (requestID string, _ error) {
+	name := fmt.Sprintf("%s", "CAPIC E2E Test")
+	if os.Getenv("CI") == "true" {
+		name = fmt.Sprintf("CAPIC E2E Test - %s", e.githubCIRunURL())
 	}
-	if size <= 0 {
-		return nil, "", errors.New("size must be greater than 0")
-	}
-	if name == "" {
-		return nil, "", errors.New("name must be set")
-	}
-	newIPBlock := sdk.IpBlock{
+	ipBlock := sdk.IpBlock{
 		Properties: &sdk.IpBlockProperties{
 			Name:     &name,
 			Size:     &size,
 			Location: &location,
 		},
 	}
-	ipb, req, err := e.api.IPBlocksApi.IpblocksPost(ctx).Ipblock(newIPBlock).Execute()
+	ipb, req, err := e.api.IPBlocksApi.IpblocksPost(ctx).Ipblock(ipBlock).Execute()
 	if err != nil {
-		return nil, "", fmt.Errorf(apiCallErrWrapper, err)
+		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
+
+	e.ipBlock = &ipb
+	Expect(os.Setenv("CONTROL_PLANE_ENDPOINT_IP", (*e.ipBlock.Properties.Ips)[0])).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
+
 	if requestPath := req.Header.Get(apiLocationHeaderKey); requestPath != "" {
-		return &ipb, requestPath, nil
+		return requestPath, nil
 	}
-	return nil, "", errLocationHeaderEmpty
+	return "", errLocationHeaderEmpty
 }
 
-// deleteIPBlock returns a function that deletes the IP block that matches the provided id.
-func (e *ionosCloudEnv) deleteIPBlock(ctx context.Context) func(*sdk.APIClient, string) (*sdk.APIResponse, error) {
-	return func(_ *sdk.APIClient, ipBlockID string) (*sdk.APIResponse, error) {
-		if ipBlockID == "" {
-			return nil, errors.New("IP block ID must be set")
-		}
-		return e.api.IPBlocksApi.IpblocksDelete(ctx, ipBlockID).Execute()
+func (e *ionosCloudEnv) deleteIPBlock(ctx context.Context) (requestLocation string, _ error) {
+	res, err := e.api.IPBlocksApi.IpblocksDelete(ctx, *e.ipBlock.Id).Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}
+	if requestLocation := res.Header.Get(apiLocationHeaderKey); requestLocation != "" {
+		return requestLocation, nil
+	}
+	return "", errLocationHeaderEmpty
+}
+
+func (e *ionosCloudEnv) waitForCreationRequests(ctx context.Context, datacenterRequest, ipBlockRequest string) error {
+	GinkgoLogr.Info("Waiting for data center and IP block creation requests to complete",
+		"datacenterRequest", datacenterRequest,
+		"datacenterID", e.datacenterID,
+		"ipBlockRequest", ipBlockRequest,
+		"ipBlockID", *e.ipBlock.Id)
+
+	_, err := e.api.WaitForRequest(ctx, datacenterRequest)
+	if err != nil {
+		return fmt.Errorf("failed waiting for data center creation: %w", err)
+	}
+	_, err = e.api.WaitForRequest(ctx, ipBlockRequest)
+	if err != nil {
+		return fmt.Errorf("failed waiting for IP block reservation: %w", err)
+	}
+	return nil
+}
+
+func (e *ionosCloudEnv) waitForDeletionRequests(ctx context.Context, datacenterRequest, ipBlockRequest string) error {
+	GinkgoLogr.Info("Waiting for data center and IP block deletion requests to complete",
+		"datacenterRequest", datacenterRequest,
+		"datacenterID", e.datacenterID,
+		"ipBlockRequest", ipBlockRequest,
+		"ipBlockID", *e.ipBlock.Id)
+
+	_, err := e.api.WaitForRequest(ctx, datacenterRequest)
+	if err != nil {
+		return fmt.Errorf("failed waiting for data center deletion: %w", err)
+	}
+	_, err = e.api.WaitForRequest(ctx, ipBlockRequest)
+	if err != nil {
+		return fmt.Errorf("failed waiting for IP block deletion: %w", err)
+	}
+	return nil
+}
+
+// githubCIRunURL returns the URL of the current GitHub CI run.
+func (e *ionosCloudEnv) githubCIRunURL() string {
+	return fmt.Sprintf("https://%s/%s/actions/runs/%s",
+		os.Getenv("GITHUB_SERVER_URL"),
+		os.Getenv("GITHUB_REPOSITORY"),
+		os.Getenv("GITHUB_RUN_ID"))
 }
