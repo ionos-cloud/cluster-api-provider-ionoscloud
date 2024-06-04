@@ -46,7 +46,7 @@ var (
 var (
 	ionosCloudMachineTemplateKind = "IonosCloudMachineTemplate"
 
-	ionosCloudClusterController = metav1.OwnerReference{Kind: "IonosCloudCluster", APIVersion: infrav1.GroupVersion.String(), Controller: ptr.To(true)}
+	ionosCloudClusterController = metav1.OwnerReference{Kind: "IonosCloudCluster", APIVersion: infrav1.GroupVersion.String(), Controller: ptr.To(false)}
 )
 
 var (

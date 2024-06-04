@@ -1,4 +1,4 @@
-name: End to End Tests
+name: End-to-End tests (non-conformance)
 on:
   pull_request:
     branches:
@@ -34,6 +34,7 @@ jobs:
       run: make GINKGO_LABEL="!Conformance" test-e2e
 
     - name: Redact sensitive data
+      if: success() || failure()
       id: sanitize
       run: ./hack/scripts/remove-sensitive-data-from-artifacts.sh
 

@@ -69,9 +69,9 @@ func (e *ionosCloudEnv) setup() {
 	By("Creating a datacenter")
 	dcName := fmt.Sprintf("%s-%s", "e2e-test", uuid.New().String())
 	datacenterID, dcRequest, err := e.createDatacenter(ctx, dcName, location, "")
+	Expect(err).ToNot(HaveOccurred())
 	Expect(datacenterID).ToNot(BeEmpty())
 	Expect(dcRequest).ToNot(BeEmpty())
-	Expect(err).ToNot(HaveOccurred())
 	_, err = e.api.WaitForRequest(ctx, dcRequest)
 	Expect(err).ToNot(HaveOccurred(), "Failed waiting for datacenter creation")
 	e.datacenterID = datacenterID

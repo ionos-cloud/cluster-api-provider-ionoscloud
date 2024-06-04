@@ -38,6 +38,15 @@ var ExpFinalizersAssertion = map[string][]string{
 	"ClusterResourceSet": {addonsv1.ClusterResourceSetFinalizer},
 }
 
-var KubernetesFinalizersAssertion = map[string][]string{
-	"Secret": {fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, "credentials")},
+// KubernetesFinalizersAssertion maps Kubernetes resource types to their expected finalizers.
+func KubernetesFinalizersAssertion(clusters *infrav1.IonosCloudClusterList) map[string][]string {
+	assertions := map[string][]string{}
+	if clusters != nil {
+		secretAssertions := make([]string, 0)
+		for _, cluster := range clusters.Items {
+			secretAssertions = append(secretAssertions, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))
+		}
+		assertions["Secret"] = secretAssertions
+	}
+	return assertions
 }
