@@ -92,8 +92,8 @@ var (
 )
 
 func init() {
-	flag.StringVar(&configPath, "e2e.config", "/home/gustavo/GolandProjects/cluster-api-provider-ionoscloud/test/e2e/config/ionoscloud.yaml", "path to the e2e config file")
-	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "/home/gustavo/GolandProjects/cluster-api-provider-ionoscloud/_artifacts", "folder where e2e test artifact should be stored")
+	flag.StringVar(&configPath, "e2e.config", "", "path to the e2e config file")
+	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.StringVar(&clusterctlConfig, "e2e.clusterctl-config", "",
 		"file which tests will use as a clusterctl config. If it is not set, a local clusterctl"+
 			"repository (including a clusterctl config) will be created automatically.")
