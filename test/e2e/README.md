@@ -15,8 +15,13 @@ Besides the tools, the following environment variables need to be set:
 
 - `IONOS_TOKEN`: The IONOS API token
 - `CONTROL_PLANE_ENDPOINT_LOCATION`: The location for the control plane endpoint and machine image.
-- `CONTROL_PLANE_ENDPOINT_IP`: The IP address for the control plane endpoint. MUST be in the location specified by `CONTROL_PLANE_ENDPOINT_LOCATION`.
 - `IONOSCLOUD_MACHINE_IMAGE_ID`: The ID of the machine image to be used for the nodes. MUST be in the location specified by `CONTROL_PLANE_ENDPOINT_LOCATION`.
+
+Before running the tests, you need to build the provider image.
+
+```shell
+make docker-build
+```
 
 To run the tests, execute the following command:
 
