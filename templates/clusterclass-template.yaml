@@ -163,6 +163,48 @@ spec:
         matchResources:
           infrastructureCluster: true
     name: infraClusterSubstitutions
+  - name: workerMachineType
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: IonosCloudMachineTemplate
+        matchResources:
+          machineDeploymentClass:
+            names:
+            - ${CLUSTER_CLASS_NAME}-worker
+      jsonPatches:
+      - op: add
+        path: /spec/template/spec/numCores
+        valueFrom:
+          variable: workerNumCores
+     - op: add
+        path: /spec/template/spec/memoryMB
+        valueFrom:
+          variable: workerMemoryMB
+     - op: add
+       path: /spec/template/spec/disk/image/id
+       valueFrom:
+         variable: workerImageID
+  - name: controlPlaneMachineType
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: IonosCloudMachineTemplate
+        matchResources:
+          controlPlane: true
+      jsonPatches:
+      - op: add
+        path: /spec/template/spec/numCores
+        valueFrom:
+          variable: controlePlaneNumCores
+     - op: add
+        path: /spec/template/spec/memoryMB
+        valueFrom:
+          variable: controlePlaneMemoryMB
+     - op: add
+       path: /spec/template/spec/disk/image/id
+       valueFrom:
+         variable: controlePlaneImageID
   - definitions:
     - jsonPatches:
       - op: add
@@ -319,6 +361,48 @@ spec:
         description: Port for the control plane endpoint.
         type: integer
   - metadata: {}
+    name: controlePlaneNumCores
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: NumCores for the control plane machines.
+        type: integer
+  - metadata: {}
+    name: controlePlaneMemoryMB
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: MemoryMB for the control plane machines.
+        type: integer
+  - metadata: {}
+    name: controlePlaneImageID
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: ImageID for the control plane machines.
+        type: integer
+  - metadata: {}
+    name: workerNumCores
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: NumCores for the worker machines.
+        type: integer
+  - metadata: {}
+    name: workerMemoryMB
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: MemoryMB for the worker machines.
+        type: integer
+  - metadata: {}
+    name: workerImageID
+    required: true
+    schema:
+      openAPIV3Schema:
+        description: ImageID for the worker machines.
+        type: integer
+  - metadata: {}
     name: credsSecretName
     required: true
     schema:
@@ -462,11 +546,11 @@ metadata:
 spec:
   template:
     spec:
-      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES}
-      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+      numCores: 2
+      memoryMB: 2048
       disk:
         image:
-          id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+          id: "placeholder"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: IonosCloudMachineTemplate
@@ -476,11 +560,11 @@ metadata:
 spec:
   template:
     spec:
-      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES}
-      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+      numCores: 2
+      memoryMB: 2048
       disk:
         image:
-          id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+          id: "placeholder"
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate

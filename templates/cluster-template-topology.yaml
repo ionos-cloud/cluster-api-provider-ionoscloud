@@ -26,6 +26,18 @@ spec:
       value: '${IONOSCLOUD_CONTRACT_NUMBER}'
     - name: location
       value: '${CONTROL_PLANE_ENDPOINT_LOCATION}'
+    - name: controlePlaneNumCores
+      value: '${IONOSCLOUD_MACHINE_NUM_CORES}'
+    - name: controlePlaneMemoryMB
+      value: '${IONOSCLOUD_MACHINE_MEMORY_MB}'
+    - name: controlePlaneImageID
+      value: '${IONOSCLOUD_MACHINE_IMAGE_ID}'
+    - name: workerNumCores
+      value: '${IONOSCLOUD_MACHINE_NUM_CORES}'
+    - name: workerMemoryMB
+      value: '${IONOSCLOUD_MACHINE_MEMORY_MB}'
+    - name: workerImageID
+      value: '${IONOSCLOUD_MACHINE_IMAGE_ID}'
     version: '${KUBERNETES_VERSION}'
     workers:
       machineDeployments:
