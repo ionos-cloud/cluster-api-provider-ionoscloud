@@ -12,8 +12,8 @@ spec:
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     variables:
-    - name: sshKeys
-      value: '${IONOSCLOUD_MACHINE_SSH_KEYS}'
+    - name: sshKey
+      value: '${IONOSCLOUD_MACHINE_SSH_KEY}'
     - name: controlPlaneIpAddr
       value: ${CONTROL_PLANE_ENDPOINT_IP}
     - name: controlPlanePort
@@ -22,15 +22,13 @@ spec:
       value: '${CLUSTER_NAME}'
     - name: datacenterID
       value: '${IONOSCLOUD_DATACENTER_ID}'
-    - name: contractNumber
-      value: '${IONOSCLOUD_CONTRACT_NUMBER}'
     - name: location
       value: '${CONTROL_PLANE_ENDPOINT_LOCATION}'
-    - name: controlePlaneNumCores
+    - name: controlPlaneNumCores
       value: '${IONOSCLOUD_MACHINE_NUM_CORES}'
-    - name: controlePlaneMemoryMB
+    - name: controlPlaneMemoryMB
       value: '${IONOSCLOUD_MACHINE_MEMORY_MB}'
-    - name: controlePlaneImageID
+    - name: controlPlaneImageID
       value: '${IONOSCLOUD_MACHINE_IMAGE_ID}'
     - name: workerNumCores
       value: '${IONOSCLOUD_MACHINE_NUM_CORES}'

@@ -7,7 +7,9 @@ metadata:
 spec:
   template:
     spec:
-      credentialsRef: {}
+      credentialsRef:
+        name: "place-holder"
+      location: "place-holder"
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
@@ -42,7 +44,7 @@ spec:
           template: |
             - name: root
               sshAuthorizedKeys:
-              - '{{ .sshKeys }}'
+              - '{{ .sshKey }}'
       selector:
         apiVersion: controlplane.cluster.x-k8s.io/v1beta1
         kind: KubeadmControlPlaneTemplate
@@ -55,7 +57,7 @@ spec:
           template: |
             - name: root
               sshAuthorizedKeys:
-              - '{{ .sshKeys }}'
+              - '{{ .sshKey }}'
       selector:
         apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
         kind: KubeadmConfigTemplate
@@ -153,10 +155,6 @@ spec:
         path: /spec/template/spec/location
         valueFrom:
           variable: location
-      - op: add
-        path: /spec/template/spec/contractNumber
-        valueFrom:
-          variable: contractNumber
       selector:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: IonosCloudClusterTemplate
@@ -196,15 +194,15 @@ spec:
       - op: add
         path: /spec/template/spec/numCores
         valueFrom:
-          variable: controlePlaneNumCores
+          variable: controlPlaneNumCores
       - op: add
         path: /spec/template/spec/memoryMB
         valueFrom:
-          variable: controlePlaneMemoryMB
+          variable: controlPlaneMemoryMB
       - op: add
         path: /spec/template/spec/disk/image/id
         valueFrom:
-          variable: controlePlaneImageID
+          variable: controlPlaneImageID
   - definitions:
     - jsonPatches:
       - op: add
@@ -227,11 +225,11 @@ spec:
                   - name: cp_enable
                     value: "true"
                   - name: vip_interface
-                    value: ${VIP_NETWORK_INTERFACE=""}
+                    value: ""
                   - name: address
-                    value: ${CONTROL_PLANE_ENDPOINT_IP}
+                    value: "{{ .controlPlaneIpAddr }}"
                   - name: port
-                    value: "${CONTROL_PLANE_ENDPOINT_PORT:-6443}"
+                    value: "{{ .controlPlanePort }}"
                   - name: vip_arp
                     value: "true"
                   - name: vip_leaderelection
@@ -267,57 +265,6 @@ spec:
                   name: kubeconfig
               status: {}
             permissions: "0644"
-      - op: add
-        path: /spec/template/spec/kubeadmConfigSpec/files/-
-        valueFrom:
-          template: |
-            content: |
-              #!/bin/bash
-
-              # Copyright 2020 The Kubernetes Authors.
-              #
-              # Licensed under the Apache License, Version 2.0 (the "License");
-              # you may not use this file except in compliance with the License.
-              # You may obtain a copy of the License at
-              #
-              #     http://www.apache.org/licenses/LICENSE-2.0
-              #
-              # Unless required by applicable law or agreed to in writing, software
-              # distributed under the License is distributed on an "AS IS" BASIS,
-              # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-              # See the License for the specific language governing permissions and
-              # limitations under the License.
-
-              set -e
-
-              # Configure the workaround required for kubeadm init with kube-vip:
-              # xref: https://github.com/kube-vip/kube-vip/issues/684
-
-              # Nothing to do for kubernetes < v1.29
-              KUBEADM_MINOR="$(kubeadm version -o short | cut -d '.' -f 2)"
-              if [[ "$KUBEADM_MINOR" -lt "29" ]]; then
-                exit 0
-              fi
-
-              IS_KUBEADM_INIT="false"
-
-              # cloud-init kubeadm init
-              if [[ -f /run/kubeadm/kubeadm.yaml ]]; then
-                IS_KUBEADM_INIT="true"
-              fi
-
-              # ignition kubeadm init
-              if [[ -f /etc/kubeadm.sh ]] && grep -q -e "kubeadm init" /etc/kubeadm.sh; then
-                IS_KUBEADM_INIT="true"
-              fi
-
-              if [[ "$IS_KUBEADM_INIT" == "true" ]]; then
-                sed -i 's#path: /etc/kubernetes/admin.conf#path: /etc/kubernetes/super-admin.conf#' \
-                  /etc/kubernetes/manifests/kube-vip.yaml
-              fi
-            owner: root:root
-            path: /etc/pre-kubeadm-commands/50-kube-vip-prepare.sh
-            permissions: "0700"
       selector:
         apiVersion: controlplane.cluster.x-k8s.io/v1beta1
         kind: KubeadmControlPlaneTemplate
@@ -326,7 +273,7 @@ spec:
     name: kubeVipPodManifest
   variables:
   - metadata: {}
-    name: sshKeys
+    name: sshKey
     required: false
     schema:
       openAPIV3Schema:
@@ -361,21 +308,21 @@ spec:
         description: Port for the control plane endpoint.
         type: integer
   - metadata: {}
-    name: controlePlaneNumCores
+    name: controlPlaneNumCores
     required: true
     schema:
       openAPIV3Schema:
         description: NumCores for the control plane machines.
         type: integer
   - metadata: {}
-    name: controlePlaneMemoryMB
+    name: controlPlaneMemoryMB
     required: true
     schema:
       openAPIV3Schema:
         description: MemoryMB for the control plane machines.
         type: integer
   - metadata: {}
-    name: controlePlaneImageID
+    name: controlPlaneImageID
     required: true
     schema:
       openAPIV3Schema:
@@ -415,13 +362,6 @@ spec:
     schema:
       openAPIV3Schema:
         description: cluster location on IONOS
-        type: string
-  - metadata: {}
-    name: contractNumber
-    required: true
-    schema:
-      openAPIV3Schema:
-        description: contract number to use on IONOS
         type: string
   workers:
     machineDeployments:
@@ -506,6 +446,53 @@ spec:
             owner: root:root
             path: /etc/set-node-ip.sh
             permissions: '0700'
+          - content: |
+              #!/bin/bash
+
+              # Copyright 2020 The Kubernetes Authors.
+              #
+              # Licensed under the Apache License, Version 2.0 (the "License");
+              # you may not use this file except in compliance with the License.
+              # You may obtain a copy of the License at
+              #
+              #     http://www.apache.org/licenses/LICENSE-2.0
+              #
+              # Unless required by applicable law or agreed to in writing, software
+              # distributed under the License is distributed on an "AS IS" BASIS,
+              # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+              # See the License for the specific language governing permissions and
+              # limitations under the License.
+
+              set -e
+
+              # Configure the workaround required for kubeadm init with kube-vip:
+              # xref: https://github.com/kube-vip/kube-vip/issues/684
+
+              # Nothing to do for kubernetes < v1.29
+              KUBEADM_MINOR="$(kubeadm version -o short | cut -d '.' -f 2)"
+              if [[ "$KUBEADM_MINOR" -lt "29" ]]; then
+                exit 0
+              fi
+
+              IS_KUBEADM_INIT="false"
+
+              # cloud-init kubeadm init
+              if [[ -f /run/kubeadm/kubeadm.yaml ]]; then
+                IS_KUBEADM_INIT="true"
+              fi
+
+              # ignition kubeadm init
+              if [[ -f /etc/kubeadm.sh ]] && grep -q -e "kubeadm init" /etc/kubeadm.sh; then
+                IS_KUBEADM_INIT="true"
+              fi
+
+              if [[ "$IS_KUBEADM_INIT" == "true" ]]; then
+                sed -i 's#path: /etc/kubernetes/admin.conf#path: /etc/kubernetes/super-admin.conf#' \
+                  /etc/kubernetes/manifests/kube-vip.yaml
+              fi
+            owner: root:root
+            path: /etc/pre-kubeadm-commands/50-kube-vip-prepare.sh
+            permissions: "0700"
         preKubeadmCommands:
           - systemctl restart systemd-networkd.service systemd-modules-load.service systemd-journald containerd
           # disable swap
@@ -528,15 +515,18 @@ spec:
             kubectl --kubeconfig /etc/kubernetes/kubelet.conf
             patch node $(hostname)
             --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
-        nodeRegistration:
-          kubeletExtraArgs:
-            # use cloud-provider: external when using a CCM
-            cloud-provider: ""
         initConfiguration:
           localAPIEndpoint: {}
+          nodeRegistration:
+            kubeletExtraArgs:
+              # use cloud-provider: external when using a CCM
+              cloud-provider: ""
         joinConfiguration:
           nodeRegistration:
             criSocket: unix:///run/containerd/containerd.sock
+            kubeletExtraArgs:
+              # use cloud-provider: external when using a CCM
+              cloud-provider: ""
 ---
 kind: IonosCloudMachineTemplate
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
@@ -548,6 +538,7 @@ spec:
     spec:
       numCores: 2
       memoryMB: 2048
+      datacenterID: "00000000-0000-0000-0000-000000000000"
       disk:
         image:
           id: "placeholder"
@@ -562,6 +553,7 @@ spec:
     spec:
       numCores: 2
       memoryMB: 2048
+      datacenterID: "00000000-0000-0000-0000-000000000000"
       disk:
         image:
           id: "placeholder"
