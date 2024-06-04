@@ -1,4 +1,4 @@
-name: End-to-End tests (conformance)
+name: Conformance end-to-end tests
 on:
   pull_request:
     branches:
@@ -9,7 +9,7 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    environment: E2E
+    environment: e2e
     env:
       IONOS_TOKEN: ${{ secrets.IONOS_TOKEN }}
       IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
