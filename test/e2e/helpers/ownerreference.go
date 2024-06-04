@@ -35,44 +35,29 @@ import (
 var (
 	coreGroupVersion = clusterv1.GroupVersion.String()
 
-	clusterKind = "Cluster"
-	machineKind = "Machine"
-
-	clusterOwner      = metav1.OwnerReference{Kind: clusterKind, APIVersion: coreGroupVersion}
-	clusterController = metav1.OwnerReference{Kind: clusterKind, APIVersion: coreGroupVersion, Controller: ptr.To(true)}
-	machineController = metav1.OwnerReference{Kind: machineKind, APIVersion: coreGroupVersion, Controller: ptr.To(true)}
+	clusterOwner      = metav1.OwnerReference{Kind: "Cluster", APIVersion: coreGroupVersion}
+	clusterController = metav1.OwnerReference{Kind: "Cluster", APIVersion: coreGroupVersion, Controller: ptr.To(true)}
+	machineController = metav1.OwnerReference{Kind: "Machine", APIVersion: coreGroupVersion, Controller: ptr.To(true)}
 )
 
 var (
-	ionosCloudMachineTemplateKind = "IonosCloudMachineTemplate"
-
 	ionosCloudClusterController = metav1.OwnerReference{Kind: "IonosCloudCluster", APIVersion: infrav1.GroupVersion.String(), Controller: ptr.To(false)}
 )
 
 var (
-	clusterResourceSetBindingKind = "ClusterResourceSetBinding"
-	clusterResourceSetOwner       = metav1.OwnerReference{Kind: "ClusterResourceSet", APIVersion: addonsv1.GroupVersion.String()}
+	clusterResourceSetOwner = metav1.OwnerReference{Kind: "ClusterResourceSet", APIVersion: addonsv1.GroupVersion.String()}
 )
 
 // Kind and Owners for types in the Kubeadm ControlPlane package.
 var (
-	kubeadmControlPlaneKind = "KubeadmControlPlane"
-
 	kubeadmControlPlaneGroupVersion = controlplanev1.GroupVersion.String()
-	kubeadmControlPlaneController   = metav1.OwnerReference{Kind: kubeadmControlPlaneKind, APIVersion: kubeadmControlPlaneGroupVersion, Controller: ptr.To(true)}
+	kubeadmControlPlaneController   = metav1.OwnerReference{Kind: "KubeadmControlPlane", APIVersion: kubeadmControlPlaneGroupVersion, Controller: ptr.To(true)}
 )
 
 // Owners and kinds for types in the Kubeadm Bootstrap package.
 var (
-	kubeadmConfigKind = "KubeadmConfig"
-
 	kubeadmConfigGroupVersion = bootstrapv1.GroupVersion.String()
-	kubeadmConfigController   = metav1.OwnerReference{Kind: kubeadmConfigKind, APIVersion: kubeadmConfigGroupVersion, Controller: ptr.To(true)}
-)
-
-var (
-	configMapKind = "ConfigMap"
-	secretKind    = "Secret"
+	kubeadmConfigController   = metav1.OwnerReference{Kind: "KubeadmConfig", APIVersion: kubeadmConfigGroupVersion, Controller: ptr.To(true)}
 )
 
 // IonosCloudInfraOwnerReferenceAssertions maps IONOS Cloud Infrastructure types to functions which return an error if the passed
@@ -84,7 +69,7 @@ var IonosCloudInfraOwnerReferenceAssertions = map[string]func([]metav1.OwnerRefe
 		return framework.HasExactOwners(owners, machineController)
 
 	},
-	ionosCloudMachineTemplateKind: func(owners []metav1.OwnerReference) error {
+	"IonosCloudMachineTemplate": func(owners []metav1.OwnerReference) error {
 		return framework.HasExactOwners(owners, clusterOwner)
 	},
 	"IonosCloudCluster": func(owners []metav1.OwnerReference) error {
@@ -103,7 +88,7 @@ var ExpOwnerReferenceAssertions = map[string]func([]metav1.OwnerReference) error
 		return framework.HasExactOwners(owners)
 	},
 	// ClusterResourcesSetBinding has ClusterResourceSet set as owners on creation.
-	clusterResourceSetBindingKind: func(owners []metav1.OwnerReference) error {
+	"ClusterResourceSetBinding": func(owners []metav1.OwnerReference) error {
 		return framework.HasOneOfExactOwners(owners, []metav1.OwnerReference{clusterResourceSetOwner}, []metav1.OwnerReference{clusterResourceSetOwner, clusterResourceSetOwner})
 	},
 }
@@ -113,7 +98,7 @@ var ExpOwnerReferenceAssertions = map[string]func([]metav1.OwnerReference) error
 // Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/tree/main/docs/book/src/reference/owner_references.md.
 // That document should be updated if these references change.
 var KubernetesReferenceAssertions = map[string]func([]metav1.OwnerReference) error{
-	secretKind: func(owners []metav1.OwnerReference) error {
+	"Secret": func(owners []metav1.OwnerReference) error {
 		// Secrets for cluster certificates must be owned and controlled by the KubeadmControlPlane.
 		// The bootstrap secret should be owned and controlled by a KubeadmControlPlane.
 		// The cluster IONOS Cloud credentials secret should be owned and controlled by IonosCloudClusterController
@@ -123,7 +108,7 @@ var KubernetesReferenceAssertions = map[string]func([]metav1.OwnerReference) err
 			[]metav1.OwnerReference{ionosCloudClusterController},
 		)
 	},
-	configMapKind: func(owners []metav1.OwnerReference) error {
+	"ConfigMap": func(owners []metav1.OwnerReference) error {
 		// The only configMaps considered here are those owned by a ClusterResourceSet.
 		return framework.HasExactOwners(owners, clusterResourceSetOwner)
 	},
