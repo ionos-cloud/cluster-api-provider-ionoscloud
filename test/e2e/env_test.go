@@ -61,8 +61,6 @@ type ionosCloudEnv struct {
 }
 
 func (e *ionosCloudEnv) setup() {
-	var err error
-
 	e.token = os.Getenv(sdk.IonosTokenEnvVar)
 	Expect(e.token).ToNot(BeEmpty(), "Please set the IONOS_TOKEN environment variable")
 	e.api = sdk.NewAPIClient(sdk.NewConfigurationFromEnv())
@@ -70,15 +68,13 @@ func (e *ionosCloudEnv) setup() {
 	location := os.Getenv("CONTROL_PLANE_ENDPOINT_LOCATION")
 
 	By("Requesting a data center")
-	dcRequest, err := e.createDatacenter(ctx, location)
-	Expect(err).ToNot(HaveOccurred(), "Failed requesting data center creation")
+	dcRequest := e.createDatacenter(ctx, location)
 
 	By("Requesting an IP block")
-	ipbRequest, err := e.reserveIPBlock(ctx, location, 1)
-	Expect(err).ToNot(HaveOccurred(), "Failed requesting IP block reservation")
+	ipbRequest := e.reserveIPBlock(ctx, location, 1)
 
 	By("Waiting for requests to complete")
-	Expect(e.waitForCreationRequests(ctx, dcRequest, ipbRequest)).ToNot(HaveOccurred(), "Failed waiting for requests to complete")
+	e.waitForCreationRequests(ctx, dcRequest, ipbRequest)
 }
 
 func (e *ionosCloudEnv) teardown() {
@@ -86,27 +82,22 @@ func (e *ionosCloudEnv) teardown() {
 		By("Deleting environment resources")
 
 		By("Requesting the deletion of the data center")
-		datacenterRequest, err := e.deleteDatacenter(ctx)
-		Expect(err).ToNot(HaveOccurred(), "Failed asking to delete data center")
+		datacenterRequest := e.deleteDatacenter(ctx)
 
 		By("Requesting the deletion of the IP Block")
-		ipBlockRequest, err := e.deleteIPBlock(ctx)
-		Expect(err).ToNot(HaveOccurred(), "Failed asking to delete IP Block")
+		ipBlockRequest := e.deleteIPBlock(ctx)
 
 		By("Waiting for deletion requests to complete")
-		Expect(e.waitForDeletionRequests(ctx, datacenterRequest, ipBlockRequest)).ToNot(HaveOccurred(), "Failed waiting for deletion requests to complete")
+		e.waitForDeletionRequests(ctx, datacenterRequest, ipBlockRequest)
 	}
 }
 
-func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (requestID string, _ error) {
-	if location == "" {
-		return "", errors.New("location must be set")
-	}
-	name := fmt.Sprintf("%s-%s", "capic-e2e-test", uuid.New().String())
+func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (requestLocation string) {
+	name := fmt.Sprintf("capic-e2e-test-%s", uuid.New().String())
 	description := "used in a CACIC E2E test run"
 	if os.Getenv("CI") == "true" {
-		name = fmt.Sprintf("%s-%s", "capic-e2e-test", os.Getenv("GITHUB_RUN_ID"))
-		description = fmt.Sprintf("CI run URL: %s", e.githubCIRunURL())
+		name = fmt.Sprintf("capic-e2e-test-%s", os.Getenv("GITHUB_RUN_ID"))
+		description = fmt.Sprintf("CI run: %s", e.githubCIRunURL())
 	}
 
 	datacenter := sdk.Datacenter{
@@ -117,34 +108,21 @@ func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (
 		},
 	}
 	datacenter, res, err := e.api.DataCentersApi.DatacentersPost(ctx).Datacenter(datacenter).Execute()
-	if err != nil {
-		return "", fmt.Errorf(apiCallErrWrapper, err)
-	}
-	if datacenter.Id == nil {
-		return "", fmt.Errorf(apiCallErrWrapper, errors.New("request to Cloud API did not return the data center"))
-	}
+	Expect(err).ToNot(HaveOccurred(), "Failed requesting data center creation")
 	e.datacenterID = *datacenter.Id
 	Expect(os.Setenv("IONOSCLOUD_DATACENTER_ID", e.datacenterID)).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
-	if requestLocation := res.Header.Get(apiLocationHeaderKey); requestLocation != "" {
-		return requestLocation, nil
-	}
-	return "", errLocationHeaderEmpty
+	return res.Header.Get(apiLocationHeaderKey)
 }
 
 // deleteDatacenter requests the deletion of the data center that matches the provided id.
-func (e *ionosCloudEnv) deleteDatacenter(ctx context.Context) (requestLocation string, _ error) {
+func (e *ionosCloudEnv) deleteDatacenter(ctx context.Context) (requestLocation string) {
 	res, err := e.api.DataCentersApi.DatacentersDelete(ctx, e.datacenterID).Execute()
-	if err != nil {
-		return "", fmt.Errorf(apiCallErrWrapper, err)
-	}
-	if requestLocation := res.Header.Get(apiLocationHeaderKey); requestLocation != "" {
-		return requestLocation, nil
-	}
-	return "", errLocationHeaderEmpty
+	Expect(err).ToNot(HaveOccurred(), "Failed requesting data center deletion")
+	return res.Header.Get(apiLocationHeaderKey)
 }
 
-func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, size int32) (requestID string, _ error) {
-	name := fmt.Sprintf("%s", "CAPIC E2E Test")
+func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, size int32) (requestLocation string) {
+	name := "CAPIC E2E Test"
 	if os.Getenv("CI") == "true" {
 		name = fmt.Sprintf("CAPIC E2E Test - %s", e.githubCIRunURL())
 	}
@@ -155,32 +133,21 @@ func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, siz
 			Location: &location,
 		},
 	}
-	ipb, req, err := e.api.IPBlocksApi.IpblocksPost(ctx).Ipblock(ipBlock).Execute()
-	if err != nil {
-		return "", fmt.Errorf(apiCallErrWrapper, err)
-	}
+	ipb, res, err := e.api.IPBlocksApi.IpblocksPost(ctx).Ipblock(ipBlock).Execute()
+	Expect(err).ToNot(HaveOccurred(), "Failed requesting IP block reservation")
 
 	e.ipBlock = &ipb
 	Expect(os.Setenv("CONTROL_PLANE_ENDPOINT_IP", (*e.ipBlock.Properties.Ips)[0])).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
-
-	if requestPath := req.Header.Get(apiLocationHeaderKey); requestPath != "" {
-		return requestPath, nil
-	}
-	return "", errLocationHeaderEmpty
+	return res.Header.Get(apiLocationHeaderKey)
 }
 
-func (e *ionosCloudEnv) deleteIPBlock(ctx context.Context) (requestLocation string, _ error) {
+func (e *ionosCloudEnv) deleteIPBlock(ctx context.Context) (requestLocation string) {
 	res, err := e.api.IPBlocksApi.IpblocksDelete(ctx, *e.ipBlock.Id).Execute()
-	if err != nil {
-		return "", fmt.Errorf(apiCallErrWrapper, err)
-	}
-	if requestLocation := res.Header.Get(apiLocationHeaderKey); requestLocation != "" {
-		return requestLocation, nil
-	}
-	return "", errLocationHeaderEmpty
+	Expect(err).ToNot(HaveOccurred(), "Failed requesting IP block deletion")
+	return res.Header.Get(apiLocationHeaderKey)
 }
 
-func (e *ionosCloudEnv) waitForCreationRequests(ctx context.Context, datacenterRequest, ipBlockRequest string) error {
+func (e *ionosCloudEnv) waitForCreationRequests(ctx context.Context, datacenterRequest, ipBlockRequest string) {
 	GinkgoLogr.Info("Waiting for data center and IP block creation requests to complete",
 		"datacenterRequest", datacenterRequest,
 		"datacenterID", e.datacenterID,
@@ -188,17 +155,12 @@ func (e *ionosCloudEnv) waitForCreationRequests(ctx context.Context, datacenterR
 		"ipBlockID", *e.ipBlock.Id)
 
 	_, err := e.api.WaitForRequest(ctx, datacenterRequest)
-	if err != nil {
-		return fmt.Errorf("failed waiting for data center creation: %w", err)
-	}
+	Expect(err).ToNot(HaveOccurred(), "failed waiting for data center creation")
 	_, err = e.api.WaitForRequest(ctx, ipBlockRequest)
-	if err != nil {
-		return fmt.Errorf("failed waiting for IP block reservation: %w", err)
-	}
-	return nil
+	Expect(err).ToNot(HaveOccurred(), "failed waiting for IP block reservation")
 }
 
-func (e *ionosCloudEnv) waitForDeletionRequests(ctx context.Context, datacenterRequest, ipBlockRequest string) error {
+func (e *ionosCloudEnv) waitForDeletionRequests(ctx context.Context, datacenterRequest, ipBlockRequest string) {
 	GinkgoLogr.Info("Waiting for data center and IP block deletion requests to complete",
 		"datacenterRequest", datacenterRequest,
 		"datacenterID", e.datacenterID,
@@ -206,14 +168,9 @@ func (e *ionosCloudEnv) waitForDeletionRequests(ctx context.Context, datacenterR
 		"ipBlockID", *e.ipBlock.Id)
 
 	_, err := e.api.WaitForRequest(ctx, datacenterRequest)
-	if err != nil {
-		return fmt.Errorf("failed waiting for data center deletion: %w", err)
-	}
+	Expect(err).ToNot(HaveOccurred(), "failed waiting for data center deletion")
 	_, err = e.api.WaitForRequest(ctx, ipBlockRequest)
-	if err != nil {
-		return fmt.Errorf("failed waiting for IP block deletion: %w", err)
-	}
-	return nil
+	Expect(err).ToNot(HaveOccurred(), "failed waiting for IP block deletion")
 }
 
 // createCredentialsSecretPNC creates a secret with the IONOS Cloud credentials. This secret should be used as the
