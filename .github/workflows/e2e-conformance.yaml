@@ -1,13 +1,8 @@
 name: Conformance end-to-end tests
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
   schedule:
     - cron: "0 5 * * 1"
+  workflow_dispatch: {}
 jobs:
   e2e:
     runs-on: ubuntu-latest
