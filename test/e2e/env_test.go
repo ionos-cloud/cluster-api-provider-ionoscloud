@@ -26,6 +26,11 @@ import (
 	"os"
 
 	"github.com/google/uuid"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/cluster-api/test/framework"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -58,10 +63,9 @@ type ionosCloudEnv struct {
 func (e *ionosCloudEnv) setup() {
 	var err error
 
-	token := os.Getenv(sdk.IonosTokenEnvVar)
-	Expect(token).ToNot(BeEmpty(), "Please set the IONOS_TOKEN environment variable")
+	e.token = os.Getenv(sdk.IonosTokenEnvVar)
+	Expect(e.token).ToNot(BeEmpty(), "Please set the IONOS_TOKEN environment variable")
 	e.api = sdk.NewAPIClient(sdk.NewConfigurationFromEnv())
-	Expect(err).ToNot(HaveOccurred(), "Failed to create IONOS Cloud API client")
 
 	location := os.Getenv("CONTROL_PLANE_ENDPOINT_LOCATION")
 
@@ -212,10 +216,49 @@ func (e *ionosCloudEnv) waitForDeletionRequests(ctx context.Context, datacenterR
 	return nil
 }
 
+// createCredentialsSecretPNC creates a secret with the IONOS Cloud credentials. This secret should be used as the
+// argument for the PostNamespaceCreation attribute of the spec input.
+func (e *ionosCloudEnv) createCredentialsSecretPNC(clusterProxy framework.ClusterProxy, namespace string) {
+	k8sClient := clusterProxy.GetClient()
+
+	namespacedName := types.NamespacedName{
+		Name:      "ionoscloud-credentials",
+		Namespace: namespace,
+	}
+
+	secret := &corev1.Secret{}
+	err := k8sClient.Get(ctx, namespacedName, secret)
+	Expect(ignoreNotFound(err)).To(Succeed(), "could not get credentials secret")
+
+	if apierrors.IsNotFound(err) {
+		By(fmt.Sprintf("Creating credentials secret for namespace %q", namespace))
+		secret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      namespacedName.Name,
+				Namespace: namespacedName.Namespace,
+			},
+			StringData: map[string]string{
+				"token": e.token,
+			},
+		}
+		Expect(clusterProxy.GetClient().Create(ctx, secret)).To(Succeed(), "could not create credentials secret")
+	} else {
+		By(fmt.Sprintf("Skipping creation of credentials secret for namespace %q as it already exists", namespace))
+	}
+}
+
 // githubCIRunURL returns the URL of the current GitHub CI run.
 func (e *ionosCloudEnv) githubCIRunURL() string {
 	return fmt.Sprintf("%s/%s/actions/runs/%s",
 		os.Getenv("GITHUB_SERVER_URL"),
 		os.Getenv("GITHUB_REPOSITORY"),
 		os.Getenv("GITHUB_RUN_ID"))
+}
+
+// ignoreNotFound returns nil if the client.Client.Create() error is a not found error, otherwise it returns the error.
+func ignoreNotFound(err error) error {
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }

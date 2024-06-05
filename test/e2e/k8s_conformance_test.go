@@ -33,6 +33,7 @@ var _ = Describe("When testing K8S conformance", Label("Conformance"), func() {
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			ArtifactFolder:        artifactFolder,
 			SkipCleanup:           skipCleanup,
+			PostNamespaceCreated:  cloudEnv.createCredentialsSecretPNC,
 		}
 	})
 })

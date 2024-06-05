@@ -32,6 +32,7 @@ var _ = Describe("When testing MachineDeployment scale out/in", func() {
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			ArtifactFolder:        artifactFolder,
 			SkipCleanup:           skipCleanup,
+			PostNamespaceCreated:  cloudEnv.createCredentialsSecretPNC,
 		}
 	})
 })

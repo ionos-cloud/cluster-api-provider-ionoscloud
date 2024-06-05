@@ -42,6 +42,7 @@ var _ = Describe("When following the Cluster API quick-start", func() {
 			BootstrapClusterProxy:   bootstrapClusterProxy,
 			ArtifactFolder:          artifactFolder,
 			SkipCleanup:             skipCleanup,
+			PostNamespaceCreated:    cloudEnv.createCredentialsSecretPNC,
 			PostMachinesProvisioned: quickStartSpecPMP(ctx),
 		}
 	})
@@ -58,6 +59,7 @@ var _ = Describe("When following the Cluster API quick-start (high availability)
 			SkipCleanup:              skipCleanup,
 			ControlPlaneMachineCount: ptr.To[int64](3),
 			WorkerMachineCount:       ptr.To[int64](2),
+			PostNamespaceCreated:     cloudEnv.createCredentialsSecretPNC,
 			PostMachinesProvisioned:  quickStartSpecPMP(ctx),
 		}
 	})
