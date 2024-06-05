@@ -108,6 +108,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: metav1.NamespaceDefault,
 			Name:      "test-cluster",
+			UID:       "uid",
 		},
 		Spec: clusterv1.ClusterSpec{},
 	}
@@ -143,7 +144,8 @@ func (s *ServiceTestSuite) SetupTest() {
 			Namespace: metav1.NamespaceDefault,
 			Name:      "test-machine",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: s.capiCluster.Name,
+				clusterv1.ClusterNameLabel:           s.capiCluster.Name,
+				clusterv1.MachineDeploymentNameLabel: "test-md",
 			},
 		},
 		Spec: infrav1.IonosCloudMachineSpec{

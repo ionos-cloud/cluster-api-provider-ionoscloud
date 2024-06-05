@@ -50,6 +50,10 @@ func (s *lanSuite) TestNetworkLANName() {
 	s.Equal("lan-default-test-cluster", s.service.lanName(s.clusterScope.Cluster))
 }
 
+func (s *lanSuite) TestLANLockKey() {
+	s.Equal("cluster/uid/dc/ccf27092-34e8-499e-a2f5-2bdee9d34a12/lan", s.service.lanLockKey(s.machineScope))
+}
+
 func (s *lanSuite) TestLANURL() {
 	s.Equal("datacenters/"+s.machineScope.DatacenterID()+"/lans/1",
 		s.service.lanURL(s.machineScope.DatacenterID(), "1"))

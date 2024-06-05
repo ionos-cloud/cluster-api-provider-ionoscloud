@@ -487,6 +487,10 @@ func (s *ipBlockTestSuite) buildRequest(status string, method, id string) sdk.Re
 	return s.buildIPBlockRequestWithName(s.service.controlPlaneEndpointIPBlockName(s.clusterScope), status, method, id)
 }
 
+func (s *ipBlockTestSuite) TestFailoverIPBlockLockKey() {
+	s.Equal("fo-ipb/default/test-md", s.service.failoverIPBlockLockKey(s.machineScope))
+}
+
 // exampleIPBlock returns a new sdk.IpBlock instance for testing. The IPs need to be set.
 func exampleIPBlock() *sdk.IpBlock {
 	return exampleIPBlockWithName(exampleIPBlockName)
