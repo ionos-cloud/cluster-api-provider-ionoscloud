@@ -117,24 +117,6 @@ func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
 	i.Status.Conditions = conditions
 }
 
-// SetCurrentRequestByDatacenter sets the current provisioning request for the given data center.
-// This function makes sure that the map is initialized before setting the request.
-func (i *IonosCloudCluster) SetCurrentRequestByDatacenter(datacenterID, method, status, requestPath string) {
-	if i.Status.CurrentRequestByDatacenter == nil {
-		i.Status.CurrentRequestByDatacenter = map[string]ProvisioningRequest{}
-	}
-	i.Status.CurrentRequestByDatacenter[datacenterID] = ProvisioningRequest{
-		Method:      method,
-		RequestPath: requestPath,
-		State:       status,
-	}
-}
-
-// DeleteCurrentRequestByDatacenter deletes the current provisioning request for the given data center.
-func (i *IonosCloudCluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
-	delete(i.Status.CurrentRequestByDatacenter, datacenterID)
-}
-
 // SetCurrentClusterRequest sets the current provisioning request for the cluster.
 func (i *IonosCloudCluster) SetCurrentClusterRequest(method, status, requestPath string) {
 	i.Status.CurrentClusterRequest = &ProvisioningRequest{

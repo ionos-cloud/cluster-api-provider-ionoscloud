@@ -153,6 +153,12 @@ func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scop
 		return false, nil
 	}
 
+	lockKey := s.failoverIPBlockLockKey(ms)
+	if err := ms.Locker.Lock(ctx, lockKey); err != nil {
+		return false, err
+	}
+	defer ms.Locker.Unlock(lockKey)
+
 	// Check if the IP block is currently in creation. We need to wait for it to be finished
 	// before we can trigger the deletion.
 	ipBlock, request, err := scopedFindResource(
@@ -455,6 +461,16 @@ func (*Service) failoverIPBlockName(ms *scope.Machine) string {
 		ms.IonosMachine.Namespace,
 		ms.IonosMachine.Labels[clusterv1.MachineDeploymentNameLabel],
 	)
+}
+
+func (*Service) failoverIPBlockLockKey(ms *scope.Machine) string {
+	// Failover IPs are shared across machines within the same failover group.
+	// When reserving the corresponding IP block, we must avoid duplicate reservations caused by concurrent machine
+	// reconciliations. So we lock when performing write operations.
+	// As the failover group corresponds with the MachineDeployment the machines belong to, we use the MachineDeployment
+	// namespace and name as part of the key used for locking. That's more fine-grained than using the machine's
+	// datacenter ID and allows working on distinct failover groups within the same datacenter in parallel.
+	return "fo-ipb/" + ms.IonosMachine.Namespace + "/" + ms.IonosMachine.Labels[clusterv1.MachineDeploymentNameLabel]
 }
 
 func ignoreErrUserSetIPNotFound(err error) error {
