@@ -214,7 +214,7 @@ func (e *ionosCloudEnv) githubCIRunURL() string {
 // writeToGithubOutput writes a key-value pair to the GITHUB_OUTPUT in an action. This function is useful for the
 // delete leftovers script.
 func (e *ionosCloudEnv) writeToGithubOutput(key, value string) {
-	f, err := os.OpenFile(os.Getenv("$GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0644)
 	Expect(err).ToNot(HaveOccurred(), "Failed opening GITHUB_OUTPUT file")
 	defer f.Close()
 
