@@ -19,9 +19,6 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - name: Build image
-        run: make docker-build
-
       - name: Run e2e tests
         run: make GINKGO_LABEL="Conformance" test-e2e
 

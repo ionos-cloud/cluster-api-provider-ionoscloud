@@ -22,9 +22,6 @@ jobs:
       with:
         go-version-file: "go.mod"
 
-    - name: Build image
-      run: make docker-build
-
     - name: Run e2e tests
       run: make test-e2e
 

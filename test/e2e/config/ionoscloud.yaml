@@ -1,5 +1,5 @@
 images:
-  - name: controller:dev
+  - name: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e
 
 providers:
   - name: cluster-api
@@ -45,11 +45,7 @@ providers:
         value: "../../../config/default"
         replacements:
           - old: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:dev
-            # NOTE(gfariasalves): If we leave only controller:dev, clusterctl init will complain about the image name
-            #   not following the canonical format. Other than that, the tag cannot be changed to :latest, otherwise
-            #   the image will be pulled from the internet (even if it is already present in the local registry) and
-            #   the tests will fail as it was never published.
-            new: docker.io/library/controller:dev
+            new: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e
           - old: "--leader-elect"
             new: "--leader-elect\n        - --insecure-diagnostics"
         files:

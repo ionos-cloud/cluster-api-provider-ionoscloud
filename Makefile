@@ -2,7 +2,7 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller:dev
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.28.0
+ENVTEST_K8S_VERSION = 1.29.2
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -118,6 +118,10 @@ run: manifests generate lint-fix vet ## Run a controller from your host.
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
 	$(CONTAINER_TOOL) build -t ${IMG} .
+
+.PHONY: docker-build-e2e
+docker-build-e2e: ## Build docker image with the manager.
+	$(CONTAINER_TOOL) build -t ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
@@ -280,7 +284,7 @@ _SKIP_ARGS := $(foreach arg,$(strip $(GINKGO_SKIP)),-skip="$(arg)")
 endif
 
 .PHONY: test-e2e
-test-e2e: ## Run the end-to-end tests
+test-e2e: docker-build-e2e ## Run the end-to-end tests
 	CGO_ENABLED=1 go run github.com/onsi/ginkgo/v2/ginkgo -v --trace \
 	-poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 	-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" \
