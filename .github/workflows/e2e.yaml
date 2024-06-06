@@ -3,9 +3,39 @@ on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - "**.md"
+      - "tools/**"
+      - ".codespellignore"
+      - ".gitignore"
+      - ".golangci.yml"
+      - ".mockery.yaml"
+      - ".yamllint"
+      - "CODEOWNERS"
+      - "envfile.example"
+      - "LICENSE"
+      - ".yamlint"
+      - "PROJECT"
+      - "sonar-project.properties"
+      - "tilt-provider.json"
   push:
     branches:
       - main
+    paths-ignore:
+      - "**.md"
+      - "tools/**"
+      - ".codespellignore"
+      - ".gitignore"
+      - ".golangci.yml"
+      - ".mockery.yaml"
+      - ".yamllint"
+      - "CODEOWNERS"
+      - "envfile.example"
+      - "LICENSE"
+      - ".yamlint"
+      - "PROJECT"
+      - "sonar-project.properties"
+      - "tilt-provider.json"
 jobs:
   e2e:
     runs-on: ubuntu-latest
