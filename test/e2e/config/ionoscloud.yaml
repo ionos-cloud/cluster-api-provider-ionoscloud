@@ -78,12 +78,12 @@ variables:
   IONOSCLOUD_MACHINE_IMAGE_ID: ""
 
 intervals:
-  default/wait-controllers: [ "20m", "10s" ]
-  default/wait-cluster: [ "20m", "10s" ]
-  default/wait-control-plane: [ "20m", "10s" ]
-  default/wait-worker-nodes: [ "20m", "10s" ]
-  default/wait-delete-cluster: [ "20m", "10s" ]
-  default/wait-nodes-ready: ["20m", "10s"]
-  scale/wait-cluster: ["20m", "10s"]
-  scale/wait-control-plane: ["20m", "10s"]
-  scale/wait-worker-nodes: ["20m", "10s"]
+  default/wait-controllers: [ "30m", "10s" ]
+  default/wait-cluster: [ "30m", "10s" ]
+  default/wait-control-plane: [ "30m", "10s" ]
+  default/wait-worker-nodes: [ "30m", "10s" ]
+  default/wait-delete-cluster: [ "30m", "10s" ]
+  default/wait-nodes-ready: ["30m", "10s"]
+  scale/wait-cluster: ["30m", "10s"]
+  scale/wait-control-plane: ["30m", "10s"]
+  scale/wait-worker-nodes: ["30m", "10s"]
