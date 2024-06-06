@@ -3,39 +3,19 @@ on:
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - "**.md"
-      - "tools/**"
-      - ".codespellignore"
-      - ".gitignore"
-      - ".golangci.yml"
-      - ".mockery.yaml"
-      - ".yamllint"
-      - "CODEOWNERS"
-      - "envfile.example"
-      - "LICENSE"
-      - ".yamlint"
-      - "PROJECT"
-      - "sonar-project.properties"
-      - "tilt-provider.json"
+    paths:
+      - "**.go"
+      - "**.yaml"
+      - "**.sh"
+      - "Dockerfile"
   push:
     branches:
       - main
-    paths-ignore:
-      - "**.md"
-      - "tools/**"
-      - ".codespellignore"
-      - ".gitignore"
-      - ".golangci.yml"
-      - ".mockery.yaml"
-      - ".yamllint"
-      - "CODEOWNERS"
-      - "envfile.example"
-      - "LICENSE"
-      - ".yamlint"
-      - "PROJECT"
-      - "sonar-project.properties"
-      - "tilt-provider.json"
+    paths:
+      - "**.go"
+      - "**.yaml"
+      - "**.sh"
+      - "Dockerfile"
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
@@ -59,17 +39,17 @@ jobs:
       id: tests
       run: make test-e2e
 
-    - name: Remove cancelled run leftovers
-      if: cancelled()
-      env:
-        DATACENTER_ID: ${{ steps.tests.outputs.DATACENTER_ID }}
-        IP_BLOCK_ID: ${{ steps.tests.outputs.IP_BLOCK_ID }}
-      run: make remove-cancelled-e2e-leftovers
-
-    - name : Upload artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       if: success() || failure()
       with:
         name: logs
         path: _artifacts
         retention-days: 7
+
+    - name: Remove cancelled run leftovers
+      if: cancelled()
+      env:
+        DATACENTER_ID: ${{ steps.tests.outputs.DATACENTER_ID }}
+        IP_BLOCK_ID: ${{ steps.tests.outputs.IP_BLOCK_ID }}
+      run: make remove-cancelled-e2e-leftovers
