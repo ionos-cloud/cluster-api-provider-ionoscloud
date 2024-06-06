@@ -21,7 +21,6 @@ package e2e
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -31,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api/test/framework"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -43,14 +43,7 @@ import (
 // TODO(gfariasalves-ionos): Remove IP block reservation and deletion after automatic IP Block reservation is working.
 
 const (
-	apiCallErrWrapper       = "request to Cloud API has failed: %w"
-	apiNoLocationErrMessage = "request to Cloud API did not return the request URL"
-
 	apiLocationHeaderKey = "Location"
-)
-
-var (
-	errLocationHeaderEmpty = errors.New(apiNoLocationErrMessage)
 )
 
 type ionosCloudEnv struct {
@@ -185,7 +178,7 @@ func (e *ionosCloudEnv) createCredentialsSecretPNC(clusterProxy framework.Cluste
 
 	secret := &corev1.Secret{}
 	err := k8sClient.Get(ctx, namespacedName, secret)
-	Expect(ignoreNotFound(err)).To(Succeed(), "could not get credentials secret")
+	Expect(runtimeclient.IgnoreNotFound(err)).To(Succeed(), "could not get credentials secret")
 
 	if apierrors.IsNotFound(err) {
 		By(fmt.Sprintf("Creating credentials secret for namespace %q", namespace))
@@ -210,12 +203,4 @@ func (e *ionosCloudEnv) githubCIRunURL() string {
 		os.Getenv("GITHUB_SERVER_URL"),
 		os.Getenv("GITHUB_REPOSITORY"),
 		os.Getenv("GITHUB_RUN_ID"))
-}
-
-// ignoreNotFound returns nil if the client.Client.Create() error is a not found error, otherwise it returns the error.
-func ignoreNotFound(err error) error {
-	if apierrors.IsNotFound(err) {
-		return nil
-	}
-	return err
 }
