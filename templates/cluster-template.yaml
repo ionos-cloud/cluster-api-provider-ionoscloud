@@ -246,6 +246,7 @@ spec:
       - rm /etc/ssh/ssh_host_*
       - ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
       - ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+      - sed -i 's/^\#HostKey \/etc\/ssh\/ssh_host_\(rsa\|ed25519\)_key$/HostKey \/etc\/ssh\/ssh_host_\1_key/g' /etc/ssh/sshd_config
       - awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe
       - mv /etc/ssh/moduli.safe /etc/ssh/moduli
       - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
@@ -396,6 +397,7 @@ spec:
         - rm /etc/ssh/ssh_host_*
         - ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
         - ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+        - sed -i 's/^\#HostKey \/etc\/ssh\/ssh_host_\(rsa\|ed25519\)_key$/HostKey \/etc\/ssh\/ssh_host_\1_key/g' /etc/ssh/sshd_config
         - awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe
         - mv /etc/ssh/moduli.safe /etc/ssh/moduli
         - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
