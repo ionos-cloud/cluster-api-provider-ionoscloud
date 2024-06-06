@@ -21,12 +21,12 @@ package e2e
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	capi "sigs.k8s.io/cluster-api/test/e2e"
+	capie2e "sigs.k8s.io/cluster-api/test/e2e"
 )
 
 var _ = Describe("When testing MachineDeployment scale out/in", func() {
-	capi.MachineDeploymentScaleSpec(ctx, func() capi.MachineDeploymentScaleSpecInput {
-		return capi.MachineDeploymentScaleSpecInput{
+	capie2e.MachineDeploymentScaleSpec(ctx, func() capie2e.MachineDeploymentScaleSpecInput {
+		return capie2e.MachineDeploymentScaleSpecInput{
 			E2EConfig:             e2eConfig,
 			ClusterctlConfigPath:  clusterctlConfigPath,
 			BootstrapClusterProxy: bootstrapClusterProxy,
