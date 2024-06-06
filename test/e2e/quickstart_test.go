@@ -32,20 +32,6 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/test/e2e/helpers"
 )
 
-var _ = Describe("When following the Cluster API quick-start", func() {
-	capie2e.QuickStartSpec(ctx, func() capie2e.QuickStartSpecInput {
-		return capie2e.QuickStartSpecInput{
-			E2EConfig:               e2eConfig,
-			ClusterctlConfigPath:    clusterctlConfigPath,
-			BootstrapClusterProxy:   bootstrapClusterProxy,
-			ArtifactFolder:          artifactFolder,
-			SkipCleanup:             skipCleanup,
-			PostNamespaceCreated:    cloudEnv.createCredentialsSecretPNC,
-			PostMachinesProvisioned: quickStartSpecPMP,
-		}
-	})
-})
-
 var _ = Describe("When following the Cluster API quick-start (high availability)", func() {
 	capie2e.QuickStartSpec(ctx, func() capie2e.QuickStartSpecInput {
 		return capie2e.QuickStartSpecInput{
@@ -57,44 +43,42 @@ var _ = Describe("When following the Cluster API quick-start (high availability)
 			ControlPlaneMachineCount: ptr.To[int64](3),
 			WorkerMachineCount:       ptr.To[int64](2),
 			PostNamespaceCreated:     cloudEnv.createCredentialsSecretPNC,
-			PostMachinesProvisioned:  quickStartSpecPMP,
+			PostMachinesProvisioned: func(proxy framework.ClusterProxy, namespace, clusterName string) {
+				// This check ensures that owner references are resilient - i.e. correctly re-reconciled - when removed.
+				framework.ValidateOwnerReferencesResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
+					framework.CoreOwnerReferenceAssertion,
+					helpers.ExpOwnerReferenceAssertions,
+					helpers.IonosCloudInfraOwnerReferenceAssertions,
+					framework.KubeadmBootstrapOwnerReferenceAssertions,
+					framework.KubeadmControlPlaneOwnerReferenceAssertions,
+					helpers.KubernetesReferenceAssertions,
+				)
+				// This check ensures that owner references are correctly updated to the correct apiVersion.
+				framework.ValidateOwnerReferencesOnUpdate(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
+					framework.CoreOwnerReferenceAssertion,
+					helpers.ExpOwnerReferenceAssertions,
+					helpers.IonosCloudInfraOwnerReferenceAssertions,
+					framework.KubeadmBootstrapOwnerReferenceAssertions,
+					framework.KubeadmControlPlaneOwnerReferenceAssertions,
+					helpers.KubernetesReferenceAssertions,
+				)
+
+				clusters := &infrav1.IonosCloudClusterList{}
+				Expect(proxy.GetClient().List(ctx, clusters, runtimeclient.InNamespace(namespace))).NotTo(HaveOccurred())
+
+				// This check ensures that finalizers are resilient - i.e. correctly re-reconciled - when removed.
+				framework.ValidateFinalizersResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
+					framework.CoreFinalizersAssertion,
+					framework.KubeadmControlPlaneFinalizersAssertion,
+					helpers.IonosCloudInfraFinalizersAssertion,
+					helpers.ExpFinalizersAssertion,
+					helpers.KubernetesFinalizersAssertion(clusters),
+				)
+
+				// This check ensures that the resourceVersions are stable, i.e. it verifies there are no
+				// continuous reconciles when everything should be stable.
+				framework.ValidateResourceVersionStable(ctx, proxy, namespace, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName))
+			},
 		}
 	})
 })
-
-func quickStartSpecPMP(proxy framework.ClusterProxy, namespace, clusterName string) {
-	// This check ensures that owner references are resilient - i.e. correctly re-reconciled - when removed.
-	framework.ValidateOwnerReferencesResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
-		framework.CoreOwnerReferenceAssertion,
-		helpers.ExpOwnerReferenceAssertions,
-		helpers.IonosCloudInfraOwnerReferenceAssertions,
-		framework.KubeadmBootstrapOwnerReferenceAssertions,
-		framework.KubeadmControlPlaneOwnerReferenceAssertions,
-		helpers.KubernetesReferenceAssertions,
-	)
-	// This check ensures that owner references are correctly updated to the correct apiVersion.
-	framework.ValidateOwnerReferencesOnUpdate(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
-		framework.CoreOwnerReferenceAssertion,
-		helpers.ExpOwnerReferenceAssertions,
-		helpers.IonosCloudInfraOwnerReferenceAssertions,
-		framework.KubeadmBootstrapOwnerReferenceAssertions,
-		framework.KubeadmControlPlaneOwnerReferenceAssertions,
-		helpers.KubernetesReferenceAssertions,
-	)
-
-	clusters := &infrav1.IonosCloudClusterList{}
-	Expect(proxy.GetClient().List(ctx, clusters, runtimeclient.InNamespace(namespace))).NotTo(HaveOccurred())
-
-	// This check ensures that finalizers are resilient - i.e. correctly re-reconciled - when removed.
-	framework.ValidateFinalizersResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
-		framework.CoreFinalizersAssertion,
-		framework.KubeadmControlPlaneFinalizersAssertion,
-		helpers.IonosCloudInfraFinalizersAssertion,
-		helpers.ExpFinalizersAssertion,
-		helpers.KubernetesFinalizersAssertion(clusters),
-	)
-
-	// This check ensures that the resourceVersions are stable, i.e. it verifies there are no
-	// continuous reconciles when everything should be stable.
-	framework.ValidateResourceVersionStable(ctx, proxy, namespace, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName))
-}
