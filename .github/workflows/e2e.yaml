@@ -36,6 +36,9 @@ on:
       - "PROJECT"
       - "sonar-project.properties"
       - "tilt-provider.json"
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -53,7 +56,15 @@ jobs:
         go-version-file: "go.mod"
 
     - name: Run e2e tests
+      id: tests
       run: make test-e2e
+
+    - name: Remove cancelled run leftovers
+      if: cancelled()
+      env:
+        DATACENTER_ID: ${{ steps.tests.outputs.DATACENTER_ID }}
+        IP_BLOCK_ID: ${{ steps.tests.outputs.IP_BLOCK_ID }}
+      run: make remove-cancelled-e2e-leftovers
 
     - name : Upload artifacts
       uses: actions/upload-artifact@v4

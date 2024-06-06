@@ -119,10 +119,6 @@ run: manifests generate lint-fix vet ## Run a controller from your host.
 docker-build: ## Build docker image with the manager.
 	$(CONTAINER_TOOL) build -t ${IMG} .
 
-.PHONY: docker-build-e2e
-docker-build-e2e: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) build -t ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e .
-
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
@@ -255,7 +251,8 @@ release-templates: ## Generate release templates
 	cp templates/cluster-template*.yaml $(RELEASE_DIR)/
 
 
-#
+##@ End-to-End Tests
+
 # Directories.
 #
 # Full directory of where the Makefile resides
@@ -263,7 +260,6 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 TEST_DIR := test
 ARTIFACTS ?= ${ROOT_DIR}/_artifacts
 
-##@ End-to-End Tests
 
 E2E_CONF_FILE ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/config/ionoscloud.yaml
 SKIP_RESOURCE_CLEANUP ?= false
@@ -283,6 +279,10 @@ ifneq ($(strip $(GINKGO_SKIP)),)
 _SKIP_ARGS := $(foreach arg,$(strip $(GINKGO_SKIP)),-skip="$(arg)")
 endif
 
+.PHONY: docker-build-e2e
+docker-build-e2e: ## Build docker image with the manager.
+	$(CONTAINER_TOOL) build -t ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e .
+
 .PHONY: test-e2e
 test-e2e: docker-build-e2e ## Run the end-to-end tests
 	CGO_ENABLED=1 go run github.com/onsi/ginkgo/v2/ginkgo -v --trace \
@@ -292,3 +292,7 @@ test-e2e: docker-build-e2e ## Run the end-to-end tests
 	--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(ROOT_DIR)/$(TEST_DIR)/e2e -- \
 	-e2e.artifacts-folder="$(ARTIFACTS)" -e2e.config="$(E2E_CONF_FILE)" \
 	-e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) -e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER)
+
+.PHONY: remove-cancelled-e2e-leftovers
+remove-cancelled-e2e-leftovers: ## Remove any leftover resources from cancelled e2e tests
+	$(ROOT_DIR)/hack/scripts/cleanup.sh

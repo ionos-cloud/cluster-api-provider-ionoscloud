@@ -103,6 +103,9 @@ func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (
 	datacenter, res, err := e.api.DataCentersApi.DatacentersPost(ctx).Datacenter(datacenter).Execute()
 	Expect(err).ToNot(HaveOccurred(), "Failed requesting data center creation")
 	e.datacenterID = *datacenter.Id
+	if os.Getenv("CI") == "true" {
+		e.writeToGithubOutput("DATACENTER_ID", e.datacenterID)
+	}
 	Expect(os.Setenv("IONOSCLOUD_DATACENTER_ID", e.datacenterID)).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
 	return res.Header.Get(apiLocationHeaderKey)
 }
@@ -115,9 +118,9 @@ func (e *ionosCloudEnv) deleteDatacenter(ctx context.Context) (requestLocation s
 }
 
 func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, size int32) (requestLocation string) {
-	name := "CAPIC E2E Test"
+	name := fmt.Sprintf("capic-e2e-test-%s", uuid.New().String())
 	if os.Getenv("CI") == "true" {
-		name = fmt.Sprintf("CAPIC E2E Test - %s", e.githubCIRunURL())
+		name = fmt.Sprintf("capic-e2e-test - %s", e.githubCIRunURL())
 	}
 	ipBlock := sdk.IpBlock{
 		Properties: &sdk.IpBlockProperties{
@@ -130,6 +133,9 @@ func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, siz
 	Expect(err).ToNot(HaveOccurred(), "Failed requesting IP block reservation")
 
 	e.ipBlock = &ipb
+	if os.Getenv("CI") == "true" {
+		e.writeToGithubOutput("IP_BLOCK_ID", *e.ipBlock.Id)
+	}
 	Expect(os.Setenv("CONTROL_PLANE_ENDPOINT_IP", (*e.ipBlock.Properties.Ips)[0])).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
 	return res.Header.Get(apiLocationHeaderKey)
 }
@@ -203,4 +209,15 @@ func (e *ionosCloudEnv) githubCIRunURL() string {
 		os.Getenv("GITHUB_SERVER_URL"),
 		os.Getenv("GITHUB_REPOSITORY"),
 		os.Getenv("GITHUB_RUN_ID"))
+}
+
+// writeToGithubOutput writes a key-value pair to the GITHUB_OUTPUT in an action. This function is useful for the
+// delete leftovers script.
+func (e *ionosCloudEnv) writeToGithubOutput(key, value string) {
+	f, err := os.OpenFile(os.Getenv("$GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0644)
+	Expect(err).ToNot(HaveOccurred(), "Failed opening GITHUB_OUTPUT file")
+	defer f.Close()
+
+	_, err = f.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+	Expect(err).ToNot(HaveOccurred(), "Failed writing to GITHUB_OUTPUT file")
 }
