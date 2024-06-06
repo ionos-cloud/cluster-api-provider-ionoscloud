@@ -17,12 +17,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
-
-      - name: Install kubectl and kustomize
-        run: |
-          sudo snap install kubectl --classic
-          sudo snap install kustomize
+          go-version-file: "go.mod"
 
       - name: Build image
         run: make docker-build

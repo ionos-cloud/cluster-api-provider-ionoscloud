@@ -271,7 +271,7 @@ GINKGO_NODES ?= 1
 GINKGO_FOCUS ?=
 GINKGO_TIMEOUT ?= 2h
 GINKGO_NOCOLOR ?= false
-GINKGO_LABEL ?=
+GINKGO_LABEL ?= "!Conformance"
 
 GINKGO_SKIP ?=
 # To set multiple ginkgo skip flags, if any
