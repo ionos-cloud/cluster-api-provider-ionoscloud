@@ -1,6 +1,10 @@
 # Checks if all go files have the required license header
 name: License
-on: [ pull_request ]
+on:
+  pull_request:
+    paths:
+      - "**.go"
+      - "**.ya?ml"
 
 jobs:
   license:

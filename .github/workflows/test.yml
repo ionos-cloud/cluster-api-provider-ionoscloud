@@ -1,5 +1,10 @@
 name: Test
-on: [ pull_request ]
+on:
+  pull_request:
+    paths:
+      - "**.go"
+      - "**.mod"
+      - "**.sum"
 
 jobs:
   go_test:
