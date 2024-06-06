@@ -295,4 +295,4 @@ test-e2e: docker-build-e2e ## Run the end-to-end tests
 
 .PHONY: remove-cancelled-e2e-leftovers
 remove-cancelled-e2e-leftovers: ## Remove any leftover resources from cancelled e2e tests
-	$(ROOT_DIR)/hack/scripts/cleanup.sh
+	$(ROOT_DIR)/hack/scripts/cancelled-workflow.sh
