@@ -64,7 +64,7 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            - ${CLUSTER_CLASS_NAME}-worker
+            - worker
     enabledIf: '{{ if .sshKey }}true{{end}}'
     name: enableSSHIntoNodes
   - definitions:
@@ -105,7 +105,7 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            - ${CLUSTER_CLASS_NAME}-worker
+            - worker
     - jsonPatches:
       - op: add
         path: /spec/template/spec/datacenterID
@@ -127,7 +127,7 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            - ${CLUSTER_CLASS_NAME}-worker
+            - worker
     name: datacenterIdSubstitutionsOnKubeadm
   - definitions:
     - jsonPatches:
@@ -161,16 +161,8 @@ spec:
         matchResources:
           infrastructureCluster: true
     name: infraClusterSubstitutions
-  - name: workerMachineType
-    definitions:
-    - selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
-        kind: IonosCloudMachineTemplate
-        matchResources:
-          machineDeploymentClass:
-            names:
-            - ${CLUSTER_CLASS_NAME}-worker
-      jsonPatches:
+  - definitions:
+    - jsonPatches:
       - op: add
         path: /spec/template/spec/numCores
         valueFrom:
@@ -183,14 +175,16 @@ spec:
         path: /spec/template/spec/disk/image/id
         valueFrom:
           variable: workerImageID
-  - name: controlPlaneMachineType
-    definitions:
-    - selector:
+      selector:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: IonosCloudMachineTemplate
         matchResources:
-          controlPlane: true
-      jsonPatches:
+          machineDeploymentClass:
+            names:
+            worker
+    name: workerMachineType
+  - definitions:
+    - jsonPatches:
       - op: add
         path: /spec/template/spec/numCores
         valueFrom:
@@ -203,6 +197,12 @@ spec:
         path: /spec/template/spec/disk/image/id
         valueFrom:
           variable: controlPlaneImageID
+      selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: IonosCloudMachineTemplate
+        matchResources:
+          controlPlane: true
+    name: controlPlaneMachineType
   - definitions:
     - jsonPatches:
       - op: add
@@ -272,92 +272,80 @@ spec:
           controlPlane: true
     name: kubeVipPodManifest
   variables:
-  - metadata: {}
-    name: sshKey
+  - name: sshKey
     required: false
     schema:
       openAPIV3Schema:
         description: Public key to SSH onto the cluster nodes.
         type: string
-  - metadata: {}
-    name: datacenterID
+  - name: datacenterID
     required: true
     schema:
       openAPIV3Schema:
         description: datacenterID for IONOS
         type: string
-  - metadata: {}
-    name: controlPlaneIpAddr
+  - name: controlPlaneIpAddr
     required: true
     schema:
       openAPIV3Schema:
         description: Floating VIP for the control plane.
         type: string
-  - metadata: {}
-    name: controlPlaneHost
+  - name: controlPlaneHost
     required: false
     schema:
       openAPIV3Schema:
         description: FQDN for the control plane.
         type: string
-  - metadata: {}
-    name: controlPlanePort
+  - name: controlPlanePort
     required: true
     schema:
       openAPIV3Schema:
         description: Port for the control plane endpoint.
         type: integer
-  - metadata: {}
-    name: controlPlaneNumCores
+        default: 6443
+  - name: controlPlaneNumCores
     required: true
     schema:
       openAPIV3Schema:
         description: NumCores for the control plane machines.
         type: integer
-  - metadata: {}
-    name: controlPlaneMemoryMB
+  - name: controlPlaneMemoryMB
     required: true
     schema:
       openAPIV3Schema:
         description: MemoryMB for the control plane machines.
         type: integer
-  - metadata: {}
-    name: controlPlaneImageID
+  - name: controlPlaneImageID
     required: true
     schema:
       openAPIV3Schema:
         description: ImageID for the control plane machines.
         type: string
-  - metadata: {}
-    name: workerNumCores
+  - name: workerNumCores
     required: true
     schema:
       openAPIV3Schema:
         description: NumCores for the worker machines.
         type: integer
-  - metadata: {}
-    name: workerMemoryMB
+  - name: workerMemoryMB
     required: true
     schema:
       openAPIV3Schema:
         description: MemoryMB for the worker machines.
         type: integer
-  - metadata: {}
-    name: workerImageID
+  - name: workerImageID
     required: true
     schema:
       openAPIV3Schema:
         description: ImageID for the worker machines.
         type: string
-  - metadata: {}
-    name: credsSecretName
+  - name: credsSecretName
     required: true
     schema:
       openAPIV3Schema:
         description: Secret containing the credentials for the infra cluster.
         type: string
-  - metadata: {}
-    name: location
+  - name: location
     required: true
     schema:
       openAPIV3Schema:
@@ -365,7 +353,7 @@ spec:
         type: string
   workers:
     machineDeployments:
-    - class: ${CLUSTER_CLASS_NAME}-worker
+    - class: worker
       template:
         bootstrap:
           ref:

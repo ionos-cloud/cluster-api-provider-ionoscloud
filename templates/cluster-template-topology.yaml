@@ -19,7 +19,7 @@ spec:
     - name: controlPlanePort
       value: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
     - name: credsSecretName
-      value: '${CLUSTER_NAME}'
+      value: '${CLUSTER_NAME}-credentials'
     - name: datacenterID
       value: '${IONOSCLOUD_DATACENTER_ID}'
     - name: location

@@ -48,3 +48,5 @@ templates/crs/cni/calico.yaml
 
 #testing stuff
 clusterctl-settings.json
+templates/clusterclass-template-replaced.yaml
+templates/cluster-template-topology-replaced.yaml
