@@ -92,7 +92,6 @@ func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (
 		name = fmt.Sprintf("capic-e2e-test-%s", os.Getenv("GITHUB_RUN_ID"))
 		description = fmt.Sprintf("CI run: %s", e.githubCIRunURL())
 	}
-
 	datacenter := sdk.Datacenter{
 		Properties: &sdk.DatacenterProperties{
 			Name:        &name,
@@ -131,7 +130,6 @@ func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, siz
 	}
 	ipb, res, err := e.api.IPBlocksApi.IpblocksPost(ctx).Ipblock(ipBlock).Execute()
 	Expect(err).ToNot(HaveOccurred(), "Failed requesting IP block reservation")
-
 	e.ipBlock = &ipb
 	if os.Getenv("CI") == "true" {
 		e.writeToGithubOutput("IP_BLOCK_ID", *e.ipBlock.Id)
