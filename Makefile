@@ -293,6 +293,14 @@ test-e2e: docker-build-e2e ## Run the end-to-end tests
 	-e2e.artifacts-folder="$(ARTIFACTS)" -e2e.config="$(E2E_CONF_FILE)" \
 	-e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) -e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER)
 
+.PHONY: ionosctl
+ionosctl: $(LOCALBIN) ## Download the latest release of ionosctl and add to the bin folder
+	@if [ ! -f $(LOCALBIN)/ionosctl ]; then \
+  		LATEST_RELEASE_TAG=$$(curl -sI https://github.com/ionos-cloud/ionosctl/releases/latest | grep -Fi Location | sed -E 's/.*\/tag\/v(.*)/\1/' | tr -d '\r'); \
+  		IONOSCTL_DOWNLOAD_URL="https://github.com/ionos-cloud/ionosctl/releases/download/v$${LATEST_RELEASE_TAG}/ionosctl-$${LATEST_RELEASE_TAG}-linux-amd64.tar.gz"; \
+  		curl -sL $$IONOSCTL_DOWNLOAD_URL | tar xz -C $(LOCALBIN) ionosctl; \
+	fi
+
 .PHONY: remove-cancelled-e2e-leftovers
-remove-cancelled-e2e-leftovers: ## Remove any leftover resources from cancelled e2e tests
+remove-cancelled-e2e-leftovers: $(ionosctl) ## Remove any leftover resources from cancelled e2e tests
 	$(ROOT_DIR)/hack/scripts/cancelled-workflow.sh

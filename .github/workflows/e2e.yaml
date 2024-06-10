@@ -1,6 +1,6 @@
 name: End-to-end tests
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
     paths:
@@ -16,9 +16,6 @@ on:
       - "**.yaml"
       - "**.sh"
       - "Dockerfile"
-concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: true
 jobs:
   e2e:
     runs-on: ubuntu-latest

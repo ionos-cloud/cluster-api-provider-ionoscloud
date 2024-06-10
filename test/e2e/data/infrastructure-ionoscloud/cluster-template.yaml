@@ -1,13 +1,8 @@
 ---
-# Cluster object with
-# - Reference to the KubeadmControlPlane object
-# - the label cni=${CLUSTER_NAME}-crs-0, so the cluster can be selected by the ClusterResourceSet.
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: "${CLUSTER_NAME}"
-  labels:
-    cni: "${CLUSTER_NAME}-crs-0"
 spec:
   clusterNetwork:
     pods:
@@ -62,7 +57,7 @@ spec:
         content: |
           # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
           # hardening guide.
-          KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+          KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,gss-curve25519-sha256-,gss-group16-sha512-,diffie-hellman-group16-sha512,gss-group16-sha512-,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
           Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
           MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
           HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
@@ -194,6 +189,29 @@ spec:
         path: /etc/ie-csi/cfg.json
         permissions: '0644'
 
+      - content: |
+          #!/bin/bash
+          set -e
+          
+          # Nothing to do for kubernetes < v1.29
+          KUBEADM_MINOR="$(kubeadm version -o short | cut -d '.' -f 2)"
+          if [[ "$KUBEADM_MINOR" -lt "29" ]]; then
+            exit 0
+          fi
+          
+          NODE_IPv4_ADDRESS=$(ip -j addr show dev ens6 | jq -r '.[].addr_info[] | select(.family == "inet") | select(.scope=="global") | select(.dynamic) | .local')
+          if [[ $NODE_IPv4_ADDRESS ]]; then
+            sed -i '$ s/$/ --node-ip '"$NODE_IPv4_ADDRESS"'/' /etc/default/kubelet
+          fi
+          # IPv6 currently not set, the ip is not set then this runs. Needs to be waited for.
+          NODE_IPv6_ADDRESS=$(ip -j addr show dev ens6 | jq -r '.[].addr_info[] | select(.family == "inet6") | select(.scope=="global") | .local')
+          if [[ $NODE_IPv6_ADDRESS ]]; then
+            sed -i '$ s/$/ --node-ip '"$NODE_IPv6_ADDRESS"'/' /etc/default/kubelet
+          fi
+        owner: root:root
+        path: /etc/set-node-ip.sh
+        permissions: '0700'
+
     preKubeadmCommands:
       - systemctl restart systemd-networkd.service systemd-modules-load.service systemd-journald containerd
       # disable swap
@@ -201,6 +219,8 @@ spec:
       - sed -i '/ swap / s/^/#/' /etc/fstab
       - sysctl --system
       - /etc/kube-vip-prepare.sh
+      # workaround 1.29 IP issue
+      - /etc/set-node-ip.sh
     postKubeadmCommands:
       - >
         sed -i 's#path: /etc/kubernetes/super-admin.conf#path: /etc/kubernetes/admin.conf#' \
@@ -208,12 +228,26 @@ spec:
       - >
         systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
         packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
-      # TODO(jriedel-ionos): remove that if we have a CCM
+      # INFO(schegi-ionos): We decided to not remove this for now, since removing this would require the ccm to be installed for cluster-api
+      # to continue after the first node.
       - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
       - >
         kubectl --kubeconfig /etc/kubernetes/kubelet.conf
         patch node $(hostname)
         --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
+        - rm /etc/ssh/ssh_host_*
+        - ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+        - ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+        - sed -i 's/^\#HostKey \/etc\/ssh\/ssh_host_\(rsa\|ed25519\)_key$/HostKey \/etc\/ssh\/ssh_host_\1_key/g' /etc/ssh/sshd_config
+        - awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe
+        - mv /etc/ssh/moduli.safe /etc/ssh/moduli
+        - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+        - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+        - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+        - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+        - DEBIAN_FRONTEND=noninteractive apt install -q -y netfilter-persistent iptables-persistent
+        - service netfilter-persistent save
+        - systemctl restart sshd
     initConfiguration:
       localAPIEndpoint:
         bindPort: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
@@ -224,6 +258,9 @@ spec:
     joinConfiguration:
       nodeRegistration:
         criSocket: unix:///run/containerd/containerd.sock
+        kubeletExtraArgs:
+          # use cloud-provider: external when using a CCM
+          cloud-provider: ""
   version: "${KUBERNETES_VERSION}"
 ---
 kind: IonosCloudMachineTemplate
@@ -304,7 +341,7 @@ spec:
           content: |
             # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
             # hardening guide.
-            KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+            KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,gss-curve25519-sha256-,gss-group16-sha512-,diffie-hellman-group16-sha512,gss-group16-sha512-,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
             Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
             MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
             HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
@@ -342,38 +379,29 @@ spec:
         - >
           systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
           packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
-        # TODO(jriedel-ionos): remove that if we have a CCM
+        # INFO(schegi-ionos): We decided to not remove this for now, since removing this would require the ccm to be
+        # installed for cluster-api to continue after the first node.
         - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
         - >
           kubectl --kubeconfig /etc/kubernetes/kubelet.conf
           patch node $(hostname)
           --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
+        - rm /etc/ssh/ssh_host_*
+        - ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+        - ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+        - sed -i 's/^\#HostKey \/etc\/ssh\/ssh_host_\(rsa\|ed25519\)_key$/HostKey \/etc\/ssh\/ssh_host_\1_key/g' /etc/ssh/sshd_config
+        - awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe
+        - mv /etc/ssh/moduli.safe /etc/ssh/moduli
+        - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+        - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+        - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+        - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+        - DEBIAN_FRONTEND=noninteractive apt install -q -y netfilter-persistent iptables-persistent
+        - service netfilter-persistent save
+        - systemctl restart sshd
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
             # use cloud-provider: external when using a CCM
             cloud-provider: ""
           criSocket: unix:///run/containerd/containerd.sock
----
-# ConfigMap object referenced by the ClusterResourceSet object and with
-# the CNI resource defined in the test config file
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: "cni-${CLUSTER_NAME}-crs-0"
-data: ${CNI_RESOURCES}
----
-# ClusterResourceSet object with
-# a selector that targets all the Cluster with label cni=${CLUSTER_NAME}-crs-0
-apiVersion: addons.cluster.x-k8s.io/v1beta1
-kind: ClusterResourceSet
-metadata:
-  name:  "${CLUSTER_NAME}-crs-0"
-spec:
-  strategy: ApplyOnce
-  clusterSelector:
-    matchLabels:
-      cni: "${CLUSTER_NAME}-crs-0"
-  resources:
-    - name: "cni-${CLUSTER_NAME}-crs-0"
-      kind: ConfigMap
