@@ -243,7 +243,7 @@ func (s *Service) getFailoverIPBlock(ctx context.Context, ms *scope.Machine) (*s
 			continue
 		}
 		if ptr.Deref(props.GetName(), "") == s.failoverIPBlockName(ms) {
-			return s.cloudAPIStateInconsistencyWorkaround(ctx, &block)
+			return &block, nil
 		}
 	}
 
@@ -283,17 +283,10 @@ func (s *Service) getControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.
 			continue
 		case ptr.Deref(props.GetName(), "") == expectedName:
 			count++
-			foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block)
-			if err != nil {
-				return nil, err
-			}
+			foundBlock = &block
 		case s.checkIfUserSetBlock(controlPlaneEndpointIP, props):
 			// NOTE: this is for when customers set IPs for the control plane endpoint themselves.
-			foundBlock, err = s.cloudAPIStateInconsistencyWorkaround(ctx, &block)
-			if err != nil {
-				return nil, err
-			}
-			return foundBlock, nil
+			return &block, nil
 		}
 		if count > 1 {
 			return nil, fmt.Errorf(
@@ -315,18 +308,6 @@ func (s *Service) getControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.
 func (*Service) checkIfUserSetBlock(controlPlaneEndpointIP string, props *sdk.IpBlockProperties) bool {
 	ips := ptr.Deref(props.GetIps(), nil)
 	return controlPlaneEndpointIP != "" && slices.Contains(ips, controlPlaneEndpointIP)
-}
-
-// cloudAPIStateInconsistencyWorkaround is a workaround for a bug where the API returns different states for the same
-// IP Block when using the ListIPBlocks method and the GetIPBlock method. This workaround uses the GetIPBlock method as
-// the source of truth to get the correct status of the IP block.
-// TODO(gfariasalves): remove this method once the bug is fixed.
-func (s *Service) cloudAPIStateInconsistencyWorkaround(ctx context.Context, block *sdk.IpBlock) (*sdk.IpBlock, error) {
-	trueBlock, err := s.ionosClient.GetIPBlock(ctx, ptr.Deref(block.GetId(), unknownValue))
-	if err != nil {
-		return nil, fmt.Errorf("could not confirm if found IP block is available: %w", err)
-	}
-	return trueBlock, nil
 }
 
 func (s *Service) getIPBlockByID(ctx context.Context, ipBlockID string) (*sdk.IpBlock, error) {
