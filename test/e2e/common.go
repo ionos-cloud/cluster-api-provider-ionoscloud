@@ -27,9 +27,9 @@ import (
 
 // Test suite constants for e2e config variables.
 const (
-	CNIPath                     = "CNI"
-	CNIResources                = "CNI_RESOURCES"
-	KubernetesVersionManagement = "KUBERNETES_VERSION_MANAGEMENT"
+	CNIPath           = "CNI"
+	CNIResources      = "CNI_RESOURCES"
+	KubernetesVersion = "KUBERNETES_VERSION"
 )
 
 func Byf(format string, a ...interface{}) {

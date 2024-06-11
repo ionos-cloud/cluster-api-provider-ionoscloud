@@ -227,7 +227,7 @@ func setupBootstrapCluster(scheme *runtime.Scheme) (bootstrap.ClusterProvider, f
 	if !useExistingCluster {
 		clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
 			Name:              e2eConfig.ManagementClusterName,
-			KubernetesVersion: e2eConfig.GetVariable(KubernetesVersionManagement),
+			KubernetesVersion: e2eConfig.GetVariable(KubernetesVersion),
 			Images:            e2eConfig.Images,
 			LogFolder:         filepath.Join(artifactFolder, "kind"),
 		})
