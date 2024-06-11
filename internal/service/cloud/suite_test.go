@@ -312,7 +312,7 @@ func (s *ServiceTestSuite) defaultServerComponents() (sdk.ServerProperties, sdk.
 		Type:             ptr.To(m.Spec.Type.String()),
 	}
 
-	lanID, _ := strconv.Atoi(exampleLANID)
+	lanID, _ := strconv.ParseInt(exampleLANID, 10, 32)
 
 	entities := sdk.ServerEntities{
 		Nics: &sdk.Nics{Items: &[]sdk.Nic{{

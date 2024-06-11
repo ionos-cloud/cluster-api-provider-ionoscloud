@@ -18,13 +18,13 @@ package cloud
 
 import (
 	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/mock"
 	"net/http"
 	"path"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -494,7 +494,6 @@ func ignoreBootstrapData(expected sdk.ServerEntities) func(sdk.ServerEntities) b
 		items := entities.GetVolumes().GetItems()
 		for i := range ptr.Deref(items, []sdk.Volume{}) {
 			(*items)[i].GetProperties().UserData = nil
-
 		}
 		return cmp.Diff(expected, entities) == ""
 	}
