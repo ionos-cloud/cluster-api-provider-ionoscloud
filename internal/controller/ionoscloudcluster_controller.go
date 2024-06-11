@@ -34,19 +34,32 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
 // IonosCloudClusterReconciler reconciles a IonosCloudCluster object.
 type IonosCloudClusterReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	scheme *runtime.Scheme
+	locker *locker.Locker
+}
+
+// NewIonosCloudClusterReconciler creates a new IonosCloudClusterReconciler.
+func NewIonosCloudClusterReconciler(mgr ctrl.Manager) *IonosCloudClusterReconciler {
+	r := &IonosCloudClusterReconciler{
+		Client: mgr.GetClient(),
+		scheme: mgr.GetScheme(),
+		locker: locker.New(),
+	}
+	return r
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudclusters,verbs=get;list;watch;create;update;patch;delete
@@ -87,6 +100,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(
 		Client:       r.Client,
 		Cluster:      cluster,
 		IonosCluster: ionosCloudCluster,
+		Locker:       r.locker,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to create scope %w", err)
@@ -224,8 +238,13 @@ func (*IonosCloudClusterReconciler) checkRequestStatus(
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *IonosCloudClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+func (r *IonosCloudClusterReconciler) SetupWithManager(
+	ctx context.Context,
+	mgr ctrl.Manager,
+	options controller.Options,
+) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
 		For(&infrav1.IonosCloudCluster{}).
 		WithEventFilter(predicates.ResourceNotPaused(ctrl.LoggerFrom(ctx))).
 		Watches(&clusterv1.Cluster{},

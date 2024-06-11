@@ -148,8 +148,9 @@ var _ = Describe("IonosCloudCluster", func() {
 				RequestPath: "/path/to/resource",
 				State:       "QUEUED",
 			}
-			fetched.SetCurrentRequestByDatacenter("123",
-				wantProvisionRequest.Method, wantProvisionRequest.State, wantProvisionRequest.RequestPath)
+			fetched.Status.CurrentRequestByDatacenter = map[string]ProvisioningRequest{
+				"123": wantProvisionRequest,
+			}
 			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
 
 			By("updating the cluster status")
@@ -163,7 +164,7 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(conditions.IsTrue(fetched, clusterv1.ReadyCondition)).To(BeTrue())
 
 			By("Removing the entry from the status again")
-			fetched.DeleteCurrentRequestByDatacenter("123")
+			delete(fetched.Status.CurrentRequestByDatacenter, "123")
 			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
 
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())

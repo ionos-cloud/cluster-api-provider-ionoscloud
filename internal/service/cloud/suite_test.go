@@ -36,6 +36,7 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -107,6 +108,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: metav1.NamespaceDefault,
 			Name:      "test-cluster",
+			UID:       "uid",
 		},
 		Spec: clusterv1.ClusterSpec{},
 	}
@@ -142,7 +144,8 @@ func (s *ServiceTestSuite) SetupTest() {
 			Namespace: metav1.NamespaceDefault,
 			Name:      "test-machine",
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel: s.capiCluster.Name,
+				clusterv1.ClusterNameLabel:           s.capiCluster.Name,
+				clusterv1.MachineDeploymentNameLabel: "test-md",
 			},
 		},
 		Spec: infrav1.IonosCloudMachineSpec{
@@ -182,6 +185,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		Client:       s.k8sClient,
 		Cluster:      s.capiCluster,
 		IonosCluster: s.infraCluster,
+		Locker:       locker.New(),
 	})
 	s.NoError(err, "failed to create cluster scope")
 
@@ -190,6 +194,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		Machine:      s.capiMachine,
 		ClusterScope: s.clusterScope,
 		IonosMachine: s.infraMachine,
+		Locker:       locker.New(),
 	})
 	s.NoError(err, "failed to create machine scope")
 

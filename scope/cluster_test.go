@@ -20,8 +20,11 @@ import (
 	"context"
 	"net"
 	"net/netip"
+	"strconv"
+	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 )
 
 func TestNewClusterMissingParams(t *testing.T) {
@@ -38,41 +42,60 @@ func TestNewClusterMissingParams(t *testing.T) {
 	require.NoError(t, infrav1.AddToScheme(scheme))
 	cl := fake.NewClientBuilder().WithScheme(scheme).Build()
 
+	completeParams := func() ClusterParams {
+		return ClusterParams{
+			Client:       cl,
+			Cluster:      &clusterv1.Cluster{},
+			IonosCluster: &infrav1.IonosCloudCluster{},
+			Locker:       locker.New(),
+		}
+	}
+
 	tests := []struct {
 		name    string
-		params  ClusterParams
+		params  func() ClusterParams
 		wantErr bool
 	}{
 		{
 			name: "all present",
-			params: ClusterParams{
-				Client:       cl,
-				Cluster:      &clusterv1.Cluster{},
-				IonosCluster: &infrav1.IonosCloudCluster{},
+			params: func() ClusterParams {
+				return completeParams()
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing client",
-			params: ClusterParams{
-				Cluster:      &clusterv1.Cluster{},
-				IonosCluster: &infrav1.IonosCloudCluster{},
+			params: func() ClusterParams {
+				params := completeParams()
+				params.Client = nil
+				return params
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing cluster",
-			params: ClusterParams{
-				Client:       cl,
-				IonosCluster: &infrav1.IonosCloudCluster{},
+			params: func() ClusterParams {
+				params := completeParams()
+				params.Cluster = nil
+				return params
 			},
 			wantErr: true,
 		},
 		{
 			name: "missing IONOS cluster",
-			params: ClusterParams{
-				Client:  cl,
-				Cluster: &clusterv1.Cluster{},
+			params: func() ClusterParams {
+				params := completeParams()
+				params.IonosCluster = nil
+				return params
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing locker",
+			params: func() ClusterParams {
+				params := completeParams()
+				params.Locker = nil
+				return params
 			},
 			wantErr: true,
 		},
@@ -80,11 +103,10 @@ func TestNewClusterMissingParams(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			params, err := NewCluster(test.params())
 			if test.wantErr {
-				_, err := NewCluster(test.params)
 				require.Error(t, err)
 			} else {
-				params, err := NewCluster(test.params)
 				require.NoError(t, err)
 				require.NotNil(t, params)
 				require.Equal(t, net.DefaultResolver, params.resolver)
@@ -220,6 +242,7 @@ func TestClusterListMachines(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			params := ClusterParams{
+				Locker: locker.New(),
 				Cluster: &clusterv1.Cluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      clusterName,
@@ -305,6 +328,7 @@ func TestClusterIsDeleted(t *testing.T) {
 				Client:       cl,
 				Cluster:      test.cluster,
 				IonosCluster: test.ionosCluster,
+				Locker:       locker.New(),
 			}
 
 			c, err := NewCluster(params)
@@ -325,4 +349,52 @@ func buildMachineWithLabel(name string, labels map[string]string) *infrav1.Ionos
 			Labels:    labels,
 		},
 	}
+}
+
+func TestCurrentRequestByDatacenterAccessors(t *testing.T) {
+	cluster := &Cluster{
+		Cluster: &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				UID: "uid",
+			},
+		},
+		IonosCluster: &infrav1.IonosCloudCluster{},
+		Locker:       locker.New(),
+	}
+
+	// If there is a concurrency issue, it will very likely become visible here.
+	var wg sync.WaitGroup
+	for i := 0; i <= 10_000; i++ {
+		wg.Add(1)
+		go func(t *testing.T, id string) {
+			defer wg.Done()
+
+			req, exists := cluster.GetCurrentRequestByDatacenter(id)
+			assert.False(t, exists)
+			assert.Zero(t, req)
+
+			cluster.SetCurrentRequestByDatacenter(id, "method", "status", "requestPath")
+
+			req, exists = cluster.GetCurrentRequestByDatacenter(id)
+			assert.True(t, exists)
+			assert.Equal(t, "method", req.Method)
+			assert.Equal(t, "status", req.State)
+			assert.Equal(t, "requestPath", req.RequestPath)
+
+			cluster.DeleteCurrentRequestByDatacenter(id)
+
+			req, exists = cluster.GetCurrentRequestByDatacenter(id)
+			assert.False(t, exists)
+			assert.Zero(t, req)
+		}(t, strconv.Itoa(i))
+	}
+
+	wg.Wait()
+
+	lockKey := cluster.currentRequestByDatacenterLockKey()
+	require.Equal(t, "uid/currentRequestByDatacenter", lockKey)
+
+	_ = cluster.Locker.Lock(context.Background(), lockKey)
+	require.Empty(t, cluster.IonosCluster.Status.CurrentRequestByDatacenter)
+	cluster.Locker.Unlock(lockKey)
 }

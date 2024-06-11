@@ -50,6 +50,10 @@ func (s *lanSuite) TestNetworkLANName() {
 	s.Equal("lan-default-test-cluster", s.service.lanName(s.clusterScope.Cluster))
 }
 
+func (s *lanSuite) TestLANLockKey() {
+	s.Equal("cluster/uid/dc/ccf27092-34e8-499e-a2f5-2bdee9d34a12/lan", s.service.lanLockKey(s.machineScope))
+}
+
 func (s *lanSuite) TestLANURL() {
 	s.Equal("datacenters/"+s.machineScope.DatacenterID()+"/lans/1",
 		s.service.lanURL(s.machineScope.DatacenterID(), "1"))
@@ -62,9 +66,8 @@ func (s *lanSuite) TestLANURLs() {
 func (s *lanSuite) TestNetworkCreateLANSuccessful() {
 	s.mockCreateLANCall().Return(exampleRequestPath, nil).Once()
 	s.NoError(s.service.createLAN(s.ctx, s.machineScope))
-	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.machineScope.DatacenterID(),
-		"request should be stored in status")
-	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.machineScope.DatacenterID()]
+	req, exists := s.clusterScope.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
+	s.True(exists, "request should be stored in status")
 	s.Equal(exampleRequestPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodPost, req.Method, "request method should be stored in status")
 	s.Equal(sdk.RequestStatusQueued, req.State, "request status should be stored in status")
@@ -73,9 +76,8 @@ func (s *lanSuite) TestNetworkCreateLANSuccessful() {
 func (s *lanSuite) TestNetworkDeleteLANSuccessful() {
 	s.mockDeleteLANCall(exampleLANID).Return(exampleRequestPath, nil).Once()
 	s.NoError(s.service.deleteLAN(s.ctx, s.machineScope, exampleLANID))
-	s.Contains(s.infraCluster.Status.CurrentRequestByDatacenter, s.machineScope.DatacenterID(),
-		"request should be stored in status")
-	req := s.infraCluster.Status.CurrentRequestByDatacenter[s.machineScope.DatacenterID()]
+	req, exists := s.clusterScope.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
+	s.True(exists, "request should be stored in status")
 	s.Equal(exampleRequestPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodDelete, req.Method, "request method should be stored in status")
 	s.Equal(sdk.RequestStatusQueued, req.State, "request status should be stored in status")
@@ -105,16 +107,11 @@ func (s *lanSuite) TestNetworkGetLANErrorNotUnique() {
 }
 
 func (s *lanSuite) TestNetworkRemoveLANPendingRequestFromClusterSuccessful() {
-	s.infraCluster.Status.CurrentRequestByDatacenter = map[string]infrav1.ProvisioningRequest{
-		s.machineScope.DatacenterID(): {
-			RequestPath: exampleRequestPath,
-			Method:      http.MethodDelete,
-			State:       sdk.RequestStatusQueued,
-		},
-	}
+	s.clusterScope.SetCurrentRequestByDatacenter(s.machineScope.DatacenterID(), http.MethodDelete, sdk.RequestStatusQueued,
+		exampleRequestPath)
 	s.NoError(s.service.removeLANPendingRequestFromCluster(s.machineScope))
-	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter,
-		s.machineScope.DatacenterID(), "request should be removed from status")
+	_, exists := s.clusterScope.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
+	s.False(exists, "request should be removed from status")
 }
 
 func (s *lanSuite) TestNetworkRemoveLANPendingRequestFromClusterNoRequest() {
@@ -171,7 +168,8 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsHasOth
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.False(requeue)
-	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.machineScope.DatacenterID())
+	_, exists := s.clusterScope.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
+	s.False(exists)
 }
 
 func (s *lanSuite) TestNetworkReconcileLANDeleteNoExistingLANExistingRequestPending() {
@@ -197,7 +195,8 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANDoesNotExist() {
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.False(requeue)
-	s.NotContains(s.infraCluster.Status.CurrentRequestByDatacenter, s.machineScope.DatacenterID())
+	_, exists := s.clusterScope.GetCurrentRequestByDatacenter(s.machineScope.DatacenterID())
+	s.False(exists)
 }
 
 func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
@@ -264,7 +263,6 @@ func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 		},
 		nil).Once()
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{ipBlock}}, nil).Once()
-	s.mockGetIPBlockByIDCall(exampleIPBlockID).Return(&ipBlock, nil).Once()
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
