@@ -18,12 +18,13 @@ package cloud
 
 import (
 	"fmt"
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/mock"
 	"net/http"
 	"path"
 	"testing"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -152,9 +153,9 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
 func (s *serverSuite) TestReconcileEnterpriseServerNoRequest() {
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
-	s.mockCreateServerCall(infrav1.ServerTypeEnterprise).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
+	s.mockCreateServerCall(s.defaultServerComponents()).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
-		Id: ptr.To("1"),
+		Id: ptr.To(exampleLANID),
 		Properties: &sdk.LanProperties{
 			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
 			Public: ptr.To(true),
@@ -170,9 +171,12 @@ func (s *serverSuite) TestReconcileEnterpriseServerNoRequest() {
 func (s *serverSuite) TestReconcileVCPUServerNoRequest() {
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
-	s.mockCreateServerCall(infrav1.ServerTypeVCPU).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
+
+	props, entities := s.defaultServerComponents()
+	props.Type = ptr.To(infrav1.ServerTypeVCPU.String())
+	s.mockCreateServerCall(props, entities).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
-		Id: ptr.To("1"),
+		Id: ptr.To(exampleLANID),
 		Properties: &sdk.LanProperties{
 			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
 			Public: ptr.To(true),
@@ -444,12 +448,15 @@ func (s *serverSuite) mockGetServerDeletionRequestCall(serverID string) *clientt
 		http.MethodDelete, path.Join(s.service.serversURL(s.machineScope.DatacenterID()), serverID))
 }
 
-func (s *serverSuite) mockCreateServerCall(serverType infrav1.ServerType) *clienttest.MockClient_CreateServer_Call {
+func (s *serverSuite) mockCreateServerCall(
+	properties sdk.ServerProperties,
+	entities sdk.ServerEntities,
+) *clienttest.MockClient_CreateServer_Call {
 	return s.ionosClient.EXPECT().CreateServer(
 		s.ctx,
 		s.machineScope.DatacenterID(),
-		mock.MatchedBy(hasServerType(serverType)),
-		mock.Anything,
+		properties,
+		mock.MatchedBy(ignoreBootstrapData(entities)),
 	)
 }
 
@@ -482,8 +489,13 @@ func (s *serverSuite) examplePostRequest(status string) sdk.Request {
 	return s.exampleRequest(opts)
 }
 
-func hasServerType(serverType infrav1.ServerType) func(properties sdk.ServerProperties) bool {
-	return func(properties sdk.ServerProperties) bool {
-		return ptr.Deref(properties.Type, "") == serverType.String()
+func ignoreBootstrapData(expected sdk.ServerEntities) func(sdk.ServerEntities) bool {
+	return func(entities sdk.ServerEntities) bool {
+		items := entities.GetVolumes().GetItems()
+		for i := range ptr.Deref(items, []sdk.Volume{}) {
+			(*items)[i].GetProperties().UserData = nil
+
+		}
+		return cmp.Diff(expected, entities) == ""
 	}
 }

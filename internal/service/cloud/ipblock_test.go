@@ -242,6 +242,19 @@ func (s *ipBlockTestSuite) TestGetLatestIPBlockDeletionRequestRequest() {
 	s.NotNil(info)
 }
 
+func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointUnavailable() {
+	block := exampleIPBlock()
+	block.GetMetadata().SetState(sdk.Busy)
+
+	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{
+		Items: &[]sdk.IpBlock{*block},
+	}, nil).Once()
+	s.mockGetIPBlockByIDCall(exampleIPBlockID).Return(block, nil).Once()
+	requeue, err := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
+	s.True(requeue)
+	s.NoError(err)
+}
+
 func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointUserSetIP() {
 	block := exampleIPBlock()
 	block.Properties.Name = ptr.To("asdf")
