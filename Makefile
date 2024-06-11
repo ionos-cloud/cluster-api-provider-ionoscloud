@@ -251,6 +251,17 @@ release-templates: ## Generate release templates
 	cp templates/cluster-template*.yaml $(RELEASE_DIR)/
 
 
+##@ CRS
+## --------------------------------------
+## CRS
+## --------------------------------------
+
+CALICO_VERSION ?= v3.26.3
+
+.PHONY: crs-calico
+crs-calico: ## Generates crs manifests for Calico.
+	curl -o templates/crs/cni/calico.yaml https://raw.githubusercontent.com/projectcalico/calico/$(CALICO_VERSION)/manifests/calico.yaml
+
 ##@ End-to-End Tests
 
 # Directories.
