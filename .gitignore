@@ -46,6 +46,8 @@ out/
 # e2e tests
 _artifacts/
 
-# testing stuff
-clusterctl-settings.json
+# crs
+templates/crs/cni/calico.yaml
 
+#testing stuff
+clusterctl-settings.json

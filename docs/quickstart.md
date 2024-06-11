@@ -125,9 +125,16 @@ KUBECONFIG=ionos-quickstart.kubeconfig kubectl get nodes
 
 ### Installing a CNI
 
-<!-- TODO(gfariasalves): Add instructions about installing a CNI or available flavours -->
+You may use our provided flavors for generating cluster with CNI, please refer to the [Cluster templates](#cluster-templates) section.
 
-### Installing a Cloud Controller Manager
+Or if your cluster does not have a CNI, you can install one manually. For example, to install Calico:
+
+```sh
+make crs-calico
+kubectl apply -f templates/crs/cni/calico.yaml
+```
+
+### Installing the Cloud Controller Manager
 
 We provide a helm chart for the Cloud Controller Manager for IONOS Cloud.
 Refer to its [README](https://github.com/ionos-cloud/cloud-provider-ionoscloud/tree/main/charts/ionoscloud-cloud-controller-manager/README.md)
@@ -139,6 +146,55 @@ for detailed installation instructions.
 
 ```sh
 kubectl delete cluster ionos-quickstart
+```
+
+## Cluster templates
+
+We provide various templates for creating clusters. Some of these templates provide you with a CNI already.
+
+For templates using `CNIs` you're required to create `ConfigMaps` to make `ClusterResourceSets` available.
+
+To enable `ClusterResourceSets` feature,
+you need to set the following environment variable before doing `clusterctl init`:
+
+```bash
+# This enables the ClusterResourceSet feature that we are using to deploy CNI
+export EXP_CLUSTER_RESOURCE_SET="true"
+```
+
+We provide the following templates:
+
+| Flavor         | Template File                          | CRS File                      |
+|----------------|----------------------------------------|-------------------------------|
+| calico         | templates/cluster-template-calico.yaml | templates/crs/cni/calico.yaml |
+| default        | templates/cluster-template.yaml        | -                             |
+
+
+#### Flavor with Calico CNI
+Before this cluster can be deployed, `calico` needs to be configured. As a first step we
+need to generate a manifest. Simply use our Makefile:
+
+```
+make crs-calico
+
+```
+Now install the ConfigMap into your k8s:
+
+```
+kubectl create cm calico  --from-file=data=templates/crs/cni/calico.yaml
+```
+
+Now, you can create a cluster using the calico flavor:
+
+```bash
+$ clusterctl generate cluster dev-calico \
+--infrastructure ionoscloud \
+--kubernetes-version v1.28.6 \
+--control-plane-machine-count 1 \
+--worker-machine-count 3 \
+--flavor calico > cluster.yaml
+
+$ kubectl apply -f cluster.yaml
 ```
 
 ### Custom Templates
