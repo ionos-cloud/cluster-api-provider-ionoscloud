@@ -39,9 +39,15 @@ If you need help with CAPIC, please visit the [#cluster-api-ionoscloud][slack] c
 
 ## Compatibility
 
-### Cluster API Versions (TODO)
+### Cluster API Versions
 
-### Kubernetes Versions (TODO)
+This provider's versions are compatible with the following versions of Cluster API:
+
+|                        | Cluster API v1beta1 (v1.7) |
+|------------------------|:--------------------------:|
+| CAPIC v1alpha1 (v0.2)  |             ✓              |
+
+### Kubernetes Versions 
 
 The IONOS Cloud provider is able to install and manage the [versions of Kubernetes supported by the Cluster API (CAPI) project](https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions).
 
