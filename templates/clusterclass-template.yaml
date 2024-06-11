@@ -43,8 +43,7 @@ spec:
         valueFrom:
           template: |
             - name: root
-              sshAuthorizedKeys:
-              - '{{ .sshKey }}'
+              sshAuthorizedKeys: [{{ .sshKeys }}]
       selector:
         apiVersion: controlplane.cluster.x-k8s.io/v1beta1
         kind: KubeadmControlPlaneTemplate
@@ -56,8 +55,7 @@ spec:
         valueFrom:
           template: |
             - name: root
-              sshAuthorizedKeys:
-              - '{{ .sshKey }}'
+              sshAuthorizedKeys: [{{ .sshKeys }}]
       selector:
         apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
         kind: KubeadmConfigTemplate
@@ -65,7 +63,7 @@ spec:
           machineDeploymentClass:
             names:
             - worker
-    enabledIf: '{{ if .sshKey }}true{{end}}'
+    enabledIf: '{{ if .sshKeys }}true{{end}}'
     name: enableSSHIntoNodes
   - definitions:
     - jsonPatches:
@@ -181,7 +179,7 @@ spec:
         matchResources:
           machineDeploymentClass:
             names:
-            worker
+            - worker
     name: workerMachineType
   - definitions:
     - jsonPatches:
@@ -272,7 +270,7 @@ spec:
           controlPlane: true
     name: kubeVipPodManifest
   variables:
-  - name: sshKey
+  - name: sshKeys
     required: false
     schema:
       openAPIV3Schema:

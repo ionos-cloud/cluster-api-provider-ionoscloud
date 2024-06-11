@@ -12,8 +12,8 @@ spec:
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     variables:
-    - name: sshKey
-      value: '${IONOSCLOUD_MACHINE_SSH_KEY}'
+    - name: sshKeys
+      value: '${IONOSCLOUD_MACHINE_SSH_KEYS}'
     - name: controlPlaneIpAddr
       value: ${CONTROL_PLANE_ENDPOINT_IP}
     - name: controlPlanePort
@@ -25,21 +25,21 @@ spec:
     - name: location
       value: '${CONTROL_PLANE_ENDPOINT_LOCATION}'
     - name: controlPlaneNumCores
-      value: '${IONOSCLOUD_MACHINE_NUM_CORES}'
+      value: ${IONOSCLOUD_MACHINE_NUM_CORES}
     - name: controlPlaneMemoryMB
-      value: '${IONOSCLOUD_MACHINE_MEMORY_MB}'
+      value: ${IONOSCLOUD_MACHINE_MEMORY_MB}
     - name: controlPlaneImageID
       value: '${IONOSCLOUD_MACHINE_IMAGE_ID}'
     - name: workerNumCores
-      value: '${IONOSCLOUD_MACHINE_NUM_CORES}'
+      value: ${IONOSCLOUD_MACHINE_NUM_CORES}
     - name: workerMemoryMB
-      value: '${IONOSCLOUD_MACHINE_MEMORY_MB}'
+      value: ${IONOSCLOUD_MACHINE_MEMORY_MB}
     - name: workerImageID
       value: '${IONOSCLOUD_MACHINE_IMAGE_ID}'
     version: '${KUBERNETES_VERSION}'
     workers:
       machineDeployments:
-      - class: ${CLUSTER_CLASS_NAME}-worker
+      - class: worker
         metadata: {}
         name: md-0
         replicas: ${WORKER_MACHINE_COUNT}
