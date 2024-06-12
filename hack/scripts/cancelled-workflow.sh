@@ -17,9 +17,9 @@ if [[ -z "${IONOS_TOKEN}" ]]; then
 fi
 
 if [[ -n "${DATACENTER_ID}" ]]; then
-    bin/ionosctl dc delete --datacenter-id "${DATACENTER_ID}"
+    bin/ionosctl dc delete --datacenter-id "${DATACENTER_ID}" --force
 fi
 
 if [[ -n "${IP_BLOCK_ID}" ]]; then
-    bin/ionosctl ipb delete --ipblock-id "${IP_BLOCK_ID}"
+    bin/ionosctl ipb delete --ipblock-id "${IP_BLOCK_ID}" --force
 fi
