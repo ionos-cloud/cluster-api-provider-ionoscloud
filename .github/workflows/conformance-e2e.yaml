@@ -1,0 +1,31 @@
+name: Conformance end-to-end tests
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch: {}
+jobs:
+  conformance-e2e:
+    runs-on: ubuntu-latest
+    environment: e2e
+    env:
+      IONOS_TOKEN: ${{ secrets.IONOS_TOKEN }}
+      IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
+      CONTROL_PLANE_ENDPOINT_LOCATION: ${{ vars.CONTROL_PLANE_ENDPOINT_LOCATION }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go environment
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Run e2e tests
+        run: make GINKGO_LABEL="Conformance" test-e2e
+
+      - name : Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: logs
+          path: _artifacts
+          retention-days: 7

@@ -1,0 +1,64 @@
+name: End-to-end tests
+on:
+  pull_request_target:
+    types: ["opened", "synchronize", "reopened", "labeled", "unlabeled" ]
+    branches: [ "main" ]
+    paths:
+      - "**.go"
+      - "**.ya?ml"
+      - "**.sh"
+      - "Dockerfile"
+      - "Makefile"
+  push:
+    branches:
+      - main
+    paths:
+      - "**.go"
+      - "**.ya?ml"
+      - "**.sh"
+      - "Dockerfile"
+      - "Makefile"
+jobs:
+  e2e:
+    if: ${{ ! contains( github.event.pull_request.labels.*.name, 'skip e2e') }}
+    runs-on: ubuntu-latest
+    environment: e2e
+    env:
+      IONOS_TOKEN: ${{ secrets.IONOS_TOKEN }}
+      IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
+      CONTROL_PLANE_ENDPOINT_LOCATION: ${{ vars.CONTROL_PLANE_ENDPOINT_LOCATION }}
+    steps:
+    - name: Check out branch ${{ github.ref }}
+      if: ${{ github.event_name == 'push' }}
+      uses: actions/checkout@v4
+
+    - name: Check out PR ${{ github.event.pull_request.number }}
+      if: ${{ github.event_name == 'pull_request_target' }}
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
+        ref: ${{ github.event.pull_request.head.ref }}
+
+    - name: Setup Go environment
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: "go.mod"
+
+    - name: Run e2e tests
+      id: tests
+      run: make test-e2e
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: success() || failure()
+      with:
+        name: logs
+        path: _artifacts
+        retention-days: 7
+
+    - name: Remove cancelled run leftovers
+      if: cancelled()
+      env:
+        DATACENTER_ID: ${{ steps.tests.outputs.DATACENTER_ID }}
+        IP_BLOCK_ID: ${{ steps.tests.outputs.IP_BLOCK_ID }}
+      run: make remove-cancelled-e2e-leftovers
