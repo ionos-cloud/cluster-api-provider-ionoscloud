@@ -42,3 +42,6 @@ cluster.yaml
 
 # release
 out/
+
+# crs
+templates/crs/cni/calico.yaml
