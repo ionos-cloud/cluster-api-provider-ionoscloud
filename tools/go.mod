@@ -6,6 +6,7 @@ require (
 	github.com/golangci/golangci-lint v1.57.1
 	github.com/google/yamlfmt v0.10.0
 	github.com/vektra/mockery/v2 v2.42.1
+	sigs.k8s.io/kubebuilder-release-tools/notes v0.3.0
 )
 
 require (
@@ -193,5 +194,4 @@ require (
 	honnef.co/go/tools v0.4.7 // indirect
 	mvdan.cc/gofumpt v0.6.0 // indirect
 	mvdan.cc/unparam v0.0.0-20240104100049-c549a3470d14 // indirect
-	sigs.k8s.io/kubebuilder-release-tools/notes v0.3.0 // indirect
 )
