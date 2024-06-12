@@ -43,5 +43,8 @@ cluster.yaml
 # release
 out/
 
+# e2e tests
+_artifacts/
+
 # crs
 templates/crs/cni/calico.yaml
