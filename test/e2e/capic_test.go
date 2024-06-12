@@ -32,7 +32,7 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/test/e2e/helpers"
 )
 
-var _ = Describe("When following the Cluster API quick-start (high availability)", func() {
+var _ = Describe("Should be able to create a cluster with 3 control-plane and 2 worker nodes", func() {
 	capie2e.QuickStartSpec(ctx, func() capie2e.QuickStartSpecInput {
 		return capie2e.QuickStartSpecInput{
 			E2EConfig:                e2eConfig,
@@ -40,8 +40,8 @@ var _ = Describe("When following the Cluster API quick-start (high availability)
 			BootstrapClusterProxy:    bootstrapClusterProxy,
 			ArtifactFolder:           artifactFolder,
 			SkipCleanup:              skipCleanup,
-			ControlPlaneMachineCount: ptr.To[int64](3),
-			WorkerMachineCount:       ptr.To[int64](2),
+			ControlPlaneMachineCount: ptr.To[int64](1),
+			WorkerMachineCount:       ptr.To[int64](1),
 			PostNamespaceCreated:     cloudEnv.createCredentialsSecretPNC,
 			PostMachinesProvisioned: func(proxy framework.ClusterProxy, namespace, clusterName string) {
 				// This check ensures that owner references are resilient - i.e. correctly re-reconciled - when removed.
@@ -79,6 +79,19 @@ var _ = Describe("When following the Cluster API quick-start (high availability)
 				// continuous reconciles when everything should be stable.
 				framework.ValidateResourceVersionStable(ctx, proxy, namespace, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName))
 			},
+		}
+	})
+})
+
+var _ = Describe("Should be able to create a cluster with 1 control-plane and 1 worker node and scale it", func() {
+	capie2e.MachineDeploymentScaleSpec(ctx, func() capie2e.MachineDeploymentScaleSpecInput {
+		return capie2e.MachineDeploymentScaleSpecInput{
+			E2EConfig:             e2eConfig,
+			ClusterctlConfigPath:  clusterctlConfigPath,
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ArtifactFolder:        artifactFolder,
+			SkipCleanup:           skipCleanup,
+			PostNamespaceCreated:  cloudEnv.createCredentialsSecretPNC,
 		}
 	})
 })
