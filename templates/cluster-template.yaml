@@ -3,6 +3,8 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: "${CLUSTER_NAME}"
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
 spec:
   clusterNetwork:
     pods:
@@ -52,12 +54,12 @@ spec:
       - name: root
         sshAuthorizedKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
     ntp:
-        enabled: true
-        servers:
-          - 0.de.pool.ntp.org
-          - 1.de.pool.ntp.org
-          - 2.de.pool.ntp.org
-          - 3.de.pool.ntp.org
+      enabled: true
+      servers:
+        - 0.de.pool.ntp.org
+        - 1.de.pool.ntp.org
+        - 2.de.pool.ntp.org
+        - 3.de.pool.ntp.org
     files:
       - path: /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
         owner: root:root
@@ -294,6 +296,8 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name: "${CLUSTER_NAME}-workers"
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
 spec:
   clusterName: "${CLUSTER_NAME}"
   replicas: ${WORKER_MACHINE_COUNT}
@@ -302,6 +306,7 @@ spec:
   template:
     metadata:
       labels:
+        cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
         node-role.kubernetes.io/node: ""
     spec:
       clusterName: "${CLUSTER_NAME}"
