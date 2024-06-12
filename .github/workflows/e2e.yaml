@@ -28,16 +28,16 @@ jobs:
       IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
       CONTROL_PLANE_ENDPOINT_LOCATION: ${{ vars.CONTROL_PLANE_ENDPOINT_LOCATION }}
     steps:
-    - name: Check out branch ${{ github.ref }}
-      if: ${{ github.event_name == 'push' }}
-      uses: actions/checkout@v4
+#    - name: Check out branch ${{ github.ref }}
+#      if: ${{ github.event_name == 'push' }}
+#      uses: actions/checkout@v4
 
     - name: Check out PR ${{ github.event.pull_request.number }}
-      if: ${{ github.event_name == 'pull_request_target' }}
+#      if: ${{ github.event_name == 'pull_request_target' }}
       uses: actions/checkout@v4
-      with:
-        repository: ${{ github.event.pull_request.head.repo.full_name }}
-        ref: ${{ github.event.pull_request.head.ref }}
+#      with:
+#        repository: ${{ github.event.pull_request.head.repo.full_name }}
+#        ref: ${{ github.event.pull_request.head.ref }}
 
     - name: Setup Go environment
       uses: actions/setup-go@v5
