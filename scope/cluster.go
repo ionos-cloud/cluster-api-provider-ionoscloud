@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 )
 
 // resolver is able to look up IP addresses from a given host name.
@@ -47,6 +48,7 @@ type Cluster struct {
 	client       client.Client
 	patchHelper  *patch.Helper
 	resolver     resolver
+	Locker       *locker.Locker
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
 }
@@ -56,6 +58,7 @@ type ClusterParams struct {
 	Client       client.Client
 	Cluster      *clusterv1.Cluster
 	IonosCluster *infrav1.IonosCloudCluster
+	Locker       *locker.Locker
 }
 
 // NewCluster creates a new cluster scope with the supplied parameters.
@@ -73,6 +76,10 @@ func NewCluster(params ClusterParams) (*Cluster, error) {
 		return nil, errors.New("IonosCluster is required when creating a cluster scope")
 	}
 
+	if params.Locker == nil {
+		return nil, errors.New("locker is required when creating a cluster scope")
+	}
+
 	helper, err := patch.NewHelper(params.IonosCluster, params.Client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init patch helper: %w", err)
@@ -84,6 +91,7 @@ func NewCluster(params ClusterParams) (*Cluster, error) {
 		IonosCluster: params.IonosCluster,
 		patchHelper:  helper,
 		resolver:     net.DefaultResolver,
+		Locker:       params.Locker,
 	}
 
 	return clusterScope, nil
@@ -151,6 +159,44 @@ func (c *Cluster) Location() string {
 // IsDeleted checks if the cluster was requested for deletion.
 func (c *Cluster) IsDeleted() bool {
 	return !c.Cluster.DeletionTimestamp.IsZero() || !c.IonosCluster.DeletionTimestamp.IsZero()
+}
+
+func (c *Cluster) currentRequestByDatacenterLockKey() string {
+	return string(c.Cluster.UID) + "/currentRequestByDatacenter"
+}
+
+// GetCurrentRequestByDatacenter returns the current provisioning request for the given data center and a boolean
+// indicating if it exists.
+func (c *Cluster) GetCurrentRequestByDatacenter(datacenterID string) (infrav1.ProvisioningRequest, bool) {
+	lockKey := c.currentRequestByDatacenterLockKey()
+	_ = c.Locker.Lock(context.Background(), lockKey)
+	defer c.Locker.Unlock(lockKey)
+	req, ok := c.IonosCluster.Status.CurrentRequestByDatacenter[datacenterID]
+	return req, ok
+}
+
+// SetCurrentRequestByDatacenter sets the current provisioning request for the given data center.
+// This function makes sure that the map is initialized before setting the request.
+func (c *Cluster) SetCurrentRequestByDatacenter(datacenterID, method, status, requestPath string) {
+	lockKey := c.currentRequestByDatacenterLockKey()
+	_ = c.Locker.Lock(context.Background(), lockKey)
+	defer c.Locker.Unlock(lockKey)
+	if c.IonosCluster.Status.CurrentRequestByDatacenter == nil {
+		c.IonosCluster.Status.CurrentRequestByDatacenter = map[string]infrav1.ProvisioningRequest{}
+	}
+	c.IonosCluster.Status.CurrentRequestByDatacenter[datacenterID] = infrav1.ProvisioningRequest{
+		Method:      method,
+		RequestPath: requestPath,
+		State:       status,
+	}
+}
+
+// DeleteCurrentRequestByDatacenter deletes the current provisioning request for the given data center.
+func (c *Cluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
+	lockKey := c.currentRequestByDatacenterLockKey()
+	_ = c.Locker.Lock(context.Background(), lockKey)
+	defer c.Locker.Unlock(lockKey)
+	delete(c.IonosCluster.Status.CurrentRequestByDatacenter, datacenterID)
 }
 
 // PatchObject will apply all changes from the IonosCloudCluster.
