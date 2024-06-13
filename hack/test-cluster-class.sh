@@ -25,7 +25,7 @@ clusterctl generate yaml --from "${ROOT_DIR}/templates/clusterclass-template.yam
 clusterctl generate cluster $CLUSTER_NAME -n $NAMESPACE --from "${ROOT_DIR}/templates/cluster-template-topology-calico.yaml" > $GENERATED_CLUSTER_FILE
 
 echo "Validate generated resources"
-clusterctl alpha topology plan -f $GENERATED_CLUSTER_CLASS_FILE -f $GENERATED_CLUSTER_FILE -o output/
+clusterctl alpha topology plan -f $GENERATED_CLUSTER_CLASS_FILE -f $GENERATED_CLUSTER_FILE -o "${ROOT_DIR}/output/"
 
 echo "Apply cluster class resources"
 echo "kubectl apply -f $GENERATED_CLUSTER_CLASS_FILE"
