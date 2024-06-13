@@ -40,8 +40,8 @@ var _ = Describe("Should be able to create a cluster with 3 control-plane and 2 
 			BootstrapClusterProxy:    bootstrapClusterProxy,
 			ArtifactFolder:           artifactFolder,
 			SkipCleanup:              skipCleanup,
-			ControlPlaneMachineCount: ptr.To[int64](1),
-			WorkerMachineCount:       ptr.To[int64](1),
+			ControlPlaneMachineCount: ptr.To[int64](3),
+			WorkerMachineCount:       ptr.To[int64](2),
 			PostNamespaceCreated:     cloudEnv.createCredentialsSecretPNC,
 			PostMachinesProvisioned: func(proxy framework.ClusterProxy, namespace, clusterName string) {
 				// This check ensures that owner references are resilient - i.e. correctly re-reconciled - when removed.
