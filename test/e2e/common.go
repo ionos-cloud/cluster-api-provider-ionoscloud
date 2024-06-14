@@ -1,5 +1,5 @@
-//go:build tools
-// +build tools
+//go:build e2e
+// +build e2e
 
 /*
 Copyright 2024 IONOS Cloud.
@@ -17,11 +17,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tools
+package e2e
 
 import (
-	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
-	_ "github.com/google/yamlfmt"
-	_ "github.com/vektra/mockery/v2"
-	_ "sigs.k8s.io/kubebuilder-release-tools/notes"
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
 )
+
+// Test suite constants for e2e config variables.
+const (
+	CNIPath           = "CNI"
+	CNIResources      = "CNI_RESOURCES"
+	KubernetesVersion = "KUBERNETES_VERSION"
+)
+
+func Byf(format string, a ...interface{}) {
+	By(fmt.Sprintf(format, a...))
+}

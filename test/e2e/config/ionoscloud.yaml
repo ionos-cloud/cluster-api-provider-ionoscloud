@@ -1,0 +1,84 @@
+images:
+  - name: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e
+
+providers:
+  - name: cluster-api
+    type: CoreProvider
+    versions:
+    - name: "v1.7.2"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.2/core-components.yaml"
+      type: url
+      contract: v1beta1
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8443
+      files:
+        - sourcePath: "../data/shared/v1.7/metadata.yaml"
+  - name: kubeadm
+    type: BootstrapProvider
+    versions:
+    - name: "v1.7.2"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.2/bootstrap-components.yaml"
+      type: url
+      contract: v1beta1
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8443
+      files:
+        - sourcePath: "../data/shared/v1.7/metadata.yaml"
+  - name: kubeadm
+    type: ControlPlaneProvider
+    versions:
+      - name: "v1.7.2"
+        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.2/control-plane-components.yaml"
+        type: url
+        contract: v1beta1
+        replacements:
+          - old: --metrics-addr=127.0.0.1:8080
+            new: --metrics-addr=:8443
+        files:
+          - sourcePath: "../data/shared/v1.7/metadata.yaml"
+  - name: ionoscloud
+    type: InfrastructureProvider
+    versions:
+      - name: v0.2.99
+        value: "../../../config/default"
+        replacements:
+          - old: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:dev
+            new: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e
+          - old: "--leader-elect"
+            new: "--leader-elect\n        - --insecure-diagnostics"
+        files:
+          - sourcePath: "../../../metadata.yaml"
+          - sourcePath: "../data/infrastructure-ionoscloud/cluster-template.yaml"
+variables:
+  # Default variables for the e2e test; those values could be overridden via env variables, thus
+  # allowing the same e2e config file to be re-used in different Prow jobs e.g. each one with a K8s version permutation.
+  # The following Kubernetes versions should be the latest versions with already published kindest/node images.
+  # This avoids building node images in the default case which improves the test duration significantly.
+  KUBERNETES_VERSION: "v1.29.2"
+  CNI: "./data/cni/calico.yaml"
+  KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
+  CLUSTER_NAME: "e2e-cluster-${RANDOM}"
+  # Enabling the feature flags by setting the env variables.
+  # Note: EXP_CLUSTER_RESOURCE_SET is enabled per default with CAPI v1.7.0.
+  # We still have to enable them here for clusterctl upgrade tests that use older versions.
+  EXP_CLUSTER_RESOURCE_SET: "true"
+  IONOSCLOUD_MACHINE_MEMORY_MB: ""
+  IONOSCLOUD_MACHINE_NUM_CORES: ""
+  IONOSCLOUD_MACHINE_SSH_KEYS: ""
+  IONOSCLOUD_DATACENTER_ID: ""
+  CONTROL_PLANE_ENDPOINT_IP: ""
+  CONTROL_PLANE_ENDPOINT_LOCATION: ""
+  IONOSCLOUD_MACHINE_IMAGE_ID: ""
+
+intervals:
+  default/wait-controllers: [ "30m", "10s" ]
+  default/wait-cluster: [ "30m", "10s" ]
+  default/wait-control-plane: [ "30m", "10s" ]
+  default/wait-worker-nodes: [ "30m", "10s" ]
+  default/wait-delete-cluster: [ "30m", "10s" ]
+  default/wait-nodes-ready: ["30m", "10s"]
+  scale/wait-cluster: ["30m", "10s"]
+  scale/wait-control-plane: ["30m", "10s"]
+  scale/wait-worker-nodes: ["30m", "10s"]

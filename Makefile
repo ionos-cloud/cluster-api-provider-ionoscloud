@@ -1,8 +1,8 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= controller:dev
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.28.0
+ENVTEST_K8S_VERSION = 1.29.5
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -261,3 +261,57 @@ CALICO_VERSION ?= v3.26.3
 .PHONY: crs-calico
 crs-calico: ## Generates crs manifests for Calico.
 	curl -o templates/crs/cni/calico.yaml https://raw.githubusercontent.com/projectcalico/calico/$(CALICO_VERSION)/manifests/calico.yaml
+
+##@ End-to-End Tests
+
+# Directories.
+#
+# Full directory of where the Makefile resides
+ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+TEST_DIR := test
+ARTIFACTS ?= ${ROOT_DIR}/_artifacts
+
+
+E2E_CONF_FILE ?= $(ROOT_DIR)/$(TEST_DIR)/e2e/config/ionoscloud.yaml
+SKIP_RESOURCE_CLEANUP ?= false
+USE_EXISTING_CLUSTER ?= false
+
+GINKGO_POLL_PROGRESS_AFTER ?= 10m
+GINKGO_POLL_PROGRESS_INTERVAL ?= 1m
+GINKGO_NODES ?= 1
+GINKGO_FOCUS ?=
+GINKGO_TIMEOUT ?= 2h
+GINKGO_NOCOLOR ?= false
+GINKGO_LABEL ?= "!Conformance"
+
+GINKGO_SKIP ?=
+# To set multiple ginkgo skip flags, if any
+ifneq ($(strip $(GINKGO_SKIP)),)
+_SKIP_ARGS := $(foreach arg,$(strip $(GINKGO_SKIP)),-skip="$(arg)")
+endif
+
+.PHONY: docker-build-e2e
+docker-build-e2e: ## Build docker image with the manager.
+	$(CONTAINER_TOOL) build -t ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:e2e .
+
+.PHONY: test-e2e
+test-e2e: docker-build-e2e ## Run the end-to-end tests
+	CGO_ENABLED=1 go run github.com/onsi/ginkgo/v2/ginkgo -v --trace \
+	-poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
+	-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" --fail-fast \
+	$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --label-filter=$(GINKGO_LABEL) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
+	--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(ROOT_DIR)/$(TEST_DIR)/e2e -- \
+	-e2e.artifacts-folder="$(ARTIFACTS)" -e2e.config="$(E2E_CONF_FILE)" \
+	-e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) -e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER)
+
+.PHONY: ionosctl
+ionosctl: $(LOCALBIN) ## Download the latest release of ionosctl and add to the bin folder
+	@if [ ! -f $(LOCALBIN)/ionosctl ]; then \
+  		LATEST_RELEASE_TAG=$$(curl -sI https://github.com/ionos-cloud/ionosctl/releases/latest | grep -Fi Location | sed -E 's/.*\/tag\/v(.*)/\1/' | tr -d '\r'); \
+  		IONOSCTL_DOWNLOAD_URL="https://github.com/ionos-cloud/ionosctl/releases/download/v$${LATEST_RELEASE_TAG}/ionosctl-$${LATEST_RELEASE_TAG}-linux-amd64.tar.gz"; \
+  		curl -sL $$IONOSCTL_DOWNLOAD_URL | tar xz -C $(LOCALBIN) ionosctl; \
+	fi
+
+.PHONY: remove-cancelled-e2e-leftovers
+remove-cancelled-e2e-leftovers: $(ionosctl) ## Remove any leftover resources from cancelled e2e tests
+	$(ROOT_DIR)/hack/scripts/cancelled-workflow.sh
