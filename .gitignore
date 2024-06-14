@@ -48,6 +48,3 @@ _artifacts/
 
 # crs
 templates/crs/cni/calico.yaml
-
-#testing stuff
-clusterctl-settings.json
