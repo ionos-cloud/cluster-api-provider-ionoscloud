@@ -263,7 +263,6 @@ func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 		},
 		nil).Once()
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{ipBlock}}, nil).Once()
-	s.mockGetIPBlockByIDCall(exampleIPBlockID).Return(&ipBlock, nil).Once()
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()

@@ -6,6 +6,7 @@ require (
 	github.com/golangci/golangci-lint v1.57.1
 	github.com/google/yamlfmt v0.10.0
 	github.com/vektra/mockery/v2 v2.42.1
+	sigs.k8s.io/kubebuilder-release-tools/notes v0.3.0
 )
 
 require (
@@ -30,6 +31,7 @@ require (
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bkielbasa/cyclop v1.2.1 // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.0 // indirect
 	github.com/bombsimon/wsl/v4 v4.2.1 // indirect
