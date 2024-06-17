@@ -240,7 +240,6 @@ func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointUnavailable() {
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{*block},
 	}, nil).Once()
-	s.mockGetIPBlockByIDCall(exampleIPBlockID).Return(block, nil).Once()
 	requeue, err := s.service.ReconcileControlPlaneEndpoint(s.ctx, s.clusterScope)
 	s.True(requeue)
 	s.NoError(err)
