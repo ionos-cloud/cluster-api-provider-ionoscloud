@@ -52,12 +52,10 @@ After this is done, we need to create a new Tag for the release.
 
 #### Minor release
 
-A minor release is pretty similar to the patch release. The only difference is that we need to create a 
-new release branch. As we might not want to include all changes from the mainline, we need to create the release
-branch from the last minor release.
+A minor release requires the creation of a new release branch. We will include all changes from the mainline
+into the release branch. This includes new features and breaking changes.
 
-The next step is the same as for the patch release. We need to cherry-pick all the relevant changes into the release branch.
-We will also include new features and breaking changes.
+In this case we do not have to `cherry-pick` the changes.
 
 ### Generate release notes
 
