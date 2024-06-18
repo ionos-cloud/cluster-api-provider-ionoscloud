@@ -3,6 +3,8 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: "${CLUSTER_NAME}"
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
 spec:
   clusterNetwork:
     pods:
@@ -52,12 +54,12 @@ spec:
       - name: root
         sshAuthorizedKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
     ntp:
-        enabled: true
-        servers:
-          - 0.de.pool.ntp.org
-          - 1.de.pool.ntp.org
-          - 2.de.pool.ntp.org
-          - 3.de.pool.ntp.org
+      enabled: true
+      servers:
+        - 0.de.pool.ntp.org
+        - 1.de.pool.ntp.org
+        - 2.de.pool.ntp.org
+        - 3.de.pool.ntp.org
     files:
       - path: /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
         owner: root:root
@@ -65,10 +67,14 @@ spec:
         content: |
           # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
           # hardening guide.
-          KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+          KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,gss-curve25519-sha256-,diffie-hellman-group16-sha512,gss-group16-sha512-,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
           Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
           MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
-          HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
+          HostKeyAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+          CASignatureAlgorithms sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+          GSSAPIKexAlgorithms gss-curve25519-sha256-,gss-group16-sha512-
+          HostbasedAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
+          PubkeyAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
       - path: /etc/sysctl.d/k8s.conf
         content: |
           fs.inotify.max_user_watches = 65536
@@ -243,6 +249,20 @@ spec:
         kubectl --kubeconfig /etc/kubernetes/kubelet.conf
         patch node $(hostname)
         --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
+      - rm /etc/ssh/ssh_host_*
+      - ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+      - ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+      - sed -i 's/^\#HostKey \/etc\/ssh\/ssh_host_\(rsa\|ed25519\)_key$/HostKey \/etc\/ssh\/ssh_host_\1_key/g' /etc/ssh/sshd_config
+      - awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe
+      - mv /etc/ssh/moduli.safe /etc/ssh/moduli
+      - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+      - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+      - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+      - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+      - apt-get update
+      - DEBIAN_FRONTEND=noninteractive apt-get install -q -y netfilter-persistent iptables-persistent
+      - service netfilter-persistent save
+      - systemctl restart sshd
     initConfiguration:
       localAPIEndpoint:
         bindPort: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
@@ -276,6 +296,8 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name: "${CLUSTER_NAME}-workers"
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
 spec:
   clusterName: "${CLUSTER_NAME}"
   replicas: ${WORKER_MACHINE_COUNT}
@@ -284,6 +306,7 @@ spec:
   template:
     metadata:
       labels:
+        cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
         node-role.kubernetes.io/node: ""
     spec:
       clusterName: "${CLUSTER_NAME}"
@@ -336,10 +359,14 @@ spec:
           content: |
             # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
             # hardening guide.
-            KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+            KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,gss-curve25519-sha256-,diffie-hellman-group16-sha512,gss-group16-sha512-,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
             Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
             MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
-            HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,sk-ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com
+            HostKeyAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+            CASignatureAlgorithms sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+            GSSAPIKexAlgorithms gss-curve25519-sha256-,gss-group16-sha512-
+            HostbasedAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
+            PubkeyAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
         - path: /etc/sysctl.d/k8s.conf
           content: |
             fs.inotify.max_user_watches = 65536
@@ -381,6 +408,20 @@ spec:
           kubectl --kubeconfig /etc/kubernetes/kubelet.conf
           patch node $(hostname)
           --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
+        - rm /etc/ssh/ssh_host_*
+        - ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+        - ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+        - sed -i 's/^\#HostKey \/etc\/ssh\/ssh_host_\(rsa\|ed25519\)_key$/HostKey \/etc\/ssh\/ssh_host_\1_key/g' /etc/ssh/sshd_config
+        - awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe
+        - mv /etc/ssh/moduli.safe /etc/ssh/moduli
+        - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+        - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+        - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+        - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+        - apt-get update
+        - DEBIAN_FRONTEND=noninteractive apt-get install -q -y netfilter-persistent iptables-persistent
+        - service netfilter-persistent save
+        - systemctl restart sshd
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
