@@ -8,7 +8,7 @@
 For each release, a milestone needs to be in place. All PRs that are part of the release need to be assigned to 
 the milestone.
 
-This will also make it easier to filter for the correct commits, that shoud be cherry-picked later.
+This will also make it easier to filter for the correct commits, that should be cherry-picked later.
 
 ### Create an issue
 
