@@ -16,7 +16,7 @@ To track the progress of the release, we need to create an issue. Make use of th
 
 ### Patch release
 
-A patch release can only include bug fixes, documentation updates, and other minor changes.
+A patch release can only include bug fixes, documentation updates, and other trivial changes.
 
 New features and breaking changes must be part of a minor release.
 
