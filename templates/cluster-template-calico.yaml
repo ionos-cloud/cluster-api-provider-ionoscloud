@@ -441,5 +441,5 @@ spec:
     matchLabels:
       cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
   resources:
-    - kind: ConfigMap
-      name: calico
+    - name: calico
+      kind: ConfigMap
