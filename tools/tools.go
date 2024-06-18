@@ -23,5 +23,4 @@ import (
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/google/yamlfmt"
 	_ "github.com/vektra/mockery/v2"
-	_ "sigs.k8s.io/kubebuilder-release-tools/notes"
 )
