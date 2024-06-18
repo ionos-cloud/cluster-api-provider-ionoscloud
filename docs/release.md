@@ -16,8 +16,7 @@ To track the progress of the release, we need to create an issue. Make use of th
 
 ### Patch release
 
-A patch release can only include changes that are backwards compatible with the previous release. 
-This includes bug fixes, documentation updates, and other minor changes.
+A patch release can only include bug fixes, documentation updates, and other minor changes.
 
 New features and breaking changes must be part of a minor release.
 
@@ -26,7 +25,7 @@ New features and breaking changes must be part of a minor release.
 A minor release includes all changes from the last minor version to the next one. 
 This also includes new features and breaking changes.
 
-The following Tasks need to be done before creating a new release:
+The following tasks need to be done before creating a new release:
 
 - Update metadata & clusterctl-settings.
 - Update version in e2e config.
@@ -48,7 +47,7 @@ For each release, we need to cherry-pick all the relevant changes. For patch rel
 have a release branch in place. All changes, that should go into the next patch version, need to be merged into
 the corresponding release branch. 
 
-After this is done, we need to create a new Tag for the release.
+After this is done, we need to create a new tag for the release.
 
 #### Minor release
 
