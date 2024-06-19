@@ -16,7 +16,7 @@ source ${ROOT_DIR}/.envfile
 echo "Setup Cluster API with ClusterResourceSet and ClusterTopology"
 echo "export EXP_CLUSTER_RESOURCE_SET=\"true\""
 echo "export CLUSTER_TOPOLOGY=\"true\""
-echo "clusterclt init --infrastructure=ionos-cloud"
+echo "clusterctl init --infrastructure=ionoscloud-ionoscloud"
 
 GENERATED_CLUSTER_CLASS_FILE="${ROOT_DIR}/output/generated-clusterclass-template.yaml"
 GENERATED_CLUSTER_FILE="${ROOT_DIR}/output/generated-cluster-template-topology-calico.yaml"
