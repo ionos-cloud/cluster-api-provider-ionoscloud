@@ -237,7 +237,6 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 		}
 	}
-
 	controllerutil.RemoveFinalizer(machineScope.IonosMachine, infrav1.MachineFinalizer)
 	return ctrl.Result{}, nil
 }
@@ -286,6 +285,12 @@ func (*IonosCloudMachineReconciler) checkRequestStates(
 					return nil
 				},
 			)
+
+			// We would like to patch the machine in the deletion step to
+			// not have a diff in the status during the final patch
+			if !machineScope.IonosMachine.DeletionTimestamp.IsZero() {
+				requeue, retErr = true, machineScope.PatchObject()
+			}
 		}
 	}
 
