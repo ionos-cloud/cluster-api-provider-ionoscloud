@@ -215,7 +215,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 
 	if requeue {
 		log.Info("Deletion request is still in progress")
-		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
+		return ctrl.Result{RequeueAfter: reducedReconcileDuration}, nil
 	}
 
 	reconcileSequence := []serviceReconcileStep[scope.Machine]{
