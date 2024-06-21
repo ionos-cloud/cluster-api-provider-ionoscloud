@@ -1,0 +1,112 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: ionoscloudclustertemplates.infrastructure.cluster.x-k8s.io
+spec:
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    kind: IonosCloudClusterTemplate
+    listKind: IonosCloudClusterTemplateList
+    plural: ionoscloudclustertemplates
+    singular: ionoscloudclustertemplate
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: IonosCloudClusterTemplate is the Schema for the ionoscloudclustertemplates
+          API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: IonosCloudClusterTemplateSpec defines the desired state of
+              IonosCloudClusterTemplate.
+            properties:
+              template:
+                description: IonosCloudClusterTemplateResource describes the data
+                  for creating a IonosCloudCluster from a template.
+                properties:
+                  spec:
+                    description: IonosCloudClusterSpec defines the desired state of
+                      IonosCloudCluster.
+                    properties:
+                      controlPlaneEndpoint:
+                        description: |-
+                          ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+
+
+                          TODO(gfariasalves): as of now, IP must be provided by the user as we still don't insert the
+                          provider-provided block IP into the kube-vip manifest.
+                        properties:
+                          host:
+                            description: The hostname on which the API server is serving.
+                            type: string
+                          port:
+                            description: The port on which the API server is serving.
+                            format: int32
+                            type: integer
+                        required:
+                        - host
+                        - port
+                        type: object
+                        x-kubernetes-validations:
+                        - message: control plane endpoint host cannot be updated
+                          rule: self.host == oldSelf.host || oldSelf.host == ''
+                        - message: control plane endpoint port cannot be updated
+                          rule: self.port == oldSelf.port || oldSelf.port == 0
+                      credentialsRef:
+                        description: CredentialsRef is a reference to the secret containing
+                          the credentials to access the IONOS Cloud API.
+                        properties:
+                          name:
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                        x-kubernetes-validations:
+                        - message: credentialsRef.name must be provided
+                          rule: has(self.name) && self.name != ''
+                      location:
+                        description: Location is the location where the data centers
+                          should be located.
+                        example: de/txl
+                        minLength: 1
+                        type: string
+                        x-kubernetes-validations:
+                        - message: location is immutable
+                          rule: self == oldSelf
+                    required:
+                    - credentialsRef
+                    - location
+                    type: object
+                required:
+                - spec
+                type: object
+            required:
+            - template
+            type: object
+        type: object
+    served: true
+    storage: true

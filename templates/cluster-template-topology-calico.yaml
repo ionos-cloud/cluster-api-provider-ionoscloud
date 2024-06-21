@@ -1,0 +1,70 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: '${CLUSTER_NAME}'
+  namespace: '${NAMESPACE}'
+spec:
+  topology:
+    class: '${CLUSTER_CLASS_NAME}'
+    controlPlane:
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+    variables:
+    - name: sshKeys
+      value: '${IONOSCLOUD_MACHINE_SSH_KEYS}'
+    - name: controlPlaneIpAddr
+      value: ${CONTROL_PLANE_ENDPOINT_IP}
+    - name: controlPlanePort
+      value: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
+    - name: credsSecretName
+      value: '${CLUSTER_NAME}-credentials'
+    - name: datacenterID
+      value: '${IONOSCLOUD_DATACENTER_ID}'
+    - name: location
+      value: '${CONTROL_PLANE_ENDPOINT_LOCATION}'
+    - name: controlPlaneNumCores
+      value: ${IONOSCLOUD_MACHINE_NUM_CORES}
+    - name: controlPlaneMemoryMB
+      value: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+    - name: controlPlaneImageID
+      value: '${IONOSCLOUD_MACHINE_IMAGE_ID}'
+    - name: workerNumCores
+      value: ${IONOSCLOUD_MACHINE_NUM_CORES}
+    - name: workerMemoryMB
+      value: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+    - name: workerImageID
+      value: '${IONOSCLOUD_MACHINE_IMAGE_ID}'
+    version: '${KUBERNETES_VERSION}'
+    workers:
+      machineDeployments:
+      - class: worker
+        metadata: {}
+        name: md-0
+        replicas: ${WORKER_MACHINE_COUNT}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "${CLUSTER_NAME}-credentials"
+  namespace: '${NAMESPACE}'
+type: Opaque
+stringData:
+  token: "${IONOS_TOKEN}"
+  apiURL: "${IONOS_API_URL:-https://api.ionos.com/cloudapi/v6}"
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: ${CLUSTER_NAME}-crs-0
+  namespace: '${NAMESPACE}'
+spec:
+  clusterSelector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  resources:
+    - kind: ConfigMap
+      name: calico
