@@ -286,8 +286,8 @@ func (*IonosCloudMachineReconciler) checkRequestStates(
 				},
 			)
 
-			// We would like to patch the machine in the deletion step to
-			// not have a diff in the status during the final patch
+			// We need to patch the machine during the deletion phase to make sure we do
+			// not have a diff in the status during the final patch when the finalizer is removed
 			if !machineScope.IonosMachine.DeletionTimestamp.IsZero() {
 				requeue, retErr = true, machineScope.PatchObject()
 			}
