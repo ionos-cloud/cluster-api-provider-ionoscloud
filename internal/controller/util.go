@@ -36,6 +36,7 @@ import (
 
 const (
 	defaultReconcileDuration = time.Second * 20
+	reducedReconcileDuration = time.Second * 10
 )
 
 type serviceReconcileStep[T scope.Cluster | scope.Machine] struct {
