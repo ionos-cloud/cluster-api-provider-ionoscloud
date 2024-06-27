@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -53,6 +54,7 @@ var _ = BeforeSuite(func() {
 
 	scheme := runtime.NewScheme()
 	Expect(AddToScheme(scheme)).To(Succeed())
+	Expect(ipamv1.AddToScheme(scheme)).To(Succeed())
 
 	cfg, err := testEnv.Start()
 	Expect(err).ToNot(HaveOccurred())

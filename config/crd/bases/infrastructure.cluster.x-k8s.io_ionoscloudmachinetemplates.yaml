@@ -80,6 +80,74 @@ spec:
                           description: Network contains the config for additional
                             LANs.
                           properties:
+                            ipv4PoolRef:
+                              description: |-
+                                IPv4PoolRef is a reference to an IPAMConfig Pool resource, which exposes IPv4 addresses.
+                                The nic will use an available IP address from the referenced pool.
+                              properties:
+                                apiGroup:
+                                  description: |-
+                                    APIGroup is the group for the resource being referenced.
+                                    If APIGroup is not specified, the specified Kind must be in the core API group.
+                                    For any other third-party types, APIGroup is required.
+                                  type: string
+                                kind:
+                                  description: Kind is the type of resource being
+                                    referenced
+                                  type: string
+                                name:
+                                  description: Name is the name of resource being
+                                    referenced
+                                  type: string
+                              required:
+                              - kind
+                              - name
+                              type: object
+                              x-kubernetes-map-type: atomic
+                              x-kubernetes-validations:
+                              - message: ipv4PoolRef allows only IPAMConfig apiGroup
+                                  ipam.cluster.x-k8s.io
+                                rule: self.apiGroup == 'ipam.cluster.x-k8s.io'
+                              - message: ipv4PoolRef allows either InClusterIPPool
+                                  or GlobalInClusterIPPool
+                                rule: self.kind == 'InClusterIPPool' || self.kind
+                                  == 'GlobalInClusterIPPool'
+                              - message: ipv4PoolRef.name is required
+                                rule: self.name != ''
+                            ipv6PoolRef:
+                              description: |-
+                                IPv6PoolRef is a reference to an IPAMConfig pool resource, which exposes IPv6 addresses.
+                                The nic will use an available IP address from the referenced pool.
+                              properties:
+                                apiGroup:
+                                  description: |-
+                                    APIGroup is the group for the resource being referenced.
+                                    If APIGroup is not specified, the specified Kind must be in the core API group.
+                                    For any other third-party types, APIGroup is required.
+                                  type: string
+                                kind:
+                                  description: Kind is the type of resource being
+                                    referenced
+                                  type: string
+                                name:
+                                  description: Name is the name of resource being
+                                    referenced
+                                  type: string
+                              required:
+                              - kind
+                              - name
+                              type: object
+                              x-kubernetes-map-type: atomic
+                              x-kubernetes-validations:
+                              - message: ipv6PoolRef allows only IPAMConfig apiGroup
+                                  ipam.cluster.x-k8s.io
+                                rule: self.apiGroup == 'ipam.cluster.x-k8s.io'
+                              - message: ipv6PoolRef allows either InClusterIPPool
+                                  or GlobalInClusterIPPool
+                                rule: self.kind == 'InClusterIPPool' || self.kind
+                                  == 'GlobalInClusterIPPool'
+                              - message: ipv6PoolRef.name is required
+                                rule: self.name != ''
                             networkID:
                               description: |-
                                 NetworkID represents an ID an existing LAN in the data center.
@@ -177,6 +245,64 @@ spec:
                         - message: failoverIP must be either 'AUTO' or a valid IPv4
                             address
                           rule: self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")
+                      ipv4PoolRef:
+                        description: |-
+                          IPv4PoolRef is a reference to an IPAMConfig Pool resource, which exposes IPv4 addresses.
+                          The nic will use an available IP address from the referenced pool.
+                        properties:
+                          apiGroup:
+                            description: |-
+                              APIGroup is the group for the resource being referenced.
+                              If APIGroup is not specified, the specified Kind must be in the core API group.
+                              For any other third-party types, APIGroup is required.
+                            type: string
+                          kind:
+                            description: Kind is the type of resource being referenced
+                            type: string
+                          name:
+                            description: Name is the name of resource being referenced
+                            type: string
+                        required:
+                        - kind
+                        - name
+                        type: object
+                        x-kubernetes-map-type: atomic
+                        x-kubernetes-validations:
+                        - message: ipv4PoolRef allows only IPAMConfig apiGroup ipam.cluster.x-k8s.io
+                          rule: self.apiGroup == 'ipam.cluster.x-k8s.io'
+                        - message: ipv4PoolRef allows either InClusterIPPool or GlobalInClusterIPPool
+                          rule: self.kind == 'InClusterIPPool' || self.kind == 'GlobalInClusterIPPool'
+                        - message: ipv4PoolRef.name is required
+                          rule: self.name != ''
+                      ipv6PoolRef:
+                        description: |-
+                          IPv6PoolRef is a reference to an IPAMConfig pool resource, which exposes IPv6 addresses.
+                          The nic will use an available IP address from the referenced pool.
+                        properties:
+                          apiGroup:
+                            description: |-
+                              APIGroup is the group for the resource being referenced.
+                              If APIGroup is not specified, the specified Kind must be in the core API group.
+                              For any other third-party types, APIGroup is required.
+                            type: string
+                          kind:
+                            description: Kind is the type of resource being referenced
+                            type: string
+                          name:
+                            description: Name is the name of resource being referenced
+                            type: string
+                        required:
+                        - kind
+                        - name
+                        type: object
+                        x-kubernetes-map-type: atomic
+                        x-kubernetes-validations:
+                        - message: ipv6PoolRef allows only IPAMConfig apiGroup ipam.cluster.x-k8s.io
+                          rule: self.apiGroup == 'ipam.cluster.x-k8s.io'
+                        - message: ipv6PoolRef allows either InClusterIPPool or GlobalInClusterIPPool
+                          rule: self.kind == 'InClusterIPPool' || self.kind == 'GlobalInClusterIPPool'
+                        - message: ipv6PoolRef.name is required
+                          rule: self.name != ''
                       memoryMB:
                         default: 3072
                         description: |-
