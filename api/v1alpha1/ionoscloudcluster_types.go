@@ -53,6 +53,11 @@ type IonosCloudClusterSpec struct {
 	// CredentialsRef is a reference to the secret containing the credentials to access the IONOS Cloud API.
 	//+kubebuilder:validation:XValidation:rule="has(self.name) && self.name != ''",message="credentialsRef.name must be provided"
 	CredentialsRef corev1.LocalObjectReference `json:"credentialsRef"`
+
+	// LoadBalancerProviderRef is a reference to the load balancer provider configuration.
+	// An empty loadBalancerProviderRef field is allowed and means to disable any load balancer logic.
+	//+kubebuilder:validation:XValidation:rule="!(has(self.name) && self.name != '') || (has(parent.location) && parent.location != '')",message="location is required if loadBalancerProviderRef is set"
+	LoadBalancerProviderRef *corev1.LocalObjectReference `json:"loadBalancerProviderRef,omitempty"`
 }
 
 // IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
