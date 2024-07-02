@@ -43,13 +43,13 @@ const (
 	AdditionalNICFormat = "nic-%s-%d"
 
 	// IPV4Format is the IP v4 format.
-	IPV4Format = "v4"
+	IPV4Format = "ipv4"
 
 	// IPV6Format is the IP v6 format.
-	IPV6Format = "v6"
+	IPV6Format = "ipv6"
 )
 
-// Helper offers ip address management services for IONOS Cloud machine reconciliation.
+// Helper offers IP address management services for IONOS Cloud machine reconciliation.
 type Helper struct {
 	logger logr.Logger
 	client client.Client
@@ -74,26 +74,25 @@ func (h *Helper) ReconcileIPAddresses(ctx context.Context, machineScope *scope.M
 
 	networkInfos := &[]infrav1.NICInfo{}
 
-	waiForIP := false
-	// primary nic.
-	waiForIP, err = h.handlePrimaryNIC(ctx, machineScope, networkInfos)
+	// primary NIC.
+	requeue, err = h.handlePrimaryNIC(ctx, machineScope, networkInfos)
 	if err != nil {
 		return true, errors.Join(err, errors.New("unable to handle primary nic"))
 	}
 
 	if machineScope.IonosMachine.Spec.AdditionalNetworks != nil {
-		additionalWait, err := h.handleAdditionalNICs(ctx, machineScope, networkInfos)
+		waitForAdditionalIP, err := h.handleAdditionalNICs(ctx, machineScope, networkInfos)
 		if err != nil {
 			return true, errors.Join(err, errors.New("unable to handle additional nics"))
 		}
-		waiForIP = waiForIP || additionalWait
+		requeue = requeue || waitForAdditionalIP
 	}
 
 	// update the status
 	log.V(4).Info("updating IonosMachine.status.machineNetworkInfo.")
 	machineScope.IonosMachine.Status.MachineNetworkInfo = &infrav1.MachineNetworkInfo{NICInfo: *networkInfos}
 
-	return waiForIP, nil
+	return requeue, nil
 }
 
 func (h *Helper) handlePrimaryNIC(ctx context.Context, machineScope *scope.Machine, nics *[]infrav1.NICInfo) (waitForIP bool, err error) {
@@ -101,7 +100,7 @@ func (h *Helper) handlePrimaryNIC(ctx context.Context, machineScope *scope.Machi
 	ipamConfig := machineScope.IonosMachine.Spec.IPAMConfig
 	nicName := fmt.Sprintf(PrimaryNICFormat, machineScope.IonosMachine.Name)
 
-	// default nic ipv4.
+	// default NIC ipv4.
 	if ipamConfig.IPv4PoolRef != nil {
 		ip, err := h.handleIPAddressForNIC(ctx, machineScope, nicName, IPV4Format, ipamConfig.IPv4PoolRef)
 		if err != nil {
@@ -114,7 +113,7 @@ func (h *Helper) handlePrimaryNIC(ctx context.Context, machineScope *scope.Machi
 		}
 	}
 
-	// default nic ipv6.
+	// default NIC ipv6.
 	if ipamConfig.IPv6PoolRef != nil {
 		ip, err := h.handleIPAddressForNIC(ctx, machineScope, nicName, IPV6Format, ipamConfig.IPv6PoolRef)
 		if err != nil {
@@ -133,7 +132,6 @@ func (h *Helper) handlePrimaryNIC(ctx context.Context, machineScope *scope.Machi
 }
 
 func (h *Helper) handleAdditionalNICs(ctx context.Context, machineScope *scope.Machine, nics *[]infrav1.NICInfo) (waitForIP bool, err error) {
-	// additional nics.
 	for _, net := range machineScope.IonosMachine.Spec.AdditionalNetworks {
 		nic := infrav1.NICInfo{Primary: false}
 		nicName := fmt.Sprintf(AdditionalNICFormat, machineScope.IonosMachine.Name, net.NetworkID)
@@ -168,13 +166,9 @@ func (h *Helper) handleAdditionalNICs(ctx context.Context, machineScope *scope.M
 }
 
 // handleIPAddressForNIC checks for an IPAddressClaim. If there is one it extracts the ip from the corresponding IPAddress object, otherwise it creates the IPAddressClaim and returns early.
-func (h *Helper) handleIPAddressForNIC(ctx context.Context, machineScope *scope.Machine, nic, format string, poolRef *corev1.TypedLocalObjectReference) (ip string, err error) {
+func (h *Helper) handleIPAddressForNIC(ctx context.Context, machineScope *scope.Machine, nic, suffix string, poolRef *corev1.TypedLocalObjectReference) (ip string, err error) {
 	log := h.logger.WithName("handleIPAddressForNIC")
 
-	suffix := "ipv4"
-	if format == IPV6Format {
-		suffix = "ipv6"
-	}
 	key := client.ObjectKey{
 		Namespace: machineScope.IonosMachine.Namespace,
 		Name:      fmt.Sprintf("%s-%s", nic, suffix),
@@ -186,7 +180,6 @@ func (h *Helper) handleIPAddressForNIC(ctx context.Context, machineScope *scope.
 			return "", err
 		}
 		log.V(4).Info("IPAddressClaim not found, creating it.", "nic", nic)
-		// IPAddressClaim not yet created.
 		err = h.CreateIPAddressClaim(ctx, machineScope.IonosMachine, key.Name, poolRef)
 		if err != nil {
 			return "", errors.Join(err, fmt.Errorf("unable to create IPAddressClaim for machine %s", machineScope.IonosMachine.Name))

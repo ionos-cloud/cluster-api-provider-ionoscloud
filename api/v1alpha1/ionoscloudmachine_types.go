@@ -178,6 +178,8 @@ type IonosCloudMachineSpec struct {
 
 // Networks contains a list of additional LAN IDs
 // that should be attached to the VM.
+// +listType=map
+// +listMapKey=networkID
 type Networks []Network
 
 // Network contains the config for additional LANs.
