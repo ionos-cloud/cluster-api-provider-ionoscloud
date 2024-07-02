@@ -101,11 +101,6 @@ spec:
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
-                        x-kubernetes-validations:
-                        - message: location is required if loadBalancerProviderRef
-                            is set
-                          rule: '!(has(self.name) && self.name != '''') || (has(parent.location)
-                            && parent.location != '''')'
                       location:
                         description: Location is the location where the data centers
                           should be located.

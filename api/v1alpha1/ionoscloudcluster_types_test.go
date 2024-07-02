@@ -86,18 +86,6 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(k8sClient.Create(context.Background(), cluster)).
 				Should(MatchError(ContainSubstring("credentialsRef.name must be provided")))
 		})
-		It("should not allow creating clusters with empty location if loadBalancerProviderRef is set", func() {
-			cluster := defaultCluster()
-			cluster.Spec.Location = ""
-			Expect(k8sClient.Create(context.Background(), cluster)).
-				Should(MatchError(ContainSubstring("location is required if loadBalancerProviderRef is set")))
-		})
-		It("should allow creating clusters with empty location if loadBalancerProviderRef is not set", func() {
-			cluster := defaultCluster()
-			cluster.Spec.Location = ""
-			cluster.Spec.LoadBalancerProviderRef = nil
-			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
-		})
 	})
 
 	Context("Update", func() {
