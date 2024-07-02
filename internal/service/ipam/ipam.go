@@ -95,6 +95,44 @@ func (h *Helper) ReconcileIPAddresses(ctx context.Context, machineScope *scope.M
 	return requeue, nil
 }
 
+func (h *Helper) ReconcileIPAddressClaimsDeletion(ctx context.Context, machineScope *scope.Machine) (err error) {
+	log := h.logger.WithName("reconcileIPAddressClaimsDeletion")
+	log.V(4).Info("removing finalizers from IPAddressClaims.")
+
+	formats := []string{IPV4Format, IPV6Format}
+	nicNames := []string{fmt.Sprintf(PrimaryNICFormat, machineScope.IonosMachine.Name)}
+
+	for _, network := range machineScope.IonosMachine.Spec.AdditionalNetworks {
+		nicName := fmt.Sprintf(AdditionalNICFormat, machineScope.IonosMachine.Name, network.NetworkID)
+		nicNames = append(nicNames, nicName)
+	}
+
+	for _, format := range formats {
+		for _, nicName := range nicNames {
+			key := client.ObjectKey{
+				Namespace: machineScope.IonosMachine.Namespace,
+				Name:      fmt.Sprintf("%s-%s", nicName, format),
+			}
+
+			claim, err := h.GetIPAddressClaim(ctx, key)
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					continue
+				}
+				return err
+			}
+
+			if updated := controllerutil.RemoveFinalizer(claim, infrav1.MachineFinalizer); updated {
+				if err = h.client.Update(ctx, claim); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func (h *Helper) handlePrimaryNIC(ctx context.Context, machineScope *scope.Machine, nics *[]infrav1.NICInfo) (waitForIP bool, err error) {
 	nic := infrav1.NICInfo{Primary: true}
 	ipamConfig := machineScope.IonosMachine.Spec.IPAMConfig
@@ -143,7 +181,7 @@ func (h *Helper) handleAdditionalNICs(ctx context.Context, machineScope *scope.M
 			if ip == "" {
 				waitForIP = true
 			} else {
-				nic.IPv6Addresses = []string{ip}
+				nic.IPv4Addresses = []string{ip}
 			}
 		}
 
@@ -239,7 +277,7 @@ func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, 
 		},
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, h.client, desired, func() error {
-		// set the owner reference to the cluster
+		controllerutil.AddFinalizer(desired, infrav1.MachineFinalizer)
 		return controllerutil.SetControllerReference(owner, desired, h.client.Scheme())
 	})
 
