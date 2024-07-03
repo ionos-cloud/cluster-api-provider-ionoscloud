@@ -19,7 +19,6 @@ package cloud
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"net/http"
 	"path"
 	"strconv"
@@ -340,39 +339,6 @@ func (s *ServiceTestSuite) defaultServerComponents() (sdk.ServerProperties, sdk.
 	return props, entities
 }
 
-func (s *ServiceTestSuite) newIonosCloudMachine(name string) *infrav1.IonosCloudMachine {
-	providerID := uuid.New().String()
-	return &infrav1.IonosCloudMachine{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: metav1.NamespaceDefault,
-			Name:      name,
-			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:           s.capiCluster.Name,
-				clusterv1.MachineDeploymentNameLabel: "test-md",
-			},
-		},
-		Spec: infrav1.IonosCloudMachineSpec{
-			ProviderID:       ptr.To("ionos://" + providerID),
-			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
-			NumCores:         2,
-			AvailabilityZone: infrav1.AvailabilityZoneAuto,
-			MemoryMB:         4096,
-			CPUFamily:        ptr.To("AMD_OPTERON"),
-			Disk: &infrav1.Volume{
-				Name:             name + "-hdd",
-				DiskType:         infrav1.VolumeDiskTypeHDD,
-				SizeGB:           20,
-				AvailabilityZone: infrav1.AvailabilityZoneAuto,
-				Image: &infrav1.ImageSpec{
-					ID: "3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e",
-				},
-			},
-			Type: infrav1.ServerTypeEnterprise,
-		},
-		Status: infrav1.IonosCloudMachineStatus{},
-	}
-}
-
 func (s *ServiceTestSuite) mockGetIPBlocksRequestsPostCall() *clienttest.MockClient_GetRequests_Call {
 	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, ipBlocksPath)
 }
@@ -403,8 +369,4 @@ func (s *ServiceTestSuite) mockGetServerCall(serverID string) *clienttest.MockCl
 
 func (s *ServiceTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
 	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
-}
-
-type ionosCloudMachineParams struct {
-	name string
 }

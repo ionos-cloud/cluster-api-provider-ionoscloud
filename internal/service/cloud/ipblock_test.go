@@ -490,6 +490,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionShouldSkipDeletio
 	s.False(requeue)
 	s.Nil(s.machineScope.IonosMachine.Status.CurrentRequest)
 }
+
 func (s *ipBlockTestSuite) mockDeleteIPBlockCall() *clienttest.MockClient_DeleteIPBlock_Call {
 	return s.ionosClient.EXPECT().DeleteIPBlock(s.ctx, exampleIPBlockID)
 }
