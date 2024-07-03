@@ -87,7 +87,7 @@ var _ = Describe("IonosCloudCluster", func() {
 			cluster := defaultCluster()
 			cluster.Spec.Location = ""
 			Expect(k8sClient.Create(context.Background(), cluster)).
-				Should(MatchError(ContainSubstring(" spec.location in body should be at least 1 chars long")))
+				Should(MatchError(ContainSubstring("spec.location in body should be at least 1 chars long")))
 		})
 	})
 
