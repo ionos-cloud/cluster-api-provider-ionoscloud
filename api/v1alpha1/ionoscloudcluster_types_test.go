@@ -58,6 +58,9 @@ func defaultCluster() *IonosCloudCluster {
 			},
 			Location:       "de/txl",
 			CredentialsRef: corev1.LocalObjectReference{Name: "secret-name"},
+			LoadBalancerProviderRef: &corev1.LocalObjectReference{
+				Name: "fake-lb-provider",
+			},
 		},
 	}
 }
