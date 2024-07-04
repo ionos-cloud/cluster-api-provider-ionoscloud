@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strconv"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -136,7 +137,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: s.capiCluster.Name,
 			Version:     ptr.To("v1.26.12"),
-			ProviderID:  ptr.To("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),
+			ProviderID:  ptr.To("ionos://" + exampleServerID),
 		},
 	}
 	s.infraMachine = &infrav1.IonosCloudMachine{
@@ -149,7 +150,7 @@ func (s *ServiceTestSuite) SetupTest() {
 			},
 		},
 		Spec: infrav1.IonosCloudMachineSpec{
-			ProviderID:       ptr.To("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),
+			ProviderID:       ptr.To("ionos://" + exampleServerID),
 			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
@@ -298,6 +299,44 @@ func (s *ServiceTestSuite) exampleLAN() sdk.Lan {
 			},
 		},
 	}
+}
+
+func (s *ServiceTestSuite) defaultServerComponents() (sdk.ServerProperties, sdk.ServerEntities) {
+	m := s.machineScope.IonosMachine
+	props := sdk.ServerProperties{
+		AvailabilityZone: ptr.To(m.Spec.AvailabilityZone.String()),
+		Cores:            ptr.To(m.Spec.NumCores),
+		CpuFamily:        m.Spec.CPUFamily,
+		Name:             ptr.To(m.Name),
+		Ram:              ptr.To(m.Spec.MemoryMB),
+		Type:             ptr.To(m.Spec.Type.String()),
+	}
+
+	lanID, _ := strconv.ParseInt(exampleLANID, 10, 32)
+
+	entities := sdk.ServerEntities{
+		Nics: &sdk.Nics{Items: &[]sdk.Nic{{
+			Properties: &sdk.NicProperties{
+				Lan:  ptr.To(int32(lanID)),
+				Name: ptr.To(s.service.nicName(m)),
+				Dhcp: ptr.To(true),
+			},
+		}}},
+		Volumes: &sdk.AttachedVolumes{
+			Items: &[]sdk.Volume{{
+				Properties: &sdk.VolumeProperties{
+					AvailabilityZone: ptr.To(m.Spec.Disk.AvailabilityZone.String()),
+					Image:            ptr.To(m.Spec.Disk.Image.ID),
+					Name:             ptr.To(s.service.volumeName(m)),
+					Type:             ptr.To(m.Spec.Disk.DiskType.String()),
+					Size:             ptr.To(float32(m.Spec.Disk.SizeGB)),
+					UserData:         nil,
+				},
+			}},
+		},
+	}
+
+	return props, entities
 }
 
 func (s *ServiceTestSuite) mockGetIPBlocksRequestsPostCall() *clienttest.MockClient_GetRequests_Call {

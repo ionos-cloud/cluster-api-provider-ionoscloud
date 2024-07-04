@@ -371,7 +371,7 @@ func setControlPlaneLabel(ctx context.Context, k8sClient client.Client, machine 
 	return k8sClient.Update(ctx, machine)
 }
 
-func (s *lanSuite) reconcileIPFailoverDeletion(testServer *sdk.Server, testLAN sdk.Lan) {
+func (s *lanSuite) reconcileIPFailoverDeletion(testServer *sdk.Server, testLAN sdk.Lan) (requeue bool, err error) {
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.setupSuccessfulLANPatchMocks()
@@ -384,9 +384,7 @@ func (s *lanSuite) reconcileIPFailoverDeletion(testServer *sdk.Server, testLAN s
 	}
 
 	s.mockPatchLANCall(props).Return(exampleRequestPath, nil).Once()
-	s.assertSuccessfulDeletion(
-		s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope),
-	)
+	return s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope)
 }
 
 func (s *lanSuite) TestReconcileIPFailoverDeletionWorker() {
@@ -409,7 +407,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionWorker() {
 		NicUuid: ptr.To(exampleNICID),
 	}}
 
-	s.reconcileIPFailoverDeletion(testServer, testLAN)
+	s.assertSuccessfulDeletion(s.reconcileIPFailoverDeletion(testServer, testLAN))
 }
 
 func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlane() {
@@ -430,7 +428,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlane() {
 		NicUuid: ptr.To(exampleNICID),
 	}}
 
-	s.reconcileIPFailoverDeletion(testServer, testLAN)
+	s.assertSuccessfulDeletion(s.reconcileIPFailoverDeletion(testServer, testLAN))
 }
 
 func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlaneSwitchNIC() {
@@ -444,7 +442,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlaneSwitchNIC() {
 	newIonosMachine.SetName("test-machine-2")
 	newIonosMachine.SetResourceVersion("")
 	newIonosMachine.SetCreationTimestamp(metav1.NewTime(time.Now()))
-	newIonosMachine.Spec.ProviderID = ptr.To("ionos://" + exampleSecondaryServerID)
+	newIonosMachine.Spec.ProviderID = ptr.To("ionos://" + exampleSecondaryServerID) //nolint: goconst
 	err = s.k8sClient.Create(s.ctx, newIonosMachine)
 	s.NoError(err)
 
@@ -482,6 +480,41 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlaneSwitchNIC() {
 	s.assertSuccessfulDeletion(
 		s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope),
 	)
+}
+
+func (s *lanSuite) TestReconcileFailoverDeletionWorkerNoSwap() {
+	const deploymentLabel = "test-deployment"
+	labels := s.infraMachine.GetLabels()
+	labels[clusterv1.MachineDeploymentNameLabel] = deploymentLabel
+	s.infraMachine.SetLabels(labels)
+
+	s.infraMachine.Spec.FailoverIP = ptr.To(exampleWorkerFailoverIP)
+
+	secondaryMachine := s.infraMachine.DeepCopy()
+	secondaryMachine.SetName("test-machine-2")
+	secondaryMachine.SetResourceVersion("")
+	secondaryMachine.SetCreationTimestamp(metav1.NewTime(time.Now()))
+	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleWorkerFailoverIP)
+
+	s.NoError(s.k8sClient.Create(s.ctx, secondaryMachine))
+	s.NoError(s.k8sClient.Update(s.ctx, s.infraMachine))
+
+	testLAN := s.exampleLAN()
+	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
+		Ip:      ptr.To(exampleArbitraryIP),
+		NicUuid: ptr.To(arbitraryNICID),
+	}, {
+		Ip:      ptr.To(exampleWorkerFailoverIP),
+		NicUuid: ptr.To(exampleSecondaryNICID),
+	}}
+
+	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
+	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
+	s.mockGetLANPatchRequestCall().Return(nil, nil).Once()
+	requeue, err := s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope)
+
+	s.NoError(err)
+	s.False(requeue)
 }
 
 func (s *lanSuite) setupSuccessfulLANPatchMocks() {

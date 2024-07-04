@@ -100,6 +100,10 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 		s.getControlPlaneEndpointIPBlock,
 		s.getLatestControlPlaneEndpointIPBlockCreationRequest,
 	)
+
+	if ignoreErrUserSetIPNotFound(ignoreNotFound(err)) != nil {
+		return false, err
+	}
 	// NOTE(gfariasalves): we ignore the error if it is a "user set IP not found" error, because it doesn't matter here.
 	// This error is only relevant when we are trying to create a new IP block. If it shows up here, it means that:
 	// a) this IP block was created by the user, and they have deleted it, or,
@@ -109,10 +113,6 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 	if errors.Is(err, errUserSetIPNotFound) || ipBlock == nil && request == nil {
 		cs.IonosCluster.DeleteCurrentClusterRequest()
 		return false, nil
-	}
-
-	if ignoreErrUserSetIPNotFound(ignoreNotFound(err)) != nil {
-		return false, err
 	}
 
 	// NOTE: this check covers the case where customers have set the control plane endpoint IP themselves.
