@@ -317,6 +317,10 @@ spec:
                   can be added as events to the IonosCloudMachine object and/or logged in the
                   controller's output.
                 type: string
+              location:
+                description: Location is the location of the datacenter the VM is
+                  provisioned in.
+                type: string
               machineNetworkInfo:
                 description: |-
                   MachineNetworkInfo contains information about the network configuration of the VM.

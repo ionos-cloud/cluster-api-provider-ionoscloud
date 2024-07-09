@@ -277,6 +277,10 @@ type IonosCloudMachineStatus struct {
 	// cloud resource that is being provisioned.
 	//+optional
 	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
+
+	// Location is the location of the datacenter the VM is provisioned in.
+	//+optional
+	Location string `json:"location"`
 }
 
 // MachineNetworkInfo contains information about the network configuration of the VM.
