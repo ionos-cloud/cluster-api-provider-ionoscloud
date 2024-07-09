@@ -199,13 +199,13 @@ spec:
       - content: |
           #!/bin/bash
           set -e
-          
+
           # Nothing to do for kubernetes < v1.29
           KUBEADM_MINOR="$(kubeadm version -o short | cut -d '.' -f 2)"
           if [[ "$KUBEADM_MINOR" -lt "29" ]]; then
             exit 0
           fi
-          
+
           NODE_IPv4_ADDRESS=$(ip -j addr show dev ens6 | jq -r '.[].addr_info[] | select(.family == "inet") | select(.scope=="global") | select(.dynamic) | .local')
           if [[ $NODE_IPv4_ADDRESS ]]; then
             sed -i '$ s/$/ --node-ip '"$NODE_IPv4_ADDRESS"'/' /etc/default/kubelet
@@ -229,7 +229,8 @@ spec:
       # workaround 1.29 IP issue
       - /etc/set-node-ip.sh
     postKubeadmCommands:
-      - sed -i 's#path: /etc/kubernetes/super-admin.conf#path: /etc/kubernetes/admin.conf#' /etc/kubernetes/manifests/kube-vip.yaml
+      - >
+        sed -i 's#path: /etc/kubernetes/super-admin.conf#path: /etc/kubernetes/admin.conf#' /etc/kubernetes/manifests/kube-vip.yaml
       - >
         systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
         packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
