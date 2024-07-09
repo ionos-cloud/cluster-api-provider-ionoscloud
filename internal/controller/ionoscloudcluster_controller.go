@@ -152,7 +152,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 	var reconcileSequence []serviceReconcileStep[scope.Cluster]
 	// TODO: This logic needs to move to another controller.
 	if clusterScope.IonosCluster.Spec.LoadBalancerProviderRef != nil {
-		// Reserving IP Blocks only makes sense for LB implementations or HA setup with kube-vip
+		// Reserving IP Blocks only makes sense for LB implementations or HA setup with kube-vip.
 		//
 		// As we are currently expecting to supply the control plane endpoint manually,
 		// logic-wise nothing changes for us. As soon as we have implemented
