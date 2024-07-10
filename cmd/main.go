@@ -105,6 +105,15 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
 		os.Exit(1)
 	}
+	if err = iccontroller.NewIonosCloudLoadBalancerReconciler(mgr).SetupWithManager(
+		ctx,
+		mgr,
+		controller.Options{MaxConcurrentReconciles: 1}, // TODO create config for this
+	); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudLoadBalancer")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
