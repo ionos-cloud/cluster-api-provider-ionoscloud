@@ -100,6 +100,8 @@ spec:
               rule: self.type != "External" || (self.type == "External" && (has(self.loadBalancerEndpoint)
                 && self.loadBalancerEndpoint.host != "" && self.loadBalancerEndpoint.port
                 != 0))
+            - message: type NLB requires a datacenterID
+              rule: self.type != "NLB" || (self.type == "NLB" && has(self.datacenterID))
           status:
             description: IonosCloudLoadBalancerStatus defines the observed state of
               IonosCloudLoadBalancer.
