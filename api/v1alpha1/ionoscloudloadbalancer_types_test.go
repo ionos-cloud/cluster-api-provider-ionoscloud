@@ -31,7 +31,7 @@ const (
 	exampleDatacenterID = "fe3b4e3d-3b0e-4e6c-9e3e-4f3c9e3e4f3c"
 )
 
-var exampleEndpoint clusterv1.APIEndpoint = clusterv1.APIEndpoint{
+var exampleEndpoint = clusterv1.APIEndpoint{
 	Host: "example.com",
 	Port: 6443,
 }
