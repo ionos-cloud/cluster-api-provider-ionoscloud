@@ -166,9 +166,6 @@ func (*IonosCloudLoadBalancerReconciler) reconcileNormal(
 
 	// TODO(lubedacht): Implement reconcileNormal
 	//		- Check if the Endpoint was already set in the IonosCloudCluster - Do nothing if it is already set
-	//		- Check load balancer type
-	//		- Create Create interface for lb implementation and construct explicit type for it
-	// 		- Create Provisioner in IonosCloud
 	// 		- Create Webhook for HA to apply kube-vip configuration to cloud init
 	// 		- Update IonosCloudCluster with Provisioner Endpoint
 	// 		- Set IonosCloudLoadBalancer status Ready
