@@ -44,8 +44,9 @@ var (
 	enableLeaderElection bool
 	diagnosticOptions    = flags.DiagnosticsOptions{}
 
-	icClusterConcurrency int
-	icMachineConcurrency int
+	icClusterConcurrency      int
+	icMachineConcurrency      int
+	icLoadBalancerConcurrency int
 )
 
 func init() {
@@ -108,7 +109,7 @@ func main() {
 	if err = iccontroller.NewIonosCloudLoadBalancerReconciler(mgr).SetupWithManager(
 		ctx,
 		mgr,
-		controller.Options{MaxConcurrentReconciles: 1}, // TODO create config for this
+		controller.Options{MaxConcurrentReconciles: icLoadBalancerConcurrency},
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudLoadBalancer")
 		os.Exit(1)
@@ -146,4 +147,6 @@ func initFlags() {
 		"Number of IonosCloudClusters to process simultaneously")
 	pflag.IntVar(&icMachineConcurrency, "ionoscloudmachine-concurrency", 1,
 		"Number of IonosCloudMachines to process simultaneously")
+	pflag.IntVar(&icLoadBalancerConcurrency, "ionoscloudloadbalancer-concurrency", 1,
+		"Number of IonosCloudLoadBalancers to process simultaneously")
 }
