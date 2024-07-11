@@ -45,9 +45,20 @@ spec:
           spec:
             description: IonosCloudLoadBalancerSpec defines the desired state of IonosCloudLoadBalancer.
             properties:
+              datacenterID:
+                description: |-
+                  DatacenterID is the ID of the datacenter where the load balancer should be created.
+                  This field is required for NLB load balancers and needs to match the datacenter ID
+                  of the control plane machines.
+                type: string
               loadBalancerEndpoint:
-                description: LoadBalancerEndpoint represents the endpoint of the load
-                  balanced control plane.
+                description: |-
+                  LoadBalancerEndpoint represents the endpoint of the load balanced control plane.
+                  If the endpoint isn't provided, the controller will reserve a new public IP address.
+                  The port is optional and defaults to 6443.
+
+
+                  For external load balancers, the endpoint and port must be provided.
                 properties:
                   host:
                     description: The hostname on which the API server is serving.
@@ -65,7 +76,24 @@ spec:
                   rule: self.host == oldSelf.host || oldSelf.host == ''
                 - message: control plane endpoint port cannot be updated
                   rule: self.port == oldSelf.port || oldSelf.port == 0
+              type:
+                default: HA
+                description: |-
+                  Type is the type of load balancer to create.
+                  defaults to HA.
+                enum:
+                - HA
+                - NLB
+                - External
+                type: string
+            required:
+            - type
             type: object
+            x-kubernetes-validations:
+            - message: external load balancers require a valid endpoint and port
+              rule: self.type != "External" || (self.type == "External" && (has(self.loadBalancerEndpoint)
+                && self.loadBalancerEndpoint.host != "" && self.loadBalancerEndpoint.port
+                != 0))
           status:
             description: IonosCloudLoadBalancerStatus defines the observed state of
               IonosCloudLoadBalancer.
@@ -115,6 +143,30 @@ spec:
                   - type
                   type: object
                 type: array
+              currentRequest:
+                description: |-
+                  CurrentRequest shows the current provisioning request for any
+                  cloud resource that is being provisioned.
+                properties:
+                  method:
+                    description: Method is the request method
+                    type: string
+                  requestPath:
+                    description: RequestPath is the sub path for the request URL
+                    type: string
+                  state:
+                    description: RequestStatus is the status of the request in the
+                      queue.
+                    enum:
+                    - QUEUED
+                    - RUNNING
+                    - DONE
+                    - FAILED
+                    type: string
+                required:
+                - method
+                - requestPath
+                type: object
               ready:
                 description: Ready indicates that the load balancer is ready.
                 type: boolean

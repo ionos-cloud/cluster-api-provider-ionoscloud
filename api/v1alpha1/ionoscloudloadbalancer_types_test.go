@@ -15,3 +15,32 @@ limitations under the License.
 */
 
 package v1alpha1
+
+import (
+	"context"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+func defaultLoadBalancer() *IonosCloudLoadBalancer {
+	return &IonosCloudLoadBalancer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-loadbalancer",
+			Namespace: metav1.NamespaceDefault,
+		},
+		Spec: IonosCloudLoadBalancerSpec{
+			Type: LoadBalancerTypeHA,
+		},
+	}
+}
+
+var _ = Describe("IonosCloudLoadBalancer", func() {
+	AfterEach(func() {
+		err := k8sClient.Delete(context.Background(), defaultLoadBalancer())
+		Expect(client.IgnoreNotFound(err)).To(Succeed())
+	})
+})
