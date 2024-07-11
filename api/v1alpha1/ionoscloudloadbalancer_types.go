@@ -63,6 +63,7 @@ type IonosCloudLoadBalancerSpec struct {
 
 	// Type is the type of load balancer to create.
 	// defaults to HA.
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="load balancer type cannot be updated"
 	//+kubebuilder:validation:Enum=HA;NLB;External
 	//+kubebuilder:default=HA
 	//+required
@@ -71,6 +72,8 @@ type IonosCloudLoadBalancerSpec struct {
 	// DatacenterID is the ID of the datacenter where the load balancer should be created.
 	// This field is required for NLB load balancers and needs to match the datacenter ID
 	// of the control plane machines.
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf || size(self) == 0",message="datacenterID cannot be updated"
+	//+optional
 	DatacenterID string `json:"datacenterID,omitempty"`
 }
 

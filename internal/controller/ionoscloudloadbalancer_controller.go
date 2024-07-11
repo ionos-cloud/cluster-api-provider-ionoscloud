@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/loadbalancing"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -124,11 +125,16 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 		retErr = errors.Join(retErr, err)
 	}()
 
-	if !ionosCloudLoadBalancer.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, loadBalancerScope)
+	prov, err := loadbalancing.NewProvisioner(nil, ionosCloudLoadBalancer.Spec.Type)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
-	return r.reconcileNormal(ctx, loadBalancerScope)
+	if !ionosCloudLoadBalancer.DeletionTimestamp.IsZero() {
+		return r.reconcileDelete(ctx, loadBalancerScope, prov)
+	}
+
+	return r.reconcileNormal(ctx, loadBalancerScope, prov)
 }
 
 func (r *IonosCloudLoadBalancerReconciler) getIonosCluster(
@@ -149,28 +155,31 @@ func (r *IonosCloudLoadBalancerReconciler) getIonosCluster(
 	return &ionosCluster, nil
 }
 
-func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
+func (*IonosCloudLoadBalancerReconciler) reconcileNormal(
 	ctx context.Context,
 	_ *scope.LoadBalancer,
+	_ loadbalancing.Provisioner,
 ) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-	logger.Error(nil, "Missing implementation")
+
+	logger.V(4).Info("Reconciling IonosCloudLoadBalancer")
 
 	// TODO(lubedacht): Implement reconcileNormal
 	//		- Check if the Endpoint was already set in the IonosCloudCluster - Do nothing if it is already set
 	//		- Check load balancer type
 	//		- Create Create interface for lb implementation and construct explicit type for it
-	// 		- Create LoadBalancer in IonosCloud
+	// 		- Create Provisioner in IonosCloud
 	// 		- Create Webhook for HA to apply kube-vip configuration to cloud init
-	// 		- Update IonosCloudCluster with LoadBalancer Endpoint
+	// 		- Update IonosCloudCluster with Provisioner Endpoint
 	// 		- Set IonosCloudLoadBalancer status Ready
 
 	return ctrl.Result{}, nil
 }
 
-func (r *IonosCloudLoadBalancerReconciler) reconcileDelete(
+func (*IonosCloudLoadBalancerReconciler) reconcileDelete(
 	_ context.Context,
 	_ *scope.LoadBalancer,
+	_ loadbalancing.Provisioner,
 ) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }

@@ -51,6 +51,9 @@ spec:
                   This field is required for NLB load balancers and needs to match the datacenter ID
                   of the control plane machines.
                 type: string
+                x-kubernetes-validations:
+                - message: datacenterID cannot be updated
+                  rule: self == oldSelf || size(self) == 0
               loadBalancerEndpoint:
                 description: |-
                   LoadBalancerEndpoint represents the endpoint of the load balanced control plane.
@@ -86,6 +89,9 @@ spec:
                 - NLB
                 - External
                 type: string
+                x-kubernetes-validations:
+                - message: load balancer type cannot be updated
+                  rule: self == oldSelf
             required:
             - type
             type: object

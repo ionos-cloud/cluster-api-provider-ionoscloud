@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package loadbalancing provides the load balancer provisioner interface and its implementations.
+// The provisioner is responsible for managing the provisioning of and cleanup of various types of load balancers.
 package loadbalancing
 
 import (
@@ -25,8 +27,8 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-// LoadBalancer is an interface for managing the provisioning of and cleanup of various types of load balancers.
-type LoadBalancer interface {
+// Provisioner is an interface for managing the provisioning of and cleanup of various types of load balancers.
+type Provisioner interface {
 	// PrepareEnvironment is responsible for setting the preconditions for the load balancer to be created.
 	PrepareEnvironment(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
 	// ProvisionLoadBalancer is responsible for creating the load balancer.
@@ -39,11 +41,14 @@ type LoadBalancer interface {
 }
 
 // NewProvisioner creates a new load balancer provisioner, based on the load balancer type.
-func NewProvisioner(_ ionoscloud.Client, lbType infrav1.LoadBalancerType) (LoadBalancer, error) {
+func NewProvisioner(_ ionoscloud.Client, lbType infrav1.LoadBalancerType) (Provisioner, error) {
 	switch lbType {
 	case infrav1.LoadBalancerTypeHA:
+		return &haProvisioner{}, nil
 	case infrav1.LoadBalancerTypeNLB:
+		return &nlbProvisioner{}, nil
 	case infrav1.LoadBalancerTypeExternal:
+		return &externalProvisioner{}, nil
 	}
 	return nil, fmt.Errorf("unknown load balancer type %q", lbType)
 }
