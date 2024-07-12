@@ -237,9 +237,9 @@ func (s *Service) getFailoverIPBlock(ctx context.Context, ms *scope.Machine) (*s
 		return nil, fmt.Errorf("failed to list IP blocks: %w", err)
 	}
 
-	location, err := s.ionosClient.GetDatacenterLocationByID(ctx, ms.IonosMachine.Spec.DatacenterID)
+	location, err := s.getLocation(ctx, ms)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get location of datacenter: %w", err)
+		return nil, err
 	}
 
 	for _, block := range ptr.Deref(blocks.GetItems(), nil) {
@@ -339,9 +339,9 @@ func (s *Service) reserveControlPlaneEndpointIPBlock(ctx context.Context, cs *sc
 
 func (s *Service) reserveMachineDeploymentFailoverIPBlock(ctx context.Context, ms *scope.Machine) error {
 	log := s.logger.WithName("reserveMachineDeploymentFailoverIPBlock")
-	location, err := s.ionosClient.GetDatacenterLocationByID(ctx, ms.IonosMachine.Spec.DatacenterID)
+	location, err := s.getLocation(ctx, ms)
 	if err != nil {
-		return fmt.Errorf("failed to get location of datacenter: %w", err)
+		return err
 	}
 
 	ms.IonosMachine.Status.Location = location
@@ -413,9 +413,9 @@ func (s *Service) getLatestControlPlaneEndpointIPBlockCreationRequest(
 
 // getLatestFailoverIPBlockCreateRequest returns the latest failover IP block creation request.
 func (s *Service) getLatestFailoverIPBlockCreateRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
-	location, err := s.ionosClient.GetDatacenterLocationByID(ctx, ms.IonosMachine.Spec.DatacenterID)
+	location, err := s.getLocation(ctx, ms)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get location of datacenter: %w", err)
+		return nil, err
 	}
 	return s.getLatestIPBlockRequestByNameAndLocation(
 		ctx, http.MethodPost,
@@ -475,4 +475,18 @@ func ignoreErrUserSetIPNotFound(err error) error {
 		return nil
 	}
 	return err
+}
+
+// getLocation checks if the location of the machine is already set in the status.
+// If not, it queries Cloud API to get the location of the datacenter.
+func (s *Service) getLocation(ctx context.Context, ms *scope.Machine) (string, error) {
+	if ms.IonosMachine.Status.Location == "" {
+		location, err := s.ionosClient.GetDatacenterLocationByID(ctx, ms.IonosMachine.Spec.DatacenterID)
+		if err != nil {
+			return "", fmt.Errorf("failed to get location of datacenter: %w", err)
+		}
+		ms.IonosMachine.Status.Location = location
+		return location, nil
+	}
+	return ms.IonosMachine.Status.Location, nil
 }

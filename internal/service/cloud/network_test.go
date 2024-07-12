@@ -286,7 +286,7 @@ func (s *lanSuite) TestReconcileIPFailoverReserveIPBlock() {
 	s.infraMachine.SetLabels(map[string]string{clusterv1.MachineDeploymentNameLabel: deploymentLabel})
 	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 
-	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil).Times(3)
+	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil).Once()
 	s.mockListIPBlocksCall().Return(nil, nil).Once()
 	s.mockGetIPBlocksRequestsPostCall().Return(nil, nil).Once()
 	s.mockReserveIPBlockCall(s.service.failoverIPBlockName(s.machineScope), s.clusterScope.Location()).

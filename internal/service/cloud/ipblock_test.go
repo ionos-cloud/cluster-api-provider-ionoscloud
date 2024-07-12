@@ -434,7 +434,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionSkipped() {
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingCreation() {
 	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
 
-	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil).Twice()
+	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil).Once()
 	s.mockListIPBlocksCall().Return(nil, nil).Once()
 	s.mockGetIPBlocksRequestsPostCall().Return([]sdk.Request{
 		s.buildIPBlockRequestWithName(
