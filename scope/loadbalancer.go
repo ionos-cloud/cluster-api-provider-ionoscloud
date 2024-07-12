@@ -81,12 +81,22 @@ func NewLoadBalancer(params LoadBalancerParams) (*LoadBalancer, error) {
 	}, nil
 }
 
+// Endpoint returns the load balancer endpoint.
+func (l *LoadBalancer) Endpoint() clusterv1.APIEndpoint {
+	return l.LoadBalancer.Spec.LoadBalancerEndpoint
+}
+
+// InfraClusterEndpoint returns the endpoint from the infra cluster..
+func (l *LoadBalancer) InfraClusterEndpoint() clusterv1.APIEndpoint {
+	return l.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint
+}
+
 // PatchObject will apply all changes from the IonosCloudLoadBalancer.
 // It will also make sure to patch the status subresource.
-func (m *LoadBalancer) PatchObject() error {
-	conditions.SetSummary(m.LoadBalancer,
+func (l *LoadBalancer) PatchObject() error {
+	conditions.SetSummary(l.LoadBalancer,
 		conditions.WithConditions(
-			infrav1.IonosCloudLoadBalancerReady))
+			infrav1.LoadBalancerReadyCondition))
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -94,9 +104,9 @@ func (m *LoadBalancer) PatchObject() error {
 	// We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
 	// aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation
 	// would cause the patch to be aborted as well.
-	return m.patchHelper.Patch(
+	return l.patchHelper.Patch(
 		timeoutCtx,
-		m.LoadBalancer,
+		l.LoadBalancer,
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 		}})
@@ -105,7 +115,7 @@ func (m *LoadBalancer) PatchObject() error {
 // Finalize will make sure to apply a patch to the current IonosCloudLoadBalancer.
 // It also implements a retry mechanism to increase the chance of success
 // in case the patch operation was not successful.
-func (m *LoadBalancer) Finalize() error {
+func (l *LoadBalancer) Finalize() error {
 	// NOTE(lubedacht) retry is only a way to reduce the failure chance,
 	// but in general, the reconciliation logic must be resilient
 	// to handle an outdated resource from that API server.
@@ -113,5 +123,5 @@ func (m *LoadBalancer) Finalize() error {
 	return retry.OnError(
 		retry.DefaultBackoff,
 		shouldRetry,
-		m.PatchObject)
+		l.PatchObject)
 }

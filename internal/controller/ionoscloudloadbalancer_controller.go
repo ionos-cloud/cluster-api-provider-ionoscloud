@@ -19,17 +19,21 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -71,7 +75,10 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 	ctx context.Context,
 	ionosCloudLoadBalancer *infrav1.IonosCloudLoadBalancer,
 ) (_ ctrl.Result, retErr error) {
-	logger := log.FromContext(ctx, "ionoscloudloadbalancer", klog.KObj(ionosCloudLoadBalancer))
+	logger := log.FromContext(ctx,
+		"ionoscloudloadbalancer", klog.KObj(ionosCloudLoadBalancer),
+		"type", ionosCloudLoadBalancer.Spec.Type,
+	)
 	ctx = log.IntoContext(ctx, logger)
 
 	logger.V(4).Info("Reconciling IonosCloudLoadBalancer")
@@ -125,7 +132,12 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 		retErr = errors.Join(retErr, err)
 	}()
 
-	prov, err := loadbalancing.NewProvisioner(nil, ionosCloudLoadBalancer.Spec.Type)
+	cloudService, err := createServiceFromCluster(ctx, r.Client, loadBalancerScope.ClusterScope.IonosCluster, logger)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	prov, err := loadbalancing.NewProvisioner(cloudService, ionosCloudLoadBalancer.Spec.Type)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -155,29 +167,78 @@ func (r *IonosCloudLoadBalancerReconciler) getIonosCluster(
 	return &ionosCluster, nil
 }
 
-func (*IonosCloudLoadBalancerReconciler) reconcileNormal(
+func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
 	ctx context.Context,
-	_ *scope.LoadBalancer,
-	_ loadbalancing.Provisioner,
+	loadBalancerScope *scope.LoadBalancer,
+	prov loadbalancing.Provisioner,
 ) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-
 	logger.V(4).Info("Reconciling IonosCloudLoadBalancer")
 
-	// TODO(lubedacht): Implement reconcileNormal
-	//		- Check if the Endpoint was already set in the IonosCloudCluster - Do nothing if it is already set
-	// 		- Create Webhook for HA to apply kube-vip configuration to cloud init
-	// 		- Update IonosCloudCluster with Provisioner Endpoint
-	// 		- Set IonosCloudLoadBalancer status Ready
+	controllerutil.AddFinalizer(loadBalancerScope.LoadBalancer, infrav1.LoadBalancerFinalizer)
 
+	if err := r.validateEndpoints(loadBalancerScope); err != nil {
+		logger.Error(err, "terminal error while validating endpoints. Reconciliation will not continue.")
+		conditions.MarkFalse(
+			loadBalancerScope.LoadBalancer,
+			infrav1.LoadBalancerReadyCondition,
+			infrav1.InvalidEndpointConfigurationReason,
+			clusterv1.ConditionSeverityError, "")
+		return ctrl.Result{}, nil
+	}
+
+	reconcileSequence := []serviceReconcileStep[scope.LoadBalancer]{
+		// NOTE(lubedacht): Prepare should do things like reserving IP addresses and making sure the load balancer
+		// spec contains a valid endpoint and port.
+		{name: "PrepareEnvironment", fn: prov.PrepareEnvironment},
+		// NOTE(lubedacht): Provision should do the actual provisioning logic for the load balancer if possible
+		{name: "ProvisionLoadBalancer", fn: prov.ProvisionLoadBalancer},
+		// NOTE(lubedacht): PostProvision can do things like setting up the endpoint for the infra cluster.
+		{name: "PostProvision", fn: prov.PostProvision},
+	}
+
+	for _, step := range reconcileSequence {
+		if requeue, err := step.fn(ctx, loadBalancerScope); err != nil || requeue {
+			if err != nil {
+				err = fmt.Errorf("error in step %s: %w", step.name, err)
+			}
+
+			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
+		}
+	}
+
+	conditions.MarkTrue(loadBalancerScope.LoadBalancer, infrav1.LoadBalancerReadyCondition)
+	loadBalancerScope.LoadBalancer.Status.Ready = true
+
+	logger.V(4).Info("Successfully reconciled IonosCloudLoadBalancer")
 	return ctrl.Result{}, nil
 }
 
 func (*IonosCloudLoadBalancerReconciler) reconcileDelete(
-	_ context.Context,
-	_ *scope.LoadBalancer,
-	_ loadbalancing.Provisioner,
+	ctx context.Context,
+	loadBalancerScope *scope.LoadBalancer,
+	prov loadbalancing.Provisioner,
 ) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	logger.V(4).Info("Deleting IonosCloudLoadBalancer")
+	reconcileSequence := []serviceReconcileStep[scope.LoadBalancer]{
+		{name: "PrepareCleanup", fn: prov.PrepareCleanup},
+		{name: "DestroyLoadBalancer", fn: prov.DestroyLoadBalancer},
+		{name: "CleanupResources", fn: prov.CleanupResources},
+	}
+
+	for _, step := range reconcileSequence {
+		if requeue, err := step.fn(ctx, loadBalancerScope); err != nil || requeue {
+			if err != nil {
+				err = fmt.Errorf("error in step %s: %w", step.name, err)
+			}
+
+			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
+		}
+	}
+
+	controllerutil.RemoveFinalizer(loadBalancerScope.LoadBalancer, infrav1.LoadBalancerFinalizer)
+	logger.V(4).Info("Successfully deleted IonosCloudLoadBalancer")
 	return ctrl.Result{}, nil
 }
 
@@ -191,4 +252,22 @@ func (r *IonosCloudLoadBalancerReconciler) SetupWithManager(ctx context.Context,
 		For(&infrav1.IonosCloudLoadBalancer{}).
 		WithEventFilter(predicates.ResourceNotPaused(ctrl.LoggerFrom(ctx))).
 		Complete(reconcile.AsReconciler[*infrav1.IonosCloudLoadBalancer](r.Client, r))
+}
+
+func (*IonosCloudLoadBalancerReconciler) validateEndpoints(loadBalancerScope *scope.LoadBalancer) error {
+	s := loadBalancerScope
+
+	if s.InfraClusterEndpoint().IsValid() && s.Endpoint().IsZero() {
+		return errors.New("infra cluster already has an endpoint set, but the load balancer does not")
+	}
+
+	if s.InfraClusterEndpoint().IsValid() && s.Endpoint().IsValid() {
+		if s.InfraClusterEndpoint() == s.Endpoint() {
+			return nil
+		}
+
+		return errors.New("infra cluster and load balancer endpoints do not match")
+	}
+
+	return nil
 }

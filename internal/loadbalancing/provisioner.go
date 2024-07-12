@@ -23,7 +23,7 @@ import (
 	"fmt"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -33,7 +33,11 @@ type Provisioner interface {
 	PrepareEnvironment(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
 	// ProvisionLoadBalancer is responsible for creating the load balancer.
 	ProvisionLoadBalancer(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
+	// PostProvision is responsible for setting the post conditions for the load balancer after it has been created.
+	PostProvision(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
 
+	// PrepareCleanup is responsible for setting the preconditions for the load balancer to be deleted.
+	PrepareCleanup(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
 	// DestroyLoadBalancer is responsible for deleting the load balancer.
 	DestroyLoadBalancer(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
 	// CleanupResources is responsible for cleaning up any resources associated with the load balancer.
@@ -41,7 +45,7 @@ type Provisioner interface {
 }
 
 // NewProvisioner creates a new load balancer provisioner, based on the load balancer type.
-func NewProvisioner(_ ionoscloud.Client, lbType infrav1.LoadBalancerType) (Provisioner, error) {
+func NewProvisioner(_ *cloud.Service, lbType infrav1.LoadBalancerType) (Provisioner, error) {
 	switch lbType {
 	case infrav1.LoadBalancerTypeHA:
 		return &haProvisioner{}, nil

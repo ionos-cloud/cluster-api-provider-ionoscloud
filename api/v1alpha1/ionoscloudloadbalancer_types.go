@@ -26,8 +26,12 @@ const (
 	// associated with the IonosCloudLoadBalancer before removing it from the API server.
 	LoadBalancerFinalizer = "ionoscloudloadbalancer.infrastructure.cluster.x-k8s.io"
 
-	// IonosCloudLoadBalancerReady is the condition for the IonosCloudLoadBalancer, which indicates that the load balancer is ready.
-	IonosCloudLoadBalancerReady clusterv1.ConditionType = "LoadBalancerReady"
+	// LoadBalancerReadyCondition is the condition for the IonosCloudLoadBalancer, which indicates that the load balancer is ready.
+	LoadBalancerReadyCondition clusterv1.ConditionType = "LoadBalancerReady"
+
+	// InvalidEndpointConfigurationReason indicates that the endpoints for IonosCloudCluster and IonosCloudLoadBalancer
+	// have not been properly configured.
+	InvalidEndpointConfigurationReason = "InvalidEndpointConfiguration"
 )
 
 // LoadBalancerType represents the type of load balancer to create.

@@ -25,21 +25,25 @@ import (
 type haProvisioner struct{}
 
 func (*haProvisioner) PrepareEnvironment(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	// TODO implement me
 	panic("implement me")
 }
 
 func (*haProvisioner) ProvisionLoadBalancer(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	// TODO implement me
+	panic("implement me")
+}
+
+func (*haProvisioner) PostProvision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+	panic("implement me")
+}
+
+func (*haProvisioner) PrepareCleanup(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }
 
 func (*haProvisioner) DestroyLoadBalancer(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	// TODO implement me
 	panic("implement me")
 }
 
 func (*haProvisioner) CleanupResources(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	// TODO implement me
 	panic("implement me")
 }

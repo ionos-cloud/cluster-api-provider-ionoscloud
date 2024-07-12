@@ -34,6 +34,14 @@ func (*externalProvisioner) ProvisionLoadBalancer(_ context.Context, _ *scope.Lo
 	return false, nil
 }
 
+func (*externalProvisioner) PostProvision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+	return false, nil
+}
+
+func (*externalProvisioner) PrepareCleanup(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+	return false, nil
+}
+
 func (*externalProvisioner) DestroyLoadBalancer(_ context.Context, _ *scope.LoadBalancer) (bool, error) {
 	return false, nil
 }

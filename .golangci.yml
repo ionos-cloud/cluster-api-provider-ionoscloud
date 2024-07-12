@@ -136,6 +136,12 @@ issues:
   # changes in PRs and avoid nitpicking.
   exclude-use-default: false
   exclude-rules:
+    # TODO(lubedacht): remove this exclusion, once the provisioners are implemented
+    # I couldn't find a place where to put nolint to disable this linter inline.
+    - linters:
+        - dupl
+      path: "provisioner_(.+).go"
+      text: "(\\d+)-(\\d+) lines are duplicate of .*"
     - linters:
         - containedctx
       path: '(.+)_test\.go'

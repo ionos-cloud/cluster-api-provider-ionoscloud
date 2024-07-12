@@ -25,21 +25,25 @@ import (
 type nlbProvisioner struct{}
 
 func (*nlbProvisioner) PrepareEnvironment(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	// TODO implement me
 	panic("implement me")
 }
 
 func (*nlbProvisioner) ProvisionLoadBalancer(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	// TODO implement me
+	panic("implement me")
+}
+
+func (*nlbProvisioner) PostProvision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+	panic("implement me")
+}
+
+func (*nlbProvisioner) PrepareCleanup(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }
 
 func (*nlbProvisioner) DestroyLoadBalancer(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	// TODO implement me
 	panic("implement me")
 }
 
 func (*nlbProvisioner) CleanupResources(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	// TODO implement me
 	panic("implement me")
 }
