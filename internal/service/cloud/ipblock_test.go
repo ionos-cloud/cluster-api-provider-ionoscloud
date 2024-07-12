@@ -179,7 +179,7 @@ func (s *ipBlockTestSuite) TestReserveMachineDeploymentIPBlockRequestSuccess() {
 	s.NoError(err)
 	req := s.machineScope.IonosMachine.Status.CurrentRequest
 	s.validateRequest(http.MethodPost, sdk.RequestStatusQueued, requestPath, req)
-	s.validateSuccessfulReservation(s.machineScope.IonosMachine.Status.Location, err)
+	s.Equal(exampleLocation, s.machineScope.IonosMachine.Status.Location)
 }
 
 func (s *ipBlockTestSuite) validateRequest(method, state, path string, req *infrav1.ProvisioningRequest) {
@@ -189,12 +189,6 @@ func (s *ipBlockTestSuite) validateRequest(method, state, path string, req *infr
 	s.Equal(method, req.Method)
 	s.Equal(state, req.State)
 	s.Equal(path, req.RequestPath)
-}
-
-func (s *ipBlockTestSuite) validateSuccessfulReservation(location string, err error) {
-	s.T().Helper()
-	s.NoError(err)
-	s.Equal(exampleLocation, location)
 }
 
 func (s *ipBlockTestSuite) TestDeleteControlPlaneEndpointIPBlockRequestSuccess() {
