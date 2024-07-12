@@ -451,6 +451,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			}
 			m.Status.FailureReason = ptr.To(errors.InvalidConfigurationMachineError)
 			m.Status.FailureMessage = ptr.To("Failure message")
+			m.Status.Location = "de/fra"
 
 			m.Status.MachineNetworkInfo = &MachineNetworkInfo{
 				NICInfo: []NICInfo{
