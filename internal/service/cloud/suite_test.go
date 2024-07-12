@@ -373,5 +373,5 @@ func (s *ServiceTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Ca
 }
 
 func (s *ServiceTestSuite) mockGetDatacenterLocationByIDCall(datacenterID string) *clienttest.MockClient_GetDatacenterLocationByID_Call {
-	return s.ionosClient.EXPECT().GetDatacenterLocationByID(datacenterID)
+	return s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, datacenterID)
 }

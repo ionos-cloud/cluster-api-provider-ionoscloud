@@ -237,7 +237,7 @@ func (s *Service) getFailoverIPBlock(ctx context.Context, ms *scope.Machine) (*s
 		return nil, fmt.Errorf("failed to list IP blocks: %w", err)
 	}
 
-	location, err := s.ionosClient.GetDatacenterLocationByID(ms.IonosMachine.Spec.DatacenterID)
+	location, err := s.ionosClient.GetDatacenterLocationByID(ctx, ms.IonosMachine.Spec.DatacenterID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get location of datacenter: %w", err)
 	}
@@ -339,7 +339,7 @@ func (s *Service) reserveControlPlaneEndpointIPBlock(ctx context.Context, cs *sc
 
 func (s *Service) reserveMachineDeploymentFailoverIPBlock(ctx context.Context, ms *scope.Machine) error {
 	log := s.logger.WithName("reserveMachineDeploymentFailoverIPBlock")
-	location, err := s.ionosClient.GetDatacenterLocationByID(ms.IonosMachine.Spec.DatacenterID)
+	location, err := s.ionosClient.GetDatacenterLocationByID(ctx, ms.IonosMachine.Spec.DatacenterID)
 	if err != nil {
 		return fmt.Errorf("failed to get location of datacenter: %w", err)
 	}
@@ -413,7 +413,7 @@ func (s *Service) getLatestControlPlaneEndpointIPBlockCreationRequest(
 
 // getLatestFailoverIPBlockCreateRequest returns the latest failover IP block creation request.
 func (s *Service) getLatestFailoverIPBlockCreateRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
-	location, err := s.ionosClient.GetDatacenterLocationByID(ms.IonosMachine.Spec.DatacenterID)
+	location, err := s.ionosClient.GetDatacenterLocationByID(ctx, ms.IonosMachine.Spec.DatacenterID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get location of datacenter: %w", err)
 	}

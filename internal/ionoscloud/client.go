@@ -67,5 +67,5 @@ type Client interface {
 	// PatchNIC updates the NIC identified by nicID with the provided properties, returning the request location.
 	PatchNIC(ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties) (string, error)
 	// GetDatacenterLocationByID returns the location of the data center identified by datacenterID.
-	GetDatacenterLocationByID(datacenterID string) (string, error)
+	GetDatacenterLocationByID(ctx context.Context, datacenterID string) (string, error)
 }

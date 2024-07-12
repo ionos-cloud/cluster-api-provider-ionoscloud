@@ -465,12 +465,12 @@ func validateNICParameters(datacenterID, serverID, nicID string) (err error) {
 }
 
 // GetDatacenterLocationByID returns the location of the data center identified by datacenterID.
-func (c *IonosCloudClient) GetDatacenterLocationByID(datacenterID string) (string, error) {
+func (c *IonosCloudClient) GetDatacenterLocationByID(ctx context.Context, datacenterID string) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
 	}
 
-	datacenter, _, err := c.API.DataCentersApi.DatacentersFindById(context.Background(), datacenterID).Execute()
+	datacenter, _, err := c.API.DataCentersApi.DatacentersFindById(ctx, datacenterID).Execute()
 	if err != nil {
 		return "", fmt.Errorf(apiCallErrWrapper, err)
 	}

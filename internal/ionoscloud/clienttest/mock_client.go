@@ -455,9 +455,9 @@ func (_c *MockClient_DeleteVolume_Call) RunAndReturn(run func(context.Context, s
 	return _c
 }
 
-// GetDatacenterLocationByID provides a mock function with given fields: datacenterID
-func (_m *MockClient) GetDatacenterLocationByID(datacenterID string) (string, error) {
-	ret := _m.Called(datacenterID)
+// GetDatacenterLocationByID provides a mock function with given fields: ctx, datacenterID
+func (_m *MockClient) GetDatacenterLocationByID(ctx context.Context, datacenterID string) (string, error) {
+	ret := _m.Called(ctx, datacenterID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetDatacenterLocationByID")
@@ -465,17 +465,17 @@ func (_m *MockClient) GetDatacenterLocationByID(datacenterID string) (string, er
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
-		return rf(datacenterID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return rf(ctx, datacenterID)
 	}
-	if rf, ok := ret.Get(0).(func(string) string); ok {
-		r0 = rf(datacenterID)
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, datacenterID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(datacenterID)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, datacenterID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -489,14 +489,15 @@ type MockClient_GetDatacenterLocationByID_Call struct {
 }
 
 // GetDatacenterLocationByID is a helper method to define mock.On call
+//   - ctx context.Context
 //   - datacenterID string
-func (_e *MockClient_Expecter) GetDatacenterLocationByID(datacenterID interface{}) *MockClient_GetDatacenterLocationByID_Call {
-	return &MockClient_GetDatacenterLocationByID_Call{Call: _e.mock.On("GetDatacenterLocationByID", datacenterID)}
+func (_e *MockClient_Expecter) GetDatacenterLocationByID(ctx interface{}, datacenterID interface{}) *MockClient_GetDatacenterLocationByID_Call {
+	return &MockClient_GetDatacenterLocationByID_Call{Call: _e.mock.On("GetDatacenterLocationByID", ctx, datacenterID)}
 }
 
-func (_c *MockClient_GetDatacenterLocationByID_Call) Run(run func(datacenterID string)) *MockClient_GetDatacenterLocationByID_Call {
+func (_c *MockClient_GetDatacenterLocationByID_Call) Run(run func(ctx context.Context, datacenterID string)) *MockClient_GetDatacenterLocationByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(context.Context), args[1].(string))
 	})
 	return _c
 }
@@ -506,7 +507,7 @@ func (_c *MockClient_GetDatacenterLocationByID_Call) Return(_a0 string, _a1 erro
 	return _c
 }
 
-func (_c *MockClient_GetDatacenterLocationByID_Call) RunAndReturn(run func(string) (string, error)) *MockClient_GetDatacenterLocationByID_Call {
+func (_c *MockClient_GetDatacenterLocationByID_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockClient_GetDatacenterLocationByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
