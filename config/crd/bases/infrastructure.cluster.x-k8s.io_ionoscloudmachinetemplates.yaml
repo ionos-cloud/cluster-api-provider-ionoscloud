@@ -144,11 +144,28 @@ spec:
                             properties:
                               id:
                                 description: ID is the ID of the image to use for
-                                  the VM.
+                                  the VM. Has precedence over selector.
                                 minLength: 1
                                 type: string
-                            required:
-                            - id
+                              selector:
+                                description: Selector is used to look up images by
+                                  name and labels.
+                                properties:
+                                  matchLabels:
+                                    additionalProperties:
+                                      type: string
+                                    description: MatchLabels is a map of key/value
+                                      pairs.
+                                    type: object
+                                  useMachineVersion:
+                                    default: true
+                                    description: |-
+                                      UseMachineVersion indicates whether to use the parent Machine's version field to look up image names.
+                                      Enabled by default.
+                                    type: boolean
+                                required:
+                                - matchLabels
+                                type: object
                             type: object
                           name:
                             description: Name is the name of the volume

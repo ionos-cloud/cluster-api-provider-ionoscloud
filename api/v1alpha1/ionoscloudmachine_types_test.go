@@ -311,15 +311,32 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 					m.Spec.Disk.Image = nil
 					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 				})
-				It("should fail none is set", func() {
+				It("should fail if no fields are set", func() {
 					m := defaultMachine()
 					m.Spec.Disk.Image.ID = ""
+					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+				})
+				It("should fail if no match labels are set", func() {
+					m := defaultMachine()
+					m.Spec.Disk.Image.Selector = &ImageSelector{}
 					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 				})
 				It("should not fail if ID is set", func() {
 					m := defaultMachine()
 					m.Spec.Disk.Image.ID = "1eef-48ec-a246-a51a33aa4f3a"
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+				})
+				It("should not fail if selector is set", func() {
+					m := defaultMachine()
+					m.Spec.Disk.Image.ID = ""
+					m.Spec.Disk.Image.Selector = &ImageSelector{
+						MatchLabels: map[string]string{
+							"foo": "bar",
+						},
+					}
+					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+					Expect(m.Spec.Disk.Image.Selector.UseMachineVersion).ToNot(BeNil())
+					Expect(*m.Spec.Disk.Image.Selector.UseMachineVersion).To(BeTrue())
 				})
 			})
 		})
