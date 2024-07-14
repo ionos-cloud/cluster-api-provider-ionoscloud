@@ -164,10 +164,11 @@ export EXP_CLUSTER_RESOURCE_SET="true"
 
 We provide the following templates:
 
-| Flavor         | Template File                          | CRS File                      |
-|----------------|----------------------------------------|-------------------------------|
-| calico         | templates/cluster-template-calico.yaml | templates/crs/cni/calico.yaml |
-| default        | templates/cluster-template.yaml        | -                             |
+| Flavor           | Template File                                  | CRS File                        |
+| ---------------- | ---------------------------------------------- | ------------------------------- |
+| default          | templates/cluster-template.yaml                | -                               |
+| calico           | templates/cluster-template-calico.yaml         | templates/crs/cni/calico.yaml   |
+| auto-image       | templates/cluster-template-auto-image.yaml     | -                               |
 
 
 #### Flavor with Calico CNI
@@ -196,6 +197,11 @@ $ clusterctl generate cluster dev-calico \
 
 $ kubectl apply -f cluster.yaml
 ```
+
+#### Flavor with auto image lookup
+
+This template makes use of labels on custom built images.
+Please refer to the [custom image docs](/docs/custom-image.md) for more information.
 
 ### Custom Templates
 
