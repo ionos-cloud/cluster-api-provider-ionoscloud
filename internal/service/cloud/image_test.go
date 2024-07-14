@@ -85,6 +85,36 @@ func (s *imageTestSuite) TestLookupImageTooManyMatches() {
 	s.Equal([]string{"image-2", "image-3"}, typedErr.imageIDs)
 }
 
+func (s *imageTestSuite) TestLookupImageMissingMachineVersion() {
+	s.ionosClient.EXPECT().ListLabels(s.ctx).Return(
+		[]sdk.Label{
+			makeTestLabel("image", "image-1", "test", "image"),
+		}, nil,
+	).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "test"), nil).Once()
+
+	s.capiMachine.Spec.Version = ptr.To("")
+
+	_, err := s.service.lookupImageID(s.ctx, s.machineScope)
+	s.ErrorIs(err, errMissingMachineVersion)
+}
+
+func (s *imageTestSuite) TestLookupImageIgnoreMissingMachineVersion() {
+	s.ionosClient.EXPECT().ListLabels(s.ctx).Return(
+		[]sdk.Label{
+			makeTestLabel("image", "image-1", "test", "image"),
+		}, nil,
+	).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "test"), nil).Once()
+
+	s.infraMachine.Spec.Disk.Image.Selector.UseMachineVersion = ptr.To(false)
+	s.capiMachine.Spec.Version = ptr.To("")
+
+	imageID, err := s.service.lookupImageID(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.Equal("image-1", imageID)
+}
+
 func (s *imageTestSuite) TestLookupImageOK() {
 	s.ionosClient.EXPECT().ListLabels(s.ctx).Return(
 		[]sdk.Label{

@@ -18,6 +18,7 @@ package cloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -28,6 +29,8 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
+
+var errMissingMachineVersion = errors.New("machine is missing version field")
 
 type noImageMatchedError struct {
 	selector *infrav1.ImageSelector
@@ -61,11 +64,12 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 	}
 
 	if ptr.Deref(imageSpec.Selector.UseMachineVersion, true) {
-		if ms.Machine.Spec.Version == nil {
-			s.logger.V(1).Info("Using empty version for image lookup")
+		version := ptr.Deref(ms.Machine.Spec.Version, "")
+		if version == "" {
+			return "", errMissingMachineVersion
 		}
 
-		images = filterImagesByName(images, ptr.Deref(ms.Machine.Spec.Version, ""))
+		images = filterImagesByName(images, version)
 	}
 
 	if len(images) == 0 {
