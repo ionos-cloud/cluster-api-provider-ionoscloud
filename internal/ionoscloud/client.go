@@ -68,4 +68,8 @@ type Client interface {
 	PatchNIC(ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties) (string, error)
 	// GetDatacenterLocationByID returns the location of the data center identified by datacenterID.
 	GetDatacenterLocationByID(ctx context.Context, datacenterID string) (string, error)
+	// GetImage returns the image identified by imageID.
+	GetImage(ctx context.Context, imageID string) (*sdk.Image, error)
+	// ListLabels returns a list of all available resource labels.
+	ListLabels(ctx context.Context) ([]sdk.Label, error)
 }

@@ -270,3 +270,29 @@ func TestWithDepth(t *testing.T) {
 		})
 	}
 }
+
+func (s *IonosCloudClientTestSuite) TestGetImage() {
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		catchAllMockURL,
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{}),
+	)
+	image, err := s.client.GetImage(s.ctx, exampleID)
+	s.NoError(err)
+	s.NotNil(image)
+}
+
+func (s *IonosCloudClientTestSuite) TestListLabels() {
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		catchAllMockURL,
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
+			"items": []map[string]any{
+				{},
+			},
+		}),
+	)
+	labels, err := s.client.ListLabels(s.ctx)
+	s.NoError(err)
+	s.NotEmpty(labels)
+}

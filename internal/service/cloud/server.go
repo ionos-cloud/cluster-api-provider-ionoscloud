@@ -328,12 +328,18 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 		return fmt.Errorf("unable to parse LAN ID: %w", err)
 	}
 
+	imageID, err := s.lookupImageID(ctx, ms)
+	if err != nil {
+		return fmt.Errorf("image lookup: %w", err)
+	}
+
 	renderedData := s.renderUserData(ms, string(bootstrapData))
 	copySpec := ms.IonosMachine.Spec.DeepCopy()
 	entityParams := serverEntityParams{
 		boostrapData: renderedData,
 		machineSpec:  *copySpec,
 		lanID:        int32(lanID),
+		imageID:      imageID,
 	}
 
 	server, requestLocation, err := s.ionosClient.CreateServer(
@@ -381,6 +387,7 @@ type serverEntityParams struct {
 	boostrapData string
 	machineSpec  infrav1.IonosCloudMachineSpec
 	lanID        int32
+	imageID      string
 }
 
 // buildServerEntities returns the server entities for the expected cloud server resource.
@@ -396,8 +403,8 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		},
 	}
 
-	if machineSpec.Disk.Image.ID != "" {
-		bootVolume.Properties.Image = &machineSpec.Disk.Image.ID
+	if params.imageID != "" {
+		bootVolume.Properties.Image = &params.imageID
 	}
 
 	serverVolumes := sdk.AttachedVolumes{
