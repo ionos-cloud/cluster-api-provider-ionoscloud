@@ -32,22 +32,15 @@ import (
 
 var errMissingMachineVersion = errors.New("machine is missing version field")
 
-type noImageMatchedError struct {
-	selector *infrav1.ImageSelector
-}
-
-func (e noImageMatchedError) Error() string {
-	return fmt.Sprintf("could not find any images matching selector %q",
-		labels.SelectorFromSet(e.selector.MatchLabels))
-}
-
-type tooManyImagesMatchError struct {
+// imageMatchError indicates that either 0 or more than 1 images matched a selector.
+// This error signals that user action is required.
+type imageMatchError struct {
 	imageIDs []string
 	selector *infrav1.ImageSelector
 }
 
-func (e tooManyImagesMatchError) Error() string {
-	return fmt.Sprintf("found %d images that matched selector %q",
+func (e imageMatchError) Error() string {
+	return fmt.Sprintf("found %d images matching selector %q",
 		len(e.imageIDs), labels.SelectorFromSet(e.selector.MatchLabels))
 }
 
@@ -73,11 +66,11 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 	}
 
 	if len(images) == 0 {
-		return "", noImageMatchedError{selector: imageSpec.Selector}
+		return "", imageMatchError{selector: imageSpec.Selector}
 	}
 
 	if len(images) > 1 {
-		return "", tooManyImagesMatchError{imageIDs: getImageIDs(images), selector: imageSpec.Selector}
+		return "", imageMatchError{imageIDs: getImageIDs(images), selector: imageSpec.Selector}
 	}
 
 	return *images[0].Id, nil

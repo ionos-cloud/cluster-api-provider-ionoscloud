@@ -63,7 +63,9 @@ func (s *imageTestSuite) TestLookupImageNoMatch() {
 	).Once()
 
 	_, err := s.service.lookupImageID(s.ctx, s.machineScope)
-	s.ErrorAs(err, new(noImageMatchedError))
+	typedErr := new(imageMatchError)
+	s.ErrorAs(err, typedErr)
+	s.Empty(typedErr.imageIDs)
 }
 
 func (s *imageTestSuite) TestLookupImageTooManyMatches() {
@@ -79,7 +81,7 @@ func (s *imageTestSuite) TestLookupImageTooManyMatches() {
 	s.ionosClient.EXPECT().GetImage(s.ctx, "image-3").Return(s.makeTestImage("image-3", "img-bar-"), nil).Once()
 
 	_, err := s.service.lookupImageID(s.ctx, s.machineScope)
-	typedErr := new(tooManyImagesMatchError)
+	typedErr := new(imageMatchError)
 	s.ErrorAs(err, typedErr)
 	slices.Sort(typedErr.imageIDs)
 	s.Equal([]string{"image-2", "image-3"}, typedErr.imageIDs)

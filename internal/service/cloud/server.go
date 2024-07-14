@@ -330,6 +330,7 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 
 	imageID, err := s.lookupImageID(ctx, ms)
 	if err != nil {
+		// TODO(avorima): Notify users of invalid image selector
 		return fmt.Errorf("image lookup: %w", err)
 	}
 
