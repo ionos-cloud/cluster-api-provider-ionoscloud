@@ -156,6 +156,9 @@ spec:
                         - matchLabels
                         type: object
                     type: object
+                    x-kubernetes-validations:
+                    - message: must provide either id or selector
+                      rule: self.id != '' || has(self.selector)
                   name:
                     description: Name is the name of the volume
                     type: string
