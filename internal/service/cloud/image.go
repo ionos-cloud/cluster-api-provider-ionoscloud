@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -56,53 +55,38 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 		return imageSpec.ID, nil
 	}
 
-	allLabels, err := s.ionosClient.ListLabels(ctx)
+	images, err := s.lookupImagesBySelector(ctx, ms.ClusterScope.Location(), imageSpec.Selector)
 	if err != nil {
 		return "", err
 	}
-
-	imageIDs := filterImagesBySelector(allLabels, imageSpec.Selector)
 
 	if ptr.Deref(imageSpec.Selector.UseMachineVersion, true) {
 		if ms.Machine.Spec.Version == nil {
 			s.logger.V(1).Info("Using empty version for image lookup")
 		}
 
-		imageIDs, err = filterImagesByName(ctx, s.ionosClient, imageIDs, ptr.Deref(ms.Machine.Spec.Version, ""))
-		if err != nil {
-			return "", err
-		}
+		images = filterImagesByName(images, ptr.Deref(ms.Machine.Spec.Version, ""))
 	}
 
-	if len(imageIDs) == 0 {
+	if len(images) == 0 {
 		return "", noImageMatchedError{selector: imageSpec.Selector}
 	}
 
-	if len(imageIDs) > 1 {
-		return "", tooManyImagesMatchError{imageIDs: imageIDs, selector: imageSpec.Selector}
+	if len(images) > 1 {
+		return "", tooManyImagesMatchError{imageIDs: getImageIDs(images), selector: imageSpec.Selector}
 	}
 
-	return imageIDs[0], nil
+	return *images[0].Id, nil
 }
 
-func filterImagesByName(ctx context.Context, client ionoscloud.Client, imageIDs []string, namePart string) ([]string, error) {
-	var result []string
-
-	for _, imageID := range imageIDs {
-		image, err := client.GetImage(ctx, imageID)
-		if err != nil {
-			return nil, err
-		}
-
-		if strings.Contains(*image.Properties.Name, namePart) {
-			result = append(result, imageID)
-		}
+func (s *Service) lookupImagesBySelector(
+	ctx context.Context, location string, selector *infrav1.ImageSelector,
+) ([]*sdk.Image, error) {
+	resourceLabels, err := s.ionosClient.ListLabels(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	return result, nil
-}
-
-func filterImagesBySelector(resourceLabels []sdk.Label, selector *infrav1.ImageSelector) []string {
 	// mapping from image ID to labels
 	imageLabelMap := make(map[string]map[string]string)
 
@@ -119,14 +103,45 @@ func filterImagesBySelector(resourceLabels []sdk.Label, selector *infrav1.ImageS
 	}
 
 	var imageIDs []string
-
 	for imageID, imageLabels := range imageLabelMap {
 		if mapContains(imageLabels, selector.MatchLabels) {
 			imageIDs = append(imageIDs, imageID)
 		}
 	}
 
-	return imageIDs
+	var images []*sdk.Image
+	for _, imageID := range imageIDs {
+		image, err := s.ionosClient.GetImage(ctx, imageID)
+		if err != nil {
+			return nil, err
+		}
+
+		if *image.Properties.Location == location {
+			images = append(images, image)
+		}
+	}
+
+	return images, nil
+}
+
+func filterImagesByName(images []*sdk.Image, namePart string) []*sdk.Image {
+	var result []*sdk.Image
+
+	for _, image := range images {
+		if strings.Contains(*image.Properties.Name, namePart) {
+			result = append(result, image)
+		}
+	}
+
+	return result
+}
+
+func getImageIDs(images []*sdk.Image) []string {
+	ids := make([]string, len(images))
+	for i, image := range images {
+		ids[i] = *image.Id
+	}
+	return ids
 }
 
 // check if b is wholly contained in a.

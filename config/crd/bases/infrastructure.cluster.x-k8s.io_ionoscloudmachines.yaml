@@ -138,8 +138,9 @@ spec:
                         minLength: 1
                         type: string
                       selector:
-                        description: Selector is used to look up images by name and
-                          labels.
+                        description: |-
+                          Selector is used to look up images by name and labels.
+                          Only images in the IonosCloudCluster's location are considered.
                         properties:
                           matchLabels:
                             additionalProperties:

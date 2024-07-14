@@ -223,6 +223,7 @@ type ImageSpec struct {
 	ID string `json:"id,omitempty"`
 
 	// Selector is used to look up images by name and labels.
+	// Only images in the IonosCloudCluster's location are considered.
 	//
 	//+optional
 	Selector *ImageSelector `json:"selector,omitempty"`

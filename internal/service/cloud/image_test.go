@@ -22,6 +22,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -73,9 +74,9 @@ func (s *imageTestSuite) TestLookupImageTooManyMatches() {
 			makeTestLabel("image", "image-3", "test", "image"),
 		}, nil,
 	).Once()
-	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(makeTestImage("img-foo-v1.2.3"), nil).Once()
-	s.ionosClient.EXPECT().GetImage(s.ctx, "image-2").Return(makeTestImage("img-foo-"+*s.capiMachine.Spec.Version), nil).Once()
-	s.ionosClient.EXPECT().GetImage(s.ctx, "image-3").Return(makeTestImage("img-bar-"+*s.capiMachine.Spec.Version), nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(makeTestImage("image-1", "img-foo-v1.2.3", "test"), nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-2").Return(s.makeTestImage("image-2", "img-foo-"), nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-3").Return(s.makeTestImage("image-3", "img-bar-"), nil).Once()
 
 	_, err := s.service.lookupImageID(s.ctx, s.machineScope)
 	typedErr := new(tooManyImagesMatchError)
@@ -90,59 +91,77 @@ func (s *imageTestSuite) TestLookupImageOK() {
 			makeTestLabel("image", "image-1", "test", "image"),
 		}, nil,
 	).Once()
-	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(makeTestImage("img-"+*s.capiMachine.Spec.Version), nil).Once()
+
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "img-"), nil).Once()
 
 	imageID, err := s.service.lookupImageID(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.Equal("image-1", imageID)
 }
 
-func TestFilterImagesByName(t *testing.T) {
-	ctx := context.Background()
-	ionosClient := clienttest.NewMockClient(t)
-	imageIDs := []string{"image-1", "image-2", "image-3"}
-	ionosClient.EXPECT().GetImage(ctx, "image-1").Return(makeTestImage("img-foo-v1.1.qcow2"), nil).Twice()
-	ionosClient.EXPECT().GetImage(ctx, "image-2").Return(makeTestImage("img-foo-v1.2.qcow2"), nil).Twice()
-	ionosClient.EXPECT().GetImage(ctx, "image-3").Return(makeTestImage("img-bar-1.2.3.qcow2"), nil).Twice()
-
-	gotIDs, err := filterImagesByName(ctx, ionosClient, imageIDs, "1.2")
-	require.NoError(t, err)
-	require.Equal(t, []string{"image-2", "image-3"}, gotIDs)
-
-	gotIDs, err = filterImagesByName(ctx, ionosClient, imageIDs, "")
-	require.NoError(t, err)
-	require.Equal(t, imageIDs, gotIDs)
+func (s *imageTestSuite) makeTestImage(id, namePrefix string) *sdk.Image {
+	return makeTestImage(id, namePrefix+*s.capiMachine.Spec.Version, s.infraCluster.Spec.Location)
 }
 
-func TestFilterImagesBySelect(t *testing.T) {
-	labels := []sdk.Label{
-		makeTestLabel("image", "image-1", "foo", "bar"),
+func TestFilterImagesByName(t *testing.T) {
+	images := []*sdk.Image{
+		makeTestImage("image-1", "img-foo-v1.1.qcow2", "test"),
+		makeTestImage("image-2", "img-foo-v1.2.qcow2", "test"),
+		makeTestImage("image-3", "img-bar-1.2.3.qcow2", "test"),
+	}
+	expectImages := []*sdk.Image{
+		makeTestImage("image-2", "img-foo-v1.2.qcow2", "test"),
+		makeTestImage("image-3", "img-bar-1.2.3.qcow2", "test"),
+	}
+
+	require.Equal(t, expectImages, filterImagesByName(images, "1.2"))
+	require.Equal(t, images, filterImagesByName(images, ""))
+}
+
+func TestLookupImagesBySelector(t *testing.T) {
+	ctx := context.Background()
+	ionosClient := clienttest.NewMockClient(t)
+	ionosClient.EXPECT().ListLabels(ctx).Return([]sdk.Label{
+		// wrong resource type
 		makeTestLabel("server", "server-1", "foo", "bar"),
-		makeTestLabel("image", "image-1", "baz", "qux"),
 		makeTestLabel("volume", "volume-1", "foo", "bar"),
+		// no match
+		makeTestLabel("image", "image-1", "baz", "qux"),
 		makeTestLabel("image", "image-2", "baz", "qux"),
 		makeTestLabel("image", "image-2", "lazy", "brown"),
-		makeTestLabel("image", "image-1", "fox", "jumps"),
-		makeTestLabel("image", "image-2", "fox", "jumps"),
+		// partial matche
 		makeTestLabel("image", "image-1", "over", "the"),
-	}
+		makeTestLabel("image", "image-2", "fox", "jumps"),
+		// full match
+		makeTestLabel("image", "image-1", "foo", "bar"),
+		makeTestLabel("image", "image-4", "foo", "bar"),
+		makeTestLabel("image", "image-1", "fox", "jumps"),
+		makeTestLabel("image", "image-4", "fox", "jumps"),
+	}, nil).Once()
+	ionosClient.EXPECT().GetImage(ctx, "image-1").Return(makeTestImage("image-1", "img-foo-v1.1.qcow2", "loc-1"), nil).Once()
+	ionosClient.EXPECT().GetImage(ctx, "image-4").Return(makeTestImage("image-4", "img-foo-v1.1.qcow2", "loc-2"), nil).Once()
+
 	selector := &infrav1.ImageSelector{
 		MatchLabels: map[string]string{
 			"foo": "bar",
 			"fox": "jumps",
 		},
 	}
-	expectIDs := []string{"image-1"}
 
-	ids := filterImagesBySelector(labels, selector)
-	slices.Sort(ids)
-	require.Equal(t, expectIDs, ids)
+	expectImages := []*sdk.Image{makeTestImage("image-1", "img-foo-v1.1.qcow2", "loc-1")}
+
+	svc, _ := NewService(ionosClient, logr.Discard())
+	images, err := svc.lookupImagesBySelector(ctx, "loc-1", selector)
+	require.NoError(t, err)
+	require.Equal(t, expectImages, images)
 }
 
-func makeTestImage(name string) *sdk.Image {
+func makeTestImage(id, name, location string) *sdk.Image {
 	return &sdk.Image{
+		Id: &id,
 		Properties: &sdk.ImageProperties{
-			Name: &name,
+			Name:     &name,
+			Location: &location,
 		},
 	}
 }
