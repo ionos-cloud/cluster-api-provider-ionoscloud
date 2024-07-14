@@ -94,7 +94,7 @@ Now, you can copy the ID of your image and set it as the `IONOSCLOUD_MACHINE_IMA
 
 The provider is able to look up images by label and name for `IonosCloudMachine` resources that make use of an image
 selector.
-By default the Kubernetes version of the parent Machine is used, so it's safe to re-use label keys and values for images
+By default the Kubernetes version of the parent Machine is used, so it's safe to reuse label keys and values for images
 that contain the version in their name.
 
 Currently it's only possible to label images using the REST API:

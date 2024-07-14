@@ -94,11 +94,9 @@ func filterImagesByName(ctx context.Context, client ionoscloud.Client, imageIDs 
 			return nil, err
 		}
 
-		if !strings.Contains(*image.Properties.Name, namePart) {
-			continue
+		if strings.Contains(*image.Properties.Name, namePart) {
+			result = append(result, imageID)
 		}
-
-		result = append(result, imageID)
 	}
 
 	return result, nil
