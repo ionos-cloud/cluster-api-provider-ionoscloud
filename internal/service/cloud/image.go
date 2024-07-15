@@ -51,7 +51,12 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 		return imageSpec.ID, nil
 	}
 
-	images, err := s.lookupImagesBySelector(ctx, ms.ClusterScope.Location(), imageSpec.Selector)
+	location, err := s.getLocation(ctx, ms)
+	if err != nil {
+		return "", err
+	}
+
+	images, err := s.lookupImagesBySelector(ctx, location, imageSpec.Selector)
 	if err != nil {
 		return "", err
 	}

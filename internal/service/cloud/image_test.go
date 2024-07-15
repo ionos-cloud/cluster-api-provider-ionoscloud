@@ -61,6 +61,7 @@ func (s *imageTestSuite) TestLookupImageNoMatch() {
 	s.ionosClient.EXPECT().ListLabels(s.ctx).Return(
 		[]sdk.Label{makeTestLabel("image", "image-1", "no", "match")}, nil,
 	).Once()
+	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
 
 	_, err := s.service.lookupImageID(s.ctx, s.machineScope)
 	typedErr := new(imageMatchError)
@@ -76,9 +77,10 @@ func (s *imageTestSuite) TestLookupImageTooManyMatches() {
 			makeTestLabel("image", "image-3", "test", "image"),
 		}, nil,
 	).Once()
+	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
 	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(makeTestImage("image-1", "img-foo-v1.2.3", "test"), nil).Once()
-	s.ionosClient.EXPECT().GetImage(s.ctx, "image-2").Return(s.makeTestImage("image-2", "img-foo-"), nil).Once()
-	s.ionosClient.EXPECT().GetImage(s.ctx, "image-3").Return(s.makeTestImage("image-3", "img-bar-"), nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-2").Return(s.makeTestImage("image-2", "img-foo-", "loc"), nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-3").Return(s.makeTestImage("image-3", "img-bar-", "loc"), nil).Once()
 
 	_, err := s.service.lookupImageID(s.ctx, s.machineScope)
 	typedErr := new(imageMatchError)
@@ -93,7 +95,8 @@ func (s *imageTestSuite) TestLookupImageMissingMachineVersion() {
 			makeTestLabel("image", "image-1", "test", "image"),
 		}, nil,
 	).Once()
-	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "test"), nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "test", "loc"), nil).Once()
+	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
 
 	s.capiMachine.Spec.Version = ptr.To("")
 
@@ -107,7 +110,8 @@ func (s *imageTestSuite) TestLookupImageIgnoreMissingMachineVersion() {
 			makeTestLabel("image", "image-1", "test", "image"),
 		}, nil,
 	).Once()
-	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "test"), nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "test", "loc"), nil).Once()
+	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
 
 	s.infraMachine.Spec.Disk.Image.Selector.UseMachineVersion = ptr.To(false)
 	s.capiMachine.Spec.Version = ptr.To("")
@@ -123,16 +127,16 @@ func (s *imageTestSuite) TestLookupImageOK() {
 			makeTestLabel("image", "image-1", "test", "image"),
 		}, nil,
 	).Once()
-
-	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "img-"), nil).Once()
+	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "img-", "loc"), nil).Once()
 
 	imageID, err := s.service.lookupImageID(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.Equal("image-1", imageID)
 }
 
-func (s *imageTestSuite) makeTestImage(id, namePrefix string) *sdk.Image {
-	return makeTestImage(id, namePrefix+*s.capiMachine.Spec.Version, s.infraCluster.Spec.Location)
+func (s *imageTestSuite) makeTestImage(id, namePrefix, location string) *sdk.Image {
+	return makeTestImage(id, namePrefix+*s.capiMachine.Spec.Version, location)
 }
 
 func TestFilterImagesByName(t *testing.T) {
