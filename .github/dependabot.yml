@@ -8,11 +8,14 @@ updates:
   commit-message:
     prefix: ":seedling:"
   groups:
-    kubernetes:
+    kubernetes-major-minor:
       patterns:
-      - k8s.io/api
-      - k8s.io/apimachinery
-      - k8s.io/client-go
+      - k8s.io/*
+      update-types: ["major", "minor"]
+    kubernetes-patches:
+      patterns:
+      - k8s.io/*
+      update-types: ["patch"]
     cluster-api:
       patterns:
       - sigs.k8s.io/cluster-api
