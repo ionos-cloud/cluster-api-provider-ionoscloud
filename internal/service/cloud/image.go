@@ -65,11 +65,7 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 		images = filterImagesByName(images, version)
 	}
 
-	if len(images) == 0 {
-		return "", imageMatchError{selector: imageSpec.Selector}
-	}
-
-	if len(images) > 1 {
+	if n := len(images); n != 1 {
 		return "", imageMatchError{imageIDs: getImageIDs(images), selector: imageSpec.Selector}
 	}
 
