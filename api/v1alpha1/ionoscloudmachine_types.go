@@ -218,7 +218,6 @@ type Volume struct {
 type ImageSpec struct {
 	// ID is the ID of the image to use for the VM. Has precedence over selector.
 	//
-	//+kubebuilder:validation:MinLength=1
 	//+optional
 	ID string `json:"id,omitempty"`
 
@@ -232,6 +231,8 @@ type ImageSpec struct {
 // ImageSelector defines label selectors for looking up images.
 type ImageSelector struct {
 	// MatchLabels is a map of key/value pairs.
+	//
+	//+kubebuilder:validation:MinProperties=1
 	MatchLabels map[string]string `json:"matchLabels"`
 
 	// UseMachineVersion indicates whether to use the parent Machine's version field to look up image names.

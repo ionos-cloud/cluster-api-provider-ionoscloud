@@ -135,7 +135,6 @@ spec:
                       id:
                         description: ID is the ID of the image to use for the VM.
                           Has precedence over selector.
-                        minLength: 1
                         type: string
                       selector:
                         description: |-
@@ -146,6 +145,7 @@ spec:
                             additionalProperties:
                               type: string
                             description: MatchLabels is a map of key/value pairs.
+                            minProperties: 1
                             type: object
                           useMachineVersion:
                             default: true
