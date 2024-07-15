@@ -69,7 +69,7 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 		return "", imageMatchError{imageIDs: getImageIDs(images), selector: imageSpec.Selector}
 	}
 
-	return *images[0].Id, nil
+	return ptr.Deref(images[0].GetId(), ""), nil
 }
 
 func (s *Service) lookupImagesBySelector(
@@ -84,15 +84,17 @@ func (s *Service) lookupImagesBySelector(
 	imageLabelMap := make(map[string]map[string]string)
 
 	for _, label := range resourceLabels {
-		if *label.Properties.ResourceType != "image" {
+		if ptr.Deref(label.GetProperties().GetResourceType(), "") != "image" {
 			continue
 		}
 
-		id := *label.Properties.ResourceId
+		id := ptr.Deref(label.GetProperties().GetResourceId(), "")
 		if _, ok := imageLabelMap[id]; !ok {
 			imageLabelMap[id] = make(map[string]string)
 		}
-		imageLabelMap[id][*label.Properties.Key] = *label.Properties.Value
+		key := ptr.Deref(label.GetProperties().GetKey(), "")
+		value := ptr.Deref(label.GetProperties().GetValue(), "")
+		imageLabelMap[id][key] = value
 	}
 
 	var imageIDs []string
@@ -109,7 +111,7 @@ func (s *Service) lookupImagesBySelector(
 			return nil, err
 		}
 
-		if *image.Properties.Location == location {
+		if ptr.Deref(image.GetProperties().GetLocation(), "") == location {
 			images = append(images, image)
 		}
 	}
@@ -121,7 +123,7 @@ func filterImagesByName(images []*sdk.Image, namePart string) []*sdk.Image {
 	var result []*sdk.Image
 
 	for _, image := range images {
-		if strings.Contains(*image.Properties.Name, namePart) {
+		if strings.Contains(ptr.Deref(image.GetProperties().GetName(), ""), namePart) {
 			result = append(result, image)
 		}
 	}
