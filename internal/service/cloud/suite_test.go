@@ -73,6 +73,7 @@ const (
 	exampleSecondaryServerID = "dd426c63-cd1d-4c02-aca3-13b4a27c2ebd"
 	exampleRequestPath       = "/test"
 	exampleLocation          = "de/txl"
+	exampleDatacenterID      = "ccf27092-34e8-499e-a2f5-2bdee9d34a12"
 )
 
 type ServiceTestSuite struct {
@@ -369,4 +370,8 @@ func (s *ServiceTestSuite) mockGetServerCall(serverID string) *clienttest.MockCl
 
 func (s *ServiceTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
 	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
+}
+
+func (s *ServiceTestSuite) mockGetDatacenterLocationByIDCall(datacenterID string) *clienttest.MockClient_GetDatacenterLocationByID_Call {
+	return s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, datacenterID)
 }

@@ -455,6 +455,63 @@ func (_c *MockClient_DeleteVolume_Call) RunAndReturn(run func(context.Context, s
 	return _c
 }
 
+// GetDatacenterLocationByID provides a mock function with given fields: ctx, datacenterID
+func (_m *MockClient) GetDatacenterLocationByID(ctx context.Context, datacenterID string) (string, error) {
+	ret := _m.Called(ctx, datacenterID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDatacenterLocationByID")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return rf(ctx, datacenterID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, datacenterID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, datacenterID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_GetDatacenterLocationByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDatacenterLocationByID'
+type MockClient_GetDatacenterLocationByID_Call struct {
+	*mock.Call
+}
+
+// GetDatacenterLocationByID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+func (_e *MockClient_Expecter) GetDatacenterLocationByID(ctx interface{}, datacenterID interface{}) *MockClient_GetDatacenterLocationByID_Call {
+	return &MockClient_GetDatacenterLocationByID_Call{Call: _e.mock.On("GetDatacenterLocationByID", ctx, datacenterID)}
+}
+
+func (_c *MockClient_GetDatacenterLocationByID_Call) Run(run func(ctx context.Context, datacenterID string)) *MockClient_GetDatacenterLocationByID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_GetDatacenterLocationByID_Call) Return(_a0 string, _a1 error) *MockClient_GetDatacenterLocationByID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_GetDatacenterLocationByID_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockClient_GetDatacenterLocationByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetIPBlock provides a mock function with given fields: ctx, ipBlockID
 func (_m *MockClient) GetIPBlock(ctx context.Context, ipBlockID string) (*ionoscloud.IpBlock, error) {
 	ret := _m.Called(ctx, ipBlockID)
