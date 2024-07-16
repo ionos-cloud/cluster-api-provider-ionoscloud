@@ -22,28 +22,28 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-type haProvisioner struct{}
+type kubeVIPProvisioner struct{}
 
-func (*haProvisioner) PrepareEnvironment(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+func (*kubeVIPProvisioner) PrepareEnvironment(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }
 
-func (*haProvisioner) ProvisionLoadBalancer(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+func (*kubeVIPProvisioner) ProvisionLoadBalancer(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }
 
-func (*haProvisioner) PostProvision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+func (*kubeVIPProvisioner) PostProvision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }
 
-func (*haProvisioner) PrepareCleanup(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+func (*kubeVIPProvisioner) PrepareCleanup(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }
 
-func (*haProvisioner) DestroyLoadBalancer(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+func (*kubeVIPProvisioner) DestroyLoadBalancer(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }
 
-func (*haProvisioner) CleanupResources(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+func (*kubeVIPProvisioner) CleanupResources(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }

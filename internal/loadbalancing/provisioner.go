@@ -45,14 +45,14 @@ type Provisioner interface {
 }
 
 // NewProvisioner creates a new load balancer provisioner, based on the load balancer type.
-func NewProvisioner(_ *cloud.Service, lbType infrav1.LoadBalancerType) (Provisioner, error) {
-	switch lbType {
-	case infrav1.LoadBalancerTypeHA:
-		return &haProvisioner{}, nil
-	case infrav1.LoadBalancerTypeNLB:
+func NewProvisioner(_ *cloud.Service, source infrav1.LoadBalancerSource) (Provisioner, error) {
+	switch {
+	case source.KubeVIP != nil:
+		return &kubeVIPProvisioner{}, nil
+	case source.NLB != nil:
 		return &nlbProvisioner{}, nil
-	case infrav1.LoadBalancerTypeExternal:
+	case source.External != nil:
 		return &externalProvisioner{}, nil
 	}
-	return nil, fmt.Errorf("unknown load balancer type %q", lbType)
+	return nil, fmt.Errorf("unknown load balancer config %#v", source)
 }

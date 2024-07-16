@@ -181,7 +181,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		}
 
 		// TODO: This logic needs to move to another controller.
-		// Reserving IP Blocks only makes sense for LB implementations or HA setup with kube-vip.
+		// Reserving IP Blocks only makes sense for LB implementations or KubeVIP setup with kube-vip.
 		//
 		// As we are currently expecting to supply the control plane endpoint manually,
 		// logic-wise nothing changes for us. As soon as we have implemented

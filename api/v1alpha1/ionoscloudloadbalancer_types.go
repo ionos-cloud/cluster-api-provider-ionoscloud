@@ -34,28 +34,8 @@ const (
 	InvalidEndpointConfigurationReason = "InvalidEndpointConfiguration"
 )
 
-// LoadBalancerType represents the type of load balancer to create.
-type LoadBalancerType string
-
-const (
-	// LoadBalancerTypeHA represents a high availability load balancer.
-	// Using this load balancer will create a kube-vip setup for the control plane nodes.
-	LoadBalancerTypeHA LoadBalancerType = "HA"
-
-	// LoadBalancerTypeNLB represents a network load balancer.
-	// An NLB load balancer will be set up in the datacenter of the control plane nodes.
-	LoadBalancerTypeNLB LoadBalancerType = "NLB"
-
-	// LoadBalancerTypeExternal represents an external load balancer.
-	// External load balancers need to be manually set up by the user.
-	//
-	// Using this type requires the user to provide the LoadBalancerEndpoint.
-	LoadBalancerTypeExternal LoadBalancerType = "External"
-)
-
 // IonosCloudLoadBalancerSpec defines the desired state of IonosCloudLoadBalancer.
-// +kubebuilder:validation:XValidation:rule=`self.type != "External" || (self.type == "External" && (has(self.loadBalancerEndpoint) && self.loadBalancerEndpoint.host != "" && self.loadBalancerEndpoint.port != 0))`,message=`external load balancers require a valid endpoint and port`
-// +kubebuilder:validation:XValidation:rule=`self.type != "NLB" || (self.type == "NLB" && has(self.datacenterID))`,message=`type NLB requires a datacenterID`
+// +kubebuilder:validation:XValidation:rule=`!has(self.external) || has(self.external) && has(self.loadBalancerEndpoint) && size(self.loadBalancerEndpoint.host) > 0 && self.loadBalancerEndpoint.port > 0`,message="external load balancers require a load balancer endpoint"
 type IonosCloudLoadBalancerSpec struct {
 	// LoadBalancerEndpoint represents the endpoint of the load balanced control plane.
 	// If the endpoint isn't provided, the controller will reserve a new public IP address.
@@ -66,21 +46,44 @@ type IonosCloudLoadBalancerSpec struct {
 	//+kubebuilder:validation:XValidation:rule="self.port == oldSelf.port || oldSelf.port == 0",message="control plane endpoint port cannot be updated"
 	LoadBalancerEndpoint clusterv1.APIEndpoint `json:"loadBalancerEndpoint,omitempty"`
 
-	// Type is the type of load balancer to create.
-	// defaults to HA.
-	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="load balancer type cannot be updated"
-	//+kubebuilder:validation:Enum=HA;NLB;External
-	//+kubebuilder:default=HA
-	//+required
-	Type LoadBalancerType `json:"type"`
+	// LoadBalancerSource is the actual load balancer definition.
+	LoadBalancerSource `json:",inline"`
+}
 
+// LoadBalancerSource defines the source of the load balancer.
+type LoadBalancerSource struct {
+	// NLB is used for setting up a network load balancer.
+	//+optional
+	NLB *NLBSpec `json:"nlb,omitempty"`
+
+	// KubeVIP is used for setting up a highly available control plane.
+	//+optional
+	KubeVIP *KubeVIPSpec `json:"kubeVIP,omitempty"`
+
+	// External is used for making use of an external load balancer.
+	//+optional
+	External *ExternalLoadBalancerSpec `json:"external,omitempty"`
+}
+
+// NLBSpec defines the spec for a network load balancer.
+type NLBSpec struct {
 	// DatacenterID is the ID of the datacenter where the load balancer should be created.
 	// This field is required for NLB load balancers and needs to match the datacenter ID
 	// of the control plane machines.
-	//+kubebuilder:validation:XValidation:rule="self == oldSelf || size(self) == 0",message="datacenterID cannot be updated"
-	//+optional
-	DatacenterID string `json:"datacenterID,omitempty"`
+	//+kubebuilder:validation:Format=uuid
+	//+required
+	DatacenterID string `json:"datacenterID"`
 }
+
+// KubeVIPSpec defines the spec for a high availability load balancer.
+type KubeVIPSpec struct {
+	// Image is the container image to use for the KubeVIP static pod.
+	Image string `json:"image,omitempty"`
+}
+
+// ExternalLoadBalancerSpec defines the spec for an external load balancer.
+// External load balancers need to be manually set up by the user.
+type ExternalLoadBalancerSpec struct{}
 
 // IonosCloudLoadBalancerStatus defines the observed state of IonosCloudLoadBalancer.
 type IonosCloudLoadBalancerStatus struct {

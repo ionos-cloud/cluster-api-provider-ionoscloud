@@ -76,9 +76,7 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 	ionosCloudLoadBalancer *infrav1.IonosCloudLoadBalancer,
 ) (_ ctrl.Result, retErr error) {
 	logger := log.FromContext(ctx,
-		"ionoscloudloadbalancer", klog.KObj(ionosCloudLoadBalancer),
-		"type", ionosCloudLoadBalancer.Spec.Type,
-	)
+		"ionoscloudloadbalancer", klog.KObj(ionosCloudLoadBalancer))
 	ctx = log.IntoContext(ctx, logger)
 
 	logger.V(4).Info("Reconciling IonosCloudLoadBalancer")
@@ -137,7 +135,7 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 		return ctrl.Result{}, err
 	}
 
-	prov, err := loadbalancing.NewProvisioner(cloudService, ionosCloudLoadBalancer.Spec.Type)
+	prov, err := loadbalancing.NewProvisioner(cloudService, ionosCloudLoadBalancer.Spec.LoadBalancerSource)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

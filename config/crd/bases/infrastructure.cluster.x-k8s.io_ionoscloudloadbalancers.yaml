@@ -45,15 +45,18 @@ spec:
           spec:
             description: IonosCloudLoadBalancerSpec defines the desired state of IonosCloudLoadBalancer.
             properties:
-              datacenterID:
-                description: |-
-                  DatacenterID is the ID of the datacenter where the load balancer should be created.
-                  This field is required for NLB load balancers and needs to match the datacenter ID
-                  of the control plane machines.
-                type: string
-                x-kubernetes-validations:
-                - message: datacenterID cannot be updated
-                  rule: self == oldSelf || size(self) == 0
+              external:
+                description: External is used for making use of an external load balancer.
+                type: object
+              kubeVIP:
+                description: KubeVIP is used for setting up a highly available control
+                  plane.
+                properties:
+                  image:
+                    description: Image is the container image to use for the KubeVIP
+                      static pod.
+                    type: string
+                type: object
               loadBalancerEndpoint:
                 description: |-
                   LoadBalancerEndpoint represents the endpoint of the load balanced control plane.
@@ -79,29 +82,25 @@ spec:
                   rule: self.host == oldSelf.host || oldSelf.host == ''
                 - message: control plane endpoint port cannot be updated
                   rule: self.port == oldSelf.port || oldSelf.port == 0
-              type:
-                default: HA
-                description: |-
-                  Type is the type of load balancer to create.
-                  defaults to HA.
-                enum:
-                - HA
-                - NLB
-                - External
-                type: string
-                x-kubernetes-validations:
-                - message: load balancer type cannot be updated
-                  rule: self == oldSelf
-            required:
-            - type
+              nlb:
+                description: NLB is used for setting up a network load balancer.
+                properties:
+                  datacenterID:
+                    description: |-
+                      DatacenterID is the ID of the datacenter where the load balancer should be created.
+                      This field is required for NLB load balancers and needs to match the datacenter ID
+                      of the control plane machines.
+                    format: uuid
+                    type: string
+                required:
+                - datacenterID
+                type: object
             type: object
             x-kubernetes-validations:
-            - message: external load balancers require a valid endpoint and port
-              rule: self.type != "External" || (self.type == "External" && (has(self.loadBalancerEndpoint)
-                && self.loadBalancerEndpoint.host != "" && self.loadBalancerEndpoint.port
-                != 0))
-            - message: type NLB requires a datacenterID
-              rule: self.type != "NLB" || (self.type == "NLB" && has(self.datacenterID))
+            - message: external load balancers require a load balancer endpoint
+              rule: '!has(self.external) || has(self.external) && has(self.loadBalancerEndpoint)
+                && size(self.loadBalancerEndpoint.host) > 0 && self.loadBalancerEndpoint.port
+                > 0'
           status:
             description: IonosCloudLoadBalancerStatus defines the observed state of
               IonosCloudLoadBalancer.

@@ -36,133 +36,101 @@ var exampleEndpoint = clusterv1.APIEndpoint{
 	Port: 6443,
 }
 
-func defaultLoadBalancer() *IonosCloudLoadBalancer {
+func defaultLoadBalancer(source LoadBalancerSource) *IonosCloudLoadBalancer {
 	return &IonosCloudLoadBalancer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-loadbalancer",
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: IonosCloudLoadBalancerSpec{
-			Type: LoadBalancerTypeHA,
+			LoadBalancerSource: source,
 		},
 	}
 }
 
 var _ = Describe("IonosCloudLoadBalancer", func() {
 	AfterEach(func() {
-		err := k8sClient.Delete(context.Background(), defaultLoadBalancer())
+		err := k8sClient.Delete(context.Background(), defaultLoadBalancer(LoadBalancerSource{}))
 		Expect(client.IgnoreNotFound(err)).To(Succeed())
 	})
 
 	Context("Create", func() {
-		When("Setting the type in the default load balancer", func() {
-			DescribeTable("Should fail for incorrect types",
-				func(lbType LoadBalancerType) {
-					dlb := defaultLoadBalancer()
-					dlb.Spec.Type = lbType
-					Expect(k8sClient.Create(context.Background(), dlb)).To(Not(Succeed()))
-				},
-				Entry("Fail for unknown", LoadBalancerType("unknown")),
-				Entry("Fail for empty", LoadBalancerType("")),
-			)
-		})
-		When("Using a HA load balancer", func() {
+		When("Using a KubeVIP load balancer", func() {
 			It("Should succeed when providing a datacenter ID", func() {
-				dlb := defaultLoadBalancer()
-				dlb.Spec.DatacenterID = exampleDatacenterID
+				dlb := defaultLoadBalancer(LoadBalancerSource{KubeVIP: &KubeVIPSpec{}})
 				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 			})
 			It("Should succeed with an endpoint and a port", func() {
-				dlb := defaultLoadBalancer()
+				dlb := defaultLoadBalancer(LoadBalancerSource{KubeVIP: &KubeVIPSpec{}})
 				dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
 				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 			})
 		})
 		When("Using an NLB load balancer", func() {
 			It("Should fail when not providing a datacenter ID", func() {
-				dlb := defaultLoadBalancer()
-				dlb.Spec.Type = LoadBalancerTypeNLB
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{}})
 				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
 			})
 			It("Should succeed when providing a datacenter ID", func() {
-				dlb := defaultLoadBalancer()
-				dlb.Spec.Type = LoadBalancerTypeNLB
-				dlb.Spec.DatacenterID = exampleDatacenterID
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
 				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 			})
 			It("Should succeed providing an endpoint and a port", func() {
-				dlb := defaultLoadBalancer()
-				dlb.Spec.Type = LoadBalancerTypeNLB
-				dlb.Spec.DatacenterID = exampleDatacenterID
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
 				dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
 				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 			})
 			It("Should fail when providing a host and a port without a datacenter ID", func() {
-				dlb := defaultLoadBalancer()
-				dlb.Spec.Type = LoadBalancerTypeNLB
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{}})
 				dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
 				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
 			})
 		})
 		When("Using an external load balancer", func() {
 			It("Should fail when not providing an endpoint", func() {
-				dlb := defaultLoadBalancer()
-				dlb.Spec.Type = LoadBalancerTypeExternal
+				dlb := defaultLoadBalancer(LoadBalancerSource{External: &ExternalLoadBalancerSpec{}})
 				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
 			})
 			It("Should fail when providing an empty endpoint", func() {
-				dlb := defaultLoadBalancer()
-				dlb.Spec.Type = LoadBalancerTypeExternal
+				dlb := defaultLoadBalancer(LoadBalancerSource{External: &ExternalLoadBalancerSpec{}})
 				dlb.Spec.LoadBalancerEndpoint = clusterv1.APIEndpoint{}
 				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
 			})
 			It("Should fail when providing an endpoint without a port", func() {
-				dlb := defaultLoadBalancer()
-				dlb.Spec.Type = LoadBalancerTypeExternal
+				dlb := defaultLoadBalancer(LoadBalancerSource{External: &ExternalLoadBalancerSpec{}})
 				dlb.Spec.LoadBalancerEndpoint = clusterv1.APIEndpoint{
 					Host: "example.com",
 				}
 				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
 			})
 			It("Should fail when providing an endpoint without a host", func() {
-				dlb := defaultLoadBalancer()
-				dlb.Spec.Type = LoadBalancerTypeExternal
+				dlb := defaultLoadBalancer(LoadBalancerSource{External: &ExternalLoadBalancerSpec{}})
 				dlb.Spec.LoadBalancerEndpoint = clusterv1.APIEndpoint{
 					Port: 6443,
 				}
 				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
 			})
 			It("Should succeed when providing an endpoint and a port", func() {
-				dlb := defaultLoadBalancer()
-				dlb.Spec.Type = LoadBalancerTypeExternal
+				dlb := defaultLoadBalancer(LoadBalancerSource{External: &ExternalLoadBalancerSpec{}})
 				dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
 				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 			})
 		})
-	})
-	Context("Update", func() {
-		It("Should fail when updating the type in a load balancer", func() {
-			dlb := defaultLoadBalancer()
-			Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
+		Context("Update", func() {
+			It("Should fail when updating the datacenter ID", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
+				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 
-			dlb.Spec.Type = LoadBalancerTypeNLB
-			Expect(k8sClient.Update(context.Background(), dlb)).NotTo(Succeed())
-		})
-		It("Should fail when updating the datacenter ID", func() {
-			dlb := defaultLoadBalancer()
-			dlb.Spec.DatacenterID = exampleDatacenterID
-			Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
+				dlb.Spec.NLB.DatacenterID = "new-datacenter-id"
+				Expect(k8sClient.Update(context.Background(), dlb)).NotTo(Succeed())
+			})
+			It("Should succeed creating a KubeVIP load balancer with an empty endpoint and updating it", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{KubeVIP: &KubeVIPSpec{}})
+				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 
-			dlb.Spec.DatacenterID = "2fe3b4e3d-3b0e-4e6c-9e3e-4f3c9e3e4f3c"
-			Expect(k8sClient.Update(context.Background(), dlb)).NotTo(Succeed())
-		})
-		It("Should succeed creating a HA load balancer with an empty endpoint and updating it", func() {
-			dlb := defaultLoadBalancer()
-			dlb.Spec.LoadBalancerEndpoint = clusterv1.APIEndpoint{}
-			Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
-
-			dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
-			Expect(k8sClient.Update(context.Background(), dlb)).To(Succeed())
+				dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
+				Expect(k8sClient.Update(context.Background(), dlb)).To(Succeed())
+			})
 		})
 	})
 })
