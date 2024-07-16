@@ -207,9 +207,14 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	reconcileSequence := []serviceReconcileStep[scope.Cluster]{
-		{"ReconcileControlPlaneEndpointDeletion", cloudService.ReconcileControlPlaneEndpointDeletion},
+	var reconcileSequence []serviceReconcileStep[scope.Cluster]
+	// TODO: This logic needs to move to another controller.
+	if clusterScope.IonosCluster.Spec.LoadBalancerProviderRef != nil {
+		reconcileSequence = []serviceReconcileStep[scope.Cluster]{
+			{"ReconcileControlPlaneEndpointDeletion", cloudService.ReconcileControlPlaneEndpointDeletion},
+		}
 	}
+
 	for _, step := range reconcileSequence {
 		if requeue, err := step.fn(ctx, clusterScope); err != nil || requeue {
 			if err != nil {
