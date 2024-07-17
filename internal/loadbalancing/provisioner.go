@@ -29,19 +29,11 @@ import (
 
 // Provisioner is an interface for managing the provisioning and cleanup of various types of load balancers.
 type Provisioner interface {
-	// PrepareEnvironment is responsible for setting the preconditions for the load balancer to be created.
-	PrepareEnvironment(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
-	// ProvisionLoadBalancer is responsible for creating the load balancer.
-	ProvisionLoadBalancer(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
-	// PostProvision is responsible for setting the post conditions for the load balancer after it has been created.
-	PostProvision(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
+	// Provision is responsible for creating the load balancer.
+	Provision(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
 
-	// PrepareCleanup is responsible for setting the preconditions for the load balancer to be deleted.
-	PrepareCleanup(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
-	// DestroyLoadBalancer is responsible for deleting the load balancer.
-	DestroyLoadBalancer(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
-	// CleanupResources is responsible for cleaning up any resources associated with the load balancer.
-	CleanupResources(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
+	// Destroy is responsible for deleting the load balancer.
+	Destroy(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
 }
 
 // NewProvisioner creates a new load balancer provisioner, based on the load balancer type.

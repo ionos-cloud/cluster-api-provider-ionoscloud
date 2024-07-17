@@ -186,24 +186,12 @@ func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
 		return ctrl.Result{}, reconcile.TerminalError(err)
 	}
 
-	reconcileSequence := []serviceReconcileStep[scope.LoadBalancer]{
-		// NOTE(lubedacht): Prepare should do things like reserving IP addresses and making sure the load balancer
-		// spec contains a valid endpoint and port.
-		{name: "PrepareEnvironment", fn: prov.PrepareEnvironment},
-		// NOTE(lubedacht): Provision should do the actual provisioning logic for the load balancer if possible
-		{name: "ProvisionLoadBalancer", fn: prov.ProvisionLoadBalancer},
-		// NOTE(lubedacht): PostProvision can do things like setting up the endpoint for the infra cluster.
-		{name: "PostProvision", fn: prov.PostProvision},
-	}
-
-	for _, step := range reconcileSequence {
-		if requeue, err := step.fn(ctx, loadBalancerScope); err != nil || requeue {
-			if err != nil {
-				err = fmt.Errorf("error in step %s: %w", step.name, err)
-			}
-
-			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
+	if requeue, err := prov.Provision(ctx, loadBalancerScope); err != nil || requeue {
+		if err != nil {
+			err = fmt.Errorf("error during provisioning: %w", err)
 		}
+
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 	}
 
 	conditions.MarkTrue(loadBalancerScope.LoadBalancer, infrav1.LoadBalancerReadyCondition)
@@ -220,20 +208,13 @@ func (*IonosCloudLoadBalancerReconciler) reconcileDelete(
 ) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Deleting IonosCloudLoadBalancer")
-	reconcileSequence := []serviceReconcileStep[scope.LoadBalancer]{
-		{name: "PrepareCleanup", fn: prov.PrepareCleanup},
-		{name: "DestroyLoadBalancer", fn: prov.DestroyLoadBalancer},
-		{name: "CleanupResources", fn: prov.CleanupResources},
-	}
 
-	for _, step := range reconcileSequence {
-		if requeue, err := step.fn(ctx, loadBalancerScope); err != nil || requeue {
-			if err != nil {
-				err = fmt.Errorf("error in step %s: %w", step.name, err)
-			}
-
-			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
+	if requeue, err := prov.Destroy(ctx, loadBalancerScope); err != nil || requeue {
+		if err != nil {
+			err = fmt.Errorf("error during cleanup: %w", err)
 		}
+
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 	}
 
 	controllerutil.RemoveFinalizer(loadBalancerScope.LoadBalancer, infrav1.LoadBalancerFinalizer)

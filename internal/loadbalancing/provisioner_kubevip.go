@@ -22,12 +22,12 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-type nlbProvisioner struct{}
+type kubeVIPProvisioner struct{}
 
-func (*nlbProvisioner) Provision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+func (*kubeVIPProvisioner) Provision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }
 
-func (*nlbProvisioner) Destroy(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+func (*kubeVIPProvisioner) Destroy(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }

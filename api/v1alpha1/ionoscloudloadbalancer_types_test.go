@@ -86,36 +86,6 @@ var _ = Describe("IonosCloudLoadBalancer", func() {
 				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
 			})
 		})
-		When("Using an external load balancer", func() {
-			It("Should fail when not providing an endpoint", func() {
-				dlb := defaultLoadBalancer(LoadBalancerSource{External: &ExternalLoadBalancerSpec{}})
-				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
-			})
-			It("Should fail when providing an empty endpoint", func() {
-				dlb := defaultLoadBalancer(LoadBalancerSource{External: &ExternalLoadBalancerSpec{}})
-				dlb.Spec.LoadBalancerEndpoint = clusterv1.APIEndpoint{}
-				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
-			})
-			It("Should fail when providing an endpoint without a port", func() {
-				dlb := defaultLoadBalancer(LoadBalancerSource{External: &ExternalLoadBalancerSpec{}})
-				dlb.Spec.LoadBalancerEndpoint = clusterv1.APIEndpoint{
-					Host: "example.com",
-				}
-				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
-			})
-			It("Should fail when providing an endpoint without a host", func() {
-				dlb := defaultLoadBalancer(LoadBalancerSource{External: &ExternalLoadBalancerSpec{}})
-				dlb.Spec.LoadBalancerEndpoint = clusterv1.APIEndpoint{
-					Port: 6443,
-				}
-				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
-			})
-			It("Should succeed when providing an endpoint and a port", func() {
-				dlb := defaultLoadBalancer(LoadBalancerSource{External: &ExternalLoadBalancerSpec{}})
-				dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
-				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
-			})
-		})
 		Context("Update", func() {
 			It("Should fail when updating the datacenter ID", func() {
 				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})

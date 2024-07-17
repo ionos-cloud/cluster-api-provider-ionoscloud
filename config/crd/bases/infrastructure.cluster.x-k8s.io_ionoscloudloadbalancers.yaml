@@ -45,16 +45,14 @@ spec:
           spec:
             description: IonosCloudLoadBalancerSpec defines the desired state of IonosCloudLoadBalancer.
             properties:
-              external:
-                description: External is used for making use of an external load balancer.
-                type: object
               kubeVIP:
                 description: KubeVIP is used for setting up a highly available control
                   plane.
                 properties:
                   image:
-                    description: Image is the container image to use for the KubeVIP
-                      static pod.
+                    description: |-
+                      Image is the container image to use for the KubeVIP static pod.
+                      If not provided, the default image will be used.
                     type: string
                 type: object
               loadBalancerEndpoint:
@@ -86,12 +84,13 @@ spec:
                 description: NLB is used for setting up a network load balancer.
                 properties:
                   datacenterID:
-                    description: |-
-                      DatacenterID is the ID of the datacenter where the load balancer should be created.
-                      This field is required for NLB load balancers and needs to match the datacenter ID
-                      of the control plane machines.
+                    description: DatacenterID is the ID of the datacenter where the
+                      load balancer should be created.
                     format: uuid
                     type: string
+                    x-kubernetes-validations:
+                    - message: datacenterID is immutable
+                      rule: self == oldSelf
                 required:
                 - datacenterID
                 type: object
