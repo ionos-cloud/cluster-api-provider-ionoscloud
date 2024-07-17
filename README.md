@@ -33,9 +33,9 @@ Started by the Kubernetes Special Interest Group (SIG) Cluster Lifecycle, the Cl
 
 Check out the [Cluster API Quick Start](docs/quickstart.md) to create your first Kubernetes cluster.
 
-<!-- ## Getting Help
+## Getting Help
 
-If you need help with CAPIC, please visit the [#cluster-api-ionoscloud][slack] channel on Slack or open a [GitHub issue](CONTRIBUTING.md). -->
+If you need help with CAPIC, please visit the [#cluster-api-ionoscloud][slack] channel on Slack or open a [GitHub issue](CONTRIBUTING.md).
 
 ## Compatibility
 
@@ -79,7 +79,7 @@ that the only people who can get things done around here are the "maintainers".
 
 <!-- References -->
 
-<!-- [slack]: https://kubernetes.slack.com/messages/??? -->
+[slack]: https://kubernetes.slack.com/archives/C07AHSGV490
 [good_first_issue]: https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22good+first+issue%22
 [bug_report]: https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/issues/new?template=bug_report.md
 [feature_request]: https://github.com/kubernetes-sigs/cluster-api-provider-ionoscloud/issues/new?template=feature_request.md
