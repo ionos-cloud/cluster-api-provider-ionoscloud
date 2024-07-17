@@ -35,7 +35,6 @@ const (
 )
 
 // IonosCloudLoadBalancerSpec defines the desired state of IonosCloudLoadBalancer.
-// +kubebuilder:validation:XValidation:rule=`!has(self.external) || has(self.external) && has(self.loadBalancerEndpoint) && size(self.loadBalancerEndpoint.host) > 0 && self.loadBalancerEndpoint.port > 0`,message="external load balancers require a load balancer endpoint"
 type IonosCloudLoadBalancerSpec struct {
 	// LoadBalancerEndpoint represents the endpoint of the load balanced control plane.
 	// If the endpoint isn't provided, the controller will reserve a new public IP address.

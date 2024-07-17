@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	exampleDatacenterID = "fe3b4e3d-3b0e-4e6c-9e3e-4f3c9e3e4f3c"
+	exampleDatacenterID          = "fe3b4e3d-3b0e-4e6c-9e3e-4f3c9e3e4f3c"
+	exampleSecondaryDatacenterID = "fe3b4e3d-3b0e-4e6c-9e3e-4f3c9e3e4f3d"
 )
 
 var exampleEndpoint = clusterv1.APIEndpoint{
@@ -56,7 +57,7 @@ var _ = Describe("IonosCloudLoadBalancer", func() {
 
 	Context("Create", func() {
 		When("Using a KubeVIP load balancer", func() {
-			It("Should succeed when providing a datacenter ID", func() {
+			It("Should succeed when no image is provided", func() {
 				dlb := defaultLoadBalancer(LoadBalancerSource{KubeVIP: &KubeVIPSpec{}})
 				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 			})
@@ -69,6 +70,10 @@ var _ = Describe("IonosCloudLoadBalancer", func() {
 		When("Using an NLB", func() {
 			It("Should fail when not providing a datacenter ID", func() {
 				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{}})
+				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
+			})
+			It("Should fail when not providing a uuid for the datacenter ID", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: "something-invalid"}})
 				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
 			})
 			It("Should succeed when providing a datacenter ID", func() {
@@ -87,19 +92,24 @@ var _ = Describe("IonosCloudLoadBalancer", func() {
 			})
 		})
 		Context("Update", func() {
-			It("Should fail when updating the datacenter ID", func() {
-				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
-				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
+			When("Using a KubeVIP load balancer", func() {
+				It("Should succeed creating a KubeVIP load balancer with an empty endpoint and updating it", func() {
+					dlb := defaultLoadBalancer(LoadBalancerSource{KubeVIP: &KubeVIPSpec{}})
+					Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 
-				dlb.Spec.NLB.DatacenterID = "new-datacenter-id"
-				Expect(k8sClient.Update(context.Background(), dlb)).NotTo(Succeed())
+					dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
+					Expect(k8sClient.Update(context.Background(), dlb)).To(Succeed())
+				})
 			})
-			It("Should succeed creating a KubeVIP load balancer with an empty endpoint and updating it", func() {
-				dlb := defaultLoadBalancer(LoadBalancerSource{KubeVIP: &KubeVIPSpec{}})
-				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
+			When("Using an NLB", func() {
+				It("Should fail when attempting to update the datacenter ID", func() {
+					dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
+					Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 
-				dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
-				Expect(k8sClient.Update(context.Background(), dlb)).To(Succeed())
+					dlb.Spec.NLB.DatacenterID = exampleSecondaryDatacenterID
+					Expect(k8sClient.Update(context.Background(), dlb)).NotTo(Succeed())
+				})
+
 			})
 		})
 	})

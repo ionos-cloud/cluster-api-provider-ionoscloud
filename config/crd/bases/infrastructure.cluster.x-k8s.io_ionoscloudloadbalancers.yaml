@@ -95,11 +95,6 @@ spec:
                 - datacenterID
                 type: object
             type: object
-            x-kubernetes-validations:
-            - message: external load balancers require a load balancer endpoint
-              rule: '!has(self.external) || has(self.external) && has(self.loadBalancerEndpoint)
-                && size(self.loadBalancerEndpoint.host) > 0 && self.loadBalancerEndpoint.port
-                > 0'
           status:
             description: IonosCloudLoadBalancerStatus defines the observed state of
               IonosCloudLoadBalancer.
