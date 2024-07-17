@@ -200,7 +200,11 @@ func hasRequestTargetType(req sdk.Request, typeName sdk.Type) bool {
 	return false
 }
 
-func scopedFindResource[T any, S scope.Cluster | scope.Machine](
+type scoped interface {
+	scope.Cluster | scope.Machine | scope.LoadBalancer
+}
+
+func scopedFindResource[T any, S scoped](
 	ctx context.Context,
 	s *S,
 	tryLookupResource func(context.Context, *S) (*T, error),

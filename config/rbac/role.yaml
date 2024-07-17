@@ -79,6 +79,33 @@ rules:
 - apiGroups:
   - ipam.cluster.x-k8s.io
   resources:
+  - ionoscloudloadbalancers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - ionoscloudloadbalancers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - ionoscloudloadbalancers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - ionoscloudmachines
   - ipaddressclaims
   verbs:
   - create

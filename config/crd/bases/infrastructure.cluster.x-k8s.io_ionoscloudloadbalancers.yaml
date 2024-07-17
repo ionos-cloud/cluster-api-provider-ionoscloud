@@ -1,0 +1,179 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: ionoscloudloadbalancers.infrastructure.cluster.x-k8s.io
+spec:
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    categories:
+    - cluster-api
+    - ionoscloud
+    kind: IonosCloudLoadBalancer
+    listKind: IonosCloudLoadBalancerList
+    plural: ionoscloudloadbalancers
+    shortNames:
+    - iclb
+    singular: ionoscloudloadbalancer
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: IonosCloudLoadBalancer is the Schema for the ionoscloudloadbalancers
+          API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: IonosCloudLoadBalancerSpec defines the desired state of IonosCloudLoadBalancer.
+            properties:
+              kubeVIP:
+                description: KubeVIP is used for setting up a highly available control
+                  plane.
+                properties:
+                  image:
+                    description: |-
+                      Image is the container image to use for the KubeVIP static pod.
+                      If not provided, the default image will be used.
+                    type: string
+                type: object
+              loadBalancerEndpoint:
+                description: |-
+                  LoadBalancerEndpoint represents the endpoint of the load balanced control plane.
+                  If the endpoint isn't provided, the controller will reserve a new public IP address.
+                  The port is optional and defaults to 6443.
+
+
+                  For external load balancers, the endpoint and port must be provided.
+                properties:
+                  host:
+                    description: The hostname on which the API server is serving.
+                    type: string
+                  port:
+                    description: The port on which the API server is serving.
+                    format: int32
+                    type: integer
+                required:
+                - host
+                - port
+                type: object
+                x-kubernetes-validations:
+                - message: control plane endpoint host cannot be updated
+                  rule: self.host == oldSelf.host || oldSelf.host == ''
+                - message: control plane endpoint port cannot be updated
+                  rule: self.port == oldSelf.port || oldSelf.port == 0
+              nlb:
+                description: NLB is used for setting up a network load balancer.
+                properties:
+                  datacenterID:
+                    description: DatacenterID is the ID of the datacenter where the
+                      load balancer should be created.
+                    format: uuid
+                    type: string
+                    x-kubernetes-validations:
+                    - message: datacenterID is immutable
+                      rule: self == oldSelf
+                required:
+                - datacenterID
+                type: object
+            type: object
+          status:
+            description: IonosCloudLoadBalancerStatus defines the observed state of
+              IonosCloudLoadBalancer.
+            properties:
+              conditions:
+                description: Conditions defines current service state of the IonosCloudLoadBalancer.
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        Last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed. If that is not known, then using the time when
+                        the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        A human readable message indicating details about the transition.
+                        This field may be empty.
+                      type: string
+                    reason:
+                      description: |-
+                        The reason for the condition's last transition in CamelCase.
+                        The specific API may choose whether or not this field is considered a guaranteed API.
+                        This field may not be empty.
+                      type: string
+                    severity:
+                      description: |-
+                        Severity provides an explicit classification of Reason code, so the users or machines can immediately
+                        understand the current situation and act accordingly.
+                        The Severity field MUST be set only when Status=False.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: |-
+                        Type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+                        can be useful (see .node.status.conditions), the ability to deconflict is important.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
+              currentRequest:
+                description: |-
+                  CurrentRequest shows the current provisioning request for any
+                  cloud resource that is being provisioned.
+                properties:
+                  method:
+                    description: Method is the request method
+                    type: string
+                  requestPath:
+                    description: RequestPath is the sub path for the request URL
+                    type: string
+                  state:
+                    description: RequestStatus is the status of the request in the
+                      queue.
+                    enum:
+                    - QUEUED
+                    - RUNNING
+                    - DONE
+                    - FAILED
+                    type: string
+                required:
+                - method
+                - requestPath
+                type: object
+              ready:
+                description: Ready indicates that the load balancer is ready.
+                type: boolean
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
