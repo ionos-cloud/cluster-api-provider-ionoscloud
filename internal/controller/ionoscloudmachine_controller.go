@@ -144,11 +144,11 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 func (r *IonosCloudMachineReconciler) reconcileNormal(
 	ctx context.Context, cloudService *cloud.Service, machineScope *scope.Machine,
 ) (ctrl.Result, error) {
-	log := ctrl.LoggerFrom(ctx)
-	log.V(4).Info("Reconciling IonosCloudMachine")
+	logger := ctrl.LoggerFrom(ctx)
+	logger.V(4).Info("Reconciling IonosCloudMachine")
 
 	if machineScope.HasFailed() {
-		log.Info("Error state detected, skipping reconciliation")
+		logger.Info("Error state detected, skipping reconciliation")
 		return ctrl.Result{}, nil
 	}
 
@@ -170,11 +170,11 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		// proceed with the reconciliation and are stuck in a loop.
 		//
 		// In any case we log the error.
-		log.Error(err, "Error when trying to determine inflight request states")
+		logger.Error(err, "Error when trying to determine inflight request states")
 	}
 
 	if requeue {
-		log.Info("Request is still in progress")
+		logger.Info("Request is still in progress")
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
@@ -201,7 +201,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 func (r *IonosCloudMachineReconciler) reconcileDelete(
 	ctx context.Context, machineScope *scope.Machine, cloudService *cloud.Service,
 ) (ctrl.Result, error) {
-	log := ctrl.LoggerFrom(ctx)
+	logger := ctrl.LoggerFrom(ctx)
 
 	requeue, err := r.checkRequestStates(ctx, machineScope, cloudService)
 	if err != nil {
@@ -210,11 +210,11 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		// proceed with the reconciliation and are stuck in a loop.
 		//
 		// In any case we log the error.
-		log.Error(err, "Error when trying to determine inflight request states")
+		logger.Error(err, "Error when trying to determine inflight request states")
 	}
 
 	if requeue {
-		log.Info("Deletion request is still in progress")
+		logger.Info("Deletion request is still in progress")
 		return ctrl.Result{RequeueAfter: reducedReconcileDuration}, nil
 	}
 
@@ -253,14 +253,15 @@ func (*IonosCloudMachineReconciler) checkRequestStates(
 	machineScope *scope.Machine,
 	cloudService *cloud.Service,
 ) (requeue bool, retErr error) {
-	log := ctrl.LoggerFrom(ctx)
+	logger := ctrl.LoggerFrom(ctx)
 	// check cluster-wide request
 	if req, exists := machineScope.ClusterScope.GetCurrentRequestByDatacenter(machineScope.DatacenterID()); exists {
+		logger.Info("Checking cluster-wide request", "request", req.RequestPath, "method", req.Method)
 		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
 		if err != nil {
 			retErr = fmt.Errorf("could not get request status: %w", err)
 		} else {
-			requeue, retErr = withStatus(status, message, &log,
+			requeue, retErr = withStatus(status, message, &logger,
 				func() error {
 					// remove the request from the status and patch the cluster
 					machineScope.ClusterScope.DeleteCurrentRequestByDatacenter(machineScope.DatacenterID())
@@ -272,15 +273,16 @@ func (*IonosCloudMachineReconciler) checkRequestStates(
 
 	// check machine related request
 	if req := machineScope.IonosMachine.Status.CurrentRequest; req != nil {
+		logger.Info("Checking machine request", "request", req.RequestPath, "method", req.Method)
 		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
 		if err != nil {
 			retErr = errors.Join(retErr, fmt.Errorf("could not get request status: %w", err))
 		} else {
-			requeue, _ = withStatus(status, message, &log,
+			requeue, _ = withStatus(status, message, &logger,
 				func() error {
 					// no need to patch the machine here as it will be patched
 					// after the machine reconciliation is done.
-					log.V(4).Info("Request is done, clearing it from the status")
+					logger.V(4).Info("Request is done, clearing it from the status")
 					machineScope.IonosMachine.DeleteCurrentRequest()
 					return nil
 				},
@@ -298,10 +300,10 @@ func (*IonosCloudMachineReconciler) checkRequestStates(
 }
 
 func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
-	log := ctrl.LoggerFrom(ctx)
+	logger := ctrl.LoggerFrom(ctx)
 	// Make sure the infrastructure is ready.
 	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
-		log.Info("Cluster infrastructure is not ready yet")
+		logger.Info("Cluster infrastructure is not ready yet")
 		conditions.MarkFalse(
 			ms.IonosMachine,
 			infrav1.MachineProvisionedCondition,
@@ -313,7 +315,7 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 
 	// Make sure to wait until the data secret was created
 	if ms.Machine.Spec.Bootstrap.DataSecretName == nil {
-		log.Info("Bootstrap data secret is not available yet")
+		logger.Info("Bootstrap data secret is not available yet")
 		conditions.MarkFalse(
 			ms.IonosMachine,
 			infrav1.MachineProvisionedCondition,

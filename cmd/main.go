@@ -44,8 +44,9 @@ var (
 	enableLeaderElection bool
 	diagnosticOptions    = flags.DiagnosticsOptions{}
 
-	icClusterConcurrency int
-	icMachineConcurrency int
+	icClusterConcurrency      int
+	icMachineConcurrency      int
+	icLoadBalancerConcurrency int
 )
 
 func init() {
@@ -90,21 +91,31 @@ func main() {
 
 	ctx := ctrl.SetupSignalHandler()
 
+	const errMsg = "unable to create controller"
 	if err = iccontroller.NewIonosCloudClusterReconciler(mgr).SetupWithManager(
 		ctx,
 		mgr,
 		controller.Options{MaxConcurrentReconciles: icClusterConcurrency},
 	); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudCluster")
+		setupLog.Error(err, errMsg, "controller", "IonosCloudCluster")
 		os.Exit(1)
 	}
 	if err = iccontroller.NewIonosCloudMachineReconciler(mgr).SetupWithManager(
 		mgr,
 		controller.Options{MaxConcurrentReconciles: icMachineConcurrency},
 	); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
+		setupLog.Error(err, errMsg, "controller", "IonosCloudMachine")
 		os.Exit(1)
 	}
+	if err = iccontroller.NewIonosCloudLoadBalancerReconciler(mgr).SetupWithManager(
+		ctx,
+		mgr,
+		controller.Options{MaxConcurrentReconciles: icLoadBalancerConcurrency},
+	); err != nil {
+		setupLog.Error(err, errMsg, "controller", "IonosCloudLoadBalancer")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -137,4 +148,6 @@ func initFlags() {
 		"Number of IonosCloudClusters to process simultaneously")
 	pflag.IntVar(&icMachineConcurrency, "ionoscloudmachine-concurrency", 1,
 		"Number of IonosCloudMachines to process simultaneously")
+	pflag.IntVar(&icLoadBalancerConcurrency, "ionoscloudloadbalancer-concurrency", 1,
+		"Number of IonosCloudLoadBalancers to process simultaneously")
 }
