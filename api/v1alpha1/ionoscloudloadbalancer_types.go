@@ -73,6 +73,7 @@ type NLBSpec struct {
 type KubeVIPSpec struct {
 	// Image is the container image to use for the KubeVIP static pod.
 	// If not provided, the default image will be used.
+	//+optional
 	Image string `json:"image,omitempty"`
 }
 
