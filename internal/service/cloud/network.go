@@ -264,7 +264,7 @@ func (*Service) removeLANPendingRequestFromCluster(ms *scope.Machine) error {
 // ReconcileIPFailover will provide the given machine with a failover configuration. Depending on the machine role,
 // the failover IP will be either the control plane endpoint or the one provided in the machine spec.
 // The control plane nodes will attach the endpoint IP to their primary NIC and add the NIC to the Failover Group
-// of the public LAN. This is needed for kube-vip to set up KubeVIP control planes.
+// of the public LAN. This is needed for kube-vip to set up HA control planes.
 //
 // The worker nodes can optionally have a Failover Group. This is useful for scenarios where the worker nodes
 // are meant to be highly available such as load balancers.

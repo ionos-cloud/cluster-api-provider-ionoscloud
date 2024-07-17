@@ -21,10 +21,8 @@ import (
 	"errors"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -42,6 +40,8 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
+
+var errOwnerReferenceMissing = errors.New("owner reference not yet applied by cluster controller")
 
 // IonosCloudLoadBalancerReconciler reconciles a IonosCloudLoadBalancer object.
 type IonosCloudLoadBalancerReconciler struct {
@@ -75,18 +75,17 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 	ctx context.Context,
 	ionosCloudLoadBalancer *infrav1.IonosCloudLoadBalancer,
 ) (_ ctrl.Result, retErr error) {
-	logger := log.FromContext(ctx,
-		"ionoscloudloadbalancer", klog.KObj(ionosCloudLoadBalancer))
-	ctx = log.IntoContext(ctx, logger)
+	logger := log.FromContext(ctx)
 
 	logger.V(4).Info("Reconciling IonosCloudLoadBalancer")
 
 	ionosCluster, err := r.getIonosCluster(ctx, ionosCloudLoadBalancer.ObjectMeta)
 	if err != nil {
-		if apierrors.IsNotFound(err) {
+		if errors.Is(err, errOwnerReferenceMissing) {
 			logger.Info("Owner reference not yet applied to IonosCloudLoadBalancer")
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 		}
+
 		return ctrl.Result{}, err
 	}
 
@@ -130,7 +129,7 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 		retErr = errors.Join(retErr, err)
 	}()
 
-	cloudService, err := createServiceFromCluster(ctx, r.Client, loadBalancerScope.ClusterScope.IonosCluster, logger)
+	cloudService, err := createServiceFromCluster(ctx, r.Client, ionosCluster, logger)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -161,8 +160,11 @@ func (r *IonosCloudLoadBalancerReconciler) getIonosCluster(
 		if err := r.Client.Get(ctx, clusterKey, &ionosCluster); err != nil {
 			return nil, err
 		}
+
+		return &ionosCluster, nil
 	}
-	return &ionosCluster, nil
+
+	return nil, errOwnerReferenceMissing
 }
 
 func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
@@ -176,13 +178,12 @@ func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
 	controllerutil.AddFinalizer(loadBalancerScope.LoadBalancer, infrav1.LoadBalancerFinalizer)
 
 	if err := r.validateEndpoints(loadBalancerScope); err != nil {
-		logger.Error(err, "terminal error while validating endpoints. Reconciliation will not continue.")
 		conditions.MarkFalse(
 			loadBalancerScope.LoadBalancer,
 			infrav1.LoadBalancerReadyCondition,
 			infrav1.InvalidEndpointConfigurationReason,
 			clusterv1.ConditionSeverityError, "")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, reconcile.TerminalError(err)
 	}
 
 	reconcileSequence := []serviceReconcileStep[scope.LoadBalancer]{

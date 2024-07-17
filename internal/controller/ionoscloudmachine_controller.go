@@ -23,7 +23,6 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -33,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -71,8 +69,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 	ctx context.Context,
 	ionosCloudMachine *infrav1.IonosCloudMachine,
 ) (_ ctrl.Result, retErr error) {
-	logger := ctrl.LoggerFrom(ctx, "ionoscloudmachine", klog.KObj(ionosCloudMachine))
-	ctx = log.IntoContext(ctx, logger)
+	logger := ctrl.LoggerFrom(ctx)
 
 	// Fetch the Machine.
 	machine, err := util.GetOwnerMachine(ctx, r.Client, ionosCloudMachine.ObjectMeta)

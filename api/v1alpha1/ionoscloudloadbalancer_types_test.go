@@ -66,7 +66,7 @@ var _ = Describe("IonosCloudLoadBalancer", func() {
 				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 			})
 		})
-		When("Using an NLB load balancer", func() {
+		When("Using an NLB", func() {
 			It("Should fail when not providing a datacenter ID", func() {
 				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{}})
 				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())

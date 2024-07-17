@@ -27,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -39,7 +38,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -82,8 +80,7 @@ func (r *IonosCloudClusterReconciler) Reconcile(
 	ctx context.Context,
 	ionosCloudCluster *infrav1.IonosCloudCluster,
 ) (_ ctrl.Result, retErr error) {
-	logger := ctrl.LoggerFrom(ctx, "ionoscloudcluster", klog.KObj(ionosCloudCluster))
-	ctx = log.IntoContext(ctx, logger)
+	logger := ctrl.LoggerFrom(ctx)
 
 	cluster, err := util.GetOwnerCluster(ctx, r.Client, ionosCloudCluster.ObjectMeta)
 	if err != nil {
@@ -181,7 +178,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		}
 
 		// TODO: This logic needs to move to another controller.
-		// Reserving IP Blocks only makes sense for LB implementations or KubeVIP setup with kube-vip.
+		// Reserving IP Blocks only makes sense for LB implementations or HA setup with kube-vip.
 		//
 		// As we are currently expecting to supply the control plane endpoint manually,
 		// logic-wise nothing changes for us. As soon as we have implemented
@@ -274,7 +271,7 @@ func (r *IonosCloudClusterReconciler) applyLoadBalancerMeta(
 ) error {
 	beforeObject := loadBalancer.DeepCopy()
 
-	if err := controllerutil.SetControllerReference(ionosCloudCluster, loadBalancer, r.scheme); err != nil {
+	if err := controllerutil.SetOwnerReference(ionosCloudCluster, loadBalancer, r.scheme); err != nil {
 		return err
 	}
 

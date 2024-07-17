@@ -32,7 +32,7 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 )
 
-// LoadBalancerParams is a struct that contains the params used to create a new Machine through NewMachine.
+// LoadBalancerParams is a struct that contains the params used to create a new LoadBalancer through NewLoadBalancer.
 type LoadBalancerParams struct {
 	Client       client.Client
 	LoadBalancer *infrav1.IonosCloudLoadBalancer

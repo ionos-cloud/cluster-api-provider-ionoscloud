@@ -59,17 +59,12 @@ type LoadBalancerSource struct {
 	// KubeVIP is used for setting up a highly available control plane.
 	//+optional
 	KubeVIP *KubeVIPSpec `json:"kubeVIP,omitempty"`
-
-	// External is used for making use of an external load balancer.
-	//+optional
-	External *ExternalLoadBalancerSpec `json:"external,omitempty"`
 }
 
 // NLBSpec defines the spec for a network load balancer.
 type NLBSpec struct {
 	// DatacenterID is the ID of the datacenter where the load balancer should be created.
-	// This field is required for NLB load balancers and needs to match the datacenter ID
-	// of the control plane machines.
+	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
 	//+kubebuilder:validation:Format=uuid
 	//+required
 	DatacenterID string `json:"datacenterID"`
@@ -78,12 +73,9 @@ type NLBSpec struct {
 // KubeVIPSpec defines the spec for a high availability load balancer.
 type KubeVIPSpec struct {
 	// Image is the container image to use for the KubeVIP static pod.
+	// If not provided, the default image will be used.
 	Image string `json:"image,omitempty"`
 }
-
-// ExternalLoadBalancerSpec defines the spec for an external load balancer.
-// External load balancers need to be manually set up by the user.
-type ExternalLoadBalancerSpec struct{}
 
 // IonosCloudLoadBalancerStatus defines the observed state of IonosCloudLoadBalancer.
 type IonosCloudLoadBalancerStatus struct {

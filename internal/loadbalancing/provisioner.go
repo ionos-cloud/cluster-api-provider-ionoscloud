@@ -27,7 +27,7 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-// Provisioner is an interface for managing the provisioning of and cleanup of various types of load balancers.
+// Provisioner is an interface for managing the provisioning and cleanup of various types of load balancers.
 type Provisioner interface {
 	// PrepareEnvironment is responsible for setting the preconditions for the load balancer to be created.
 	PrepareEnvironment(ctx context.Context, loadBalancerScope *scope.LoadBalancer) (requeue bool, err error)
@@ -51,8 +51,6 @@ func NewProvisioner(_ *cloud.Service, source infrav1.LoadBalancerSource) (Provis
 		return &kubeVIPProvisioner{}, nil
 	case source.NLB != nil:
 		return &nlbProvisioner{}, nil
-	case source.External != nil:
-		return &externalProvisioner{}, nil
 	}
 	return nil, fmt.Errorf("unknown load balancer config %#v", source)
 }
