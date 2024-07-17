@@ -104,6 +104,12 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 		return ctrl.Result{}, nil
 	}
 
+	// TODO(lubedacht) this check needs to move into a validating webhook and should prevent that the resource
+	// 	can be applied in the first place.
+	if err = r.validateLoadBalancerSource(ionosCloudLoadBalancer.Spec.LoadBalancerSource); err != nil {
+		return ctrl.Result{}, reconcile.TerminalError(err)
+	}
+
 	clusterScope, err := scope.NewCluster(scope.ClusterParams{
 		Client:       r.Client,
 		Cluster:      cluster,
@@ -247,6 +253,18 @@ func (*IonosCloudLoadBalancerReconciler) validateEndpoints(loadBalancerScope *sc
 		}
 
 		return errors.New("infra cluster and load balancer endpoints do not match")
+	}
+
+	return nil
+}
+
+func (*IonosCloudLoadBalancerReconciler) validateLoadBalancerSource(source infrav1.LoadBalancerSource) error {
+	if source.NLB == nil && source.KubeVIP == nil {
+		return errors.New("exactly one source needs to be set, none are set")
+	}
+
+	if source.NLB != nil && source.KubeVIP != nil {
+		return errors.New("exactly one source needs to be set, both are set")
 	}
 
 	return nil
