@@ -109,7 +109,6 @@ var _ = Describe("IonosCloudLoadBalancer", func() {
 					dlb.Spec.NLB.DatacenterID = exampleSecondaryDatacenterID
 					Expect(k8sClient.Update(context.Background(), dlb)).NotTo(Succeed())
 				})
-
 			})
 		})
 	})
