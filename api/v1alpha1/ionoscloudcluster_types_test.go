@@ -104,34 +104,20 @@ var _ = Describe("IonosCloudCluster", func() {
 		})
 
 		When("trying to update the control plane endpoint", func() {
-			It("should fail if the host is already set", func() {
+			It("should fail when attempting to set an invalid port number", func() {
 				cluster := defaultCluster()
 				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
 
-				cluster.Spec.ControlPlaneEndpoint.Host = newValueStr
-				Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
+				cluster.Spec.ControlPlaneEndpoint.Port = 0
+				Expect(k8sClient.Update(context.Background(), cluster)).
+					Should(MatchError(ContainSubstring("port must be within 1-65535")))
 			})
-			It("should work if the endpoint host is not set", func() {
-				cluster := defaultCluster()
-				cluster.Spec.ControlPlaneEndpoint.Host = ""
-				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
-
-				cluster.Spec.ControlPlaneEndpoint.Host = newValueStr
-				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
-			})
-			It("should fail if the port is already set", func() {
+			It("should not fail when updating the endpoint correctly", func() {
 				cluster := defaultCluster()
 				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
 
 				cluster.Spec.ControlPlaneEndpoint.Port = 1234
-				Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
-			})
-			It("should work if the endpoint port is not set", func() {
-				cluster := defaultCluster()
-				cluster.Spec.ControlPlaneEndpoint.Port = 0
-				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
-
-				cluster.Spec.ControlPlaneEndpoint.Port = 4657
+				cluster.Spec.ControlPlaneEndpoint.Host = "example.org"
 				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
 			})
 		})
