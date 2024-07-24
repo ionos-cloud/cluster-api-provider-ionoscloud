@@ -333,7 +333,7 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options
 			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind(infrav1.IonosCloudMachineType)))).
-		Complete(reconcile.AsReconciler[*infrav1.IonosCloudMachine](r.Client, r))
+		Complete(reconcile.AsReconciler(r.Client, r))
 }
 
 func (r *IonosCloudMachineReconciler) getClusterScope(
