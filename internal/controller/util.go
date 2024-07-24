@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -38,6 +40,8 @@ const (
 	defaultReconcileDuration = time.Second * 20
 	reducedReconcileDuration = time.Second * 10
 )
+
+var errOwnerReferenceMissing = errors.New("owner reference not yet applied by cluster controller")
 
 type scoped interface {
 	scope.Cluster | scope.Machine | scope.LoadBalancer
@@ -141,4 +145,26 @@ func removeCredentialsFinalizer(ctx context.Context, c client.Client, cluster *i
 
 	controllerutil.RemoveFinalizer(&secret, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))
 	return c.Update(ctx, &secret)
+}
+
+func findOwningCluster(
+	ctx context.Context,
+	meta metav1.ObjectMeta,
+	c client.Client,
+) (*infrav1.IonosCloudCluster, error) {
+	var ionosCluster infrav1.IonosCloudCluster
+	for _, ref := range meta.GetOwnerReferences() {
+		if ref.Kind != infrav1.IonosCloudClusterKind {
+			continue
+		}
+
+		clusterKey := client.ObjectKey{Namespace: meta.Namespace, Name: ref.Name}
+		if err := c.Get(ctx, clusterKey, &ionosCluster); err != nil {
+			return nil, err
+		}
+
+		return &ionosCluster, nil
+	}
+
+	return nil, errOwnerReferenceMissing
 }

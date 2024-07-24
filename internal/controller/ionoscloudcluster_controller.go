@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -307,5 +308,44 @@ func (r *IonosCloudClusterReconciler) SetupWithManager(
 			),
 			builder.WithPredicates(predicates.ClusterUnpaused(ctrl.LoggerFrom(ctx))),
 		).
+		Watches(&infrav1.IonosCloudLoadBalancer{},
+			handler.EnqueueRequestsFromMapFunc(r.requeueForLoadBalancerUpdate(ctx))).
 		Complete(reconcile.AsReconciler[*infrav1.IonosCloudCluster](r.Client, r))
+}
+
+// requeueForLoadBalancerUpdate will return a handler.MapFunc that will map an IonosCloudLoadBalancer to an IonosCloudCluster.
+// This function is used to requeue the IonosCloudCluster when the IonosCloudLoadBalancer was updated.
+func (r *IonosCloudClusterReconciler) requeueForLoadBalancerUpdate(ctx context.Context) handler.MapFunc {
+	logger := ctrl.LoggerFrom(ctx)
+	return func(ctx context.Context, object client.Object) []reconcile.Request {
+		logger.V(4).Info("Mapping IonosCloudLoadBalancer to IonosCloudCluster", "object", object)
+
+		lb, ok := object.(*infrav1.IonosCloudLoadBalancer)
+		if !ok {
+			err := fmt.Errorf("expected an IonosCloudLoadBalancer, got %T", object)
+			logger.Error(err, "object is not an IonosCloudLoadBalancer", "object", klog.KObj(object))
+			return nil
+		}
+
+		if !lb.DeletionTimestamp.IsZero() {
+			logger.V(4).Info("LoadBalancer is being deleted, skipping mapping", "object", klog.KObj(lb))
+			return nil
+		}
+
+		// find the cluster that owns the load balancer
+		infraCluster, err := findOwningCluster(ctx, lb.ObjectMeta, r.Client)
+		if err != nil {
+			logger.V(4).Error(err, "failed to find owning cluster", "object", klog.KObj(lb))
+			return nil
+		}
+
+		logger.V(4).Info("Adding reconcile request for IonosCloudCluster", "ionoscloudcluster", klog.KObj(infraCluster))
+
+		return []ctrl.Request{{
+			NamespacedName: client.ObjectKey{
+				Namespace: infraCluster.Namespace,
+				Name:      infraCluster.Name,
+			},
+		}}
+	}
 }

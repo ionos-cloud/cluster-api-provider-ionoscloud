@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -40,8 +39,6 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
-
-var errOwnerReferenceMissing = errors.New("owner reference not yet applied by cluster controller")
 
 // IonosCloudLoadBalancerReconciler reconciles a IonosCloudLoadBalancer object.
 type IonosCloudLoadBalancerReconciler struct {
@@ -79,7 +76,7 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 
 	logger.V(4).Info("Reconciling IonosCloudLoadBalancer")
 
-	ionosCluster, err := r.getIonosCluster(ctx, ionosCloudLoadBalancer.ObjectMeta)
+	ionosCluster, err := findOwningCluster(ctx, ionosCloudLoadBalancer.ObjectMeta, r.Client)
 	if err != nil {
 		if errors.Is(err, errOwnerReferenceMissing) {
 			logger.Info("Owner reference not yet applied to IonosCloudLoadBalancer")
@@ -150,27 +147,6 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 	}
 
 	return r.reconcileNormal(ctx, loadBalancerScope, prov)
-}
-
-func (r *IonosCloudLoadBalancerReconciler) getIonosCluster(
-	ctx context.Context,
-	meta metav1.ObjectMeta,
-) (*infrav1.IonosCloudCluster, error) {
-	var ionosCluster infrav1.IonosCloudCluster
-	for _, ref := range meta.GetOwnerReferences() {
-		if ref.Kind != infrav1.IonosCloudClusterKind {
-			continue
-		}
-
-		clusterKey := client.ObjectKey{Namespace: meta.Namespace, Name: ref.Name}
-		if err := r.Client.Get(ctx, clusterKey, &ionosCluster); err != nil {
-			return nil, err
-		}
-
-		return &ionosCluster, nil
-	}
-
-	return nil, errOwnerReferenceMissing
 }
 
 func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
