@@ -100,6 +100,10 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 		s.getControlPlaneEndpointIPBlock,
 		s.getLatestControlPlaneEndpointIPBlockCreationRequest,
 	)
+
+	if ignoreErrUserSetIPNotFound(ignoreNotFound(err)) != nil {
+		return false, err
+	}
 	// NOTE(gfariasalves): we ignore the error if it is a "user set IP not found" error, because it doesn't matter here.
 	// This error is only relevant when we are trying to create a new IP block. If it shows up here, it means that:
 	// a) this IP block was created by the user, and they have deleted it, or,
@@ -109,10 +113,6 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 	if errors.Is(err, errUserSetIPNotFound) || ipBlock == nil && request == nil {
 		cs.IonosCluster.DeleteCurrentClusterRequest()
 		return false, nil
-	}
-
-	if ignoreErrUserSetIPNotFound(ignoreNotFound(err)) != nil {
-		return false, err
 	}
 
 	// NOTE: this check covers the case where customers have set the control plane endpoint IP themselves.
@@ -237,9 +237,14 @@ func (s *Service) getFailoverIPBlock(ctx context.Context, ms *scope.Machine) (*s
 		return nil, fmt.Errorf("failed to list IP blocks: %w", err)
 	}
 
+	location, err := s.getLocation(ctx, ms)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, block := range ptr.Deref(blocks.GetItems(), nil) {
 		props := block.GetProperties()
-		if ptr.Deref(props.GetLocation(), "") != ms.ClusterScope.Location() {
+		if ptr.Deref(props.GetLocation(), "") != location {
 			continue
 		}
 		if ptr.Deref(props.GetName(), "") == s.failoverIPBlockName(ms) {
@@ -334,9 +339,16 @@ func (s *Service) reserveControlPlaneEndpointIPBlock(ctx context.Context, cs *sc
 
 func (s *Service) reserveMachineDeploymentFailoverIPBlock(ctx context.Context, ms *scope.Machine) error {
 	log := s.logger.WithName("reserveMachineDeploymentFailoverIPBlock")
+	location, err := s.getLocation(ctx, ms)
+	if err != nil {
+		return err
+	}
+
+	ms.IonosMachine.Status.Location = location
+
 	return s.reserveIPBlock(
 		ctx, s.failoverIPBlockName(ms),
-		ms.ClusterScope.Location(), log,
+		location, log,
 		ms.IonosMachine.SetCurrentRequest,
 	)
 }
@@ -401,10 +413,14 @@ func (s *Service) getLatestControlPlaneEndpointIPBlockCreationRequest(
 
 // getLatestFailoverIPBlockCreateRequest returns the latest failover IP block creation request.
 func (s *Service) getLatestFailoverIPBlockCreateRequest(ctx context.Context, ms *scope.Machine) (*requestInfo, error) {
+	location, err := s.getLocation(ctx, ms)
+	if err != nil {
+		return nil, err
+	}
 	return s.getLatestIPBlockRequestByNameAndLocation(
 		ctx, http.MethodPost,
 		s.failoverIPBlockName(ms),
-		ms.ClusterScope.Location(),
+		location,
 	)
 }
 
@@ -459,4 +475,18 @@ func ignoreErrUserSetIPNotFound(err error) error {
 		return nil
 	}
 	return err
+}
+
+// getLocation checks if the location of the machine is already set in the status.
+// If not, it queries Cloud API to get the location of the datacenter.
+func (s *Service) getLocation(ctx context.Context, ms *scope.Machine) (string, error) {
+	if ms.IonosMachine.Status.Location == "" {
+		location, err := s.ionosClient.GetDatacenterLocationByID(ctx, ms.IonosMachine.Spec.DatacenterID)
+		if err != nil {
+			return "", fmt.Errorf("failed to get location of datacenter: %w", err)
+		}
+		ms.IonosMachine.Status.Location = location
+		return location, nil
+	}
+	return ms.IonosMachine.Status.Location, nil
 }

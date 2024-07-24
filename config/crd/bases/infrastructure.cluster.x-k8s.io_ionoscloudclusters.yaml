@@ -77,10 +77,9 @@ spec:
                 - port
                 type: object
                 x-kubernetes-validations:
-                - message: control plane endpoint host cannot be updated
-                  rule: self.host == oldSelf.host || oldSelf.host == ''
-                - message: control plane endpoint port cannot be updated
-                  rule: self.port == oldSelf.port || oldSelf.port == 0
+                - message: port must be within 1-65535
+                  rule: size(self.host) == 0 && self.port == 0 || self.port > 0 &&
+                    self.port < 65536
               credentialsRef:
                 description: CredentialsRef is a reference to the secret containing
                   the credentials to access the IONOS Cloud API.
@@ -96,6 +95,19 @@ spec:
                 x-kubernetes-validations:
                 - message: credentialsRef.name must be provided
                   rule: has(self.name) && self.name != ''
+              loadBalancerProviderRef:
+                description: |-
+                  LoadBalancerProviderRef is a reference to the load balancer provider configuration.
+                  An empty loadBalancerProviderRef field is allowed and means to disable any load balancer logic.
+                properties:
+                  name:
+                    description: |-
+                      Name of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
               location:
                 description: Location is the location where the data centers should
                   be located.

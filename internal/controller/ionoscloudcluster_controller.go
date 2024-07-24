@@ -149,9 +149,19 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	reconcileSequence := []serviceReconcileStep[scope.Cluster]{
-		{"ReconcileControlPlaneEndpoint", cloudService.ReconcileControlPlaneEndpoint},
+	var reconcileSequence []serviceReconcileStep[scope.Cluster]
+	// TODO: This logic needs to move to another controller.
+	if clusterScope.IonosCluster.Spec.LoadBalancerProviderRef != nil {
+		// Reserving IP Blocks only makes sense for LB implementations or HA setup with kube-vip.
+		//
+		// As we are currently expecting to supply the control plane endpoint manually,
+		// logic-wise nothing changes for us. As soon as we have implemented
+		// the load balancer controller, the cluster controller logic will be basically empty.
+		reconcileSequence = []serviceReconcileStep[scope.Cluster]{
+			{"ReconcileControlPlaneEndpoint", cloudService.ReconcileControlPlaneEndpoint},
+		}
 	}
+
 	for _, step := range reconcileSequence {
 		if requeue, err := step.fn(ctx, clusterScope); err != nil || requeue {
 			if err != nil {
@@ -197,9 +207,14 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	reconcileSequence := []serviceReconcileStep[scope.Cluster]{
-		{"ReconcileControlPlaneEndpointDeletion", cloudService.ReconcileControlPlaneEndpointDeletion},
+	var reconcileSequence []serviceReconcileStep[scope.Cluster]
+	// TODO: This logic needs to move to another controller.
+	if clusterScope.IonosCluster.Spec.LoadBalancerProviderRef != nil {
+		reconcileSequence = []serviceReconcileStep[scope.Cluster]{
+			{"ReconcileControlPlaneEndpointDeletion", cloudService.ReconcileControlPlaneEndpointDeletion},
+		}
 	}
+
 	for _, step := range reconcileSequence {
 		if requeue, err := step.fn(ctx, clusterScope); err != nil || requeue {
 			if err != nil {

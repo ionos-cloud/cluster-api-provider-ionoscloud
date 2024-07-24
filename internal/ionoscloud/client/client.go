@@ -463,3 +463,40 @@ func validateNICParameters(datacenterID, serverID, nicID string) (err error) {
 
 	return nil
 }
+
+// GetDatacenterLocationByID returns the location of the data center identified by datacenterID.
+func (c *IonosCloudClient) GetDatacenterLocationByID(ctx context.Context, datacenterID string) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+
+	datacenter, _, err := c.API.DataCentersApi.DatacentersFindById(ctx, datacenterID).Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	return *datacenter.Properties.Location, nil
+}
+
+// GetImage returns the image identified by imageID.
+func (c *IonosCloudClient) GetImage(ctx context.Context, imageID string) (*sdk.Image, error) {
+	image, _, err := c.API.ImagesApi.ImagesFindById(ctx, imageID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	return &image, nil
+}
+
+// ListLabels returns a list of all available resource labels.
+func (c *IonosCloudClient) ListLabels(ctx context.Context) ([]sdk.Label, error) {
+	labels, _, err := c.API.LabelsApi.
+		LabelsGet(ctx).
+		Depth(1). // always use depth 1 because we need the list item properties
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	return *labels.Items, nil
+}

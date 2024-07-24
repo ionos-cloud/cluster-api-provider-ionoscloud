@@ -4,12 +4,16 @@
 export IONOS_TOKEN="token"
 export IONOS_API_URL="https://api.ionos.com/cloudapi/v6"
 
+# ClusterClass and Cluster API related environment variables
+export NAMESPACE="default"
 
 # Cluster API related environment variables
 export CONTROL_PLANE_ENDPOINT_HOST="example.org"
 export CONTROL_PLANE_ENDPOINT_IP="192.168.0.1"
 export CONTROL_PLANE_ENDPOINT_PORT=6443
 export CONTROL_PLANE_ENDPOINT_LOCATION="de/txl"
+export CONTROL_PLANE_MACHINE_COUNT=3
+export WORKER_MACHINE_COUNT=1
 export CLUSTER_NAME="cluster-name"
 export KUBERNETES_VERSION="1.29.2"
 
@@ -17,5 +21,8 @@ export KUBERNETES_VERSION="1.29.2"
 export IONOSCLOUD_DATACENTER_ID="12345"
 export IONOSCLOUD_MACHINE_NUM_CORES=2
 export IONOSCLOUD_MACHINE_MEMORY_MB=4096
-export IONOSCLOUD_MACHINE_IMAGE_ID=123456
+export IONOSCLOUD_MACHINE_IMAGE_ID="123456"
 export IONOSCLOUD_MACHINE_SSH_KEYS="ssh-ed25519 ..., ssh-ed25519 ..."
+
+# ClusterClass related environment variables
+export CLUSTER_CLASS_NAME="testclass"

@@ -89,3 +89,22 @@ Now, you can copy the ID of your image and set it as the `IONOSCLOUD_MACHINE_IMA
 
 > [!IMPORTANT]
 > Please ensure to update the KUBERNETES_VERSION in your environment file (envfile) if it changes.
+
+### Enabling image lookup
+
+The provider is able to look up images by label and name for `IonosCloudMachine` resources that make use of an image
+selector.
+By default, the Kubernetes version of the parent Machine is used, so it's safe to reuse label keys and values for images
+that contain the version in their name.
+
+Currently, it's only possible to label images using the REST API:
+
+```sh
+curl -H "Authorization: Bearer <JWT>" -H "Content-Type: application/json" -X POST \
+    https://api.ionos.com/cloudapi/v6/images/<image-id>/labels -d '{"properties":{"key":"<some key>","value":"<some value>"}}'
+```
+
+Now, you can set the key and value as `IONOSCLOUD_IMAGE_LABEL_KEY` and `IONOSCLOUD_IMAGE_LABEL_VALUE` environment variables.
+Your custom image will then be used when using the [`auto-image`](/templates/cluster-template-auto-image.yaml) template.
+
+Given the correct labels the Kubernetes version is the only value that needs to be updated for version upgrades.

@@ -176,8 +176,7 @@ type IonosCloudMachineSpec struct {
 	Type ServerType `json:"type,omitempty"`
 }
 
-// Networks contains a list of additional LAN IDs
-// that should be attached to the VM.
+// Networks contains a list of additional LAN IDs that should be attached to the VM.
 // +listType=map
 // +listMapKey=networkID
 type Networks []Network
@@ -218,15 +217,37 @@ type Volume struct {
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	// Image is the image to use for the VM.
-	//+required
+	//+kubebuilder:validation:XValidation:rule="self.id != '' || has(self.selector)",message="must provide either id or selector"
 	Image *ImageSpec `json:"image"`
 }
 
 // ImageSpec defines the image to use for the VM.
 type ImageSpec struct {
-	// ID is the ID of the image to use for the VM.
-	//+kubebuilder:validation:MinLength=1
-	ID string `json:"id"`
+	// ID is the ID of the image to use for the VM. Has precedence over selector.
+	//
+	//+optional
+	ID string `json:"id,omitempty"`
+
+	// Selector is used to look up images by name and labels.
+	// Only images in the IonosCloudCluster's location are considered.
+	//
+	//+optional
+	Selector *ImageSelector `json:"selector,omitempty"`
+}
+
+// ImageSelector defines label selectors for looking up images.
+type ImageSelector struct {
+	// MatchLabels is a map of key/value pairs.
+	//
+	//+kubebuilder:validation:MinProperties=1
+	MatchLabels map[string]string `json:"matchLabels"`
+
+	// UseMachineVersion indicates whether to use the parent Machine's version field to look up image names.
+	// Enabled by default.
+	//
+	//+kubebuilder:default=true
+	//+optional
+	UseMachineVersion *bool `json:"useMachineVersion,omitempty"`
 }
 
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
@@ -285,6 +306,10 @@ type IonosCloudMachineStatus struct {
 	// cloud resource that is being provisioned.
 	//+optional
 	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
+
+	// Location is the location of the datacenter the VM is provisioned in.
+	//+optional
+	Location string `json:"location"`
 }
 
 // MachineNetworkInfo contains information about the network configuration of the VM.

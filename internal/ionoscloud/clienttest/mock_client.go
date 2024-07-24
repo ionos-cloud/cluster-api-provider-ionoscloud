@@ -455,6 +455,63 @@ func (_c *MockClient_DeleteVolume_Call) RunAndReturn(run func(context.Context, s
 	return _c
 }
 
+// GetDatacenterLocationByID provides a mock function with given fields: ctx, datacenterID
+func (_m *MockClient) GetDatacenterLocationByID(ctx context.Context, datacenterID string) (string, error) {
+	ret := _m.Called(ctx, datacenterID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDatacenterLocationByID")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return rf(ctx, datacenterID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = rf(ctx, datacenterID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, datacenterID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_GetDatacenterLocationByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDatacenterLocationByID'
+type MockClient_GetDatacenterLocationByID_Call struct {
+	*mock.Call
+}
+
+// GetDatacenterLocationByID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+func (_e *MockClient_Expecter) GetDatacenterLocationByID(ctx interface{}, datacenterID interface{}) *MockClient_GetDatacenterLocationByID_Call {
+	return &MockClient_GetDatacenterLocationByID_Call{Call: _e.mock.On("GetDatacenterLocationByID", ctx, datacenterID)}
+}
+
+func (_c *MockClient_GetDatacenterLocationByID_Call) Run(run func(ctx context.Context, datacenterID string)) *MockClient_GetDatacenterLocationByID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_GetDatacenterLocationByID_Call) Return(_a0 string, _a1 error) *MockClient_GetDatacenterLocationByID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_GetDatacenterLocationByID_Call) RunAndReturn(run func(context.Context, string) (string, error)) *MockClient_GetDatacenterLocationByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetIPBlock provides a mock function with given fields: ctx, ipBlockID
 func (_m *MockClient) GetIPBlock(ctx context.Context, ipBlockID string) (*ionoscloud.IpBlock, error) {
 	ret := _m.Called(ctx, ipBlockID)
@@ -510,6 +567,65 @@ func (_c *MockClient_GetIPBlock_Call) Return(_a0 *ionoscloud.IpBlock, _a1 error)
 }
 
 func (_c *MockClient_GetIPBlock_Call) RunAndReturn(run func(context.Context, string) (*ionoscloud.IpBlock, error)) *MockClient_GetIPBlock_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetImage provides a mock function with given fields: ctx, imageID
+func (_m *MockClient) GetImage(ctx context.Context, imageID string) (*ionoscloud.Image, error) {
+	ret := _m.Called(ctx, imageID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetImage")
+	}
+
+	var r0 *ionoscloud.Image
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*ionoscloud.Image, error)); ok {
+		return rf(ctx, imageID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *ionoscloud.Image); ok {
+		r0 = rf(ctx, imageID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*ionoscloud.Image)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, imageID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_GetImage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetImage'
+type MockClient_GetImage_Call struct {
+	*mock.Call
+}
+
+// GetImage is a helper method to define mock.On call
+//   - ctx context.Context
+//   - imageID string
+func (_e *MockClient_Expecter) GetImage(ctx interface{}, imageID interface{}) *MockClient_GetImage_Call {
+	return &MockClient_GetImage_Call{Call: _e.mock.On("GetImage", ctx, imageID)}
+}
+
+func (_c *MockClient_GetImage_Call) Run(run func(ctx context.Context, imageID string)) *MockClient_GetImage_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_GetImage_Call) Return(_a0 *ionoscloud.Image, _a1 error) *MockClient_GetImage_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_GetImage_Call) RunAndReturn(run func(context.Context, string) (*ionoscloud.Image, error)) *MockClient_GetImage_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -747,6 +863,64 @@ func (_c *MockClient_ListLANs_Call) Return(_a0 *ionoscloud.Lans, _a1 error) *Moc
 }
 
 func (_c *MockClient_ListLANs_Call) RunAndReturn(run func(context.Context, string) (*ionoscloud.Lans, error)) *MockClient_ListLANs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListLabels provides a mock function with given fields: ctx
+func (_m *MockClient) ListLabels(ctx context.Context) ([]ionoscloud.Label, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListLabels")
+	}
+
+	var r0 []ionoscloud.Label
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) ([]ionoscloud.Label, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) []ionoscloud.Label); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]ionoscloud.Label)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_ListLabels_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListLabels'
+type MockClient_ListLabels_Call struct {
+	*mock.Call
+}
+
+// ListLabels is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockClient_Expecter) ListLabels(ctx interface{}) *MockClient_ListLabels_Call {
+	return &MockClient_ListLabels_Call{Call: _e.mock.On("ListLabels", ctx)}
+}
+
+func (_c *MockClient_ListLabels_Call) Run(run func(ctx context.Context)) *MockClient_ListLabels_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockClient_ListLabels_Call) Return(_a0 []ionoscloud.Label, _a1 error) *MockClient_ListLabels_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_ListLabels_Call) RunAndReturn(run func(context.Context) ([]ionoscloud.Label, error)) *MockClient_ListLabels_Call {
 	_c.Call.Return(run)
 	return _c
 }

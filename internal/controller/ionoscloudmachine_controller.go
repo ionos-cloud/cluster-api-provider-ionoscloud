@@ -220,7 +220,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 
 	if requeue {
 		log.Info("Deletion request is still in progress")
-		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
+		return ctrl.Result{RequeueAfter: reducedReconcileDuration}, nil
 	}
 
 	ipamHelper := k8s.NewHelper(r.Client, log)
@@ -244,7 +244,6 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 		}
 	}
-
 	controllerutil.RemoveFinalizer(machineScope.IonosMachine, infrav1.MachineFinalizer)
 	return ctrl.Result{}, nil
 }
@@ -293,6 +292,12 @@ func (*IonosCloudMachineReconciler) checkRequestStates(
 					return nil
 				},
 			)
+
+			// We need to patch the machine during the deletion phase to make sure we do
+			// not have a diff in the status during the final patch when the finalizer is removed.
+			if !machineScope.IonosMachine.DeletionTimestamp.IsZero() {
+				requeue, retErr = true, machineScope.PatchObject()
+			}
 		}
 	}
 
