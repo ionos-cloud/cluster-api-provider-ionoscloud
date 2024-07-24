@@ -34,6 +34,8 @@ const (
 	IonosCloudClusterKind = "IonosCloudCluster"
 )
 
+//+kubebuilder:validation:XValidation:rule="self.controlPlaneEndpoint.host == '' || has(self.location)",message="location is required when controlPlaneEndpoint.host is set"
+
 // IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
 type IonosCloudClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
@@ -44,10 +46,12 @@ type IonosCloudClusterSpec struct {
 	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 
 	// Location is the location where the data centers should be located.
+	//
 	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="location is immutable"
 	//+kubebuilder:example=de/txl
 	//+kubebuilder:validation:MinLength=1
-	Location string `json:"location"`
+	//+optional
+	Location string `json:"location,omitempty"`
 
 	// CredentialsRef is a reference to the secret containing the credentials to access the IONOS Cloud API.
 	//+kubebuilder:validation:XValidation:rule="has(self.name) && self.name != ''",message="credentialsRef.name must be provided"
