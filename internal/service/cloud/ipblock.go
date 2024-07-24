@@ -46,11 +46,16 @@ const (
 var errUserSetIPNotFound = errors.New("could not find any IP block for the already set control plane endpoint")
 
 // ReconcileControlPlaneEndpoint ensures the control plane endpoint IP block exists.
-func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.Cluster) (requeue bool, err error) {
+func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, ls *scope.LoadBalancer) (requeue bool, err error) {
+	// If the endpoints match, there is nothing we have to do
+	if ls.Endpoint().IsValid() && ls.InfraClusterEndpoint() == ls.Endpoint() {
+		return false, nil
+	}
+
 	log := s.logger.WithName("ReconcileControlPlaneEndpoint")
 
 	ipBlock, request, err := scopedFindResource(
-		ctx, cs,
+		ctx, ls,
 		s.getControlPlaneEndpointIPBlock,
 		s.getLatestControlPlaneEndpointIPBlockCreationRequest,
 	)
@@ -63,26 +68,29 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 			log.Info("IP block is not available yet", "state", state)
 			return true, nil
 		}
-		if cs.IonosCluster.Spec.ControlPlaneEndpoint.Host == "" {
+
+		if ls.Endpoint().Host == "" {
 			ip := (*ipBlock.Properties.Ips)[0]
-			cs.IonosCluster.Spec.ControlPlaneEndpoint.Host = ip
+			ls.LoadBalancer.Spec.LoadBalancerEndpoint.Host = ip
 		}
-		if cs.IonosCluster.Spec.ControlPlaneEndpoint.Port == 0 {
-			cs.IonosCluster.Spec.ControlPlaneEndpoint.Port = defaultControlPlaneEndpointPort
+
+		if ls.Endpoint().Port == 0 {
+			ls.LoadBalancer.Spec.LoadBalancerEndpoint.Port = defaultControlPlaneEndpointPort
 		}
-		cs.SetControlPlaneEndpointIPBlockID(*ipBlock.Id)
+
+		ls.LoadBalancer.Status.LoadBalancerEndpointIPBlockID = *ipBlock.Id
 		return false, nil
 	}
 
 	if request != nil && request.isPending() {
 		// We want to requeue and check again after some time
-		cs.IonosCluster.SetCurrentClusterRequest(http.MethodPost, request.status, request.location)
+		ls.LoadBalancer.SetCurrentRequest(http.MethodPost, request.status, request.location)
 		log.Info("Request is pending", "location", request.location)
 		return true, nil
 	}
 
 	log.V(4).Info("No IP block was found. Creating new IP block")
-	if err := s.reserveControlPlaneEndpointIPBlock(ctx, cs); err != nil {
+	if err := s.reserveControlPlaneEndpointIPBlock(ctx, ls); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -90,13 +98,13 @@ func (s *Service) ReconcileControlPlaneEndpoint(ctx context.Context, cs *scope.C
 
 // ReconcileControlPlaneEndpointDeletion ensures the control plane endpoint IP block is deleted.
 func (s *Service) ReconcileControlPlaneEndpointDeletion(
-	ctx context.Context, cs *scope.Cluster,
+	ctx context.Context, ls *scope.LoadBalancer,
 ) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileControlPlaneEndpointDeletion")
 
 	// Try to retrieve the cluster IP Block or even check if it's currently still being created.
 	ipBlock, request, err := scopedFindResource(
-		ctx, cs,
+		ctx, ls,
 		s.getControlPlaneEndpointIPBlock,
 		s.getLatestControlPlaneEndpointIPBlockCreationRequest,
 	)
@@ -111,20 +119,20 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 	// part of the reconciliation loop, and the resource is now gone.
 	// For both cases this means success, so we can return early with no error.
 	if errors.Is(err, errUserSetIPNotFound) || ipBlock == nil && request == nil {
-		cs.IonosCluster.DeleteCurrentClusterRequest()
+		ls.LoadBalancer.DeleteCurrentRequest()
 		return false, nil
 	}
 
 	// NOTE: this check covers the case where customers have set the control plane endpoint IP themselves.
 	// If this is the case we don't request for the deletion of the IP block.
-	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), unknownValue) != s.controlPlaneEndpointIPBlockName(cs) {
+	if ipBlock != nil && ptr.Deref(ipBlock.GetProperties().GetName(), unknownValue) != s.controlPlaneEndpointIPBlockName(ls.ClusterScope) {
 		log.Info("Control Plane Endpoint was created externally by the user. Skipping deletion")
 		return false, nil
 	}
 
 	if request != nil && request.isPending() {
 		// We want to requeue and check again after some time
-		cs.IonosCluster.SetCurrentClusterRequest(http.MethodPost, request.status, request.location)
+		ls.LoadBalancer.SetCurrentRequest(http.MethodPost, request.status, request.location)
 		log.Info("Creation request is pending", "location", request.location)
 		return true, nil
 	}
@@ -136,12 +144,12 @@ func (s *Service) ReconcileControlPlaneEndpointDeletion(
 
 	if request != nil && request.isPending() {
 		// We want to requeue and check again after some time
-		cs.IonosCluster.SetCurrentClusterRequest(http.MethodDelete, request.status, request.location)
+		ls.LoadBalancer.SetCurrentRequest(http.MethodDelete, request.status, request.location)
 		log.Info("Deletion request is pending", "location", request.location)
 		return true, nil
 	}
 
-	err = s.deleteControlPlaneEndpointIPBlock(ctx, cs, *ipBlock.Id)
+	err = s.deleteControlPlaneEndpointIPBlock(ctx, ls, *ipBlock.Id)
 	return err == nil, err
 }
 
@@ -257,30 +265,31 @@ func (s *Service) getFailoverIPBlock(ctx context.Context, ms *scope.Machine) (*s
 
 // getControlPlaneEndpointIPBlock finds the IP block that matches the expected name and location.
 // An error is returned if there are multiple IP blocks that match both the name and location.
-func (s *Service) getControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.Cluster) (*sdk.IpBlock, error) {
-	ipBlock, err := s.getIPBlockByID(ctx, cs.IonosCluster.Status.ControlPlaneEndpointIPBlockID)
+func (s *Service) getControlPlaneEndpointIPBlock(ctx context.Context, ls *scope.LoadBalancer) (*sdk.IpBlock, error) {
+	ipBlock, err := s.getIPBlockByID(ctx, ls.LoadBalancer.Status.LoadBalancerEndpointIPBlockID)
 	if ipBlock != nil || ignoreNotFound(err) != nil {
 		return ipBlock, err
 	}
+
 	notFoundError := err
 
-	s.logger.Info("IP block not found by ID, trying to find by listing IP blocks instead")
 	blocks, err := s.apiWithDepth(listIPBlocksDepth).ListIPBlocks(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list IP blocks: %w", err)
 	}
 
-	controlPlaneEndpointIP, err := cs.GetControlPlaneEndpointIP(ctx)
+	controlPlaneEndpointIP, err := ls.ClusterScope.ResolveIPAddressForHost(ctx, ls.Endpoint().Host)
 	if err != nil {
 		return nil, err
 	}
 
 	var (
-		expectedName     = s.controlPlaneEndpointIPBlockName(cs)
-		expectedLocation = cs.Location()
+		expectedName     = s.controlPlaneEndpointIPBlockName(ls.ClusterScope)
+		expectedLocation = ls.ClusterScope.Location()
 		count            = 0
 		foundBlock       *sdk.IpBlock
 	)
+
 	for _, block := range ptr.Deref(blocks.GetItems(), nil) {
 		props := block.GetProperties()
 		switch {
@@ -328,12 +337,12 @@ func (s *Service) getIPBlockByID(ctx context.Context, ipBlockID string) (*sdk.Ip
 }
 
 // reserveControlPlaneEndpointIPBlock requests for the reservation of an IP block for the control plane.
-func (s *Service) reserveControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.Cluster) error {
+func (s *Service) reserveControlPlaneEndpointIPBlock(ctx context.Context, ls *scope.LoadBalancer) error {
 	log := s.logger.WithName("reserveControlPlaneEndpointIPBlock")
 	return s.reserveIPBlock(
-		ctx, s.controlPlaneEndpointIPBlockName(cs),
-		cs.Location(), log,
-		cs.IonosCluster.SetCurrentClusterRequest,
+		ctx, s.controlPlaneEndpointIPBlockName(ls.ClusterScope),
+		ls.ClusterScope.Location(), log,
+		ls.LoadBalancer.SetCurrentRequest,
 	)
 }
 
@@ -372,9 +381,9 @@ func (s *Service) reserveIPBlock(
 }
 
 // deleteControlPlaneEndpointIPBlock requests for the deletion of the control plane IP block with the given ID.
-func (s *Service) deleteControlPlaneEndpointIPBlock(ctx context.Context, cs *scope.Cluster, ipBlockID string) error {
+func (s *Service) deleteControlPlaneEndpointIPBlock(ctx context.Context, ls *scope.LoadBalancer, ipBlockID string) error {
 	log := s.logger.WithName("deleteControlPlaneEndpointIPBlock")
-	return s.deleteIPBlock(ctx, log, ipBlockID, cs.IonosCluster.SetCurrentClusterRequest)
+	return s.deleteIPBlock(ctx, log, ipBlockID, ls.LoadBalancer.SetCurrentRequest)
 }
 
 // deleteFailoverIPBlock requests for the deletion of the failover IP block with the given ID.
@@ -402,12 +411,12 @@ func (s *Service) deleteIPBlock(
 // getLatestControlPlaneEndpointIPBlockCreationRequest returns the latest IP block creation request.
 func (s *Service) getLatestControlPlaneEndpointIPBlockCreationRequest(
 	ctx context.Context,
-	cs *scope.Cluster,
+	ls *scope.LoadBalancer,
 ) (*requestInfo, error) {
 	return s.getLatestIPBlockRequestByNameAndLocation(
 		ctx, http.MethodPost,
-		s.controlPlaneEndpointIPBlockName(cs),
-		cs.Location(),
+		s.controlPlaneEndpointIPBlockName(ls.ClusterScope),
+		ls.ClusterScope.Location(),
 	)
 }
 

@@ -32,7 +32,7 @@ import (
 
 var errMissingMachineVersion = errors.New("machine is missing version field")
 
-// imageMatchError indicates that either 0 or more than 1 images matched a selector.
+// imageMatchError indicates that either 0 or more than 1 image matched a selector.
 // This error signals that user action is required.
 type imageMatchError struct {
 	imageIDs []string

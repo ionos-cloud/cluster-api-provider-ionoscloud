@@ -247,14 +247,6 @@ func (*IonosCloudLoadBalancerReconciler) validateEndpoints(loadBalancerScope *sc
 		return errors.New("infra cluster already has an endpoint set, but the load balancer does not")
 	}
 
-	if s.InfraClusterEndpoint().IsValid() && s.Endpoint().IsValid() {
-		if s.InfraClusterEndpoint() == s.Endpoint() {
-			return nil
-		}
-
-		return errors.New("infra cluster and load balancer endpoints do not match")
-	}
-
 	return nil
 }
 

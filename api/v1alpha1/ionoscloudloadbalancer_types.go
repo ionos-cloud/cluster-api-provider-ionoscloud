@@ -91,6 +91,10 @@ type IonosCloudLoadBalancerStatus struct {
 	// cloud resource that is being provisioned.
 	//+optional
 	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
+
+	// LoadBalancerEndpointIPBlockID is the IONOS Cloud UUID for the control plane endpoint IP block.
+	//+optional
+	LoadBalancerEndpointIPBlockID string `json:"loadBalancerEndpointIPBlockID,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -123,6 +127,20 @@ func (l *IonosCloudLoadBalancer) GetConditions() clusterv1.Conditions {
 // SetConditions sets the conditions in the status.
 func (l *IonosCloudLoadBalancer) SetConditions(conditions clusterv1.Conditions) {
 	l.Status.Conditions = conditions
+}
+
+// SetCurrentRequest sets the current provisioning request for the cluster.
+func (l *IonosCloudLoadBalancer) SetCurrentRequest(method, status, requestPath string) {
+	l.Status.CurrentRequest = &ProvisioningRequest{
+		Method:      method,
+		RequestPath: requestPath,
+		State:       status,
+	}
+}
+
+// DeleteCurrentRequest deletes the current provisioning request for the cluster.
+func (l *IonosCloudLoadBalancer) DeleteCurrentRequest() {
+	l.Status.CurrentRequest = nil
 }
 
 func init() {

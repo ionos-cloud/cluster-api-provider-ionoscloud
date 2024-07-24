@@ -105,7 +105,11 @@ func (c *Cluster) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
 // GetControlPlaneEndpointIP returns the endpoint IP for the IonosCloudCluster.
 // If the endpoint host is unset (neither an IP nor an FQDN), it will return an empty string.
 func (c *Cluster) GetControlPlaneEndpointIP(ctx context.Context) (string, error) {
-	host := c.GetControlPlaneEndpoint().Host
+	return c.ResolveIPAddressForHost(ctx, c.GetControlPlaneEndpoint().Host)
+}
+
+// ResolveIPAddressForHost resolves the IP address for the given host.
+func (c *Cluster) ResolveIPAddressForHost(ctx context.Context, host string) (string, error) {
 	if host == "" {
 		return "", nil
 	}

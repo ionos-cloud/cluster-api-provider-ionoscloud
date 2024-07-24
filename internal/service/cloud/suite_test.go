@@ -28,6 +28,7 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -79,17 +80,19 @@ const (
 type ServiceTestSuite struct {
 	*require.Assertions
 	suite.Suite
-	k8sClient    client.Client
-	ctx          context.Context
-	machineScope *scope.Machine
-	clusterScope *scope.Cluster
-	log          logr.Logger
-	service      *Service
-	capiCluster  *clusterv1.Cluster
-	capiMachine  *clusterv1.Machine
-	infraCluster *infrav1.IonosCloudCluster
-	infraMachine *infrav1.IonosCloudMachine
-	ionosClient  *clienttest.MockClient
+	k8sClient         client.Client
+	ctx               context.Context
+	machineScope      *scope.Machine
+	clusterScope      *scope.Cluster
+	loadbalancerScope *scope.LoadBalancer
+	log               logr.Logger
+	service           *Service
+	capiCluster       *clusterv1.Cluster
+	capiMachine       *clusterv1.Machine
+	infraCluster      *infrav1.IonosCloudCluster
+	infraMachine      *infrav1.IonosCloudMachine
+	loadbalancer      *infrav1.IonosCloudLoadBalancer
+	ionosClient       *clienttest.MockClient
 }
 
 func (s *ServiceTestSuite) SetupSuite() {
@@ -124,6 +127,9 @@ func (s *ServiceTestSuite) SetupTest() {
 		},
 		Spec: infrav1.IonosCloudClusterSpec{
 			Location: "de/txl",
+			LoadBalancerProviderRef: &corev1.LocalObjectReference{
+				Name: "test-loadbalancer",
+			},
 		},
 		Status: infrav1.IonosCloudClusterStatus{},
 	}
@@ -171,12 +177,27 @@ func (s *ServiceTestSuite) SetupTest() {
 		Status: infrav1.IonosCloudMachineStatus{},
 	}
 
+	s.loadbalancer = &infrav1.IonosCloudLoadBalancer{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "test-loadbalancer",
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: s.capiCluster.Name,
+			},
+		},
+		Spec: infrav1.IonosCloudLoadBalancerSpec{
+			LoadBalancerEndpoint: clusterv1.APIEndpoint{},
+			LoadBalancerSource:   infrav1.LoadBalancerSource{},
+		},
+		Status: infrav1.IonosCloudLoadBalancerStatus{},
+	}
+
 	scheme := runtime.NewScheme()
 	s.NoError(clusterv1.AddToScheme(scheme), "failed to extend scheme with Cluster API types")
 	s.NoError(infrav1.AddToScheme(scheme), "failed to extend scheme with IonosCloud types")
 	s.NoError(clientgoscheme.AddToScheme(scheme))
 
-	initObjects := []client.Object{s.infraMachine, s.infraCluster, s.capiCluster, s.capiMachine}
+	initObjects := []client.Object{s.infraMachine, s.infraCluster, s.capiCluster, s.capiMachine, s.loadbalancer}
 	s.k8sClient = fake.NewClientBuilder().
 		WithScheme(scheme).
 		WithObjects(initObjects...).
@@ -199,6 +220,15 @@ func (s *ServiceTestSuite) SetupTest() {
 		Locker:       locker.New(),
 	})
 	s.NoError(err, "failed to create machine scope")
+
+	s.loadbalancerScope, err = scope.NewLoadBalancer(scope.LoadBalancerParams{
+		Client:       s.k8sClient,
+		LoadBalancer: s.loadbalancer,
+		ClusterScope: s.clusterScope,
+		Locker:       locker.New(),
+	})
+
+	s.NoError(err, "failed to create load balancer scope")
 
 	s.service, err = NewService(s.ionosClient, s.log)
 	s.NoError(err, "failed to create service")

@@ -177,15 +177,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 		}
 
-		// TODO: This logic needs to move to another controller.
-		// Reserving IP Blocks only makes sense for LB implementations or HA setup with kube-vip.
-		//
-		// As we are currently expecting to supply the control plane endpoint manually,
-		// logic-wise nothing changes for us. As soon as we have implemented
-		// the load balancer controller, the cluster controller logic will be basically empty.
-		// reconcileSequence = []serviceReconcileStep[scope.Cluster]{
-		//	{"ReconcileControlPlaneEndpoint", cloudService.ReconcileControlPlaneEndpoint},
-		// }
+		// TODO ensure to apply the endpoint to the cluster endpoint
 	}
 
 	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
@@ -223,23 +215,28 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	var reconcileSequence []serviceReconcileStep[scope.Cluster]
-	// TODO: This logic needs to move to another controller.
 	if clusterScope.IonosCluster.Spec.LoadBalancerProviderRef != nil {
-		reconcileSequence = []serviceReconcileStep[scope.Cluster]{
-			{"ReconcileControlPlaneEndpointDeletion", cloudService.ReconcileControlPlaneEndpointDeletion},
-		}
-	}
+		var loadBalancer infrav1.IonosCloudLoadBalancer
 
-	for _, step := range reconcileSequence {
-		if requeue, err := step.fn(ctx, clusterScope); err != nil || requeue {
-			if err != nil {
-				err = fmt.Errorf("error in step %s: %w", step.name, err)
+		cl := clusterScope.IonosCluster
+		lbKey := client.ObjectKey{
+			Namespace: cl.Namespace,
+			Name:      cl.Spec.LoadBalancerProviderRef.Name,
+		}
+
+		if err := r.Client.Get(ctx, lbKey, &loadBalancer); err != nil {
+			if client.IgnoreNotFound(err) != nil {
+				return ctrl.Result{}, err
 			}
+		}
 
-			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
+		if loadBalancer.ObjectMeta.DeletionTimestamp.IsZero() {
+			if err := r.Client.Delete(ctx, &loadBalancer); err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 	}
+
 	if err := removeCredentialsFinalizer(ctx, r.Client, clusterScope.IonosCluster); err != nil {
 		return ctrl.Result{}, err
 	}

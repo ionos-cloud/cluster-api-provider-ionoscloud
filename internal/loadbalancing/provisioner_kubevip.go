@@ -19,15 +19,28 @@ package loadbalancing
 import (
 	"context"
 
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-type kubeVIPProvisioner struct{}
-
-func (*kubeVIPProvisioner) Provision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	panic("implement me")
+type kubeVIPProvisioner struct {
+	service *cloud.Service
 }
 
-func (*kubeVIPProvisioner) Destroy(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	panic("implement me")
+func (k *kubeVIPProvisioner) Provision(ctx context.Context, ls *scope.LoadBalancer) (requeue bool, err error) {
+	requeue, err = k.service.ReconcileControlPlaneEndpoint(ctx, ls)
+	if requeue || err != nil {
+		return requeue, err
+	}
+
+	return false, nil
+}
+
+func (k *kubeVIPProvisioner) Destroy(ctx context.Context, ls *scope.LoadBalancer) (requeue bool, err error) {
+	requeue, err = k.service.ReconcileControlPlaneEndpointDeletion(ctx, ls)
+	if requeue || err != nil {
+		return requeue, err
+	}
+
+	return false, nil
 }

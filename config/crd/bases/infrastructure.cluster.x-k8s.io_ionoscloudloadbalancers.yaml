@@ -168,6 +168,10 @@ spec:
                 - method
                 - requestPath
                 type: object
+              loadBalancerEndpointIPBlockID:
+                description: LoadBalancerEndpointIPBlockID is the IONOS Cloud UUID
+                  for the control plane endpoint IP block.
+                type: string
               ready:
                 description: Ready indicates that the load balancer is ready.
                 type: boolean
