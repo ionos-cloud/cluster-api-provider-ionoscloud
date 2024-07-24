@@ -83,7 +83,7 @@ spec:
                             ipv4PoolRef:
                               description: |-
                                 IPv4PoolRef is a reference to an IPAMConfig Pool resource, which exposes IPv4 addresses.
-                                The nic will use an available IP address from the referenced pool.
+                                The NIC will use an available IP address from the referenced pool.
                               properties:
                                 apiGroup:
                                   description: |-
@@ -117,7 +117,7 @@ spec:
                             ipv6PoolRef:
                               description: |-
                                 IPv6PoolRef is a reference to an IPAMConfig pool resource, which exposes IPv6 addresses.
-                                The nic will use an available IP address from the referenced pool.
+                                The NIC will use an available IP address from the referenced pool.
                               properties:
                                 apiGroup:
                                   description: |-
@@ -251,7 +251,7 @@ spec:
                       ipv4PoolRef:
                         description: |-
                           IPv4PoolRef is a reference to an IPAMConfig Pool resource, which exposes IPv4 addresses.
-                          The nic will use an available IP address from the referenced pool.
+                          The NIC will use an available IP address from the referenced pool.
                         properties:
                           apiGroup:
                             description: |-
@@ -280,7 +280,7 @@ spec:
                       ipv6PoolRef:
                         description: |-
                           IPv6PoolRef is a reference to an IPAMConfig pool resource, which exposes IPv6 addresses.
-                          The nic will use an available IP address from the referenced pool.
+                          The NIC will use an available IP address from the referenced pool.
                         properties:
                           apiGroup:
                             description: |-

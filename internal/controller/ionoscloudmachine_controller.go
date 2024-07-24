@@ -36,7 +36,7 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/ipam"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/k8s"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -181,10 +181,10 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	ipamHelper := ipam.NewHelper(r.Client, log)
+	k8sHelper := k8s.NewHelper(r.Client, log)
 	reconcileSequence := []serviceReconcileStep[scope.Machine]{
 		{"ReconcileLAN", cloudService.ReconcileLAN},
-		{"ReconcileIPAddressClaims", ipamHelper.ReconcileIPAddresses},
+		{"ReconcileIPAddressClaims", k8sHelper.ReconcileIPAddresses},
 		{"ReconcileServer", cloudService.ReconcileServer},
 		{"ReconcileIPFailover", cloudService.ReconcileIPFailover},
 		{"FinalizeMachineProvisioning", cloudService.FinalizeMachineProvisioning},
@@ -223,7 +223,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	ipamHelper := ipam.NewHelper(r.Client, log)
+	ipamHelper := k8s.NewHelper(r.Client, log)
 	reconcileSequence := []serviceReconcileStep[scope.Machine]{
 		// NOTE(avorima): NICs, which are configured in an IP failover configuration, cannot be deleted
 		// by a request to delete the server. Therefore, during deletion, we need to remove the NIC from
@@ -232,7 +232,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		{"ReconcileServerDeletion", cloudService.ReconcileServerDeletion},
 		{"ReconcileLANDeletion", cloudService.ReconcileLANDeletion},
 		{"ReconcileFailoverIPBlockDeletion", cloudService.ReconcileFailoverIPBlockDeletion},
-		{"ReconcileIPAddressClaimsDeletion", ipamHelper.ReconcileIPAddresses},
+		{"ReconcileIPAddressClaimsDeletion", ipamHelper.ReconcileIPAddressClaimsDeletion},
 	}
 
 	for _, step := range reconcileSequence {
