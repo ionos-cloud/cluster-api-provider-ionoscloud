@@ -178,7 +178,11 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 		}
 
-		// TODO ensure to apply the endpoint to the cluster endpoint
+		if loadBalancer.Spec.LoadBalancerEndpoint.IsValid() {
+			if clusterScope.IonosCluster.Spec.ControlPlaneEndpoint != loadBalancer.Spec.LoadBalancerEndpoint {
+				clusterScope.IonosCluster.Spec.ControlPlaneEndpoint = loadBalancer.Spec.LoadBalancerEndpoint
+			}
+		}
 	}
 
 	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)

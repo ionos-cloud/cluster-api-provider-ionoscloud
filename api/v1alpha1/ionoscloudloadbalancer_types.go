@@ -75,6 +75,11 @@ type KubeVIPSpec struct {
 	// If not provided, the default image will be used.
 	//+optional
 	Image string `json:"image,omitempty"`
+
+	// Interface is the network interface to use for the KubeVIP static pod.
+	// If not provided, the default interface will be used.
+	//+optional
+	Interface string `json:"interface,omitempty"`
 }
 
 // IonosCloudLoadBalancerStatus defines the observed state of IonosCloudLoadBalancer.
@@ -144,5 +149,5 @@ func (l *IonosCloudLoadBalancer) DeleteCurrentRequest() {
 }
 
 func init() {
-	objectTypes = append(objectTypes, &IonosCloudLoadBalancer{})
+	objectTypes = append(objectTypes, &IonosCloudLoadBalancer{}, &IonosCloudLoadBalancerList{})
 }
