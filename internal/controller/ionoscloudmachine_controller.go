@@ -131,9 +131,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 		return ctrl.Result{}, fmt.Errorf("failed to create ionos client: %w", err)
 	}
 
-	if err != nil {
-		return ctrl.Result{}, errors.New("could not create machine service")
-	}
 	if !ionosCloudMachine.ObjectMeta.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, machineScope, cloudService)
 	}
