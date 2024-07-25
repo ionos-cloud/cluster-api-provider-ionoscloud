@@ -67,8 +67,8 @@ func (lwc *lockWithCounter) inc() {
 }
 
 // dec decrements the number of waiters.
-func (lwc *lockWithCounter) dec() {
-	lwc.waiters.Add(-1)
+func (lwc *lockWithCounter) dec() int32 {
+	return lwc.waiters.Add(-1)
 }
 
 // count gets the current number of waiters.
@@ -109,10 +109,9 @@ func (l *Locker) Lock(ctx context.Context, key string) error {
 		return nil
 	case <-ctx.Done():
 		// Locking aborted, so we can decrement the number of waiters for this lock.
-		lwc.dec()
-		// If there are no more waiters, we can delete the lock.
+		// If there are no more waiters and the lock is not held, we can delete the lock.
 		l.mu.Lock()
-		if lwc.count() == 0 {
+		if lwc.dec() == 0 && len(lwc.ch) == 0 {
 			delete(l.locks, key)
 		}
 		l.mu.Unlock()
@@ -129,10 +128,12 @@ func (l *Locker) Unlock(key string) {
 	if !exists {
 		panic("no such lock: " + key)
 	}
-	<-lwc.ch
 
 	// If there are no more waiters, we can delete the lock.
 	if lwc.count() == 0 {
 		delete(l.locks, key)
 	}
+
+	// Release key lock
+	<-lwc.ch
 }
