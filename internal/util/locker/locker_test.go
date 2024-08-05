@@ -158,5 +158,5 @@ func TestLockerContextDeadlineExceeded(t *testing.T) {
 		require.ErrorIs(t, context.DeadlineExceeded, err)
 	})
 
-	require.Empty(t, l.locks)
+	require.NotPanics(t, func() { l.Unlock("test") })
 }
