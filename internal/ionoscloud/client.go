@@ -41,7 +41,7 @@ type Client interface {
 	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
 	// CreateLAN creates a new LAN with the provided properties in the specified data center,
 	// returning the request path.
-	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost) (string, error)
+	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanProperties) (string, error)
 	// PatchLAN patches the LAN that matches lanID in the specified data center with the provided properties,
 	// returning the request location.
 	PatchLAN(ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties) (string, error)

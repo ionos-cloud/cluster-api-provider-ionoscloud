@@ -98,7 +98,7 @@ func (_c *MockClient_CheckRequestStatus_Call) RunAndReturn(run func(context.Cont
 }
 
 // CreateLAN provides a mock function with given fields: ctx, datacenterID, properties
-func (_m *MockClient) CreateLAN(ctx context.Context, datacenterID string, properties ionoscloud.LanPropertiesPost) (string, error) {
+func (_m *MockClient) CreateLAN(ctx context.Context, datacenterID string, properties ionoscloud.LanProperties) (string, error) {
 	ret := _m.Called(ctx, datacenterID, properties)
 
 	if len(ret) == 0 {
@@ -107,16 +107,16 @@ func (_m *MockClient) CreateLAN(ctx context.Context, datacenterID string, proper
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.LanPropertiesPost) (string, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.LanProperties) (string, error)); ok {
 		return rf(ctx, datacenterID, properties)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.LanPropertiesPost) string); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.LanProperties) string); ok {
 		r0 = rf(ctx, datacenterID, properties)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, ionoscloud.LanPropertiesPost) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, ionoscloud.LanProperties) error); ok {
 		r1 = rf(ctx, datacenterID, properties)
 	} else {
 		r1 = ret.Error(1)
@@ -133,14 +133,14 @@ type MockClient_CreateLAN_Call struct {
 // CreateLAN is a helper method to define mock.On call
 //   - ctx context.Context
 //   - datacenterID string
-//   - properties ionoscloud.LanPropertiesPost
+//   - properties ionoscloud.LanProperties
 func (_e *MockClient_Expecter) CreateLAN(ctx interface{}, datacenterID interface{}, properties interface{}) *MockClient_CreateLAN_Call {
 	return &MockClient_CreateLAN_Call{Call: _e.mock.On("CreateLAN", ctx, datacenterID, properties)}
 }
 
-func (_c *MockClient_CreateLAN_Call) Run(run func(ctx context.Context, datacenterID string, properties ionoscloud.LanPropertiesPost)) *MockClient_CreateLAN_Call {
+func (_c *MockClient_CreateLAN_Call) Run(run func(ctx context.Context, datacenterID string, properties ionoscloud.LanProperties)) *MockClient_CreateLAN_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(ionoscloud.LanPropertiesPost))
+		run(args[0].(context.Context), args[1].(string), args[2].(ionoscloud.LanProperties))
 	})
 	return _c
 }
@@ -150,7 +150,7 @@ func (_c *MockClient_CreateLAN_Call) Return(_a0 string, _a1 error) *MockClient_C
 	return _c
 }
 
-func (_c *MockClient_CreateLAN_Call) RunAndReturn(run func(context.Context, string, ionoscloud.LanPropertiesPost) (string, error)) *MockClient_CreateLAN_Call {
+func (_c *MockClient_CreateLAN_Call) RunAndReturn(run func(context.Context, string, ionoscloud.LanProperties) (string, error)) *MockClient_CreateLAN_Call {
 	_c.Call.Return(run)
 	return _c
 }
