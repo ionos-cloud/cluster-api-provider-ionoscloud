@@ -36,6 +36,7 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/k8s"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -62,6 +63,8 @@ func NewIonosCloudMachineReconciler(mgr ctrl.Manager) *IonosCloudMachineReconcil
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudmachines/finalizers,verbs=update
 
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
+//+kubebuilder:rbac:groups=ipam.cluster.x-k8s.io,resources=ipaddresses,verbs=get;list;watch
+//+kubebuilder:rbac:groups=ipam.cluster.x-k8s.io,resources=ipaddressclaims,verbs=get;list;watch;create;update;delete
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;update
 //+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
@@ -135,11 +138,11 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 		return r.reconcileDelete(ctx, machineScope, cloudService)
 	}
 
-	return r.reconcileNormal(ctx, cloudService, machineScope)
+	return r.reconcileNormal(ctx, machineScope, cloudService)
 }
 
 func (r *IonosCloudMachineReconciler) reconcileNormal(
-	ctx context.Context, cloudService *cloud.Service, machineScope *scope.Machine,
+	ctx context.Context, machineScope *scope.Machine, cloudService *cloud.Service,
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(4).Info("Reconciling IonosCloudMachine")
@@ -175,8 +178,10 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
+	k8sHelper := k8s.NewHelper(r.Client, log)
 	reconcileSequence := []serviceReconcileStep[scope.Machine]{
 		{"ReconcileLAN", cloudService.ReconcileLAN},
+		{"ReconcileIPAddressClaims", k8sHelper.ReconcileIPAddresses},
 		{"ReconcileServer", cloudService.ReconcileServer},
 		{"ReconcileIPFailover", cloudService.ReconcileIPFailover},
 		{"FinalizeMachineProvisioning", cloudService.FinalizeMachineProvisioning},
@@ -215,6 +220,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		return ctrl.Result{RequeueAfter: reducedReconcileDuration}, nil
 	}
 
+	ipamHelper := k8s.NewHelper(r.Client, log)
 	reconcileSequence := []serviceReconcileStep[scope.Machine]{
 		// NOTE(avorima): NICs, which are configured in an IP failover configuration, cannot be deleted
 		// by a request to delete the server. Therefore, during deletion, we need to remove the NIC from
@@ -223,6 +229,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		{"ReconcileServerDeletion", cloudService.ReconcileServerDeletion},
 		{"ReconcileLANDeletion", cloudService.ReconcileLANDeletion},
 		{"ReconcileFailoverIPBlockDeletion", cloudService.ReconcileFailoverIPBlockDeletion},
+		{"ReconcileIPAddressClaimsDeletion", ipamHelper.ReconcileIPAddressClaimsDeletion},
 	}
 
 	for _, step := range reconcileSequence {

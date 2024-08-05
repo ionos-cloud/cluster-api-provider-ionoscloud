@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -173,6 +174,7 @@ func (s *ServiceTestSuite) SetupTest() {
 
 	scheme := runtime.NewScheme()
 	s.NoError(clusterv1.AddToScheme(scheme), "failed to extend scheme with Cluster API types")
+	s.NoError(ipamv1.AddToScheme(scheme), "failed to extend scheme with Cluster API ipam types")
 	s.NoError(infrav1.AddToScheme(scheme), "failed to extend scheme with IonosCloud types")
 	s.NoError(clientgoscheme.AddToScheme(scheme))
 
