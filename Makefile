@@ -81,6 +81,12 @@ unit-test: generate mocks ## Run unit tests.
 	@grep -vE 'generated|mock' $(COVERAGE).tmp > $(COVERAGE)
 	@rm $(COVERAGE).tmp
 
+.PHONY: unit-test-fmt
+unit-test-fmt: ## Run unit tests with fmt.
+	CGO_ENABLED=1 go test ./... -v -race -shuffle on -coverprofile $(COVERAGE).tmp -timeout=5m -short -json | gotestfmt
+	@grep -vE 'generated|mock' $(COVERAGE).tmp > $(COVERAGE)
+	@rm $(COVERAGE).tmp
+
 .PHONY: integration-test
 integration-test: manifests api-integration-test ## Run integration tests.
 
@@ -315,3 +321,15 @@ ionosctl: $(LOCALBIN) ## Download the latest release of ionosctl and add to the 
 .PHONY: remove-cancelled-e2e-leftovers
 remove-cancelled-e2e-leftovers: $(ionosctl) ## Remove any leftover resources from cancelled e2e tests
 	$(ROOT_DIR)/hack/scripts/cancelled-workflow.sh
+
+TMPDIR ?= /tmp
+
+.PHONY: generate-local-ssl-certs
+generate-local-ssl-certs: ## Generate local SSL certificates for running webhooks locally
+	mkdir -p ${TMPDIR}/k8s-webhook-server/serving-certs
+	openssl req -x509 -nodes \
+		-newkey rsa:2048 \
+		-keyout ${TMPDIR}/k8s-webhook-server/serving-certs/tls.key \
+		-out ${TMPDIR}/k8s-webhook-server/serving-certs/tls.crt \
+		-days 365 \
+		-subj "/CN=local-webhook"

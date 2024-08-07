@@ -27,13 +27,22 @@ stringData:
   token: "${IONOS_TOKEN}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: IonosCloudLoadBalancer
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  loadBalancerEndpoint:
+    host: ${CONTROL_PLANE_ENDPOINT_HOST:-${CONTROL_PLANE_ENDPOINT_IP:-""}}
+    port: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
+  kubeVIP: {}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: IonosCloudCluster
 metadata:
   name: "${CLUSTER_NAME}"
 spec:
-  controlPlaneEndpoint:
-    host: ${CONTROL_PLANE_ENDPOINT_HOST:-${CONTROL_PLANE_ENDPOINT_IP}}
-    port: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
+  loadBalancerProviderRef:
+    name: ${CLUSTER_NAME}
   location: ${CONTROL_PLANE_ENDPOINT_LOCATION}
   credentialsRef:
     name: "${CLUSTER_NAME}-credentials"

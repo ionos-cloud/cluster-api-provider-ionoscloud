@@ -229,15 +229,15 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 			Name:      cl.Spec.LoadBalancerProviderRef.Name,
 		}
 
-		if err := r.Client.Get(ctx, lbKey, &loadBalancer); err != nil {
-			if client.IgnoreNotFound(err) != nil {
+		if err := r.Client.Get(ctx, lbKey, &loadBalancer); !apierrors.IsNotFound(err) {
+			if err != nil {
 				return ctrl.Result{}, err
 			}
-		}
 
-		if loadBalancer.ObjectMeta.DeletionTimestamp.IsZero() {
-			if err := r.Client.Delete(ctx, &loadBalancer); err != nil {
-				return ctrl.Result{}, err
+			if loadBalancer.ObjectMeta.DeletionTimestamp.IsZero() {
+				if err := r.Client.Delete(ctx, &loadBalancer); err != nil {
+					return ctrl.Result{}, err
+				}
 			}
 		}
 	}
@@ -283,7 +283,11 @@ func (r *IonosCloudClusterReconciler) applyLoadBalancerMeta(
 	}
 
 	loadBalancerLabels, clusterLabels := loadBalancer.GetLabels(), ionosCloudCluster.GetLabels()
+	if loadBalancerLabels == nil {
+		loadBalancerLabels = make(map[string]string)
+	}
 	loadBalancerLabels[clusterv1.ClusterNameLabel] = clusterLabels[clusterv1.ClusterNameLabel]
+	loadBalancer.SetLabels(loadBalancerLabels)
 
 	if !cmp.Equal(beforeObject.ObjectMeta, loadBalancer.ObjectMeta) {
 		return r.Client.Patch(ctx, loadBalancer, client.MergeFrom(beforeObject))
