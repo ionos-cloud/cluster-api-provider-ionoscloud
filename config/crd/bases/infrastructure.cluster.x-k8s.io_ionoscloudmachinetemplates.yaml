@@ -73,13 +73,18 @@ spec:
                     description: Spec is the IonosCloudMachineSpec for the IonosCloudMachineTemplate.
                     properties:
                       additionalNetworks:
-                        description: |-
-                          AdditionalNetworks defines the additional network configurations for the VM.
-                          NOTE(lubedacht): We currently only support networks with DHCP enabled.
+                        description: AdditionalNetworks defines the additional network
+                          configurations for the VM.
                         items:
                           description: Network contains the config for additional
                             LANs.
                           properties:
+                            dhcp:
+                              default: true
+                              description: |-
+                                DHCP indicates whether DHCP is enabled for the LAN.
+                                The primary NIC will always have DHCP enabled.
+                              type: boolean
                             networkID:
                               description: |-
                                 NetworkID represents an ID an existing LAN in the data center.

@@ -150,6 +150,45 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
 	s.True(requeue)
 }
 
+func (s *serverSuite) TestReconcileServerAdditionalNetworks() {
+	s.machineScope.IonosMachine.Spec.AdditionalNetworks = []infrav1.Network{{
+		NetworkID: 43,
+		DHCP:      ptr.To(false),
+	}, {
+		NetworkID: 44,
+		DHCP:      ptr.To(true),
+	}}
+
+	s.prepareReconcileServerRequestTest()
+	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
+	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+		Id: ptr.To(exampleLANID),
+		Properties: &sdk.LanProperties{
+			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
+			Public: ptr.To(true),
+		},
+	}}}, nil)
+
+	properties, entities := s.defaultServerComponents()
+	*entities.Nics.Items = append(*entities.Nics.Items, sdk.Nic{
+		Properties: &sdk.NicProperties{
+			Lan:  ptr.To[int32](43),
+			Dhcp: ptr.To(false),
+		},
+	}, sdk.Nic{
+		Properties: &sdk.NicProperties{
+			Lan:  ptr.To[int32](44),
+			Dhcp: ptr.To(true),
+		},
+	})
+	s.mockCreateServerCall(properties, entities).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
+
+	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
+	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
+	s.NoError(err)
+	s.True(requeue)
+}
+
 func (s *serverSuite) TestReconcileEnterpriseServerNoRequest() {
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)

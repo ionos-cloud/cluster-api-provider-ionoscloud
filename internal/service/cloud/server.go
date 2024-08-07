@@ -431,7 +431,8 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 
 	for _, nic := range ms.IonosMachine.Spec.AdditionalNetworks {
 		items = append(items, sdk.Nic{Properties: &sdk.NicProperties{
-			Lan: &nic.NetworkID,
+			Lan:  &nic.NetworkID,
+			Dhcp: nic.DHCP,
 		}})
 	}
 
