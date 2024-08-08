@@ -354,6 +354,11 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				m.Spec.AdditionalNetworks[0].NetworkID = -1
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
+			It("DHCP should default to true", func() {
+				m := defaultMachine()
+				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+				Expect(*m.Spec.AdditionalNetworks[0].DHCP).To(BeTrue())
+			})
 		})
 	})
 	Context("FailoverIP", func() {
