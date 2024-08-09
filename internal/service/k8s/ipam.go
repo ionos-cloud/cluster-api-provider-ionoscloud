@@ -27,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -219,7 +220,7 @@ func (h *Helper) handleIPAddressForNIC(ctx context.Context, machineScope *scope.
 			return "", err
 		}
 		log.V(4).Info("IPAddressClaim not found, creating it.", "nic", nic)
-		err = h.CreateIPAddressClaim(ctx, machineScope.IonosMachine, key.Name, poolRef)
+		err = h.CreateIPAddressClaim(ctx, machineScope.IonosMachine, key.Name, machineScope.ClusterScope.Cluster.Name, poolRef)
 		if err != nil {
 			return "", errors.Join(err, fmt.Errorf("unable to create IPAddressClaim for machine %s", machineScope.IonosMachine.Name))
 		}
@@ -251,12 +252,11 @@ func (h *Helper) handleIPAddressForNIC(ctx context.Context, machineScope *scope.
 }
 
 // CreateIPAddressClaim creates an IPAddressClaim for a given object.
-func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, name string, poolRef *corev1.TypedLocalObjectReference) error {
+func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, name string, cluster string, poolRef *corev1.TypedLocalObjectReference) error {
 	claimRef := types.NamespacedName{
 		Namespace: owner.GetNamespace(),
 		Name:      name,
 	}
-
 	ipAddrClaim := &ipamv1.IPAddressClaim{}
 	var err error
 	if err = h.client.Get(ctx, claimRef, ipAddrClaim); err != nil && !apierrors.IsNotFound(err) {
@@ -272,6 +272,7 @@ func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      claimRef.Name,
 			Namespace: claimRef.Namespace,
+			Labels:    map[string]string{clusterv1.ClusterNameLabel: cluster},
 		},
 		Spec: ipamv1.IPAddressClaimSpec{
 			PoolRef: *poolRef,
