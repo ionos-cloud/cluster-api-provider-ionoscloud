@@ -183,6 +183,10 @@ type Network struct {
 	//+kubebuilder:validation:Minimum=1
 	NetworkID int32 `json:"networkID"`
 
+	// VNET is solely used for internal purposes and requires elevated permissions.
+	//+optional
+	VNET *string `json:"vnet,omitempty"`
+
 	// DHCP indicates whether DHCP is enabled for the LAN.
 	// The primary NIC will always have DHCP enabled.
 	//+kubebuilder:default=true
