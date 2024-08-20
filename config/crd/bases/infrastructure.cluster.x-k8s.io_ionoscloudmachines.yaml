@@ -82,6 +82,10 @@ spec:
                       format: int32
                       minimum: 1
                       type: integer
+                    vnet:
+                      description: VNET is solely used for internal purposes and requires
+                        elevated permissions.
+                      type: string
                   required:
                   - networkID
                   type: object
