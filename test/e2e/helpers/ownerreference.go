@@ -109,7 +109,7 @@ var KubernetesReferenceAssertions = map[string]func(types.NamespacedName, []meta
 			[]metav1.OwnerReference{ionosCloudClusterController},
 		)
 	},
-	"ConfigMap": func(owners []metav1.OwnerReference) error {
+	"ConfigMap": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		// The only configMaps considered here are those owned by a ClusterResourceSet.
 		return framework.HasExactOwners(owners, clusterResourceSetOwner)
 	},
