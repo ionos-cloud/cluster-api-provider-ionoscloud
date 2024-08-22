@@ -21,6 +21,7 @@ package helpers
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
@@ -64,15 +65,15 @@ var (
 // OwnerReferences aren't as expected.
 // Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/tree/main/docs/book/src/reference/owner_references.md.
 // That document should be updated if these references change.
-var IonosCloudInfraOwnerReferenceAssertions = map[string]func([]metav1.OwnerReference) error{
-	"IonosCloudMachine": func(owners []metav1.OwnerReference) error {
+var IonosCloudInfraOwnerReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
+	"IonosCloudMachine": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		return framework.HasExactOwners(owners, machineController)
 
 	},
-	"IonosCloudMachineTemplate": func(owners []metav1.OwnerReference) error {
+	"IonosCloudMachineTemplate": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		return framework.HasExactOwners(owners, clusterOwner)
 	},
-	"IonosCloudCluster": func(owners []metav1.OwnerReference) error {
+	"IonosCloudCluster": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		// IonosCloudCluster must be owned and controlled by a Cluster.
 		return framework.HasExactOwners(owners, clusterController)
 	},
@@ -82,13 +83,13 @@ var IonosCloudInfraOwnerReferenceAssertions = map[string]func([]metav1.OwnerRefe
 // aren't as expected.
 // Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/tree/main/docs/book/src/reference/owner_references.md.
 // That document should be updated if these references change.
-var ExpOwnerReferenceAssertions = map[string]func([]metav1.OwnerReference) error{
-	"ClusterResourceSet": func(owners []metav1.OwnerReference) error {
+var ExpOwnerReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
+	"ClusterResourceSet": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		// ClusterResourcesSet doesn't have ownerReferences (it is a clusterctl move-hierarchy root).
 		return framework.HasExactOwners(owners)
 	},
 	// ClusterResourcesSetBinding has ClusterResourceSet set as owners on creation.
-	"ClusterResourceSetBinding": func(owners []metav1.OwnerReference) error {
+	"ClusterResourceSetBinding": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		return framework.HasOneOfExactOwners(owners, []metav1.OwnerReference{clusterResourceSetOwner}, []metav1.OwnerReference{clusterResourceSetOwner, clusterResourceSetOwner})
 	},
 }
@@ -97,8 +98,8 @@ var ExpOwnerReferenceAssertions = map[string]func([]metav1.OwnerReference) error
 // aren't as expected.
 // Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/tree/main/docs/book/src/reference/owner_references.md.
 // That document should be updated if these references change.
-var KubernetesReferenceAssertions = map[string]func([]metav1.OwnerReference) error{
-	"Secret": func(owners []metav1.OwnerReference) error {
+var KubernetesReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
+	"Secret": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		// Secrets for cluster certificates must be owned and controlled by the KubeadmControlPlane.
 		// The bootstrap secret should be owned and controlled by a KubeadmControlPlane.
 		// The cluster IONOS Cloud credentials secret should be owned and controlled by IonosCloudClusterController

@@ -68,7 +68,7 @@ var _ = Describe("Should be able to create a cluster with 3 control-plane and 2 
 
 				// This check ensures that finalizers are resilient - i.e. correctly re-reconciled - when removed.
 				framework.ValidateFinalizersResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
-					framework.CoreFinalizersAssertion,
+					framework.CoreFinalizersAssertionWithClassyClusters,
 					framework.KubeadmControlPlaneFinalizersAssertion,
 					helpers.IonosCloudInfraFinalizersAssertion,
 					helpers.ExpFinalizersAssertion,
