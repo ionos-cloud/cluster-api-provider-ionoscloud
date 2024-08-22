@@ -24,6 +24,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"k8s.io/klog/v2"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,6 +108,9 @@ func TestE2E(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping as only short tests should run")
 	}
+
+	ctrl.SetLogger(klog.Background())
+
 	g := NewWithT(t)
 
 	// ensure the artifacts folder exists
