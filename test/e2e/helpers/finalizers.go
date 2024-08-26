@@ -48,7 +48,13 @@ func KubernetesFinalizersAssertion(clusters *infrav1.IonosCloudClusterList) map[
 		for _, cluster := range clusters.Items {
 			secretAssertions = append(secretAssertions, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))
 		}
-		assertions["Secret"] = func(types.NamespacedName) []string { return secretAssertions }
+		assertions["Secret"] = func(nn types.NamespacedName) []string {
+			if nn.Name == "ionoscloud-credentials" {
+				return secretAssertions
+			}
+
+			return []string{}
+		}
 	}
 	return assertions
 }
