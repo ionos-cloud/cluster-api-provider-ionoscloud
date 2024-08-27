@@ -22,6 +22,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/test/e2e/helpers"
 	"os"
 
 	"github.com/google/uuid"
@@ -176,7 +177,7 @@ func (e *ionosCloudEnv) createCredentialsSecretPNC(clusterProxy framework.Cluste
 	k8sClient := clusterProxy.GetClient()
 
 	namespacedName := types.NamespacedName{
-		Name:      "ionoscloud-credentials",
+		Name:      helpers.CloudAPISecretName,
 		Namespace: namespace,
 	}
 

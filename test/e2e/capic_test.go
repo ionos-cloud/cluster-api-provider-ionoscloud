@@ -32,7 +32,7 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/test/e2e/helpers"
 )
 
-var _ = Describe("Should be able to create a cluster with 3 control-plane and 2 worker nodes", func() {
+var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-plane and 2 worker nodes", func() {
 	capie2e.QuickStartSpec(ctx, func() capie2e.QuickStartSpecInput {
 		return capie2e.QuickStartSpecInput{
 			E2EConfig:                e2eConfig,

@@ -22,6 +22,7 @@ package helpers
 import (
 	"fmt"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	addonsv1 "sigs.k8s.io/cluster-api/exp/addons/api/v1beta1"
 
@@ -41,6 +42,8 @@ var ExpFinalizersAssertion = map[string]func(types.NamespacedName) []string{
 
 // KubernetesFinalizersAssertion maps Kubernetes resource types to their expected finalizers.
 func KubernetesFinalizersAssertion(clusters *infrav1.IonosCloudClusterList) map[string]func(types.NamespacedName) []string {
+	// Add secret names here that are known to be used by the test suite.
+	knownSecrets := sets.New(CloudAPISecretName)
 	assertions := map[string]func(types.NamespacedName) []string{}
 
 	if clusters != nil {
@@ -49,7 +52,7 @@ func KubernetesFinalizersAssertion(clusters *infrav1.IonosCloudClusterList) map[
 			secretAssertions = append(secretAssertions, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))
 		}
 		assertions["Secret"] = func(nn types.NamespacedName) []string {
-			if nn.Name == "ionoscloud-credentials" {
+			if knownSecrets.Has(nn.Name) {
 				return secretAssertions
 			}
 
