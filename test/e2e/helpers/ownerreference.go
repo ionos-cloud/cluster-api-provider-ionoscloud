@@ -41,13 +41,9 @@ var (
 	machineController = metav1.OwnerReference{Kind: "Machine", APIVersion: coreGroupVersion, Controller: ptr.To(true)}
 )
 
-var (
-	ionosCloudClusterController = metav1.OwnerReference{Kind: "IonosCloudCluster", APIVersion: infrav1.GroupVersion.String(), Controller: ptr.To(false)}
-)
+var ionosCloudClusterController = metav1.OwnerReference{Kind: "IonosCloudCluster", APIVersion: infrav1.GroupVersion.String(), Controller: ptr.To(false)}
 
-var (
-	clusterResourceSetOwner = metav1.OwnerReference{Kind: "ClusterResourceSet", APIVersion: addonsv1.GroupVersion.String()}
-)
+var clusterResourceSetOwner = metav1.OwnerReference{Kind: "ClusterResourceSet", APIVersion: addonsv1.GroupVersion.String()}
 
 // Kind and Owners for types in the Kubeadm ControlPlane package.
 var (
@@ -68,7 +64,6 @@ var (
 var IonosCloudInfraOwnerReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
 	"IonosCloudMachine": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		return framework.HasExactOwners(owners, machineController)
-
 	},
 	"IonosCloudMachineTemplate": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		return framework.HasExactOwners(owners, clusterOwner)

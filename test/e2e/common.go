@@ -17,6 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package e2e offers end-to-end tests for the Cluster API IONOS Cloud provider.
 package e2e
 
 import (
@@ -32,6 +33,6 @@ const (
 	KubernetesVersion = "KUBERNETES_VERSION"
 )
 
-func Byf(format string, a ...interface{}) {
+func Byf(format string, a ...any) {
 	By(fmt.Sprintf(format, a...))
 }

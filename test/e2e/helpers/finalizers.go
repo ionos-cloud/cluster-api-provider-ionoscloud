@@ -21,9 +21,9 @@ package helpers
 
 import (
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-
 	addonsv1 "sigs.k8s.io/cluster-api/exp/addons/api/v1beta1"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"

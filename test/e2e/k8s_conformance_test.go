@@ -20,8 +20,9 @@ limitations under the License.
 package e2e
 
 import (
-	. "github.com/onsi/ginkgo/v2"
 	capie2e "sigs.k8s.io/cluster-api/test/e2e"
+
+	. "github.com/onsi/ginkgo/v2"
 )
 
 var _ = Describe("When testing K8S conformance", Label("Conformance"), func() {

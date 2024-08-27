@@ -17,23 +17,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package e2e offers end-to-end tests for the Cluster API IONOS Cloud provider.
 package e2e
 
 import (
 	"context"
 	"flag"
 	"fmt"
-	"k8s.io/klog/v2"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
@@ -42,9 +39,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-// Test suite flags
+// Test suite flags.
 var (
 	// configPath is the path to the e2e config file.
 	configPath string
@@ -114,12 +114,12 @@ func TestE2E(t *testing.T) {
 	g := NewWithT(t)
 
 	// ensure the artifacts folder exists
-	g.Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder)
+	g.Expect(os.MkdirAll(artifactFolder, 0o750)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder)
 
 	if alsoLogToFile {
 		w, err := ginkgoextensions.EnableFileLogging(filepath.Join(artifactFolder, "ginkgo-log.txt"))
 		g.Expect(err).ToNot(HaveOccurred())
-		defer w.Close()
+		defer g.Expect(w.Close()).NotTo(HaveOccurred())
 	}
 
 	RegisterFailHandler(Fail)
@@ -186,7 +186,9 @@ var _ = SynchronizedAfterSuite(func() {
 }, func() {
 	// After all ParallelNodes.
 	By("Dumping logs from the bootstrap cluster")
-	dumpBootstrapClusterLogs()
+	if err := dumpBootstrapClusterLogs(); err != nil {
+		GinkgoWriter.Printf("Failed to dump bootstrap cluster logs: %v", err)
+	}
 
 	By("Tearing down the management cluster")
 	if !skipCleanup {
@@ -257,19 +259,18 @@ func initBootstrapCluster() {
 	}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 }
 
-func dumpBootstrapClusterLogs() {
+func dumpBootstrapClusterLogs() error {
 	if bootstrapClusterProxy == nil {
-		return
+		return nil
 	}
 	clusterLogCollector := bootstrapClusterProxy.GetLogCollector()
 	if clusterLogCollector == nil {
-		return
+		return nil
 	}
 
 	nodes, err := bootstrapClusterProxy.GetClientSet().CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		fmt.Printf("Failed to get nodes for the bootstrap cluster: %v\n", err)
-		return
+		return fmt.Errorf("failed to get nodes for the bootstrap cluster: %w", err)
 	}
 
 	for i := range nodes.Items {
@@ -289,9 +290,10 @@ func dumpBootstrapClusterLogs() {
 			filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName(), "machines", nodeName),
 		)
 		if err != nil {
-			fmt.Printf("Failed to get logs for the bootstrap cluster node %s: %v\n", nodeName, err)
+			return fmt.Errorf("failed to get logs for the bootstrap cluster node %s: %w", nodeName, err)
 		}
 	}
+	return nil
 }
 
 func tearDown() {

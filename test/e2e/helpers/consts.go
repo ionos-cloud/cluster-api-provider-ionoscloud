@@ -17,8 +17,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package helpers provides helper functions for the e2e tests.
 package helpers
 
 const (
-	CloudAPISecretName = "ionoscloud-credentials"
+	// CloudAPISecretName is the name of the secret used to store the cloud API credentials.
+	CloudAPISecretName = "ionoscloud-credentials" //nolint:gosec
 )
