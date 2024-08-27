@@ -219,12 +219,12 @@ func (c *IonosCloudClient) DeleteVolume(ctx context.Context, datacenterID, volum
 
 // CreateLAN creates a new LAN with the provided properties in the specified data center,
 // returning the request location.
-func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanPropertiesPost,
+func (c *IonosCloudClient) CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanProperties,
 ) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
 	}
-	lanPost := sdk.LanPost{
+	lanPost := sdk.Lan{
 		Properties: &properties,
 	}
 	_, req, err := c.API.LANsApi.DatacentersLansPost(ctx, datacenterID).Lan(lanPost).Execute()

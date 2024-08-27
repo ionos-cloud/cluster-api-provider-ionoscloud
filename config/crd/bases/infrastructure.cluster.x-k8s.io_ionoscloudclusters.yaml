@@ -119,8 +119,10 @@ spec:
                   rule: self == oldSelf
             required:
             - credentialsRef
-            - location
             type: object
+            x-kubernetes-validations:
+            - message: location is required when controlPlaneEndpoint.host is set
+              rule: self.controlPlaneEndpoint.host == '' || has(self.location)
           status:
             description: IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
             properties:

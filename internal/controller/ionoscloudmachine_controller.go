@@ -134,9 +134,6 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 		return ctrl.Result{}, fmt.Errorf("failed to create ionos client: %w", err)
 	}
 
-	if err != nil {
-		return ctrl.Result{}, errors.New("could not create machine service")
-	}
 	if !ionosCloudMachine.ObjectMeta.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, machineScope, cloudService)
 	}
@@ -343,7 +340,7 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options
 			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind(infrav1.IonosCloudMachineType)))).
-		Complete(reconcile.AsReconciler[*infrav1.IonosCloudMachine](r.Client, r))
+		Complete(reconcile.AsReconciler(r.Client, r))
 }
 
 func (r *IonosCloudMachineReconciler) getClusterScope(

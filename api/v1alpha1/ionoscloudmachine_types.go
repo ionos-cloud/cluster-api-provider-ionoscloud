@@ -151,7 +151,6 @@ type IonosCloudMachineSpec struct {
 	Disk *Volume `json:"disk"`
 
 	// AdditionalNetworks defines the additional network configurations for the VM.
-	// NOTE(lubedacht): We currently only support networks with DHCP enabled.
 	//+optional
 	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
 
@@ -187,6 +186,16 @@ type Network struct {
 	// This LAN will be excluded from the deletion process.
 	//+kubebuilder:validation:Minimum=1
 	NetworkID int32 `json:"networkID"`
+
+	// VNET is solely used for internal purposes and requires elevated permissions.
+	//+optional
+	VNET *string `json:"vnet,omitempty"`
+
+	// DHCP indicates whether DHCP is enabled for the LAN.
+	// The primary NIC will always have DHCP enabled.
+	//+kubebuilder:default=true
+	//+optional
+	DHCP *bool `json:"dhcp,omitempty"`
 
 	// IPAMConfig allows to obtain IP Addresses from existing IP pools instead of using DHCP.
 	IPAMConfig `json:",inline"`

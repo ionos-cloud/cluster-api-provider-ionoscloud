@@ -46,6 +46,8 @@ This provider's versions are compatible with the following versions of Cluster A
 |                        | Cluster API v1beta1 (v1.7) |
 |------------------------|:--------------------------:|
 | CAPIC v1alpha1 (v0.2)  |             ✓              |
+| CAPIC v1alpha1 (v0.3)  |             ✓              |
+| CAPIC v1alpha1 (v0.4)  |             ✓              |
 
 ### Kubernetes Versions 
 

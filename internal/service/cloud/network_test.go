@@ -629,7 +629,7 @@ func (s *lanSuite) examplePatchRequest(status string) sdk.Request {
 }
 
 func (s *lanSuite) mockCreateLANCall() *clienttest.MockClient_CreateLAN_Call {
-	return s.ionosClient.EXPECT().CreateLAN(s.ctx, s.machineScope.DatacenterID(), sdk.LanPropertiesPost{
+	return s.ionosClient.EXPECT().CreateLAN(s.ctx, s.machineScope.DatacenterID(), sdk.LanProperties{
 		Name:          ptr.To(s.service.lanName(s.clusterScope.Cluster)),
 		Public:        ptr.To(true),
 		Ipv6CidrBlock: ptr.To("AUTO"),

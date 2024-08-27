@@ -405,6 +405,11 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				Entry("invalid IPv4PoolRef with invalid apiGroup", "IPv4", "InClusterIPPool", "SomeWrongAPIGroup", "ipv4-pool"),
 				Entry("invalid IPv4PoolRef with empty name", "IPv4", "InClusterIPPool", "ipam.cluster.x-k8s.io", ""),
 			)
+			It("DHCP should default to true", func() {
+				m := defaultMachine()
+				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+				Expect(*m.Spec.AdditionalNetworks[0].DHCP).To(BeTrue())
+			})
 		})
 	})
 	Context("FailoverIP", func() {

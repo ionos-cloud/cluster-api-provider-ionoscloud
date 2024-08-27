@@ -73,9 +73,8 @@ spec:
                     description: Spec is the IonosCloudMachineSpec for the IonosCloudMachineTemplate.
                     properties:
                       additionalNetworks:
-                        description: |-
-                          AdditionalNetworks defines the additional network configurations for the VM.
-                          NOTE(lubedacht): We currently only support networks with DHCP enabled.
+                        description: AdditionalNetworks defines the additional network
+                          configurations for the VM.
                         items:
                           description: Network contains the config for additional
                             LANs.
@@ -148,6 +147,12 @@ spec:
                                   == 'GlobalInClusterIPPool'
                               - message: ipv6PoolRef.name is required
                                 rule: self.name != ''
+                            dhcp:
+                              default: true
+                              description: |-
+                                DHCP indicates whether DHCP is enabled for the LAN.
+                                The primary NIC will always have DHCP enabled.
+                              type: boolean
                             networkID:
                               description: |-
                                 NetworkID represents an ID an existing LAN in the data center.
@@ -155,6 +160,10 @@ spec:
                               format: int32
                               minimum: 1
                               type: integer
+                            vnet:
+                              description: VNET is solely used for internal purposes
+                                and requires elevated permissions.
+                              type: string
                           required:
                           - networkID
                           type: object

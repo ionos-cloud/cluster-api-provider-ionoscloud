@@ -180,7 +180,7 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 func (s *Service) createLAN(ctx context.Context, ms *scope.Machine) error {
 	log := s.logger.WithName("createLAN")
 
-	lanProperties := sdk.LanPropertiesPost{
+	lanProperties := sdk.LanProperties{
 		Name:          ptr.To(s.lanName(ms.ClusterScope.Cluster)),
 		Public:        ptr.To(true),
 		Ipv6CidrBlock: ptr.To("AUTO"), // IPv6 is enabled by default.
