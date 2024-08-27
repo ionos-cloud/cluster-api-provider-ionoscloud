@@ -20,8 +20,6 @@ limitations under the License.
 package e2e
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	clusterctlcluster "sigs.k8s.io/cluster-api/cmd/clusterctl/client/cluster"
 	capie2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -30,9 +28,12 @@ import (
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/test/e2e/helpers"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Should be able to create a cluster with 3 control-plane and 2 worker nodes", func() {
+var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-plane and 2 worker nodes", func() {
 	capie2e.QuickStartSpec(ctx, func() capie2e.QuickStartSpecInput {
 		return capie2e.QuickStartSpecInput{
 			E2EConfig:                e2eConfig,
@@ -68,7 +69,7 @@ var _ = Describe("Should be able to create a cluster with 3 control-plane and 2 
 
 				// This check ensures that finalizers are resilient - i.e. correctly re-reconciled - when removed.
 				framework.ValidateFinalizersResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
-					framework.CoreFinalizersAssertion,
+					framework.CoreFinalizersAssertionWithLegacyClusters,
 					framework.KubeadmControlPlaneFinalizersAssertion,
 					helpers.IonosCloudInfraFinalizersAssertion,
 					helpers.ExpFinalizersAssertion,

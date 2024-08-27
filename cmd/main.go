@@ -42,7 +42,7 @@ var (
 	setupLog             = ctrl.Log.WithName("setup")
 	healthProbeAddr      string
 	enableLeaderElection bool
-	diagnosticOptions    = flags.DiagnosticsOptions{}
+	managerOptions       = flags.ManagerOptions{}
 
 	icClusterConcurrency int
 	icMachineConcurrency int
@@ -65,9 +65,15 @@ func main() {
 	initFlags()
 	pflag.Parse()
 
+	_, metricsOptions, err := flags.GetManagerOptions(managerOptions)
+	if err != nil {
+		setupLog.Error(err, "unable to get manager options")
+		os.Exit(1)
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
-		Metrics:                flags.GetDiagnosticsOptions(diagnosticOptions),
+		Metrics:                *metricsOptions,
 		HealthProbeBindAddress: healthProbeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "15f3d3ca.cluster.x-k8s.io",
@@ -127,7 +133,7 @@ func main() {
 func initFlags() {
 	klog.InitFlags(nil)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	flags.AddDiagnosticsOptions(pflag.CommandLine, &diagnosticOptions)
+	flags.AddManagerOptions(pflag.CommandLine, &managerOptions)
 	pflag.StringVar(&healthProbeAddr, "health-probe-bind-address", ":8081",
 		"The address the probe endpoint binds to.")
 	pflag.BoolVar(&enableLeaderElection, "leader-elect", false,
