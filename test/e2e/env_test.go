@@ -88,7 +88,7 @@ func (e *ionosCloudEnv) teardown() {
 
 func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (requestLocation string) {
 	name := fmt.Sprintf("capic-e2e-test-%s", uuid.New().String())
-	description := "used in a CACIC E2E test run"
+	description := "used in a CAPIC E2E test run"
 	if os.Getenv("CI") == "true" {
 		name = fmt.Sprintf("capic-e2e-test-%s", os.Getenv("GITHUB_RUN_ID"))
 		description = fmt.Sprintf("CI run: %s", e.githubCIRunURL())
