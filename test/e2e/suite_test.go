@@ -34,6 +34,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -193,6 +194,7 @@ var _ = SynchronizedAfterSuite(func() {
 func initScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
 	framework.TryAddDefaultSchemes(s)
+	Expect(ipamv1.AddToScheme(s)).To(Succeed())
 	Expect(infrav1.AddToScheme(s)).To(Succeed())
 	return s
 }
@@ -248,6 +250,7 @@ func initBootstrapCluster() {
 	clusterctl.InitManagementClusterAndWatchControllerLogs(watchesCtx, clusterctl.InitManagementClusterAndWatchControllerLogsInput{
 		ClusterProxy:            bootstrapClusterProxy,
 		ClusterctlConfigPath:    clusterctlConfigPath,
+		IPAMProviders:           e2eConfig.IPAMProviders(),
 		InfrastructureProviders: e2eConfig.InfrastructureProviders(),
 		LogFolder:               filepath.Join(artifactFolder, "clusters", bootstrapClusterProxy.GetName()),
 	}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)

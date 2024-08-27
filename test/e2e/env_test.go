@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/google/uuid"
 	corev1 "k8s.io/api/core/v1"
@@ -64,7 +65,7 @@ func (e *ionosCloudEnv) setup() {
 	dcRequest := e.createDatacenter(ctx, location)
 
 	By("Requesting an IP block")
-	ipbRequest := e.reserveIPBlock(ctx, location, 1)
+	ipbRequest := e.reserveIPBlock(ctx, location, 2)
 
 	By("Waiting for requests to complete")
 	e.waitForCreationRequests(ctx, dcRequest, ipbRequest)
@@ -134,7 +135,12 @@ func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, siz
 	if os.Getenv("CI") == "true" {
 		e.writeToGithubOutput("IP_BLOCK_ID", *e.ipBlock.Id)
 	}
-	Expect(os.Setenv("CONTROL_PLANE_ENDPOINT_IP", (*e.ipBlock.Properties.Ips)[0])).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
+
+	ips := (*e.ipBlock.Properties.Ips)
+	Expect(os.Setenv("CONTROL_PLANE_ENDPOINT_IP", ips[0])).ToNot(HaveOccurred(), "Failed setting control plane endpoint ID in environment variable")
+	if len(ips) > 1 {
+		Expect(os.Setenv("ADDITIONAL_IPS", strings.Join(ips[1:], ","))).ToNot(HaveOccurred(), "Failed setting additional IPs in environment variable")
+	}
 	return res.Header.Get(apiLocationHeaderKey)
 }
 

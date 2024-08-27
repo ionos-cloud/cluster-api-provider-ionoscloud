@@ -38,6 +38,19 @@ providers:
             new: --metrics-addr=:8443
         files:
           - sourcePath: "../data/shared/v1.7/metadata.yaml"
+  - name: in-cluster
+    type: IPAMProvider
+    versions:
+      - name: "{go://sigs.k8s.io/cluster-api-ipam-provider-in-cluster@v0.1}" # supported release in the v1alpha2 series
+        # Use manifest from source files
+        value: "https://github.com/kubernetes-sigs/cluster-api-ipam-provider-in-cluster/releases/download/{go://sigs.k8s.io/cluster-api-ipam-provider-in-cluster@v0.1}/ipam-components.yaml"
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../data/shared/capi-ipam/v0.1/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
   - name: ionoscloud
     type: InfrastructureProvider
     versions:
@@ -51,6 +64,7 @@ providers:
         files:
           - sourcePath: "../../../metadata.yaml"
           - sourcePath: "../data/infrastructure-ionoscloud/cluster-template.yaml"
+          - sourcePath: "../data/infrastructure-ionoscloud/cluster-template-ipam.yaml"
 variables:
   # Default variables for the e2e test; those values could be overridden via env variables, thus
   # allowing the same e2e config file to be re-used in different Prow jobs e.g. each one with a K8s version permutation.
