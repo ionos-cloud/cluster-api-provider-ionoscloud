@@ -119,7 +119,7 @@ func TestE2E(t *testing.T) {
 	if alsoLogToFile {
 		w, err := ginkgoextensions.EnableFileLogging(filepath.Join(artifactFolder, "ginkgo-log.txt"))
 		g.Expect(err).ToNot(HaveOccurred())
-		defer g.Expect(w.Close()).NotTo(HaveOccurred())
+		defer func() { _ = w.Close() }()
 	}
 
 	RegisterFailHandler(Fail)

@@ -96,7 +96,7 @@ func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (
 	name := "capic-e2e-test" + uuid.New().String()
 	description := "used in a CACIC E2E test run"
 	if e.ciMode {
-		name = "capic-e2e-test-" + os.Getenv("GITHUB_RUN_ID")
+		name = defaultCloudResourceNamePrefix + os.Getenv("GITHUB_RUN_ID")
 		description = "CI run: " + e.githubCIRunURL()
 	}
 	datacenter := sdk.Datacenter{
@@ -124,9 +124,9 @@ func (e *ionosCloudEnv) deleteDatacenter(ctx context.Context) (requestLocation s
 }
 
 func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, size int32) (requestLocation string) {
-	name := "capic-e2e-test" + uuid.New().String()
+	name := defaultCloudResourceNamePrefix + uuid.New().String()
 	if e.ciMode {
-		name = "capic-e2e-test-" + e.githubCIRunURL()
+		name = defaultCloudResourceNamePrefix + e.githubCIRunURL()
 	}
 	ipBlock := sdk.IpBlock{
 		Properties: &sdk.IpBlockProperties{
@@ -221,7 +221,7 @@ func (*ionosCloudEnv) githubCIRunURL() string {
 func (*ionosCloudEnv) writeToGithubOutput(key, value string) {
 	f, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0o644) //nolint:gosec
 	Expect(err).ToNot(HaveOccurred(), "Failed opening GITHUB_OUTPUT file")
-	defer Expect(f.Close()).NotTo(HaveOccurred())
+	defer func() { _ = f.Close() }()
 
 	_, err = f.WriteString(fmt.Sprintf("%s=%s\n", key, value))
 	Expect(err).ToNot(HaveOccurred(), "Failed writing to GITHUB_OUTPUT file")

@@ -31,6 +31,8 @@ const (
 	CNIPath           = "CNI"
 	CNIResources      = "CNI_RESOURCES"
 	KubernetesVersion = "KUBERNETES_VERSION"
+
+	defaultCloudResourceNamePrefix = "capic-e2e-test-"
 )
 
 func Byf(format string, a ...any) {
