@@ -151,8 +151,11 @@ type IonosCloudMachineSpec struct {
 	Disk *Volume `json:"disk"`
 
 	// AdditionalNetworks defines the additional network configurations for the VM.
+	//
+	// +listType=map
+	// +listMapKey=networkID
 	//+optional
-	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
+	AdditionalNetworks []Network `json:"additionalNetworks,omitempty"`
 
 	// IPAMConfig allows to obtain IP Addresses from existing IP pools instead of using DHCP.
 	IPAMConfig `json:",inline"`
@@ -174,11 +177,6 @@ type IonosCloudMachineSpec struct {
 	//+optional
 	Type ServerType `json:"type,omitempty"`
 }
-
-// Networks contains a list of additional LAN IDs that should be attached to the VM.
-// +listType=map
-// +listMapKey=networkID
-type Networks []Network
 
 // Network contains the config for additional LANs.
 type Network struct {

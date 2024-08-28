@@ -55,7 +55,7 @@ func defaultMachine() *IonosCloudMachine {
 					ID: "1eef-48ec-a246-a51a33aa4f3a",
 				},
 			},
-			AdditionalNetworks: Networks{
+			AdditionalNetworks: []Network{
 				{
 					NetworkID: 1,
 				},
