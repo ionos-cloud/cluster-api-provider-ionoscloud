@@ -144,7 +144,7 @@ func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, siz
 	}
 
 	ips := (*e.ipBlock.Properties.Ips)
-	Expect(os.Setenv("CONTROL_PLANE_ENDPOINT_IP", ips[0])).ToNot(HaveOccurred(), "Failed setting control plane endpoint ID in environment variable")
+	Expect(os.Setenv("CONTROL_PLANE_ENDPOINT_IP", ips[0])).ToNot(HaveOccurred(), "Failed setting control plane endpoint IP in environment variable")
 	if len(ips) > 1 {
 		Expect(os.Setenv("ADDITIONAL_IPS", strings.Join(ips[1:], ","))).ToNot(HaveOccurred(), "Failed setting additional IPs in environment variable")
 	}
