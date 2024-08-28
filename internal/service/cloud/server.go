@@ -416,6 +416,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		Properties: &sdk.NicProperties{
 			Lan:  &params.lanID,
 			Name: ptr.To(s.nicName(ms.IonosMachine)),
+			Dhcp: ptr.To(true),
 		},
 	}
 
@@ -424,8 +425,6 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		primaryNIC.Properties.Ips = ptr.To(nicInfo.IPv4Addresses)
 		primaryNIC.Properties.Ipv6Ips = ptr.To(nicInfo.IPv6Addresses)
 	}
-
-	primaryNIC.Properties.Dhcp = ptr.To(true)
 
 	// In case we want to retrieve a public IP from the DHCP, we need to
 	// create a NIC with empty IP addresses and patch the NIC afterward.
@@ -453,8 +452,6 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 			nic.Properties.Ips = ptr.To(nicInfo.IPv4Addresses)
 			nic.Properties.Ipv6Ips = ptr.To(nicInfo.IPv6Addresses)
 		}
-
-		nic.Properties.Dhcp = ptr.To(true)
 
 		items = append(items, nic)
 	}
