@@ -23,9 +23,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
+	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,10 +35,10 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/test/e2e/helpers"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	sdk "github.com/ionos-cloud/sdk-go/v6"
 )
 
 // NOTE(gfariasalves-ionos): This file exists to avoid having to use Terraform to create the resources needed for the tests,
@@ -52,10 +54,15 @@ type ionosCloudEnv struct {
 	token        string
 	datacenterID string
 	ipBlock      *sdk.IpBlock
+	ciMode       bool
 }
 
 func (e *ionosCloudEnv) setup() {
 	e.token = os.Getenv(sdk.IonosTokenEnvVar)
+	ciMode, err := strconv.ParseBool(os.Getenv("CI"))
+	Expect(err).NotTo(HaveOccurred())
+	e.ciMode = ciMode
+
 	Expect(e.token).ToNot(BeEmpty(), "Please set the IONOS_TOKEN environment variable")
 	e.api = sdk.NewAPIClient(sdk.NewConfigurationFromEnv())
 
@@ -87,11 +94,11 @@ func (e *ionosCloudEnv) teardown() {
 }
 
 func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (requestLocation string) {
-	name := fmt.Sprintf("capic-e2e-test-%s", uuid.New().String())
-	description := "used in a CAPIC E2E test run"
-	if os.Getenv("CI") == "true" {
-		name = fmt.Sprintf("capic-e2e-test-%s", os.Getenv("GITHUB_RUN_ID"))
-		description = fmt.Sprintf("CI run: %s", e.githubCIRunURL())
+	name := "capic-e2e-test" + uuid.New().String()
+	description := "used in a CACIC E2E test run"
+	if e.ciMode {
+		name = defaultCloudResourceNamePrefix + os.Getenv("GITHUB_RUN_ID")
+		description = "CI run: " + e.githubCIRunURL()
 	}
 	datacenter := sdk.Datacenter{
 		Properties: &sdk.DatacenterProperties{
@@ -103,7 +110,7 @@ func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (
 	datacenter, res, err := e.api.DataCentersApi.DatacentersPost(ctx).Datacenter(datacenter).Execute()
 	Expect(err).ToNot(HaveOccurred(), "Failed requesting data center creation")
 	e.datacenterID = *datacenter.Id
-	if os.Getenv("CI") == "true" {
+	if e.ciMode {
 		e.writeToGithubOutput("DATACENTER_ID", e.datacenterID)
 	}
 	Expect(os.Setenv("IONOSCLOUD_DATACENTER_ID", e.datacenterID)).ToNot(HaveOccurred(), "Failed setting datacenter ID in environment variable")
@@ -118,9 +125,9 @@ func (e *ionosCloudEnv) deleteDatacenter(ctx context.Context) (requestLocation s
 }
 
 func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, size int32) (requestLocation string) {
-	name := fmt.Sprintf("capic-e2e-test-%s", uuid.New().String())
-	if os.Getenv("CI") == "true" {
-		name = fmt.Sprintf("capic-e2e-test - %s", e.githubCIRunURL())
+	name := defaultCloudResourceNamePrefix + uuid.New().String()
+	if e.ciMode {
+		name = defaultCloudResourceNamePrefix + e.githubCIRunURL()
 	}
 	ipBlock := sdk.IpBlock{
 		Properties: &sdk.IpBlockProperties{
@@ -132,7 +139,7 @@ func (e *ionosCloudEnv) reserveIPBlock(ctx context.Context, location string, siz
 	ipb, res, err := e.api.IPBlocksApi.IpblocksPost(ctx).Ipblock(ipBlock).Execute()
 	Expect(err).ToNot(HaveOccurred(), "Failed requesting IP block reservation")
 	e.ipBlock = &ipb
-	if os.Getenv("CI") == "true" {
+	if e.ciMode {
 		e.writeToGithubOutput("IP_BLOCK_ID", *e.ipBlock.Id)
 	}
 
@@ -182,7 +189,7 @@ func (e *ionosCloudEnv) createCredentialsSecretPNC(clusterProxy framework.Cluste
 	k8sClient := clusterProxy.GetClient()
 
 	namespacedName := types.NamespacedName{
-		Name:      "ionoscloud-credentials",
+		Name:      helpers.CloudAPISecretName,
 		Namespace: namespace,
 	}
 
@@ -208,7 +215,7 @@ func (e *ionosCloudEnv) createCredentialsSecretPNC(clusterProxy framework.Cluste
 }
 
 // githubCIRunURL returns the URL of the current GitHub CI run.
-func (e *ionosCloudEnv) githubCIRunURL() string {
+func (*ionosCloudEnv) githubCIRunURL() string {
 	return fmt.Sprintf("%s/%s/actions/runs/%s",
 		os.Getenv("GITHUB_SERVER_URL"),
 		os.Getenv("GITHUB_REPOSITORY"),
@@ -217,10 +224,10 @@ func (e *ionosCloudEnv) githubCIRunURL() string {
 
 // writeToGithubOutput writes a key-value pair to the GITHUB_OUTPUT in an action. This function is useful for the
 // delete leftovers script.
-func (e *ionosCloudEnv) writeToGithubOutput(key, value string) {
-	f, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0644)
+func (*ionosCloudEnv) writeToGithubOutput(key, value string) {
+	f, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0o644) //nolint:gosec
 	Expect(err).ToNot(HaveOccurred(), "Failed opening GITHUB_OUTPUT file")
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	_, err = f.WriteString(fmt.Sprintf("%s=%s\n", key, value))
 	Expect(err).ToNot(HaveOccurred(), "Failed writing to GITHUB_OUTPUT file")

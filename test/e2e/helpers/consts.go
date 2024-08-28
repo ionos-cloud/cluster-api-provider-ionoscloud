@@ -17,24 +17,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package e2e offers end-to-end tests for the Cluster API IONOS Cloud provider.
-package e2e
+// Package helpers provides helper functions for the e2e tests.
+package helpers
 
-import (
-	"fmt"
-
-	. "github.com/onsi/ginkgo/v2"
-)
-
-// Test suite constants for e2e config variables.
 const (
-	CNIPath           = "CNI"
-	CNIResources      = "CNI_RESOURCES"
-	KubernetesVersion = "KUBERNETES_VERSION"
-
-	defaultCloudResourceNamePrefix = "capic-e2e-test-"
+	// CloudAPISecretName is the name of the secret used to store the cloud API credentials.
+	CloudAPISecretName = "ionoscloud-credentials" //nolint:gosec
 )
-
-func Byf(format string, a ...any) {
-	By(fmt.Sprintf(format, a...))
-}
