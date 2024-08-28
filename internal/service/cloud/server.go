@@ -442,10 +442,10 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	for i, nw := range ms.IonosMachine.Spec.AdditionalNetworks {
 		nic := sdk.Nic{
 			Properties: &sdk.NicProperties{
-				Lan: &nw.NetworkID,
-			Vnet: nw.VNET,
-			Dhcp: nw.DHCP,
-		},
+				Lan:  &nw.NetworkID,
+				Vnet: nw.VNET,
+				Dhcp: nw.DHCP,
+			},
 		}
 
 		if ms.IonosMachine.Status.MachineNetworkInfo != nil {

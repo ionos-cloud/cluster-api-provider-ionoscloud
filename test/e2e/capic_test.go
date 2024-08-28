@@ -111,7 +111,7 @@ var _ = Describe("Should be able to create a cluster with 1 control-plane using 
 			ArtifactFolder:           artifactFolder,
 			SkipCleanup:              skipCleanup,
 			PostNamespaceCreated:     cloudEnv.createCredentialsSecretPNC,
-			PostMachinesProvisioned: func(managementClusterProxy framework.ClusterProxy, namespace, clusterName string) {
+			PostMachinesProvisioned: func(managementClusterProxy framework.ClusterProxy, namespace, _ string) {
 				machines := &infrav1.IonosCloudMachineList{}
 				Expect(managementClusterProxy.GetClient().List(ctx, machines, runtimeclient.InNamespace(namespace))).NotTo(HaveOccurred())
 				nic := machines.Items[0].Status.MachineNetworkInfo.NICInfo[0]

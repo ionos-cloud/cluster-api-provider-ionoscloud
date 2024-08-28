@@ -79,6 +79,12 @@ spec:
                           description: Network contains the config for additional
                             LANs.
                           properties:
+                            dhcp:
+                              default: true
+                              description: |-
+                                DHCP indicates whether DHCP is enabled for the LAN.
+                                The primary NIC will always have DHCP enabled.
+                              type: boolean
                             ipv4PoolRef:
                               description: |-
                                 IPv4PoolRef is a reference to an IPAMConfig Pool resource, which exposes IPv4 addresses.
@@ -147,12 +153,6 @@ spec:
                                   == 'GlobalInClusterIPPool'
                               - message: ipv6PoolRef.name is required
                                 rule: self.name != ''
-                            dhcp:
-                              default: true
-                              description: |-
-                                DHCP indicates whether DHCP is enabled for the LAN.
-                                The primary NIC will always have DHCP enabled.
-                              type: boolean
                             networkID:
                               description: |-
                                 NetworkID represents an ID an existing LAN in the data center.
