@@ -152,8 +152,6 @@ type IonosCloudMachineSpec struct {
 
 	// AdditionalNetworks defines the additional network configurations for the VM.
 	//
-	// +listType=map
-	// +listMapKey=networkID
 	//+optional
 	AdditionalNetworks []Network `json:"additionalNetworks,omitempty"`
 

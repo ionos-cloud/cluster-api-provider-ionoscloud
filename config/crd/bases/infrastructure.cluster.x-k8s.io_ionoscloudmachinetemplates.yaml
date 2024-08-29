@@ -168,9 +168,6 @@ spec:
                           - networkID
                           type: object
                         type: array
-                        x-kubernetes-list-map-keys:
-                        - networkID
-                        x-kubernetes-list-type: map
                       availabilityZone:
                         default: AUTO
                         description: AvailabilityZone is the availability zone in
