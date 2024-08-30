@@ -51,6 +51,7 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - ionoscloudclusters
+  - ionoscloudloadbalancers
   - ionoscloudmachines
   verbs:
   - create
@@ -64,6 +65,7 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - ionoscloudclusters/finalizers
+  - ionoscloudloadbalancers/finalizers
   - ionoscloudmachines/finalizers
   verbs:
   - update
@@ -71,6 +73,7 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - ionoscloudclusters/status
+  - ionoscloudloadbalancers/status
   - ionoscloudmachines/status
   verbs:
   - get
@@ -79,33 +82,6 @@ rules:
 - apiGroups:
   - ipam.cluster.x-k8s.io
   resources:
-  - ionoscloudloadbalancers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - ionoscloudloadbalancers/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - ionoscloudloadbalancers/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - ionoscloudmachines
   - ipaddressclaims
   verbs:
   - create
