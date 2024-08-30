@@ -85,11 +85,14 @@ func (e *ionosCloudEnv) teardown() {
 		By("Requesting the deletion of the data center")
 		datacenterRequest := e.deleteDatacenter(ctx)
 
+		By("Waiting for the deletion request to complete")
+		e.waitForDataCenterDeletion(ctx, datacenterRequest)
+
 		By("Requesting the deletion of the IP Block")
 		ipBlockRequest := e.deleteIPBlock(ctx)
 
-		By("Waiting for deletion requests to complete")
-		e.waitForDeletionRequests(ctx, datacenterRequest, ipBlockRequest)
+		By("Waiting for deletion request to complete")
+		e.waitForIPBlockDeletion(ctx, ipBlockRequest)
 	}
 }
 
@@ -170,17 +173,22 @@ func (e *ionosCloudEnv) waitForCreationRequests(ctx context.Context, datacenterR
 	Expect(err).ToNot(HaveOccurred(), "failed waiting for IP block reservation")
 }
 
-func (e *ionosCloudEnv) waitForDeletionRequests(ctx context.Context, datacenterRequest, ipBlockRequest string) {
-	GinkgoLogr.Info("Waiting for data center and IP block deletion requests to complete",
-		"datacenterRequest", datacenterRequest,
-		"datacenterID", e.datacenterID,
+func (e *ionosCloudEnv) waitForIPBlockDeletion(ctx context.Context, ipBlockRequest string) {
+	GinkgoLogr.Info("Waiting for IP block deletion requests to complete",
 		"ipBlockRequest", ipBlockRequest,
 		"ipBlockID", *e.ipBlock.Id)
 
+	_, err := e.api.WaitForRequest(ctx, ipBlockRequest)
+	Expect(err).ToNot(HaveOccurred(), "failed waiting for IP block deletion")
+}
+
+func (e *ionosCloudEnv) waitForDataCenterDeletion(ctx context.Context, datacenterRequest string) {
+	GinkgoLogr.Info("Waiting for data center deletion requests to complete",
+		"datacenterRequest", datacenterRequest,
+		"datacenterID", e.datacenterID)
+
 	_, err := e.api.WaitForRequest(ctx, datacenterRequest)
 	Expect(err).ToNot(HaveOccurred(), "failed waiting for data center deletion")
-	_, err = e.api.WaitForRequest(ctx, ipBlockRequest)
-	Expect(err).ToNot(HaveOccurred(), "failed waiting for IP block deletion")
 }
 
 // createCredentialsSecretPNC creates a secret with the IONOS Cloud credentials. This secret should be used as the
