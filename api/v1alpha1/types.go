@@ -16,6 +16,8 @@ limitations under the License.
 
 package v1alpha1
 
+import corev1 "k8s.io/api/core/v1"
+
 // ProvisioningRequest is a definition of a provisioning request
 // in the IONOS Cloud.
 type ProvisioningRequest struct {
@@ -29,4 +31,23 @@ type ProvisioningRequest struct {
 	//+kubebuilder:validation:Enum=QUEUED;RUNNING;DONE;FAILED
 	//+optional
 	State string `json:"state,omitempty"`
+}
+
+// IPAMConfig optionally defines which IP Pools to use.
+type IPAMConfig struct {
+	// IPv4PoolRef is a reference to an IPAMConfig Pool resource, which exposes IPv4 addresses.
+	// The NIC will use an available IP address from the referenced pool.
+	// +kubebuilder:validation:XValidation:rule="self.apiGroup == 'ipam.cluster.x-k8s.io'",message="ipv4PoolRef allows only IPAMConfig apiGroup ipam.cluster.x-k8s.io"
+	// +kubebuilder:validation:XValidation:rule="self.kind == 'InClusterIPPool' || self.kind == 'GlobalInClusterIPPool'",message="ipv4PoolRef allows either InClusterIPPool or GlobalInClusterIPPool"
+	// +kubebuilder:validation:XValidation:rule="self.name != ''",message="ipv4PoolRef.name is required"
+	// +optional
+	IPv4PoolRef *corev1.TypedLocalObjectReference `json:"ipv4PoolRef,omitempty"`
+
+	// IPv6PoolRef is a reference to an IPAMConfig pool resource, which exposes IPv6 addresses.
+	// The NIC will use an available IP address from the referenced pool.
+	// +kubebuilder:validation:XValidation:rule="self.apiGroup == 'ipam.cluster.x-k8s.io'",message="ipv6PoolRef allows only IPAMConfig apiGroup ipam.cluster.x-k8s.io"
+	// +kubebuilder:validation:XValidation:rule="self.kind == 'InClusterIPPool' || self.kind == 'GlobalInClusterIPPool'",message="ipv6PoolRef allows either InClusterIPPool or GlobalInClusterIPPool"
+	// +kubebuilder:validation:XValidation:rule="self.name != ''",message="ipv6PoolRef.name is required"
+	// +optional
+	IPv6PoolRef *corev1.TypedLocalObjectReference `json:"ipv6PoolRef,omitempty"`
 }

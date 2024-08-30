@@ -412,29 +412,48 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		Items: &[]sdk.Volume{bootVolume},
 	}
 
-	// As we want to retrieve a public IP from the DHCP, we need to
+	primaryNIC := sdk.Nic{
+		Properties: &sdk.NicProperties{
+			Lan:  &params.lanID,
+			Name: ptr.To(s.nicName(ms.IonosMachine)),
+			Dhcp: ptr.To(true),
+		},
+	}
+
+	if ms.IonosMachine.Status.MachineNetworkInfo != nil {
+		nicInfo := ms.IonosMachine.Status.MachineNetworkInfo.NICInfo[0]
+		primaryNIC.Properties.Ips = ptr.To(nicInfo.IPv4Addresses)
+		primaryNIC.Properties.Ipv6Ips = ptr.To(nicInfo.IPv6Addresses)
+	}
+
+	// In case we want to retrieve a public IP from the DHCP, we need to
 	// create a NIC with empty IP addresses and patch the NIC afterward.
+	// To simplify the code we also follow this approach when using IP pools.
 	serverNICs := sdk.Nics{
 		Items: &[]sdk.Nic{
-			{
-				Properties: &sdk.NicProperties{
-					Dhcp: ptr.To(true),
-					Lan:  &params.lanID,
-					Name: ptr.To(s.nicName(ms.IonosMachine)),
-				},
-			},
+			primaryNIC,
 		},
 	}
 
 	// Attach server to additional LANs if any.
 	items := *serverNICs.Items
 
-	for _, nic := range ms.IonosMachine.Spec.AdditionalNetworks {
-		items = append(items, sdk.Nic{Properties: &sdk.NicProperties{
-			Lan:  &nic.NetworkID,
-			Vnet: nic.VNET,
-			Dhcp: nic.DHCP,
-		}})
+	for i, nw := range ms.IonosMachine.Spec.AdditionalNetworks {
+		nic := sdk.Nic{
+			Properties: &sdk.NicProperties{
+				Lan:  &nw.NetworkID,
+				Vnet: nw.VNET,
+				Dhcp: nw.DHCP,
+			},
+		}
+
+		if ms.IonosMachine.Status.MachineNetworkInfo != nil {
+			nicInfo := ms.IonosMachine.Status.MachineNetworkInfo.NICInfo[i+1]
+			nic.Properties.Ips = ptr.To(nicInfo.IPv4Addresses)
+			nic.Properties.Ipv6Ips = ptr.To(nicInfo.IPv6Addresses)
+		}
+
+		items = append(items, nic)
 	}
 
 	serverNICs.Items = &items

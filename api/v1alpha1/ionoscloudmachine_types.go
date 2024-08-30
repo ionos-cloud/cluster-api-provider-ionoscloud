@@ -151,8 +151,12 @@ type IonosCloudMachineSpec struct {
 	Disk *Volume `json:"disk"`
 
 	// AdditionalNetworks defines the additional network configurations for the VM.
+	//
 	//+optional
-	AdditionalNetworks Networks `json:"additionalNetworks,omitempty"`
+	AdditionalNetworks []Network `json:"additionalNetworks,omitempty"`
+
+	// IPAMConfig allows to obtain IP Addresses from existing IP pools instead of using DHCP.
+	IPAMConfig `json:",inline"`
 
 	// FailoverIP can be set to enable failover for VMs in the same MachineDeployment.
 	// It can be either set to an already reserved IPv4 address, or it can be set to "AUTO"
@@ -172,10 +176,6 @@ type IonosCloudMachineSpec struct {
 	Type ServerType `json:"type,omitempty"`
 }
 
-// Networks contains a list of additional LAN IDs
-// that should be attached to the VM.
-type Networks []Network
-
 // Network contains the config for additional LANs.
 type Network struct {
 	// NetworkID represents an ID an existing LAN in the data center.
@@ -192,6 +192,9 @@ type Network struct {
 	//+kubebuilder:default=true
 	//+optional
 	DHCP *bool `json:"dhcp,omitempty"`
+
+	// IPAMConfig allows to obtain IP Addresses from existing IP pools instead of using DHCP.
+	IPAMConfig `json:",inline"`
 }
 
 // Volume is the physical storage on the VM.
@@ -259,7 +262,7 @@ type IonosCloudMachineStatus struct {
 	Ready bool `json:"ready"`
 
 	// MachineNetworkInfo contains information about the network configuration of the VM.
-	// This information is only available after the VM has been provisioned.
+	//+optional
 	MachineNetworkInfo *MachineNetworkInfo `json:"machineNetworkInfo,omitempty"`
 
 	// FailureReason will be set in the event that there is a terminal problem
@@ -315,6 +318,8 @@ type IonosCloudMachineStatus struct {
 }
 
 // MachineNetworkInfo contains information about the network configuration of the VM.
+// Before the provisioning MachineNetworkInfo may contain IP addresses to be used for provisioning.
+// After provisioning this information is available completely.
 type MachineNetworkInfo struct {
 	// NICInfo holds information about the NICs, which are attached to the VM.
 	//+optional
@@ -324,10 +329,16 @@ type MachineNetworkInfo struct {
 // NICInfo provides information about the NIC of the VM.
 type NICInfo struct {
 	// IPv4Addresses contains the IPv4 addresses of the NIC.
-	IPv4Addresses []string `json:"ipv4Addresses"`
+	// By default, we enable dual-stack, but as we are storing the IP obtained from AddressClaims here before
+	// creating the VM this can be temporarily empty, e.g. we use DHCP for IPv4 and fixed IP for IPv6.
+	//+optional
+	IPv4Addresses []string `json:"ipv4Addresses,omitempty"`
 
 	// IPv6Addresses contains the IPv6 addresses of the NIC.
-	IPv6Addresses []string `json:"ipv6Addresses"`
+	// By default, we enable dual-stack, but as we are storing the IP obtained from AddressClaims here before
+	// creating the VM this can be temporarily empty, e.g. we use DHCP for IPv6 and fixed IP for IPv4.
+	//+optional
+	IPv6Addresses []string `json:"ipv6Addresses,omitempty"`
 
 	// NetworkID is the ID of the LAN to which the NIC is connected.
 	NetworkID int32 `json:"networkID"`

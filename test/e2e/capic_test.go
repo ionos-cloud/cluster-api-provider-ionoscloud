@@ -20,6 +20,8 @@ limitations under the License.
 package e2e
 
 import (
+	"os"
+
 	clusterctlcluster "sigs.k8s.io/cluster-api/cmd/clusterctl/client/cluster"
 	capie2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -93,6 +95,29 @@ var _ = Describe("Should be able to create a cluster with 1 control-plane and 1 
 			ArtifactFolder:        artifactFolder,
 			SkipCleanup:           skipCleanup,
 			PostNamespaceCreated:  cloudEnv.createCredentialsSecretPNC,
+		}
+	})
+})
+
+var _ = Describe("Should be able to create a cluster with 1 control-plane using an IP from the IPAddressPool", func() {
+	capie2e.QuickStartSpec(ctx, func() capie2e.QuickStartSpecInput {
+		return capie2e.QuickStartSpecInput{
+			E2EConfig:                e2eConfig,
+			ControlPlaneMachineCount: ptr.To(int64(1)),
+			WorkerMachineCount:       ptr.To(int64(0)),
+			ClusterctlConfigPath:     clusterctlConfigPath,
+			BootstrapClusterProxy:    bootstrapClusterProxy,
+			Flavor:                   ptr.To("ipam"),
+			ArtifactFolder:           artifactFolder,
+			SkipCleanup:              skipCleanup,
+			PostNamespaceCreated:     cloudEnv.createCredentialsSecretPNC,
+			PostMachinesProvisioned: func(managementClusterProxy framework.ClusterProxy, namespace, _ string) {
+				machines := &infrav1.IonosCloudMachineList{}
+				Expect(managementClusterProxy.GetClient().List(ctx, machines, runtimeclient.InNamespace(namespace))).NotTo(HaveOccurred())
+				nic := machines.Items[0].Status.MachineNetworkInfo.NICInfo[0]
+				desired := os.Getenv("ADDITIONAL_IPS")
+				Expect(nic.IPv4Addresses).To(ContainElement(desired))
+			},
 		}
 	})
 })
