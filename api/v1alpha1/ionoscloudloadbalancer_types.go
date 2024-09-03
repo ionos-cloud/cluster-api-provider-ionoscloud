@@ -54,10 +54,6 @@ type LoadBalancerSource struct {
 	// NLB is used for setting up a network load balancer.
 	//+optional
 	NLB *NLBSpec `json:"nlb,omitempty"`
-
-	// KubeVIP is used for setting up a highly available control plane.
-	//+optional
-	KubeVIP *KubeVIPSpec `json:"kubeVIP,omitempty"`
 }
 
 // NLBSpec defines the spec for a network load balancer.
@@ -67,14 +63,6 @@ type NLBSpec struct {
 	//+kubebuilder:validation:Format=uuid
 	//+required
 	DatacenterID string `json:"datacenterID"`
-}
-
-// KubeVIPSpec defines the spec for a high availability load balancer.
-type KubeVIPSpec struct {
-	// Image is the container image to use for the KubeVIP static pod.
-	// If not provided, the default image will be used.
-	//+optional
-	Image string `json:"image,omitempty"`
 }
 
 // IonosCloudLoadBalancerStatus defines the observed state of IonosCloudLoadBalancer.
@@ -91,6 +79,19 @@ type IonosCloudLoadBalancerStatus struct {
 	// cloud resource that is being provisioned.
 	//+optional
 	CurrentRequest *ProvisioningRequest `json:"currentRequest,omitempty"`
+
+	// NLBStatus defines the status for a network load balancer.
+	//+optional
+	NLBStatus *NLBStatus `json:"nlbStatus,omitempty"`
+}
+
+// NLBStatus holds information about the NLB configuration of the load balancer.
+type NLBStatus struct {
+	// PublicLANID is the ID of the LAN used for incoming traffic.
+	PublicLANID string `json:"publicLANID"`
+
+	// PrivateLANID is the ID of the LAN used for outgoing traffic.
+	PrivateLANID string `json:"privateLANID"`
 }
 
 // +kubebuilder:object:root=true
@@ -123,6 +124,36 @@ func (l *IonosCloudLoadBalancer) GetConditions() clusterv1.Conditions {
 // SetConditions sets the conditions in the status.
 func (l *IonosCloudLoadBalancer) SetConditions(conditions clusterv1.Conditions) {
 	l.Status.Conditions = conditions
+}
+
+// SetCurrentRequest sets the current provisioning request.
+func (l *IonosCloudLoadBalancer) SetCurrentRequest(method, status, requestPath string) {
+	l.Status.CurrentRequest = &ProvisioningRequest{
+		Method:      method,
+		State:       status,
+		RequestPath: requestPath,
+	}
+}
+
+// DeleteCurrentRequest deletes the current provisioning request.
+func (l *IonosCloudLoadBalancer) DeleteCurrentRequest() {
+	l.Status.CurrentRequest = nil
+}
+
+// SetPublicLANID sets the public LAN ID in the status.
+func (l *IonosCloudLoadBalancer) SetPublicLANID(id string) {
+	if l.Status.NLBStatus == nil {
+		l.Status.NLBStatus = &NLBStatus{}
+	}
+	l.Status.NLBStatus.PublicLANID = id
+}
+
+// SetPrivateLANID sets the private LAN ID in the status.
+func (l *IonosCloudLoadBalancer) SetPrivateLANID(id string) {
+	if l.Status.NLBStatus == nil {
+		l.Status.NLBStatus = &NLBStatus{}
+	}
+	l.Status.NLBStatus.PrivateLANID = id
 }
 
 func init() {

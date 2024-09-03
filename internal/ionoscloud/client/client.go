@@ -115,6 +115,35 @@ func (c *IonosCloudClient) CreateServer(
 		err = errLocationHeaderEmpty
 	}
 
+	//c.API.NetworkLoadBalancersApi.DatacentersNetworkloadbalancersPost(ctx, datacenterID).NetworkLoadBalancer(sdk.NetworkLoadBalancer{
+	//	Properties: &sdk.NetworkLoadBalancerProperties{
+	//		Name:           nil,
+	//		ListenerLan:    nil,
+	//		Ips:            nil,
+	//		TargetLan:      nil,
+	//		LbPrivateIps:   nil,
+	//		CentralLogging: nil,
+	//		LoggingFormat:  nil,
+	//	},
+	//	Entities: sdk.NetworkLoadBalancerEntities{
+	//		Forwardingrules:  &sdk.NetworkLoadBalancerForwardingRules{
+	//			Items:  &[]sdk.NetworkLoadBalancerForwardingRule{
+	//				{
+	//					Properties: &sdk.NetworkLoadBalancerForwardingRuleProperties{
+	//						Name:         nil,
+	//						Algorithm:    nil,
+	//						Protocol:     nil,
+	//						ListenerIp:   nil,
+	//						ListenerPort: nil,
+	//						HealthCheck:  nil,
+	//						Targets:      ,
+	//					},
+	//				},
+	//			},
+	//		},
+	//	},
+	//}).Execute()
+
 	return &s, location, err
 }
 

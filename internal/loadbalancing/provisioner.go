@@ -39,8 +39,6 @@ type Provisioner interface {
 // NewProvisioner creates a new load balancer provisioner, based on the load balancer type.
 func NewProvisioner(_ *cloud.Service, source infrav1.LoadBalancerSource) (Provisioner, error) {
 	switch {
-	case source.KubeVIP != nil:
-		return &kubeVIPProvisioner{}, nil
 	case source.NLB != nil:
 		return &nlbProvisioner{}, nil
 	}

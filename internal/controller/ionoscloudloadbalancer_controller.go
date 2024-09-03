@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -32,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -104,8 +104,6 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 		return ctrl.Result{}, nil
 	}
 
-	// TODO(lubedacht) this check needs to move into a validating webhook and should prevent that the resource
-	// 	can be applied in the first place.
 	if err = r.validateLoadBalancerSource(ionosCloudLoadBalancer.Spec.LoadBalancerSource); err != nil {
 		return ctrl.Result{}, reconcile.TerminalError(err)
 	}
@@ -192,6 +190,8 @@ func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
 		return ctrl.Result{}, reconcile.TerminalError(err)
 	}
 
+	// TODO check the current request state
+
 	if requeue, err := prov.Provision(ctx, loadBalancerScope); err != nil || requeue {
 		if err != nil {
 			err = fmt.Errorf("error during provisioning: %w", err)
@@ -215,6 +215,8 @@ func (*IonosCloudLoadBalancerReconciler) reconcileDelete(
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Deleting IonosCloudLoadBalancer")
 
+	// TODO check the current request state
+
 	if requeue, err := prov.Destroy(ctx, loadBalancerScope); err != nil || requeue {
 		if err != nil {
 			err = fmt.Errorf("error during cleanup: %w", err)
@@ -236,6 +238,7 @@ func (r *IonosCloudLoadBalancerReconciler) SetupWithManager(ctx context.Context,
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.IonosCloudLoadBalancer{}).
+		Watches(&infrav1.IonosCloudMachine{}, handler.EnqueueRequestsFromMapFunc(r.machineToLoadBalancerRequests)).
 		WithEventFilter(predicates.ResourceNotPaused(ctrl.LoggerFrom(ctx))).
 		Complete(reconcile.AsReconciler[*infrav1.IonosCloudLoadBalancer](r.Client, r))
 }
@@ -259,13 +262,79 @@ func (*IonosCloudLoadBalancerReconciler) validateEndpoints(loadBalancerScope *sc
 }
 
 func (*IonosCloudLoadBalancerReconciler) validateLoadBalancerSource(source infrav1.LoadBalancerSource) error {
-	if source.NLB == nil && source.KubeVIP == nil {
-		return errors.New("exactly one source needs to be set, none are set")
-	}
-
-	if source.NLB != nil && source.KubeVIP != nil {
-		return errors.New("exactly one source needs to be set, both are set")
+	if source.NLB == nil {
+		return errors.New("exactly one source needs to be set, NLB is not set")
 	}
 
 	return nil
+}
+
+func (r *IonosCloudLoadBalancerReconciler) machineToLoadBalancerRequests(ctx context.Context, obj client.Object) []reconcile.Request {
+	logger := ctrl.LoggerFrom(ctx)
+	machine, ok := obj.(*infrav1.IonosCloudMachine)
+	if !ok {
+		return nil
+	}
+
+	if !isControlPlaneMachine(machine) || !isMachineAvailable(machine) {
+		return nil
+	}
+
+	infraCluster, err := getInfraClusterFromMachine(ctx, r.Client, machine)
+	if err != nil {
+		logger.Error(err, "failed to get infra cluster from machine")
+		return nil
+	}
+
+	if infraCluster.Spec.LoadBalancerProviderRef == nil {
+		logger.Info("Load balancer provider ref is not set, skipping load balancer reconciliation")
+		return nil
+	}
+
+	return []reconcile.Request{{
+		NamespacedName: client.ObjectKey{
+			Namespace: infraCluster.GetNamespace(),
+			Name:      infraCluster.Spec.LoadBalancerProviderRef.Name,
+		},
+	}}
+}
+
+func isControlPlaneMachine(machine *infrav1.IonosCloudMachine) bool {
+	labels := machine.GetLabels()
+	if labels == nil {
+		return false
+	}
+
+	_, ok := labels[clusterv1.MachineControlPlaneLabel]
+	return ok
+}
+
+func isMachineAvailable(machine *infrav1.IonosCloudMachine) bool {
+	return machine.DeletionTimestamp.IsZero() && conditions.IsTrue(machine, clusterv1.ReadyCondition)
+}
+
+func getInfraClusterFromMachine(ctx context.Context, c client.Client, machine *infrav1.IonosCloudMachine) (*infrav1.IonosCloudCluster, error) {
+	labels := machine.GetLabels()
+	if labels == nil {
+		return nil, errors.New("machine has no labels")
+	}
+
+	capiCluster, err := util.GetClusterFromMetadata(ctx, c, machine.ObjectMeta)
+	if err != nil {
+		return nil, err
+	}
+
+	if !capiCluster.DeletionTimestamp.IsZero() {
+		return nil, errors.New("cluster is already being deleted")
+	}
+
+	infraRef := capiCluster.Spec.InfrastructureRef
+
+	infraClusterKey := client.ObjectKey{Namespace: infraRef.Namespace, Name: infraRef.Name}
+	var infraCluster infrav1.IonosCloudCluster
+	if err := c.Get(ctx, infraClusterKey, &infraCluster); err != nil {
+		return nil, err
+	}
+
+	return &infraCluster, nil
 }

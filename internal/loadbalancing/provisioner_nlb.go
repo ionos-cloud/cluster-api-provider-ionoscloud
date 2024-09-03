@@ -19,12 +19,43 @@ package loadbalancing
 import (
 	"context"
 
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-type nlbProvisioner struct{}
+type nlbProvisioner struct {
+	svc *cloud.Service
+}
 
-func (*nlbProvisioner) Provision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+func (n *nlbProvisioner) Provision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+	/*
+		Required:
+		* public LAN for incoming traffic
+		* private LAN for outgoing traffic
+		* control plane nodes need to be in private LAN and in public LAN
+		* NLB with the target LAN and probably the private IPs
+
+		c.API.NetworkLoadBalancersApi.DatacentersNetworkloadbalancersPost(ctx, datacenterID).NetworkLoadBalancer(sdk.NetworkLoadBalancer{
+			Properties: &sdk.NetworkLoadBalancerProperties{
+				Name:           nil,
+				ListenerLan:    nil,
+				Ips:            nil,
+				TargetLan:      nil,
+				LbPrivateIps:   nil,
+				CentralLogging: nil,
+				LoggingFormat:  nil,
+			},
+		}).Execute()
+	*/
+
+	// Reconcile Incoming LAN
+
+	// Reconcile Outgoing private LAN
+
+	// Reconcile NLB and attach it to both LANs
+
+	// Inform control plane machines to be added to private LAN - somehow.... Think
+
 	panic("implement me")
 }
 

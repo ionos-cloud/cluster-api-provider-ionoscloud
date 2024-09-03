@@ -1,0 +1,354 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: "${CLUSTER_NAME}"
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+    cni: "${CLUSTER_NAME}-crs-0"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: ["192.168.0.0/16"]
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: IonosCloudCluster
+    name: "${CLUSTER_NAME}"
+  controlPlaneRef:
+    kind: KubeadmControlPlane
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    name: "${CLUSTER_NAME}-control-plane"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: IonosCloudCluster
+metadata:
+  name: "${CLUSTER_NAME}"
+spec:
+  location: ${CONTROL_PLANE_ENDPOINT_LOCATION}
+  loadBalancerProviderRef:
+    name: "${CLUSTER_NAME}-nlb"
+  credentialsRef:
+    name: "ionoscloud-credentials"
+---
+kind: IonosCloudLoadBalancer
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+metadata:
+  name: "${CLUSTER_NAME}-nlb"
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+spec:
+  loadBalancerEndpoint:
+    host: ${CONTROL_PLANE_ENDPOINT_HOST:-${CONTROL_PLANE_ENDPOINT_IP}}
+    port: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
+  nlb:
+    datacenterID: ${IONOSCLOUD_DATACENTER_ID}
+---
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  machineTemplate:
+    infrastructureRef:
+      kind: IonosCloudMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+      name: "${CLUSTER_NAME}-control-plane"
+  kubeadmConfigSpec:
+    users:
+      - name: root
+        sshAuthorizedKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
+    ntp:
+      enabled: true
+      servers:
+        - 0.de.pool.ntp.org
+        - 1.de.pool.ntp.org
+        - 2.de.pool.ntp.org
+        - 3.de.pool.ntp.org
+    files:
+      - path: /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
+        owner: root:root
+        permissions: '0644'
+        content: |
+          # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
+          # hardening guide.
+          KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,gss-curve25519-sha256-,diffie-hellman-group16-sha512,gss-group16-sha512-,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+          Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+          MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+          HostKeyAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+          CASignatureAlgorithms sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+          GSSAPIKexAlgorithms gss-curve25519-sha256-,gss-group16-sha512-
+          HostbasedAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
+          PubkeyAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
+      - path: /etc/sysctl.d/k8s.conf
+        content: |
+          fs.inotify.max_user_watches = 65536
+          net.netfilter.nf_conntrack_max = 1000000
+      - path: /etc/modules-load.d/k8s.conf
+        content: |
+          ip_vs
+          ip_vs_rr
+          ip_vs_wrr
+          ip_vs_sh
+          ip_vs_sed
+      # Crictl config
+      - path: /etc/crictl.yaml
+        content: |
+          runtime-endpoint: unix:///run/containerd/containerd.sock
+          timeout: 10
+
+      # CSI Metadata config
+      - content: |
+          {
+            "datacenter-id": "${IONOSCLOUD_DATACENTER_ID}"
+          }
+        owner: root:root
+        path: /etc/ie-csi/cfg.json
+        permissions: '0644'
+
+      - content: |
+          #!/bin/bash
+          set -e
+          
+          # Nothing to do for kubernetes < v1.29
+          KUBEADM_MINOR="$(kubeadm version -o short | cut -d '.' -f 2)"
+          if [[ "$KUBEADM_MINOR" -lt "29" ]]; then
+            exit 0
+          fi
+          
+          NODE_IPv4_ADDRESS=$(ip -j addr show dev ens6 | jq -r '.[].addr_info[] | select(.family == "inet") | select(.scope=="global") | select(.dynamic) | .local')
+          if [[ $NODE_IPv4_ADDRESS ]]; then
+            sed -i '$ s/$/ --node-ip '"$NODE_IPv4_ADDRESS"'/' /etc/default/kubelet
+          fi
+          # IPv6 currently not set, the ip is not set then this runs. Needs to be waited for.
+          NODE_IPv6_ADDRESS=$(ip -j addr show dev ens6 | jq -r '.[].addr_info[] | select(.family == "inet6") | select(.scope=="global") | .local')
+          if [[ $NODE_IPv6_ADDRESS ]]; then
+            sed -i '$ s/$/ --node-ip '"$NODE_IPv6_ADDRESS"'/' /etc/default/kubelet
+          fi
+        owner: root:root
+        path: /etc/set-node-ip.sh
+        permissions: '0700'
+
+    preKubeadmCommands:
+      - systemctl restart systemd-networkd.service systemd-modules-load.service systemd-journald containerd
+      # disable swap
+      - swapoff -a
+      - sed -i '/ swap / s/^/#/' /etc/fstab
+      - sysctl --system
+      # workaround 1.29 IP issue
+      - /etc/set-node-ip.sh
+    postKubeadmCommands:
+      - >
+        systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
+        packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
+      # INFO(schegi-ionos): We decided to not remove this for now, since removing this would require the ccm to be installed for cluster-api
+      # to continue after the first node.
+      - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
+      - >
+        kubectl --kubeconfig /etc/kubernetes/kubelet.conf
+        patch node $(hostname)
+        --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
+      - rm /etc/ssh/ssh_host_*
+      - ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+      - ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+      - sed -i 's/^\#HostKey \/etc\/ssh\/ssh_host_\(rsa\|ed25519\)_key$/HostKey \/etc\/ssh\/ssh_host_\1_key/g' /etc/ssh/sshd_config
+      - awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe
+      - mv /etc/ssh/moduli.safe /etc/ssh/moduli
+      - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+      - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+      - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+      - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+      - apt-get update
+      - DEBIAN_FRONTEND=noninteractive apt-get install -q -y netfilter-persistent iptables-persistent
+      - service netfilter-persistent save
+      - systemctl restart sshd
+    initConfiguration:
+      localAPIEndpoint:
+        bindPort: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
+      nodeRegistration:
+        kubeletExtraArgs:
+          # use cloud-provider: external when using a CCM
+          cloud-provider: ""
+    joinConfiguration:
+      nodeRegistration:
+        criSocket: unix:///run/containerd/containerd.sock
+        kubeletExtraArgs:
+          # use cloud-provider: external when using a CCM
+          cloud-provider: ""
+  version: "${KUBERNETES_VERSION}"
+---
+kind: IonosCloudMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  template:
+    spec:
+      datacenterID: ${IONOSCLOUD_DATACENTER_ID}
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES:-4}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB:-8192}
+      disk:
+        image:
+          id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-workers"
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels:
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+        node-role.kubernetes.io/node: ""
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-worker"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-worker"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: IonosCloudMachineTemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: IonosCloudMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-worker"
+spec:
+  template:
+    spec:
+      datacenterID: ${IONOSCLOUD_DATACENTER_ID}
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES:-2}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB:-4096}
+      disk:
+        image:
+          id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-worker"
+spec:
+  template:
+    spec:
+      users:
+        - name: root
+          sshAuthorizedKeys: [${IONOSCLOUD_MACHINE_SSH_KEYS}]
+      ntp:
+        enabled: true
+        servers:
+          - 0.de.pool.ntp.org
+          - 1.de.pool.ntp.org
+          - 2.de.pool.ntp.org
+          - 3.de.pool.ntp.org
+      files:
+        - path: /etc/ssh/sshd_config.d/ssh-audit_hardening.conf
+          owner: root:root
+          permissions: '0644'
+          content: |
+            # Restrict key exchange, cipher, and MAC algorithms, as per sshaudit.com
+            # hardening guide.
+            KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,gss-curve25519-sha256-,diffie-hellman-group16-sha512,gss-group16-sha512-,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+            Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+            MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+            HostKeyAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+            CASignatureAlgorithms sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+            GSSAPIKexAlgorithms gss-curve25519-sha256-,gss-group16-sha512-
+            HostbasedAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
+            PubkeyAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
+        - path: /etc/sysctl.d/k8s.conf
+          content: |
+            fs.inotify.max_user_watches = 65536
+            net.netfilter.nf_conntrack_max = 1000000
+        - path: /etc/modules-load.d/k8s.conf
+          content: |
+            ip_vs
+            ip_vs_rr
+            ip_vs_wrr
+            ip_vs_sh
+            ip_vs_sed
+        # Crictl config
+        - path: /etc/crictl.yaml
+          content: |
+            runtime-endpoint: unix:///run/containerd/containerd.sock
+            timeout: 10
+        # CSI Metadata config
+        - content: |
+            {
+              "datacenter-id": "${IONOSCLOUD_DATACENTER_ID}"
+            }
+          owner: root:root
+          path: /etc/ie-csi/cfg.json
+          permissions: '0644'
+      preKubeadmCommands:
+        - systemctl restart systemd-networkd.service systemd-modules-load.service systemd-journald containerd
+        # disable swap
+        - swapoff -a
+        - sed -i '/ swap / s/^/#/' /etc/fstab
+        - sysctl --system
+      postKubeadmCommands:
+        - >
+          systemctl disable --now udisks2 multipathd motd-news.timer fwupd-refresh.timer
+          packagekit ModemManager snapd snapd.socket snapd.apparmor snapd.seeded
+        # INFO(schegi-ionos): We decided to not remove this for now, since removing this would require the ccm to be
+        # installed for cluster-api to continue after the first node.
+        - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get node $(hostname) -ojsonpath='{..systemUUID }')
+        - >
+          kubectl --kubeconfig /etc/kubernetes/kubelet.conf
+          patch node $(hostname)
+          --type strategic -p '{"spec": {"providerID": "ionos://'$${system_uuid}'"}}'
+        - rm /etc/ssh/ssh_host_*
+        - ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+        - ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N ""
+        - sed -i 's/^\#HostKey \/etc\/ssh\/ssh_host_\(rsa\|ed25519\)_key$/HostKey \/etc\/ssh\/ssh_host_\1_key/g' /etc/ssh/sshd_config
+        - awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe
+        - mv /etc/ssh/moduli.safe /etc/ssh/moduli
+        - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+        - iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+        - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+        - ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+        - apt-get update
+        - DEBIAN_FRONTEND=noninteractive apt-get install -q -y netfilter-persistent iptables-persistent
+        - service netfilter-persistent save
+        - systemctl restart sshd
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            # use cloud-provider: external when using a CCM
+            cloud-provider: ""
+          criSocket: unix:///run/containerd/containerd.sock
+---
+# ConfigMap object referenced by the ClusterResourceSet object and with
+# the CNI resource defined in the test config file
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "cni-${CLUSTER_NAME}-crs-0"
+data: ${CNI_RESOURCES}
+---
+# ClusterResourceSet object with
+# a selector that targets all the Cluster with label cni=${CLUSTER_NAME}-crs-0
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name:  "${CLUSTER_NAME}-crs-0"
+spec:
+  strategy: ApplyOnce
+  clusterSelector:
+    matchLabels:
+      cni: "${CLUSTER_NAME}-crs-0"
+  resources:
+    - name: "cni-${CLUSTER_NAME}-crs-0"
+      kind: ConfigMap
