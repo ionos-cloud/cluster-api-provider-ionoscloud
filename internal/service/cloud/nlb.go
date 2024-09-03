@@ -97,9 +97,6 @@ func (s *Service) ReconcileLoadBalancerNetworksDeletion(ctx context.Context, lb 
 		return true, nil
 	}
 
-	// TODO: Maybe delete NLB first?
-	// 	depends on what Cloud API requires
-
 	if requeue, err := s.reconcileOutgoingLANDeletion(ctx, lb); err != nil || requeue {
 		return requeue, err
 	}
@@ -319,6 +316,16 @@ func (s *Service) getLANByNameFunc(datacenterID, lanName string) func(context.Co
 	}
 }
 
+func findNICByName(nics []sdk.Nic, expectedNICName string) *sdk.Nic {
+	for _, nic := range nics {
+		if ptr.Deref(nic.GetProperties().GetName(), "") == expectedNICName {
+			return &nic
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
 	if lb.LoadBalancer.GetPrivateLANID() == "" {
 		return true, errors.New("private LAN ID is not set")
@@ -342,12 +349,10 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 		}
 
 		nics := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
-		found := false
-		for _, nic := range nics {
-			if ptr.Deref(nic.GetProperties().GetName(), "") == expectedNICName {
-				found = true
-				break
-			}
+		nlbNIC := findNICByName(nics, expectedNICName)
+		if nlbNIC != nil {
+			// NIC already exists
+			continue
 		}
 
 		lanID, err := strconv.ParseInt(lb.LoadBalancer.GetPrivateLANID(), 10, 32)
@@ -355,15 +360,13 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 			return true, err
 		}
 
-		if !found {
-			nics = append(nics, sdk.Nic{
-				Properties: &sdk.NicProperties{
-					Name: ptr.To(expectedNICName),
-					Dhcp: ptr.To(true),
-					Lan:  ptr.To(int32(lanID)),
-				},
-			})
-		}
+		nics = append(nics, sdk.Nic{
+			Properties: &sdk.NicProperties{
+				Name: ptr.To(expectedNICName),
+				Dhcp: ptr.To(true),
+				Lan:  ptr.To(int32(lanID)),
+			},
+		})
 
 		server.Entities.Nics.SetItems(nics)
 	}
