@@ -148,12 +148,28 @@ func (l *IonosCloudLoadBalancer) SetPublicLANID(id string) {
 	l.Status.NLBStatus.PublicLANID = id
 }
 
+// GetPublicLANID returns the public LAN ID from the status.
+func (l *IonosCloudLoadBalancer) GetPublicLANID() string {
+	if l.Status.NLBStatus == nil {
+		return ""
+	}
+	return l.Status.NLBStatus.PublicLANID
+}
+
 // SetPrivateLANID sets the private LAN ID in the status.
 func (l *IonosCloudLoadBalancer) SetPrivateLANID(id string) {
 	if l.Status.NLBStatus == nil {
 		l.Status.NLBStatus = &NLBStatus{}
 	}
 	l.Status.NLBStatus.PrivateLANID = id
+}
+
+// GetPrivateLANID returns the private LAN ID from the status.
+func (l *IonosCloudLoadBalancer) GetPrivateLANID() string {
+	if l.Status.NLBStatus == nil {
+		return ""
+	}
+	return l.Status.NLBStatus.PrivateLANID
 }
 
 func init() {

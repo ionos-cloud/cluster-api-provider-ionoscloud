@@ -27,7 +27,8 @@ type nlbProvisioner struct {
 	svc *cloud.Service
 }
 
-func (n *nlbProvisioner) Provision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
+// Provision is responsible for creating the Network Load Balancer.
+func (n *nlbProvisioner) Provision(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
 	/*
 		Required:
 		* public LAN for incoming traffic
@@ -48,17 +49,18 @@ func (n *nlbProvisioner) Provision(_ context.Context, _ *scope.LoadBalancer) (re
 		}).Execute()
 	*/
 
-	// Reconcile Incoming LAN
-
-	// Reconcile Outgoing private LAN
+	requeue, err = n.svc.ReconcileLoadBalancerNetworks(ctx, lb)
+	if err != nil || requeue {
+		return requeue, err
+	}
 
 	// Reconcile NLB and attach it to both LANs
-
-	// Inform control plane machines to be added to private LAN - somehow.... Think
-
-	panic("implement me")
+	return n.svc.ReconcileNLB(ctx, lb)
 }
 
-func (*nlbProvisioner) Destroy(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	panic("implement me")
+func (n *nlbProvisioner) Destroy(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
+	// Destroy NLB
+
+	// Destroy LANs
+	return n.svc.ReconcileLoadBalancerNetworksDeletion(ctx, lb)
 }

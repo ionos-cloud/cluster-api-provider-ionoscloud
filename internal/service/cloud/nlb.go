@@ -19,27 +19,30 @@ package cloud
 import (
 	"context"
 	"fmt"
+	"net/http"
+
+	sdk "github.com/ionos-cloud/sdk-go/v6"
+
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
-	sdk "github.com/ionos-cloud/sdk-go/v6"
-	"net/http"
 )
 
-func (s *Service) nlbLANName(lb *infrav1.IonosCloudLoadBalancer, public bool) string {
-	lanType := "outgoing"
-	if public {
-		lanType = "incomming"
-	}
+const (
+	lanTypePublic  string = "in"
+	lanTypePrivate string = "out"
+)
 
+func (*Service) nlbLANName(lb *infrav1.IonosCloudLoadBalancer, lanType string) string {
 	return fmt.Sprintf("lan-%s-%s-%s",
+		lanType,
 		lb.Namespace,
 		lb.Name,
-		lanType,
 	)
 }
 
-func (s *Service) ReconcileNLB(ctx context.Context, ls *scope.LoadBalancer) (requeue bool, err error) {
+// ReconcileNLB ensures the creation and update of the NLB.
+func (*Service) ReconcileNLB(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
 	panic("implement me")
 }
 
@@ -65,7 +68,7 @@ func (s *Service) ReconcileLoadBalancerNetworks(ctx context.Context, lb *scope.L
 }
 
 func (s *Service) reconcileIncomingLAN(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
-	lan, requeue, err := s.reconcileLoadBalancerLAN(ctx, lb, true)
+	lan, requeue, err := s.reconcileLoadBalancerLAN(ctx, lb, lanTypePublic)
 	if err != nil || requeue {
 		return requeue, err
 	}
@@ -76,7 +79,7 @@ func (s *Service) reconcileIncomingLAN(ctx context.Context, lb *scope.LoadBalanc
 }
 
 func (s *Service) reconcileOutgoingLAN(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
-	lan, requeue, err := s.reconcileLoadBalancerLAN(ctx, lb, false)
+	lan, requeue, err := s.reconcileLoadBalancerLAN(ctx, lb, lanTypePrivate)
 	if err != nil || requeue {
 		return requeue, err
 	}
@@ -86,17 +89,21 @@ func (s *Service) reconcileOutgoingLAN(ctx context.Context, lb *scope.LoadBalanc
 	return false, nil
 }
 
-func (s *Service) reconcileLoadBalancerLAN(ctx context.Context, lb *scope.LoadBalancer, incoming bool) (lan *sdk.Lan, requeue bool, err error) {
+func (s *Service) reconcileLoadBalancerLAN(
+	ctx context.Context,
+	lb *scope.LoadBalancer,
+	lanType string,
+) (lan *sdk.Lan, requeue bool, err error) {
 	log := s.logger.WithName("createLoadBalancerLAN")
 
-	log.Info("Creating LAN for NLB", "incoming", incoming)
+	log.Info("Creating LAN for NLB", "type", lanType)
 
 	var (
 		datacenterID = lb.LoadBalancer.Spec.NLB.DatacenterID
-		lanName      = s.nlbLANName(lb.LoadBalancer, true)
+		lanName      = s.nlbLANName(lb.LoadBalancer, lanType)
 	)
 
-	lan, requeue, err = s.findLoadBalancerLANByName(ctx, lb, true)
+	lan, requeue, err = s.findLoadBalancerLANByName(ctx, lb, lanType)
 	if err != nil || requeue {
 		return nil, requeue, err
 	}
@@ -110,7 +117,7 @@ func (s *Service) reconcileLoadBalancerLAN(ctx context.Context, lb *scope.LoadBa
 		return lan, false, nil
 	}
 
-	path, err := s.createLoadBalancerLAN(ctx, lanName, datacenterID, true)
+	path, err := s.createLoadBalancerLAN(ctx, lanName, datacenterID, lanType == lanTypePublic)
 	if err != nil {
 		return nil, false, fmt.Errorf("could not create incoming LAN: %w", err)
 	}
@@ -128,32 +135,25 @@ func (s *Service) createLoadBalancerLAN(ctx context.Context, lanName, datacenter
 	log := s.logger.WithName("createLoadBalancerLAN")
 	log.Info("Creating LoadBalancer LAN", "name", lanName, "datacenterID", datacenterID, "public", public)
 
-	requestPath, err = s.ionosClient.CreateLAN(ctx, datacenterID, sdk.LanProperties{
+	return s.ionosClient.CreateLAN(ctx, datacenterID, sdk.LanProperties{
 		Name:          ptr.To(lanName),
 		Ipv6CidrBlock: ptr.To("AUTO"),
 		Public:        ptr.To(public),
 	})
-
-	if err != nil {
-		return "", err
-	}
-
-	return requestPath, nil
 }
 
-func (s *Service) findLoadBalancerLANByName(ctx context.Context, lb *scope.LoadBalancer, public bool) (lan *sdk.Lan, requeue bool, err error) {
+func (s *Service) findLoadBalancerLANByName(ctx context.Context, lb *scope.LoadBalancer, lanType string) (lan *sdk.Lan, requeue bool, err error) {
 	log := s.logger.WithName("findLoadBalancerLANByName")
 
 	var (
 		datacenterID = lb.LoadBalancer.Spec.NLB.DatacenterID
-		lanName      = s.nlbLANName(lb.LoadBalancer, public)
+		lanName      = s.nlbLANName(lb.LoadBalancer, lanType)
 	)
 
 	lan, request, err := scopedFindResource(
 		ctx, lb,
 		s.getLANByNameFunc(datacenterID, lanName),
-		s.getLatestLoadBalancerLANCreationRequest(true))
-
+		s.getLatestLoadBalancerLANCreationRequest(lanType))
 	if err != nil {
 		return nil, true, fmt.Errorf("could not find or create incoming LAN: %w", err)
 	}
@@ -166,6 +166,7 @@ func (s *Service) findLoadBalancerLANByName(ctx context.Context, lb *scope.LoadB
 	return lan, false, nil
 }
 
+// ReconcileLoadBalancerNetworksDeletion handles the deletion of the networks for the corresponding NLB.
 func (s *Service) ReconcileLoadBalancerNetworksDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
 	log := s.logger.WithName("ReconcileLoadBalancerNetworksDeletion")
 	log.V(4).Info("Reconciling LoadBalancer Networks deletion")
@@ -183,33 +184,84 @@ func (s *Service) ReconcileLoadBalancerNetworksDeletion(ctx context.Context, lb 
 }
 
 func (s *Service) reconcileIncomingLANDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
-	return s.reconcileLoadBalancerLANDeletion(ctx, lb, true)
+	return s.reconcileLoadBalancerLANDeletion(ctx, lb, lb.LoadBalancer.Status.NLBStatus.PublicLANID)
 }
 
 func (s *Service) reconcileOutgoingLANDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
-	return s.reconcileLoadBalancerLANDeletion(ctx, lb, false)
+	return s.reconcileLoadBalancerLANDeletion(ctx, lb, lanTypePrivate)
 }
 
-func (s *Service) reconcileLoadBalancerLANDeletion(ctx context.Context, lb *scope.LoadBalancer, incoming bool) (requeue bool, err error) {
+func (s *Service) reconcileLoadBalancerLANDeletion(ctx context.Context, lb *scope.LoadBalancer, lanID string) (requeue bool, err error) {
 	log := s.logger.WithName("reconcileLoadBalancerLANDeletion")
 
-	log.V(4).Info("Deleting LAN for NLB", "incoming", incoming)
+	log.V(4).Info("Deleting LAN for NLB", "ID", lanID)
 
 	// check if the LAN exists or if there is a pending creation request
-	lan, requeue, err := s.findLoadBalancerLANByName(ctx, lb, incoming)
+	lan, requeue, err := s.findLoadBalancerLANByID(ctx, lb, lanID)
 	if err != nil || requeue {
 		return requeue, err
 	}
 
 	if lan == nil {
+		// LAN is already deleted
+		lb.LoadBalancer.DeleteCurrentRequest()
+		return false, nil
+	}
 
+	// check if there is a pending deletion request for the LAN
+	request, err := s.getLatestLoadBalancerLANDeletionRequest(ctx, lb, ptr.Deref(lan.GetId(), ""))
+	if err != nil {
+		return false, fmt.Errorf("could not check for pending LAN deletion request: %w", err)
+	}
+
+	if request != nil && request.isPending() {
+		log.Info("Found pending LAN deletion request. Waiting for it to be finished")
+		return true, nil
+	}
+
+	path, err := s.deleteLoadBalancerLAN(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID, ptr.Deref(lan.GetId(), ""))
+	if err != nil {
+		return true, err
+	}
+
+	if err := s.ionosClient.WaitForRequest(ctx, path); err != nil {
+		lb.LoadBalancer.SetCurrentRequest(http.MethodDelete, sdk.RequestStatusQueued, path)
+		return true, err
 	}
 
 	return false, nil
 }
 
+func (s *Service) findLoadBalancerLANByID(ctx context.Context, lb *scope.LoadBalancer, lanID string) (lan *sdk.Lan, requeue bool, err error) {
+	log := s.logger.WithName("findLoadBalancerLANByID")
+
+	datacenterID := lb.LoadBalancer.Spec.NLB.DatacenterID
+
+	lan, request, err := scopedFindResource(
+		ctx, lb,
+		s.getLANByIDFunc(datacenterID, lanID),
+		s.getLatestLoadBalancerLANCreationRequest(lanID))
+	if err != nil {
+		return nil, true, fmt.Errorf("could not find or create incoming LAN: %w", err)
+	}
+
+	if request != nil && request.isPending() {
+		log.Info("Request for incoming LAN is pending. Waiting for it to be finished")
+		return nil, true, nil
+	}
+
+	return lan, false, nil
+}
+
+func (s *Service) deleteLoadBalancerLAN(ctx context.Context, datacenterID, lanID string) (requestPath string, err error) {
+	log := s.logger.WithName("createLoadBalancerLAN")
+	log.Info("Deleting LoadBalancer LAN", "datacenterID", datacenterID, "lanID", lanID)
+
+	return s.ionosClient.DeleteLAN(ctx, datacenterID, lanID)
+}
+
 func (s *Service) getLANByNameFunc(datacenterID, lanName string) func(context.Context, *scope.LoadBalancer) (*sdk.Lan, error) {
-	return func(ctx context.Context, lb *scope.LoadBalancer) (*sdk.Lan, error) {
+	return func(ctx context.Context, _ *scope.LoadBalancer) (*sdk.Lan, error) {
 		// check if the LAN exists
 		depth := int32(2) // for listing the LANs with their number of NICs
 		lans, err := s.apiWithDepth(depth).ListLANs(ctx, datacenterID)
@@ -239,12 +291,19 @@ func (s *Service) getLANByNameFunc(datacenterID, lanName string) func(context.Co
 	}
 }
 
-func (s *Service) getLatestLoadBalancerLANCreationRequest(public bool) func(context.Context, *scope.LoadBalancer) (*requestInfo, error) {
-	return func(ctx context.Context, lb *scope.LoadBalancer) (*requestInfo, error) {
-		return getMatchingRequest[sdk.Lan](
-			ctx, s,
-			http.MethodPost,
-			s.lansURL(lb.LoadBalancer.Spec.NLB.DatacenterID),
-			matchByName[*sdk.Lan, *sdk.LanProperties](s.nlbLANName(lb.LoadBalancer, public)))
+func (s *Service) getLANByIDFunc(datacenterID, lanID string) func(context.Context, *scope.LoadBalancer) (*sdk.Lan, error) {
+	return func(ctx context.Context, _ *scope.LoadBalancer) (*sdk.Lan, error) {
+		return s.ionosClient.GetLAN(ctx, datacenterID, lanID)
 	}
+}
+
+func (s *Service) getLatestLoadBalancerLANCreationRequest(lanType string) func(context.Context, *scope.LoadBalancer) (*requestInfo, error) {
+	return func(ctx context.Context, lb *scope.LoadBalancer) (*requestInfo, error) {
+		return s.getLatestLANRequestByMethod(ctx, http.MethodPost, s.lansURL(lb.LoadBalancer.Spec.NLB.DatacenterID),
+			matchByName[*sdk.Lan, *sdk.LanProperties](s.nlbLANName(lb.LoadBalancer, lanType)))
+	}
+}
+
+func (s *Service) getLatestLoadBalancerLANDeletionRequest(ctx context.Context, lb *scope.LoadBalancer, lanID string) (*requestInfo, error) {
+	return s.getLatestLANRequestByMethod(ctx, http.MethodDelete, s.lanURL(lb.LoadBalancer.Spec.NLB.DatacenterID, lanID))
 }

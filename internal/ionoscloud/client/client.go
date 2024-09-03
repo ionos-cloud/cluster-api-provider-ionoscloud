@@ -115,7 +115,7 @@ func (c *IonosCloudClient) CreateServer(
 		err = errLocationHeaderEmpty
 	}
 
-	//c.API.NetworkLoadBalancersApi.DatacentersNetworkloadbalancersPost(ctx, datacenterID).NetworkLoadBalancer(sdk.NetworkLoadBalancer{
+	// c.API.NetworkLoadBalancersApi.DatacentersNetworkloadbalancersPost(ctx, datacenterID).NetworkLoadBalancer(sdk.NetworkLoadBalancer{
 	//	Properties: &sdk.NetworkLoadBalancerProperties{
 	//		Name:           nil,
 	//		ListenerLan:    nil,
@@ -142,7 +142,7 @@ func (c *IonosCloudClient) CreateServer(
 	//			},
 	//		},
 	//	},
-	//}).Execute()
+	// }).Execute()
 
 	return &s, location, err
 }
@@ -244,6 +244,21 @@ func (c *IonosCloudClient) DeleteVolume(ctx context.Context, datacenterID, volum
 	}
 
 	return "", errLocationHeaderEmpty
+}
+
+// GetLAN returns the LAN that matches the provided lanID in the specified data center.
+func (c *IonosCloudClient) GetLAN(ctx context.Context, datacenterID, lanID string) (*sdk.Lan, error) {
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
+	}
+	if lanID == "" {
+		return nil, errLANIDIsEmpty
+	}
+	lan, _, err := c.API.LANsApi.DatacentersLansFindById(ctx, datacenterID, lanID).Depth(c.requestDepth).Execute()
+	if err != nil {
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
+	}
+	return &lan, nil
 }
 
 // CreateLAN creates a new LAN with the provided properties in the specified data center,
