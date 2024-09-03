@@ -32,6 +32,9 @@ type Client interface {
 	ListServers(ctx context.Context, datacenterID string) (*sdk.Servers, error)
 	// GetServer returns the server that matches the provided serverID in the specified data center.
 	GetServer(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error)
+	// UpdateServer updates the server that matches the provided serverID in the specified data center.
+	UpdateServer(ctx context.Context, datacenterID, serverID string, properties sdk.ServerProperties,
+		entities sdk.ServerEntities) (string, error)
 	// DeleteServer deletes the server that matches the provided serverID in the specified data center.
 	DeleteServer(ctx context.Context, datacenterID, serverID string, deleteVolumes bool) (string, error)
 	// StartServer starts the server that matches the provided serverID in the specified data center.

@@ -18,8 +18,12 @@ package cloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 
@@ -36,6 +40,13 @@ const (
 func (*Service) nlbLANName(lb *infrav1.IonosCloudLoadBalancer, lanType string) string {
 	return fmt.Sprintf("lan-%s-%s-%s",
 		lanType,
+		lb.Namespace,
+		lb.Name,
+	)
+}
+
+func (*Service) nlbNICName(lb *infrav1.IonosCloudLoadBalancer) string {
+	return fmt.Sprintf("nic-nlb-%s-%s",
 		lb.Namespace,
 		lb.Name,
 	)
@@ -63,7 +74,28 @@ func (s *Service) ReconcileLoadBalancerNetworks(ctx context.Context, lb *scope.L
 		return requeue, err
 	}
 
+	if requeue, err := s.reconcileControlPlaneLAN(ctx, lb); err != nil || requeue {
+		return requeue, err
+	}
+
 	log.V(4).Info("Successfully reconciled LoadBalancer Networks")
+	return false, nil
+}
+
+// ReconcileLoadBalancerNetworksDeletion handles the deletion of the networks for the corresponding NLB.
+func (s *Service) ReconcileLoadBalancerNetworksDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
+	log := s.logger.WithName("ReconcileLoadBalancerNetworksDeletion")
+	log.V(4).Info("Reconciling LoadBalancer Networks deletion")
+
+	if requeue, err := s.reconcileIncomingLANDeletion(ctx, lb); err != nil || requeue {
+		return requeue, err
+	}
+
+	if requeue, err := s.reconcileOutgoingLANDeletion(ctx, lb); err != nil || requeue {
+		return requeue, err
+	}
+
+	log.V(4).Info("Successfully reconciled LoadBalancer Networks deletion")
 	return false, nil
 }
 
@@ -164,23 +196,6 @@ func (s *Service) findLoadBalancerLANByName(ctx context.Context, lb *scope.LoadB
 	}
 
 	return lan, false, nil
-}
-
-// ReconcileLoadBalancerNetworksDeletion handles the deletion of the networks for the corresponding NLB.
-func (s *Service) ReconcileLoadBalancerNetworksDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
-	log := s.logger.WithName("ReconcileLoadBalancerNetworksDeletion")
-	log.V(4).Info("Reconciling LoadBalancer Networks deletion")
-
-	if requeue, err := s.reconcileIncomingLANDeletion(ctx, lb); err != nil || requeue {
-		return requeue, err
-	}
-
-	if requeue, err := s.reconcileOutgoingLANDeletion(ctx, lb); err != nil || requeue {
-		return requeue, err
-	}
-
-	log.V(4).Info("Successfully reconciled LoadBalancer Networks deletion")
-	return false, nil
 }
 
 func (s *Service) reconcileIncomingLANDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
@@ -289,6 +304,59 @@ func (s *Service) getLANByNameFunc(datacenterID, lanName string) func(context.Co
 
 		return foundLAN, nil
 	}
+}
+
+func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
+	if lb.LoadBalancer.GetPrivateLANID() == "" {
+		return true, errors.New("private LAN ID is not set")
+	}
+
+	cpMachines, err := lb.ClusterScope.ListMachines(ctx, client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""})
+	if err != nil {
+		return true, err
+	}
+
+	expectedNICName := s.nlbNICName(lb.LoadBalancer)
+
+	for _, machine := range cpMachines {
+		if !machine.Status.Ready {
+			continue
+		}
+
+		server, err := s.getServerByServerID(ctx, machine.Spec.DatacenterID, machine.ExtractServerID())
+		if err != nil {
+			return true, err
+		}
+
+		nics := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
+		found := false
+		for _, nic := range nics {
+			if ptr.Deref(nic.GetProperties().GetName(), "") == expectedNICName {
+				found = true
+				break
+			}
+		}
+
+		lanID, err := strconv.Atoi(lb.LoadBalancer.GetPrivateLANID())
+		if err != nil {
+			return true, err
+		}
+
+		if !found {
+			nics = append(nics, sdk.Nic{
+				Properties: &sdk.NicProperties{
+					Name: ptr.To(expectedNICName),
+					Dhcp: ptr.To(true),
+					Lan:  ptr.To(int32(lanID)),
+				},
+			})
+		}
+
+		server.Entities.Nics.SetItems(nics)
+
+	}
+
+	return false, nil
 }
 
 func (s *Service) getLANByIDFunc(datacenterID, lanID string) func(context.Context, *scope.LoadBalancer) (*sdk.Lan, error) {

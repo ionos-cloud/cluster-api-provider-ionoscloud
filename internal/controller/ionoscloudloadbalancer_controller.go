@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -260,6 +261,30 @@ func (*IonosCloudLoadBalancerReconciler) validateEndpoints(loadBalancerScope *sc
 	}
 
 	return nil
+}
+
+func (*IonosCloudLoadBalancerReconciler) checkRequestStatus(
+	ctx context.Context,
+	loadBalancerScope *scope.LoadBalancer,
+	cloudService cloud.Service,
+) (requeue bool, retErr error) {
+	logger := ctrl.LoggerFrom(ctx)
+	loadBalancer := loadBalancerScope.LoadBalancer
+
+	if req := loadBalancer.Status.CurrentRequest; req != nil {
+		logger.Info("Checking request status", "request", req.RequestPath, "method", req.Method)
+		status, message, err := cloudService.GetRequestStatus(ctx, req.RequestPath)
+		if err != nil {
+			retErr = fmt.Errorf("could not get request status: %w", err)
+		} else {
+			requeue, retErr = withStatus(status, message, &logger, func() error {
+				loadBalancer.DeleteCurrentRequest()
+				return nil
+			})
+		}
+	}
+
+	return requeue, retErr
 }
 
 func (*IonosCloudLoadBalancerReconciler) validateLoadBalancerSource(source infrav1.LoadBalancerSource) error {

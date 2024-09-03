@@ -173,5 +173,5 @@ func (l *IonosCloudLoadBalancer) GetPrivateLANID() string {
 }
 
 func init() {
-	objectTypes = append(objectTypes, &IonosCloudLoadBalancer{})
+	objectTypes = append(objectTypes, &IonosCloudLoadBalancer{}, &IonosCloudLoadBalancerList{})
 }

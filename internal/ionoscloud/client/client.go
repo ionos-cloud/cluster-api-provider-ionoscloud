@@ -180,6 +180,33 @@ func (c *IonosCloudClient) GetServer(ctx context.Context, datacenterID, serverID
 	return &server, nil
 }
 
+// UpdateServer updates the server that matches the provided serverID in the specified data center.
+func (c *IonosCloudClient) UpdateServer(ctx context.Context, datacenterID, serverID string, properties sdk.ServerProperties,
+	entities sdk.ServerEntities) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+	if serverID == "" {
+		return "", errServerIDIsEmpty
+	}
+
+	updateServer := sdk.Server{
+		Properties: &properties,
+		Entities:   &entities,
+	}
+
+	_, res, err := c.API.ServersApi.DatacentersServersPut(ctx, datacenterID, serverID).Server(updateServer).Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	if location := res.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
+}
+
 // DeleteServer deletes the server that matches the provided serverID in the specified data center.
 func (c *IonosCloudClient) DeleteServer(ctx context.Context, datacenterID, serverID string, deleteVolumes bool) (string, error) {
 	if datacenterID == "" {
