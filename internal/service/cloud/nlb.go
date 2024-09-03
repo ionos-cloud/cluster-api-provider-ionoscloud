@@ -21,11 +21,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -87,11 +87,24 @@ func (s *Service) ReconcileLoadBalancerNetworksDeletion(ctx context.Context, lb 
 	log := s.logger.WithName("ReconcileLoadBalancerNetworksDeletion")
 	log.V(4).Info("Reconciling LoadBalancer Networks deletion")
 
-	if requeue, err := s.reconcileIncomingLANDeletion(ctx, lb); err != nil || requeue {
+	cpMachines, err := lb.ClusterScope.ListMachines(ctx, client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""})
+	if err != nil {
+		return true, err
+	}
+
+	if len(cpMachines) > 0 {
+		log.Info("Control plane machines still exist. Waiting for machines to be deleted")
+		return true, nil
+	}
+
+	// TODO: Maybe delete NLB first?
+	// 	depends on what Cloud API requires
+
+	if requeue, err := s.reconcileOutgoingLANDeletion(ctx, lb); err != nil || requeue {
 		return requeue, err
 	}
 
-	if requeue, err := s.reconcileOutgoingLANDeletion(ctx, lb); err != nil || requeue {
+	if requeue, err := s.reconcileIncomingLANDeletion(ctx, lb); err != nil || requeue {
 		return requeue, err
 	}
 
@@ -337,7 +350,7 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 			}
 		}
 
-		lanID, err := strconv.Atoi(lb.LoadBalancer.GetPrivateLANID())
+		lanID, err := strconv.ParseInt(lb.LoadBalancer.GetPrivateLANID(), 10, 32)
 		if err != nil {
 			return true, err
 		}
@@ -353,7 +366,6 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 		}
 
 		server.Entities.Nics.SetItems(nics)
-
 	}
 
 	return false, nil

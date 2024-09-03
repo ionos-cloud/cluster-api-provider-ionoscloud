@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,6 +38,7 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/loadbalancing"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
@@ -146,10 +146,10 @@ func (r *IonosCloudLoadBalancerReconciler) Reconcile(
 	}
 
 	if !ionosCloudLoadBalancer.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, loadBalancerScope, prov)
+		return r.reconcileDelete(ctx, loadBalancerScope, prov, cloudService)
 	}
 
-	return r.reconcileNormal(ctx, loadBalancerScope, prov)
+	return r.reconcileNormal(ctx, loadBalancerScope, prov, cloudService)
 }
 
 func (r *IonosCloudLoadBalancerReconciler) getIonosCluster(
@@ -177,6 +177,7 @@ func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
 	ctx context.Context,
 	loadBalancerScope *scope.LoadBalancer,
 	prov loadbalancing.Provisioner,
+	cloudService *cloud.Service,
 ) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Reconciling IonosCloudLoadBalancer")
@@ -192,7 +193,9 @@ func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
 		return ctrl.Result{}, reconcile.TerminalError(err)
 	}
 
-	// TODO check the current request state
+	if requeue, err := r.checkRequestStatus(ctx, loadBalancerScope, cloudService); err != nil || requeue {
+		return ctrl.Result{Requeue: requeue}, err
+	}
 
 	if requeue, err := prov.Provision(ctx, loadBalancerScope); err != nil || requeue {
 		if err != nil {
@@ -209,15 +212,18 @@ func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
 	return ctrl.Result{}, nil
 }
 
-func (*IonosCloudLoadBalancerReconciler) reconcileDelete(
+func (r *IonosCloudLoadBalancerReconciler) reconcileDelete(
 	ctx context.Context,
 	loadBalancerScope *scope.LoadBalancer,
 	prov loadbalancing.Provisioner,
+	cloudService *cloud.Service,
 ) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.V(4).Info("Deleting IonosCloudLoadBalancer")
 
-	// TODO check the current request state
+	if requeue, err := r.checkRequestStatus(ctx, loadBalancerScope, cloudService); err != nil || requeue {
+		return ctrl.Result{Requeue: requeue}, err
+	}
 
 	if requeue, err := prov.Destroy(ctx, loadBalancerScope); err != nil || requeue {
 		if err != nil {
@@ -266,7 +272,7 @@ func (*IonosCloudLoadBalancerReconciler) validateEndpoints(loadBalancerScope *sc
 func (*IonosCloudLoadBalancerReconciler) checkRequestStatus(
 	ctx context.Context,
 	loadBalancerScope *scope.LoadBalancer,
-	cloudService cloud.Service,
+	cloudService *cloud.Service,
 ) (requeue bool, retErr error) {
 	logger := ctrl.LoggerFrom(ctx)
 	loadBalancer := loadBalancerScope.LoadBalancer

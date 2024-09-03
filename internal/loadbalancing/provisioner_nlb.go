@@ -36,7 +36,7 @@ func (n *nlbProvisioner) Provision(ctx context.Context, lb *scope.LoadBalancer) 
 
 	return false, nil
 	// Reconcile NLB and attach it to both LANs
-	//return n.svc.ReconcileNLB(ctx, lb)
+	// return n.svc.ReconcileNLB(ctx, lb)
 }
 
 func (n *nlbProvisioner) Destroy(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {

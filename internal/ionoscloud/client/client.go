@@ -182,7 +182,8 @@ func (c *IonosCloudClient) GetServer(ctx context.Context, datacenterID, serverID
 
 // UpdateServer updates the server that matches the provided serverID in the specified data center.
 func (c *IonosCloudClient) UpdateServer(ctx context.Context, datacenterID, serverID string, properties sdk.ServerProperties,
-	entities sdk.ServerEntities) (string, error) {
+	entities sdk.ServerEntities,
+) (string, error) {
 	if datacenterID == "" {
 		return "", errDatacenterIDIsEmpty
 	}

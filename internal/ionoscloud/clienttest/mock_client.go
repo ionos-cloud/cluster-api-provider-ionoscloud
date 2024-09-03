@@ -1280,6 +1280,66 @@ func (_c *MockClient_StartServer_Call) RunAndReturn(run func(context.Context, st
 	return _c
 }
 
+// UpdateServer provides a mock function with given fields: ctx, datacenterID, serverID, properties, entities
+func (_m *MockClient) UpdateServer(ctx context.Context, datacenterID string, serverID string, properties ionoscloud.ServerProperties, entities ionoscloud.ServerEntities) (string, error) {
+	ret := _m.Called(ctx, datacenterID, serverID, properties, entities)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateServer")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.ServerProperties, ionoscloud.ServerEntities) (string, error)); ok {
+		return rf(ctx, datacenterID, serverID, properties, entities)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.ServerProperties, ionoscloud.ServerEntities) string); ok {
+		r0 = rf(ctx, datacenterID, serverID, properties, entities)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, ionoscloud.ServerProperties, ionoscloud.ServerEntities) error); ok {
+		r1 = rf(ctx, datacenterID, serverID, properties, entities)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_UpdateServer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateServer'
+type MockClient_UpdateServer_Call struct {
+	*mock.Call
+}
+
+// UpdateServer is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - serverID string
+//   - properties ionoscloud.ServerProperties
+//   - entities ionoscloud.ServerEntities
+func (_e *MockClient_Expecter) UpdateServer(ctx interface{}, datacenterID interface{}, serverID interface{}, properties interface{}, entities interface{}) *MockClient_UpdateServer_Call {
+	return &MockClient_UpdateServer_Call{Call: _e.mock.On("UpdateServer", ctx, datacenterID, serverID, properties, entities)}
+}
+
+func (_c *MockClient_UpdateServer_Call) Run(run func(ctx context.Context, datacenterID string, serverID string, properties ionoscloud.ServerProperties, entities ionoscloud.ServerEntities)) *MockClient_UpdateServer_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(ionoscloud.ServerProperties), args[4].(ionoscloud.ServerEntities))
+	})
+	return _c
+}
+
+func (_c *MockClient_UpdateServer_Call) Return(_a0 string, _a1 error) *MockClient_UpdateServer_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_UpdateServer_Call) RunAndReturn(run func(context.Context, string, string, ionoscloud.ServerProperties, ionoscloud.ServerEntities) (string, error)) *MockClient_UpdateServer_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // WaitForRequest provides a mock function with given fields: ctx, requestURL
 func (_m *MockClient) WaitForRequest(ctx context.Context, requestURL string) error {
 	ret := _m.Called(ctx, requestURL)
