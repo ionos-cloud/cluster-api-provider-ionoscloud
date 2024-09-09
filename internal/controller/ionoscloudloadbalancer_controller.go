@@ -205,6 +205,11 @@ func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 	}
 
+	loadBalancerScope.ClusterScope.IonosCluster.Spec.ControlPlaneEndpoint = loadBalancerScope.Endpoint()
+	if err := loadBalancerScope.ClusterScope.PatchObject(); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	conditions.MarkTrue(loadBalancerScope.LoadBalancer, infrav1.LoadBalancerReadyCondition)
 	loadBalancerScope.LoadBalancer.Status.Ready = true
 

@@ -224,10 +224,10 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 	}
 
 	var reconcileSequence []serviceReconcileStep[scope.Cluster]
-	// TODO: This logic needs to move to another controller.
 	if clusterScope.IonosCluster.Spec.LoadBalancerProviderRef != nil {
 		reconcileSequence = []serviceReconcileStep[scope.Cluster]{
 			{"ReconcileControlPlaneEndpointDeletion", cloudService.ReconcileControlPlaneEndpointDeletion},
+			{"ReconcileLoadBalancerDeletion", r.reconcileLoadBalancerDeletion},
 		}
 	}
 
@@ -240,11 +240,41 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
 		}
 	}
+
 	if err := removeCredentialsFinalizer(ctx, r.Client, clusterScope.IonosCluster); err != nil {
 		return ctrl.Result{}, err
 	}
+
 	controllerutil.RemoveFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
 	return ctrl.Result{}, nil
+}
+
+func (r *IonosCloudClusterReconciler) reconcileLoadBalancerDeletion(ctx context.Context, clusterScope *scope.Cluster) (requeue bool, err error) {
+	logger := ctrl.LoggerFrom(ctx)
+	// We need to wait until the load balancer was deleted before we can remove the finalizers.
+	if clusterScope.IonosCluster.Spec.LoadBalancerProviderRef != nil {
+		loadBalancer := infrav1.IonosCloudLoadBalancer{}
+		lbKey := client.ObjectKey{
+			Namespace: clusterScope.IonosCluster.GetNamespace(),
+			Name:      clusterScope.IonosCluster.Spec.LoadBalancerProviderRef.Name,
+		}
+
+		err := r.Client.Get(ctx, lbKey, &loadBalancer)
+		if client.IgnoreNotFound(err) != nil {
+			return true, err
+		}
+
+		if err == nil {
+			if loadBalancer.DeletionTimestamp.IsZero() {
+				logger.Info("Deleting load balancer", "loadBalancer", loadBalancer.Name)
+				return true, r.Client.Delete(ctx, &loadBalancer)
+			}
+
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (*IonosCloudClusterReconciler) checkRequestStatus(

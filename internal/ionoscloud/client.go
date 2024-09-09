@@ -32,9 +32,6 @@ type Client interface {
 	ListServers(ctx context.Context, datacenterID string) (*sdk.Servers, error)
 	// GetServer returns the server that matches the provided serverID in the specified data center.
 	GetServer(ctx context.Context, datacenterID, serverID string) (*sdk.Server, error)
-	// UpdateServer updates the server that matches the provided serverID in the specified data center.
-	UpdateServer(ctx context.Context, datacenterID, serverID string, properties sdk.ServerProperties,
-		entities sdk.ServerEntities) (string, error)
 	// DeleteServer deletes the server that matches the provided serverID in the specified data center.
 	DeleteServer(ctx context.Context, datacenterID, serverID string, deleteVolumes bool) (string, error)
 	// StartServer starts the server that matches the provided serverID in the specified data center.
@@ -69,6 +66,8 @@ type Client interface {
 	WaitForRequest(ctx context.Context, requestURL string) error
 	// GetRequests returns the requests made in the last 24 hours that match the provided method and path.
 	GetRequests(ctx context.Context, method, path string) ([]sdk.Request, error)
+	// CreateNIC creates a new NIC with the provided properties in the specified data center and server.
+	CreateNIC(ctx context.Context, datacenterID, serverID string, properties sdk.NicProperties) (string, error)
 	// PatchNIC updates the NIC identified by nicID with the provided properties, returning the request location.
 	PatchNIC(ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties) (string, error)
 	// GetDatacenterLocationByID returns the location of the data center identified by datacenterID.

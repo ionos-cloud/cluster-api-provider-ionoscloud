@@ -24,6 +24,7 @@ import (
 	"strconv"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"golang.org/x/sync/errgroup"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -209,15 +210,35 @@ func (s *Service) findLoadBalancerLANByName(ctx context.Context, lb *scope.LoadB
 }
 
 func (s *Service) reconcileIncomingLANDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
-	return s.reconcileLoadBalancerLANDeletion(ctx, lb, lb.LoadBalancer.Status.NLBStatus.PublicLANID)
+	return s.reconcileLoadBalancerLANDeletion(ctx, lb, lanTypePublic)
 }
 
 func (s *Service) reconcileOutgoingLANDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
 	return s.reconcileLoadBalancerLANDeletion(ctx, lb, lanTypePrivate)
 }
 
-func (s *Service) reconcileLoadBalancerLANDeletion(ctx context.Context, lb *scope.LoadBalancer, lanID string) (requeue bool, err error) {
+func (s *Service) reconcileLoadBalancerLANDeletion(ctx context.Context, lb *scope.LoadBalancer, lanType string) (requeue bool, err error) {
 	log := s.logger.WithName("reconcileLoadBalancerLANDeletion")
+
+	lanID := lb.LoadBalancer.GetPublicLANID()
+	if lanType == lanTypePrivate {
+		lanID = lb.LoadBalancer.GetPrivateLANID()
+	}
+
+	if lanID == "" {
+		lan, requeue, err := s.findLoadBalancerLANByName(ctx, lb, lanType)
+		if err != nil || requeue {
+			return requeue, err
+		}
+
+		if lan == nil {
+			// LAN was already deleted
+			lb.LoadBalancer.DeleteCurrentRequest()
+			return false, nil
+		}
+
+		return s.deleteAndWaitForLAN(ctx, lb, ptr.Deref(lan.GetId(), ""))
+	}
 
 	log.V(4).Info("Deleting LAN for NLB", "ID", lanID)
 
@@ -234,7 +255,7 @@ func (s *Service) reconcileLoadBalancerLANDeletion(ctx context.Context, lb *scop
 	}
 
 	// check if there is a pending deletion request for the LAN
-	request, err := s.getLatestLoadBalancerLANDeletionRequest(ctx, lb, ptr.Deref(lan.GetId(), ""))
+	request, err := s.getLatestLoadBalancerLANDeletionRequest(ctx, lb, lanID)
 	if err != nil {
 		return false, fmt.Errorf("could not check for pending LAN deletion request: %w", err)
 	}
@@ -244,7 +265,11 @@ func (s *Service) reconcileLoadBalancerLANDeletion(ctx context.Context, lb *scop
 		return true, nil
 	}
 
-	path, err := s.deleteLoadBalancerLAN(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID, ptr.Deref(lan.GetId(), ""))
+	return s.deleteAndWaitForLAN(ctx, lb, lanID)
+}
+
+func (s *Service) deleteAndWaitForLAN(ctx context.Context, lb *scope.LoadBalancer, lanID string) (requeue bool, err error) {
+	path, err := s.deleteLoadBalancerLAN(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID, lanID)
 	if err != nil {
 		return true, err
 	}
@@ -338,12 +363,24 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 
 	expectedNICName := s.nlbNICName(lb.LoadBalancer)
 
+	errGrp, ctx := errgroup.WithContext(ctx)
+	errGrp.SetLimit(len(cpMachines))
+
 	for _, machine := range cpMachines {
 		if !machine.Status.Ready {
 			continue
 		}
 
-		server, err := s.getServerByServerID(ctx, machine.Spec.DatacenterID, machine.ExtractServerID())
+		var (
+			datacenterID = machine.Spec.DatacenterID
+			serverID     = machine.ExtractServerID()
+		)
+
+		if pending, err := s.isNICCreationPending(ctx, datacenterID, serverID, expectedNICName); err != nil || pending {
+			return pending, err
+		}
+
+		server, err := s.getServerByServerID(ctx, datacenterID, serverID)
 		if err != nil {
 			return true, err
 		}
@@ -360,15 +397,33 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 			return true, err
 		}
 
-		nics = append(nics, sdk.Nic{
-			Properties: &sdk.NicProperties{
-				Name: ptr.To(expectedNICName),
-				Dhcp: ptr.To(true),
-				Lan:  ptr.To(int32(lanID)),
-			},
-		})
+		newNICProps := sdk.NicProperties{
+			Name: ptr.To(expectedNICName),
+			Dhcp: ptr.To(true),
+			Lan:  ptr.To(int32(lanID)),
+		}
 
-		server.Entities.Nics.SetItems(nics)
+		errGrp.Go(func() error {
+			return s.createAndAttachNIC(ctx, datacenterID, serverID, newNICProps)
+		})
+	}
+
+	if err := errGrp.Wait(); err != nil {
+		return true, err
+	}
+
+	return false, nil
+}
+
+func (s *Service) isNICCreationPending(ctx context.Context, datacenterID, serverID, expectedName string) (bool, error) {
+	// check if there is an ongoing request for the server
+	request, err := s.getLatestNICCreateRequest(ctx, datacenterID, serverID, expectedName)
+	if err != nil {
+		return true, err
+	}
+
+	if request != nil && request.isPending() {
+		return true, nil
 	}
 
 	return false, nil
