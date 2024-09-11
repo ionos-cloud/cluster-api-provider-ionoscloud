@@ -76,4 +76,16 @@ type Client interface {
 	GetImage(ctx context.Context, imageID string) (*sdk.Image, error)
 	// ListLabels returns a list of all available resource labels.
 	ListLabels(ctx context.Context) ([]sdk.Label, error)
+	// CreateNLB creates a new Network Load Balancer with the provided properties in the specified data center.
+	CreateNLB(ctx context.Context, datacenterID string, properties sdk.NetworkLoadBalancerProperties) (string, error)
+	// DeleteNLB deletes the Network Load Balancer identified by the ID in the specified data center.
+	DeleteNLB(ctx context.Context, datacenterID, nlbID string) (string, error)
+	// GetNLB returns the Network Load Balancer identified by the ID in the specified data center.
+	GetNLB(ctx context.Context, datacenterID, nlbID string) (*sdk.NetworkLoadBalancer, error)
+	// ListNLBs returns a list of Network Load Balancers in the specified data center.
+	ListNLBs(ctx context.Context, datacenterID string) (*sdk.NetworkLoadBalancers, error)
+	// CreateNLBForwardingRule creates a new forwarding rule with the provided properties in the specified data center and NLB.
+	CreateNLBForwardingRule(ctx context.Context, datacenterID, nlbID string, rule sdk.NetworkLoadBalancerForwardingRule) (string, error)
+	// UpdateNLBForwardingRule updates the forwarding rule identified by ruleID with the provided properties in the specified data center and NLB.
+	UpdateNLBForwardingRule(ctx context.Context, datacenterID, nlbID, ruleID string, rule sdk.NetworkLoadBalancerForwardingRule) (string, error)
 }

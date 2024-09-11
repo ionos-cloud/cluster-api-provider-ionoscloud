@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strconv"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -87,11 +89,14 @@ type IonosCloudLoadBalancerStatus struct {
 
 // NLBStatus holds information about the NLB configuration of the load balancer.
 type NLBStatus struct {
+	// ID is the ID of the network load balancer.
+	ID string `json:"id,omitempty"`
+
 	// PublicLANID is the ID of the LAN used for incoming traffic.
-	PublicLANID string `json:"publicLANID"`
+	PublicLANID int32 `json:"publicLANID,omitempty"`
 
 	// PrivateLANID is the ID of the LAN used for outgoing traffic.
-	PrivateLANID string `json:"privateLANID"`
+	PrivateLANID int32 `json:"privateLANID,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -140,12 +145,36 @@ func (l *IonosCloudLoadBalancer) DeleteCurrentRequest() {
 	l.Status.CurrentRequest = nil
 }
 
-// SetPublicLANID sets the public LAN ID in the status.
-func (l *IonosCloudLoadBalancer) SetPublicLANID(id string) {
+// GetNLBID returns the NLB ID from the status.
+func (l *IonosCloudLoadBalancer) GetNLBID() string {
+	if l.Status.NLBStatus == nil {
+		return ""
+	}
+
+	return l.Status.NLBStatus.ID
+}
+
+// SetNLBID sets the NLB ID in the status.
+func (l *IonosCloudLoadBalancer) SetNLBID(nlbID string) {
 	if l.Status.NLBStatus == nil {
 		l.Status.NLBStatus = &NLBStatus{}
 	}
-	l.Status.NLBStatus.PublicLANID = id
+
+	l.Status.NLBStatus.ID = nlbID
+}
+
+// SetPublicLANID sets the public LAN ID in the status.
+func (l *IonosCloudLoadBalancer) SetPublicLANID(id string) error {
+	if l.Status.NLBStatus == nil {
+		l.Status.NLBStatus = &NLBStatus{}
+	}
+	lanID, err := strconv.ParseInt(id, 10, 32)
+	if err != nil {
+		return err
+	}
+
+	l.Status.NLBStatus.PublicLANID = int32(lanID)
+	return nil
 }
 
 // GetPublicLANID returns the public LAN ID from the status.
@@ -153,15 +182,24 @@ func (l *IonosCloudLoadBalancer) GetPublicLANID() string {
 	if l.Status.NLBStatus == nil {
 		return ""
 	}
-	return l.Status.NLBStatus.PublicLANID
+
+	return strconv.Itoa(int(l.Status.NLBStatus.PublicLANID))
 }
 
 // SetPrivateLANID sets the private LAN ID in the status.
-func (l *IonosCloudLoadBalancer) SetPrivateLANID(id string) {
+func (l *IonosCloudLoadBalancer) SetPrivateLANID(id string) error {
 	if l.Status.NLBStatus == nil {
 		l.Status.NLBStatus = &NLBStatus{}
 	}
-	l.Status.NLBStatus.PrivateLANID = id
+
+	lanID, err := strconv.ParseInt(id, 10, 32)
+	if err != nil {
+		return err
+	}
+
+	l.Status.NLBStatus.PrivateLANID = int32(lanID)
+
+	return nil
 }
 
 // GetPrivateLANID returns the private LAN ID from the status.
@@ -169,7 +207,8 @@ func (l *IonosCloudLoadBalancer) GetPrivateLANID() string {
 	if l.Status.NLBStatus == nil {
 		return ""
 	}
-	return l.Status.NLBStatus.PrivateLANID
+
+	return strconv.Itoa(int(l.Status.NLBStatus.PrivateLANID))
 }
 
 func init() {

@@ -160,17 +160,19 @@ spec:
               nlbStatus:
                 description: NLBStatus defines the status for a network load balancer.
                 properties:
+                  id:
+                    description: ID is the ID of the network load balancer.
+                    type: string
                   privateLANID:
                     description: PrivateLANID is the ID of the LAN used for outgoing
                       traffic.
-                    type: string
+                    format: int32
+                    type: integer
                   publicLANID:
                     description: PublicLANID is the ID of the LAN used for incoming
                       traffic.
-                    type: string
-                required:
-                - privateLANID
-                - publicLANID
+                    format: int32
+                    type: integer
                 type: object
               ready:
                 description: Ready indicates that the load balancer is ready.

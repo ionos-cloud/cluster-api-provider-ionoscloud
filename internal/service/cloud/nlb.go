@@ -25,6 +25,7 @@ import (
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/util/sets"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -53,9 +54,275 @@ func (*Service) nlbNICName(lb *infrav1.IonosCloudLoadBalancer) string {
 	)
 }
 
+func (*Service) nlbName(lb *infrav1.IonosCloudLoadBalancer) string {
+	return lb.Namespace + "-" + lb.Name
+}
+
 // ReconcileNLB ensures the creation and update of the NLB.
-func (*Service) ReconcileNLB(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	panic("implement me")
+func (s *Service) ReconcileNLB(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
+	logger := s.logger.WithName("ReconcileNLB")
+	logger.V(4).Info("Reconciling NLB")
+
+	// Check if NLB needs to be created
+
+	nlb, requeue, err := s.ensureNLB(ctx, lb)
+	if err != nil || requeue {
+		return requeue, err
+	}
+
+	return s.ensureForwardingRules(ctx, lb, nlb)
+}
+
+func (s *Service) ensureNLB(
+	ctx context.Context,
+	lb *scope.LoadBalancer,
+) (nlb *sdk.NetworkLoadBalancer, requeue bool, err error) {
+	nlb, request, err := scopedFindResource(ctx, lb, s.getNLB, s.getLatestNLBCreationRequest)
+	if err != nil {
+		return nil, true, err
+	}
+
+	if request != nil && request.isPending() {
+		// Creation is in progress, we need to wait
+		return nil, true, nil
+	}
+
+	if nlb != nil {
+		if ptr.Deref(nlb.GetId(), "") != "" {
+			lb.LoadBalancer.SetNLBID(*nlb.GetId())
+		}
+
+		return nlb, false, nil
+	}
+
+	location, err := s.ionosClient.CreateNLB(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID, sdk.NetworkLoadBalancerProperties{
+		Name:        ptr.To(s.nlbName(lb.LoadBalancer)),
+		ListenerLan: ptr.To(lb.LoadBalancer.Status.NLBStatus.PublicLANID),
+		TargetLan:   ptr.To(lb.LoadBalancer.Status.NLBStatus.PrivateLANID),
+	})
+	if err != nil {
+		return nil, true, err
+	}
+
+	lb.LoadBalancer.SetCurrentRequest(http.MethodPost, sdk.RequestStatusQueued, location)
+	return nil, true, nil
+}
+
+func (s *Service) getControlPlaneMachines(ctx context.Context, lb *scope.LoadBalancer) (sets.Set[sdk.Server], error) {
+	// Get CP nodes
+	cpMachines, err := lb.ClusterScope.ListMachines(ctx, client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	machineSet := sets.New[string]()
+	for _, machine := range cpMachines {
+		machineSet.Insert(machine.ExtractServerID())
+	}
+
+	servers, err := s.ionosClient.ListServers(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID)
+	if err != nil {
+		return nil, err
+	}
+
+	cpServers := sets.New[sdk.Server]()
+	for _, server := range *servers.GetItems() {
+		if machineSet.Has(*server.GetId()) {
+			cpServers.Insert(server)
+		}
+	}
+
+	return cpServers, nil
+}
+
+func (s *Service) buildExpectedTargets(cpServers []sdk.Server, lb *scope.LoadBalancer) ([]sdk.NetworkLoadBalancerForwardingRuleTarget, error) {
+	targets := []sdk.NetworkLoadBalancerForwardingRuleTarget{}
+
+	for _, server := range cpServers {
+		nics := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
+		nic := findNICByName(nics, s.nlbNICName(lb.LoadBalancer))
+		if nic == nil {
+			return nil, fmt.Errorf("could not find NIC for server %s", *server.GetId())
+		}
+
+		ips := ptr.Deref(nic.GetProperties().GetIps(), []string{})
+		if len(ips) == 0 {
+			return nil, fmt.Errorf("could not find IP for NIC %s", *nic.GetId())
+		}
+
+		targets = append(targets, sdk.NetworkLoadBalancerForwardingRuleTarget{
+			Ip:     ptr.To(ips[0]),
+			Port:   ptr.To(lb.Endpoint().Port),
+			Weight: ptr.To(int32(1)),
+		})
+	}
+	return targets, nil
+}
+
+func (s *Service) ensureForwardingRules(ctx context.Context, lb *scope.LoadBalancer, nlb *sdk.NetworkLoadBalancer) (requeue bool, err error) {
+	cpServers, err := s.getControlPlaneMachines(ctx, lb)
+	if err != nil {
+		return true, err
+	}
+
+	targets, err := s.buildExpectedTargets(cpServers.UnsortedList(), lb)
+	if err != nil {
+		return true, err
+	}
+
+	ruleName := "control-plane-rule" // TODO make this configurable?
+
+	rules := ptr.Deref(nlb.GetEntities().GetForwardingrules().GetItems(), []sdk.NetworkLoadBalancerForwardingRule{})
+	var existingRule sdk.NetworkLoadBalancerForwardingRule
+	for _, rule := range rules {
+		if *rule.GetProperties().GetName() == ruleName {
+			existingRule = rule
+			break
+		}
+	}
+
+	// no rule found, we need to create it
+	if !existingRule.HasId() {
+		expectedRule := sdk.NetworkLoadBalancerForwardingRule{
+			Properties: &sdk.NetworkLoadBalancerForwardingRuleProperties{
+				Name:         ptr.To(ruleName),
+				Algorithm:    ptr.To("ROUND_ROBIN"),
+				ListenerIp:   ptr.To(lb.Endpoint().Host),
+				ListenerPort: ptr.To(lb.Endpoint().Port),
+				Protocol:     ptr.To("TCP"),
+				Targets:      ptr.To(targets),
+			},
+		}
+
+		location, err := s.ionosClient.CreateNLBForwardingRule(
+			ctx,
+			lb.LoadBalancer.Spec.NLB.DatacenterID,
+			*nlb.Id,
+			expectedRule)
+		if err != nil {
+			return true, err
+		}
+
+		lb.LoadBalancer.SetCurrentRequest(http.MethodPost, sdk.RequestStatusQueued, location)
+		return true, nil
+	}
+
+	// check if rule needs to be updated
+	if !s.targetsValid(*existingRule.GetProperties().GetTargets(), targets) {
+		existingRule.GetProperties().SetTargets(targets)
+		location, err := s.ionosClient.UpdateNLBForwardingRule(
+			ctx, lb.LoadBalancer.Spec.NLB.DatacenterID,
+			*nlb.GetId(),
+			*existingRule.GetId(),
+			existingRule,
+		)
+		if err != nil {
+			return true, err
+		}
+
+		lb.LoadBalancer.SetCurrentRequest(http.MethodPut, sdk.RequestStatusQueued, location)
+		// Update the rule with the new targets
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (*Service) targetsValid(existing, expected []sdk.NetworkLoadBalancerForwardingRuleTarget) bool {
+	if len(existing) != len(expected) {
+		return false
+	}
+
+	existingSet := sets.New[sdk.NetworkLoadBalancerForwardingRuleTarget](existing...)
+
+	for _, target := range expected {
+		if !existingSet.Has(target) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (s *Service) getNLB(ctx context.Context, lb *scope.LoadBalancer) (nlb *sdk.NetworkLoadBalancer, err error) {
+	if nlbID := lb.LoadBalancer.GetNLBID(); nlbID != "" {
+		nlb, err = s.ionosClient.GetNLB(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID, nlbID)
+		if ignoreNotFound(err) != nil {
+			return nil, err
+		}
+
+		if nlb != nil {
+			return nlb, nil
+		}
+	}
+
+	// We don't have an ID, we need to find the NLB by name
+	const listDepth = 3
+	nlbs, err := s.apiWithDepth(listDepth).ListNLBs(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, nlb := range ptr.Deref(nlbs.GetItems(), []sdk.NetworkLoadBalancer{}) {
+		if nlb.Properties.HasName() && *nlb.Properties.Name == s.nlbName(lb.LoadBalancer) {
+			return &nlb, nil
+		}
+	}
+
+	// return not found error
+	return nil, err
+}
+
+func (*Service) nlbsURL(datacenterID string) string {
+	return fmt.Sprintf("/datacenters/%s/networkloadbalancers", datacenterID)
+}
+
+func (*Service) nlbURL(datacenterID, nlbID string) string {
+	return fmt.Sprintf("/datacenters/%s/networkloadbalancers/%s", datacenterID, nlbID)
+}
+
+// ReconcileNLBDeletion ensures the deletion of the NLB.
+func (s *Service) ReconcileNLBDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
+	log := s.logger.WithName("ReconcileNLBDeletion")
+	log.V(4).Info("Reconciling NLB deletion")
+
+	// Check if there is an ongoing creation request
+
+	request, err := s.getLatestNLBCreationRequest(ctx, lb)
+	if err != nil {
+		return true, fmt.Errorf("could not get latest NLB creation request: %w", err)
+	}
+
+	if request != nil && request.isPending() {
+		log.Info("Found pending NLB creation request. Waiting for it to be finished")
+		return true, nil
+	}
+
+	// Check if there is an ongoing deletion request
+	nlb, request, err := scopedFindResource(ctx, lb, s.getNLB, s.getLatestNLBDeletionRequest)
+	if err != nil {
+		return true, err
+	}
+
+	if request != nil && request.isPending() {
+		log.Info("Found pending NLB deletion request. Waiting for it to be finished")
+		return true, nil
+	}
+
+	if nlb == nil {
+		// NLB was already deleted
+		lb.LoadBalancer.DeleteCurrentRequest()
+		return false, nil
+	}
+
+	// Delete the NLB
+	path, err := s.ionosClient.DeleteNLB(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID, *nlb.GetId())
+	if err != nil {
+		return true, err
+	}
+
+	lb.LoadBalancer.SetCurrentRequest(http.MethodDelete, sdk.RequestStatusQueued, path)
+	return true, nil
 }
 
 // ReconcileLoadBalancerNetworks reconciles the networks for the corresponding NLB.
@@ -116,7 +383,11 @@ func (s *Service) reconcileIncomingLAN(ctx context.Context, lb *scope.LoadBalanc
 		return requeue, err
 	}
 
-	lb.LoadBalancer.SetPublicLANID(ptr.Deref(lan.GetId(), ""))
+	if lan != nil {
+		if err := lb.LoadBalancer.SetPublicLANID(ptr.Deref(lan.GetId(), "")); err != nil {
+			return true, err
+		}
+	}
 
 	return false, nil
 }
@@ -127,7 +398,11 @@ func (s *Service) reconcileOutgoingLAN(ctx context.Context, lb *scope.LoadBalanc
 		return requeue, err
 	}
 
-	lb.LoadBalancer.SetPrivateLANID(ptr.Deref(lan.GetId(), ""))
+	if lan != nil {
+		if err := lb.LoadBalancer.SetPrivateLANID(ptr.Deref(lan.GetId(), "")); err != nil {
+			return true, err
+		}
+	}
 
 	return false, nil
 }
@@ -444,4 +719,25 @@ func (s *Service) getLatestLoadBalancerLANCreationRequest(lanType string) func(c
 
 func (s *Service) getLatestLoadBalancerLANDeletionRequest(ctx context.Context, lb *scope.LoadBalancer, lanID string) (*requestInfo, error) {
 	return s.getLatestLANRequestByMethod(ctx, http.MethodDelete, s.lanURL(lb.LoadBalancer.Spec.NLB.DatacenterID, lanID))
+}
+
+func (s *Service) getLatestNLBCreationRequest(ctx context.Context, lb *scope.LoadBalancer) (*requestInfo, error) {
+	return s.getLatestNLBRequestByMethod(ctx, http.MethodPost, s.nlbsURL(lb.LoadBalancer.Spec.NLB.DatacenterID),
+		matchByName[*sdk.NetworkLoadBalancer, *sdk.NetworkLoadBalancerProperties](s.nlbName(lb.LoadBalancer)))
+}
+
+func (s *Service) getLatestNLBDeletionRequest(ctx context.Context, lb *scope.LoadBalancer) (*requestInfo, error) {
+	return s.getLatestNLBRequestByMethod(ctx, http.MethodDelete, s.nlbURL(lb.LoadBalancer.Spec.NLB.DatacenterID, lb.LoadBalancer.Status.NLBStatus.ID))
+}
+
+func (s *Service) getLatestNLBRequestByMethod(
+	ctx context.Context,
+	method, path string,
+	matcher ...matcherFunc[*sdk.NetworkLoadBalancer],
+) (*requestInfo, error) {
+	return getMatchingRequest(
+		ctx, s,
+		method,
+		path,
+		matcher...)
 }
