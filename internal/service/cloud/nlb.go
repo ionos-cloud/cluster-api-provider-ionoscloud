@@ -92,6 +92,11 @@ func (s *Service) ensureNLB(
 			lb.LoadBalancer.SetNLBID(*nlb.GetId())
 		}
 
+		if state := getState(nlb); !isAvailable(state) {
+			// NLB is not ready yet
+			return nil, true, nil
+		}
+
 		return nlb, false, nil
 	}
 
@@ -99,6 +104,7 @@ func (s *Service) ensureNLB(
 		Name:        ptr.To(s.nlbName(lb.LoadBalancer)),
 		ListenerLan: ptr.To(lb.LoadBalancer.Status.NLBStatus.PublicLANID),
 		TargetLan:   ptr.To(lb.LoadBalancer.Status.NLBStatus.PrivateLANID),
+		Ips:         ptr.To([]string{lb.Endpoint().Host}), // TODO resolve IP address
 	})
 	if err != nil {
 		return nil, true, err
@@ -120,7 +126,7 @@ func (s *Service) getControlPlaneMachines(ctx context.Context, lb *scope.LoadBal
 		machineSet.Insert(machine.ExtractServerID())
 	}
 
-	servers, err := s.ionosClient.ListServers(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID)
+	servers, err := s.apiWithDepth(3).ListServers(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID)
 	if err != nil {
 		return nil, err
 	}
@@ -136,13 +142,15 @@ func (s *Service) getControlPlaneMachines(ctx context.Context, lb *scope.LoadBal
 }
 
 func (s *Service) buildExpectedTargets(cpServers []sdk.Server, lb *scope.LoadBalancer) ([]sdk.NetworkLoadBalancerForwardingRuleTarget, error) {
-	targets := []sdk.NetworkLoadBalancerForwardingRuleTarget{}
+	log := s.logger.WithName("buildExpectedTargets")
+	targets := make([]sdk.NetworkLoadBalancerForwardingRuleTarget, 0, len(cpServers))
 
 	for _, server := range cpServers {
 		nics := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
 		nic := findNICByName(nics, s.nlbNICName(lb.LoadBalancer))
 		if nic == nil {
-			return nil, fmt.Errorf("could not find NIC for server %s", *server.GetId())
+			log.Info("NIC not found for server", "server", *server.GetId())
+			continue
 		}
 
 		ips := ptr.Deref(nic.GetProperties().GetIps(), []string{})
@@ -163,6 +171,11 @@ func (s *Service) ensureForwardingRules(ctx context.Context, lb *scope.LoadBalan
 	cpServers, err := s.getControlPlaneMachines(ctx, lb)
 	if err != nil {
 		return true, err
+	}
+
+	if cpServers.Len() == 0 {
+		// no machines yet. No need to apply rules
+		return false, nil
 	}
 
 	targets, err := s.buildExpectedTargets(cpServers.UnsortedList(), lb)
@@ -233,10 +246,14 @@ func (*Service) targetsValid(existing, expected []sdk.NetworkLoadBalancerForward
 		return false
 	}
 
-	existingSet := sets.New[sdk.NetworkLoadBalancerForwardingRuleTarget](existing...)
+	existingSet := sets.New[string]()
+
+	for _, r := range existing {
+		existingSet.Insert(*r.GetIp())
+	}
 
 	for _, target := range expected {
-		if !existingSet.Has(target) {
+		if !existingSet.Has(*target.GetIp()) {
 			return false
 		}
 	}
@@ -245,8 +262,9 @@ func (*Service) targetsValid(existing, expected []sdk.NetworkLoadBalancerForward
 }
 
 func (s *Service) getNLB(ctx context.Context, lb *scope.LoadBalancer) (nlb *sdk.NetworkLoadBalancer, err error) {
+	const apiDepth = 10
 	if nlbID := lb.LoadBalancer.GetNLBID(); nlbID != "" {
-		nlb, err = s.ionosClient.GetNLB(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID, nlbID)
+		nlb, err = s.apiWithDepth(apiDepth).GetNLB(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID, nlbID)
 		if ignoreNotFound(err) != nil {
 			return nil, err
 		}
@@ -257,8 +275,7 @@ func (s *Service) getNLB(ctx context.Context, lb *scope.LoadBalancer) (nlb *sdk.
 	}
 
 	// We don't have an ID, we need to find the NLB by name
-	const listDepth = 3
-	nlbs, err := s.apiWithDepth(listDepth).ListNLBs(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID)
+	nlbs, err := s.apiWithDepth(apiDepth).ListNLBs(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID)
 	if err != nil {
 		return nil, err
 	}
@@ -299,14 +316,19 @@ func (s *Service) ReconcileNLBDeletion(ctx context.Context, lb *scope.LoadBalanc
 	}
 
 	// Check if there is an ongoing deletion request
-	nlb, request, err := scopedFindResource(ctx, lb, s.getNLB, s.getLatestNLBDeletionRequest)
+	request, err = s.getLatestNLBDeletionRequest(ctx, lb)
 	if err != nil {
-		return true, err
+		return true, fmt.Errorf("could not get latest NLB deletion request: %w", err)
 	}
 
 	if request != nil && request.isPending() {
 		log.Info("Found pending NLB deletion request. Waiting for it to be finished")
 		return true, nil
+	}
+
+	nlb, err := s.getNLB(ctx, lb)
+	if err != nil {
+		return true, err
 	}
 
 	if nlb == nil {
@@ -642,10 +664,6 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 	errGrp.SetLimit(len(cpMachines))
 
 	for _, machine := range cpMachines {
-		if !machine.Status.Ready {
-			continue
-		}
-
 		var (
 			datacenterID = machine.Spec.DatacenterID
 			serverID     = machine.ExtractServerID()
@@ -658,6 +676,10 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 		server, err := s.getServerByServerID(ctx, datacenterID, serverID)
 		if err != nil {
 			return true, err
+		}
+
+		if state := getState(server); !isAvailable(state) {
+			return true, nil
 		}
 
 		nics := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
