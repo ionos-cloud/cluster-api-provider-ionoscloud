@@ -414,3 +414,7 @@ func (s *ServiceTestSuite) mockListLANsCall(datacenterID string) *clienttest.Moc
 func (s *ServiceTestSuite) mockGetDatacenterLocationByIDCall(datacenterID string) *clienttest.MockClient_GetDatacenterLocationByID_Call {
 	return s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, datacenterID)
 }
+
+func (s *ServiceTestSuite) mockGetLANCreationRequestsCall(datacenterID string) *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.lansURL(datacenterID))
+}

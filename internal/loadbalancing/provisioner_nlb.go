@@ -29,7 +29,7 @@ type nlbProvisioner struct {
 
 // Provision is responsible for creating the Network Load Balancer.
 func (n *nlbProvisioner) Provision(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
-	requeue, err = n.svc.ReconcileLoadBalancerNetworks(ctx, lb)
+	requeue, err = n.svc.ReconcileNLBNetworks(ctx, lb)
 	if err != nil || requeue {
 		return requeue, err
 	}
@@ -45,5 +45,5 @@ func (n *nlbProvisioner) Destroy(ctx context.Context, lb *scope.LoadBalancer) (r
 	}
 
 	// Destroy LANs
-	return n.svc.ReconcileLoadBalancerNetworksDeletion(ctx, lb)
+	return n.svc.ReconcileNLBNetworksDeletion(ctx, lb)
 }

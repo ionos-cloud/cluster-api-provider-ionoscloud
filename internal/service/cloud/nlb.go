@@ -350,13 +350,13 @@ func (s *Service) ReconcileNLBDeletion(ctx context.Context, lb *scope.LoadBalanc
 	return true, nil
 }
 
-// ReconcileLoadBalancerNetworks reconciles the networks for the corresponding NLB.
+// ReconcileNLBNetworks reconciles the networks for the corresponding NLB.
 //
 // The following networks need to be created for a basic NLB configuration:
 // * Incoming public LAN. This will be used to expose the NLB to the internet.
 // * Outgoing private LAN. This LAN will be connected with the NICs of control plane nodes.
-func (s *Service) ReconcileLoadBalancerNetworks(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
-	log := s.logger.WithName("ReconcileLoadBalancerNetworks")
+func (s *Service) ReconcileNLBNetworks(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
+	log := s.logger.WithName("ReconcileNLBNetworks")
 	log.V(4).Info("Reconciling LoadBalancer Networks")
 
 	if requeue, err := s.reconcileIncomingLAN(ctx, lb); err != nil || requeue {
@@ -375,9 +375,9 @@ func (s *Service) ReconcileLoadBalancerNetworks(ctx context.Context, lb *scope.L
 	return false, nil
 }
 
-// ReconcileLoadBalancerNetworksDeletion handles the deletion of the networks for the corresponding NLB.
-func (s *Service) ReconcileLoadBalancerNetworksDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
-	log := s.logger.WithName("ReconcileLoadBalancerNetworksDeletion")
+// ReconcileNLBNetworksDeletion handles the deletion of the networks for the corresponding NLB.
+func (s *Service) ReconcileNLBNetworksDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
+	log := s.logger.WithName("ReconcileNLBNetworksDeletion")
 	log.V(4).Info("Reconciling LoadBalancer Networks deletion")
 
 	cpMachines, err := lb.ClusterScope.ListMachines(ctx, client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""})
@@ -469,6 +469,11 @@ func (s *Service) reconcileLoadBalancerLAN(
 	if err := s.ionosClient.WaitForRequest(ctx, path); err != nil {
 		lb.LoadBalancer.SetCurrentRequest(http.MethodPost, sdk.RequestStatusQueued, path)
 		return nil, true, err
+	}
+
+	lan, requeue, err = s.findLoadBalancerLANByName(ctx, lb, lanType)
+	if err != nil || requeue {
+		return nil, requeue, err
 	}
 
 	return lan, false, nil
@@ -624,7 +629,7 @@ func (s *Service) getLANByNameFunc(datacenterID, lanName string) func(context.Co
 			foundLAN *sdk.Lan
 		)
 
-		for _, l := range *lans.Items {
+		for _, l := range ptr.Deref(lans.GetItems(), []sdk.Lan{}) {
 			if l.Properties.HasName() && *l.Properties.Name == lanName {
 				foundLAN = &l
 				lanCount++
@@ -657,8 +662,8 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 	}
 
 	cpMachines, err := lb.ClusterScope.ListMachines(ctx, client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""})
-	if err != nil {
-		return true, err
+	if err != nil || len(cpMachines) == 0 {
+		return false, err
 	}
 
 	expectedNICName := s.nlbNICName(lb.LoadBalancer)

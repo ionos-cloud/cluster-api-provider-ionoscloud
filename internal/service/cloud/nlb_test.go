@@ -288,6 +288,58 @@ func (n *nlbSuite) TestReconcileNLBDeletion() {
 
 func (n *nlbSuite) TestReconcileLoadBalancerNetworksCreateIncomingAndOutgoing() {
 	n.mockListLANsCall(n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(nil, nil).Once()
+	n.mockGetLANCreationRequestsCall(n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(nil, nil).Twice()
+
+	n.mockCreateNLBLANCall(sdk.LanProperties{
+		Name:          ptr.To(n.service.nlbLANName(n.infraLoadBalancer, lanTypePublic)),
+		Ipv6CidrBlock: ptr.To("AUTO"),
+		Public:        ptr.To(true),
+	}).Return("path/to/lan", nil).Once()
+
+	const (
+		incomingLANID = "2"
+		outgoingLANID = "3"
+	)
+
+	n.mockWaitForRequestCall("path/to/lan").Return(nil).Twice()
+
+	firstLans := []sdk.Lan{{
+		Id:       ptr.To(incomingLANID),
+		Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(sdk.Available)},
+		Properties: &sdk.LanProperties{
+			Name:          ptr.To(n.service.nlbLANName(n.infraLoadBalancer, lanTypePublic)),
+			Ipv6CidrBlock: ptr.To("AUTO"),
+			Public:        ptr.To(true),
+		},
+	}}
+
+	call := n.mockListLANsCall(n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(&sdk.Lans{
+		Items: &firstLans,
+	}, nil).Twice()
+
+	n.mockCreateNLBLANCall(sdk.LanProperties{
+		Name:          ptr.To(n.service.nlbLANName(n.infraLoadBalancer, lanTypePrivate)),
+		Ipv6CidrBlock: ptr.To("AUTO"),
+		Public:        ptr.To(false),
+	}).Return("path/to/lan", nil).Once().NotBefore(call)
+
+	secondLANs := append(firstLans, sdk.Lan{
+		Id:       ptr.To(outgoingLANID),
+		Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(sdk.Available)},
+		Properties: &sdk.LanProperties{
+			Name:          ptr.To(n.service.nlbLANName(n.infraLoadBalancer, lanTypePrivate)),
+			Ipv6CidrBlock: ptr.To("AUTO"),
+			Public:        ptr.To(false),
+		},
+	})
+
+	n.mockListLANsCall(n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(&sdk.Lans{
+		Items: &secondLANs,
+	}, nil).Once()
+
+	requeue, err := n.service.ReconcileNLBNetworks(n.ctx, n.loadBalancerScope)
+	n.NoError(err)
+	n.False(requeue)
 }
 
 func (n *nlbSuite) setupExistingNLBScenario(nlb *sdk.NetworkLoadBalancer) {
@@ -334,6 +386,10 @@ func (n *nlbSuite) mockGetNLBCreationRequestCall() *clienttest.MockClient_GetReq
 
 func (n *nlbSuite) mockGetNLBDeletionRequestCall(nlbID string) *clienttest.MockClient_GetRequests_Call {
 	return n.ionosClient.EXPECT().GetRequests(n.ctx, http.MethodDelete, n.service.nlbURL(n.infraLoadBalancer.Spec.NLB.DatacenterID, nlbID))
+}
+
+func (n *nlbSuite) mockCreateNLBLANCall(properties sdk.LanProperties) *clienttest.MockClient_CreateLAN_Call {
+	return n.ionosClient.EXPECT().CreateLAN(n.ctx, n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID, properties)
 }
 
 func (n *nlbSuite) defaultNLB() *sdk.NetworkLoadBalancer {
