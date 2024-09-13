@@ -97,14 +97,20 @@ func (s *Service) ensureNLB(
 			return nil, true, nil
 		}
 
+		lb.LoadBalancer.DeleteCurrentRequest()
 		return nlb, false, nil
+	}
+
+	ips, err := lb.ResolveEndpoint(ctx)
+	if err != nil {
+		return nil, true, err
 	}
 
 	location, err := s.ionosClient.CreateNLB(ctx, lb.LoadBalancer.Spec.NLB.DatacenterID, sdk.NetworkLoadBalancerProperties{
 		Name:        ptr.To(s.nlbName(lb.LoadBalancer)),
 		ListenerLan: ptr.To(lb.LoadBalancer.Status.NLBStatus.PublicLANID),
 		TargetLan:   ptr.To(lb.LoadBalancer.Status.NLBStatus.PrivateLANID),
-		Ips:         ptr.To([]string{lb.Endpoint().Host}), // TODO resolve IP address
+		Ips:         ptr.To(ips), // TODO resolve IP address
 	})
 	if err != nil {
 		return nil, true, err
@@ -119,6 +125,10 @@ func (s *Service) getControlPlaneMachines(ctx context.Context, lb *scope.LoadBal
 	cpMachines, err := lb.ClusterScope.ListMachines(ctx, client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""})
 	if err != nil {
 		return nil, err
+	}
+
+	if len(cpMachines) == 0 {
+		return sets.New[sdk.Server](), nil
 	}
 
 	machineSet := sets.New[string]()
@@ -169,18 +179,13 @@ func (s *Service) buildExpectedTargets(cpServers []sdk.Server, lb *scope.LoadBal
 
 func (s *Service) ensureForwardingRules(ctx context.Context, lb *scope.LoadBalancer, nlb *sdk.NetworkLoadBalancer) (requeue bool, err error) {
 	cpServers, err := s.getControlPlaneMachines(ctx, lb)
-	if err != nil {
-		return true, err
-	}
-
-	if cpServers.Len() == 0 {
-		// no machines yet. No need to apply rules
-		return false, nil
+	if err != nil || cpServers.Len() == 0 {
+		return false, err
 	}
 
 	targets, err := s.buildExpectedTargets(cpServers.UnsortedList(), lb)
-	if err != nil {
-		return true, err
+	if err != nil || len(targets) == 0 {
+		return false, err
 	}
 
 	ruleName := "control-plane-rule" // TODO make this configurable?
@@ -194,15 +199,14 @@ func (s *Service) ensureForwardingRules(ctx context.Context, lb *scope.LoadBalan
 		}
 	}
 
-	// no rule found, we need to create it
 	if !existingRule.HasId() {
 		expectedRule := sdk.NetworkLoadBalancerForwardingRule{
 			Properties: &sdk.NetworkLoadBalancerForwardingRuleProperties{
 				Name:         ptr.To(ruleName),
-				Algorithm:    ptr.To("ROUND_ROBIN"),
+				Algorithm:    ptr.To(lb.LoadBalancer.Spec.NLB.Algorithm),
 				ListenerIp:   ptr.To(lb.Endpoint().Host),
 				ListenerPort: ptr.To(lb.Endpoint().Port),
-				Protocol:     ptr.To("TCP"),
+				Protocol:     ptr.To(lb.LoadBalancer.Spec.NLB.Protocol),
 				Targets:      ptr.To(targets),
 			},
 		}
@@ -220,7 +224,6 @@ func (s *Service) ensureForwardingRules(ctx context.Context, lb *scope.LoadBalan
 		return true, nil
 	}
 
-	// check if rule needs to be updated
 	if !s.targetsValid(*existingRule.GetProperties().GetTargets(), targets) {
 		existingRule.GetProperties().SetTargets(targets)
 		location, err := s.ionosClient.UpdateNLBForwardingRule(

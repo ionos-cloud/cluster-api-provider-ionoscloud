@@ -65,6 +65,18 @@ type NLBSpec struct {
 	//+kubebuilder:validation:Format=uuid
 	//+required
 	DatacenterID string `json:"datacenterID"`
+
+	// Algorithm is the load balancing algorithm.
+	//+kubebuilder:validation:Enum=ROUND_ROBIN;LEAST_CONNECTION;RANDOM;SOURCE_IP
+	//+kubebuilder:default=ROUND_ROBIN
+	//+optional
+	Algorithm string `json:"algorithm,omitempty"`
+
+	// Protocol is the load balancing protocol.
+	//+kubebuilder:validation:Enum=TCP;HTTP
+	//+kubebuilder:default=TCP
+	//+optional
+	Protocol string `json:"protocol,omitempty"`
 }
 
 // IonosCloudLoadBalancerStatus defines the observed state of IonosCloudLoadBalancer.

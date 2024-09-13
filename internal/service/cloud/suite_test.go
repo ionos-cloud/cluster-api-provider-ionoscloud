@@ -75,22 +75,26 @@ const (
 	exampleRequestPath       = "/test"
 	exampleLocation          = "de/txl"
 	exampleDatacenterID      = "ccf27092-34e8-499e-a2f5-2bdee9d34a12"
+	exampleNLBID             = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3f"
+	exampleForwardingRuleID  = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3e"
 )
 
 type ServiceTestSuite struct {
 	*require.Assertions
 	suite.Suite
-	k8sClient    client.Client
-	ctx          context.Context
-	machineScope *scope.Machine
-	clusterScope *scope.Cluster
-	log          logr.Logger
-	service      *Service
-	capiCluster  *clusterv1.Cluster
-	capiMachine  *clusterv1.Machine
-	infraCluster *infrav1.IonosCloudCluster
-	infraMachine *infrav1.IonosCloudMachine
-	ionosClient  *clienttest.MockClient
+	k8sClient         client.Client
+	ctx               context.Context
+	machineScope      *scope.Machine
+	clusterScope      *scope.Cluster
+	loadBalancerScope *scope.LoadBalancer
+	log               logr.Logger
+	service           *Service
+	capiCluster       *clusterv1.Cluster
+	capiMachine       *clusterv1.Machine
+	infraCluster      *infrav1.IonosCloudCluster
+	infraMachine      *infrav1.IonosCloudMachine
+	infraLoadBalancer *infrav1.IonosCloudLoadBalancer
+	ionosClient       *clienttest.MockClient
 }
 
 func (s *ServiceTestSuite) SetupSuite() {
@@ -172,6 +176,26 @@ func (s *ServiceTestSuite) SetupTest() {
 		Status: infrav1.IonosCloudMachineStatus{},
 	}
 
+	s.infraLoadBalancer = &infrav1.IonosCloudLoadBalancer{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "test-loadbalancer",
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: s.capiCluster.Name,
+			},
+		},
+		Spec: infrav1.IonosCloudLoadBalancerSpec{
+			LoadBalancerSource: infrav1.LoadBalancerSource{
+				NLB: &infrav1.NLBSpec{
+					DatacenterID: exampleDatacenterID,
+				},
+			},
+		},
+		Status: infrav1.IonosCloudLoadBalancerStatus{
+			NLBStatus: &infrav1.NLBStatus{},
+		},
+	}
+
 	scheme := runtime.NewScheme()
 	s.NoError(clusterv1.AddToScheme(scheme), "failed to extend scheme with Cluster API types")
 	s.NoError(ipamv1.AddToScheme(scheme), "failed to extend scheme with Cluster API ipam types")
@@ -198,6 +222,15 @@ func (s *ServiceTestSuite) SetupTest() {
 		Machine:      s.capiMachine,
 		ClusterScope: s.clusterScope,
 		IonosMachine: s.infraMachine,
+		Locker:       locker.New(),
+	})
+
+	s.NoError(err)
+
+	s.loadBalancerScope, err = scope.NewLoadBalancer(scope.LoadBalancerParams{
+		Client:       s.k8sClient,
+		LoadBalancer: s.infraLoadBalancer,
+		ClusterScope: s.clusterScope,
 		Locker:       locker.New(),
 	})
 	s.NoError(err, "failed to create machine scope")
@@ -368,6 +401,10 @@ func (s *ServiceTestSuite) mockWaitForRequestCall(location string) *clienttest.M
 
 func (s *ServiceTestSuite) mockGetServerCall(serverID string) *clienttest.MockClient_GetServer_Call {
 	return s.ionosClient.EXPECT().GetServer(s.ctx, s.machineScope.DatacenterID(), serverID)
+}
+
+func (s *ServiceTestSuite) mockListServersCall(datacenterID string) *clienttest.MockClient_ListServers_Call {
+	return s.ionosClient.EXPECT().ListServers(s.ctx, datacenterID)
 }
 
 func (s *ServiceTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {

@@ -69,6 +69,24 @@ var _ = Describe("IonosCloudLoadBalancer", func() {
 				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
 				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 			})
+			It("Should have ROUND_ROBIN as the default algorithm", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
+				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
+				Expect(dlb.Spec.NLB.Algorithm).To(Equal("ROUND_ROBIN"))
+			})
+			It("Should fail when providing an invalid algorithm", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID, Algorithm: "INVALID"}})
+				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
+			})
+			It("Should have TCP as the default protocol", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
+				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
+				Expect(dlb.Spec.NLB.Protocol).To(Equal("TCP"))
+			})
+			It("Should fail when providing an invalid protocol", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID, Protocol: "INVALID"}})
+				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
+			})
 			It("Should succeed providing an endpoint and a port", func() {
 				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
 				dlb.Spec.LoadBalancerEndpoint = exampleEndpoint

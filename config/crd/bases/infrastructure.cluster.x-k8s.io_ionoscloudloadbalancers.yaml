@@ -72,6 +72,15 @@ spec:
               nlb:
                 description: NLB is used for setting up a network load balancer.
                 properties:
+                  algorithm:
+                    default: ROUND_ROBIN
+                    description: Algorithm is the load balancing algorithm.
+                    enum:
+                    - ROUND_ROBIN
+                    - LEAST_CONNECTION
+                    - RANDOM
+                    - SOURCE_IP
+                    type: string
                   datacenterID:
                     description: DatacenterID is the ID of the datacenter where the
                       load balancer should be created.
@@ -80,6 +89,13 @@ spec:
                     x-kubernetes-validations:
                     - message: datacenterID is immutable
                       rule: self == oldSelf
+                  protocol:
+                    default: TCP
+                    description: Protocol is the load balancing protocol.
+                    enum:
+                    - TCP
+                    - HTTP
+                    type: string
                 required:
                 - datacenterID
                 type: object

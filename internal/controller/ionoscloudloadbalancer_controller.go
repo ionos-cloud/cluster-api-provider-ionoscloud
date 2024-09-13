@@ -194,7 +194,7 @@ func (r *IonosCloudLoadBalancerReconciler) reconcileNormal(
 	}
 
 	if requeue, err := r.checkRequestStatus(ctx, loadBalancerScope, cloudService); err != nil || requeue {
-		return ctrl.Result{Requeue: requeue}, err
+		return ctrl.Result{Requeue: requeue, RequeueAfter: defaultReconcileDuration}, err
 	}
 
 	if requeue, err := prov.Provision(ctx, loadBalancerScope); err != nil || requeue {
