@@ -42,95 +42,95 @@ func TestNLBSuite(t *testing.T) {
 	suite.Run(t, new(nlbSuite))
 }
 
-func (n *nlbSuite) TestNLBLANName() {
-	nlbLANName := n.service.nlbLANName(n.infraLoadBalancer, lanTypePublic)
-	expected := "lan-in-" + n.infraLoadBalancer.Namespace + "-" + n.infraLoadBalancer.Name
-	n.Equal(expected, nlbLANName)
+func (s *nlbSuite) TestNLBLANName() {
+	nlbLANName := s.service.nlbLANName(s.infraLoadBalancer, lanTypePublic)
+	expected := "lan-in-" + s.infraLoadBalancer.Namespace + "-" + s.infraLoadBalancer.Name
+	s.Equal(expected, nlbLANName)
 }
 
-func (n *nlbSuite) TestNLBNICName() {
-	nlbNICName := n.service.nlbNICName(n.infraLoadBalancer)
-	expected := "nic-nlb-" + n.infraLoadBalancer.Namespace + "-" + n.infraLoadBalancer.Name
-	n.Equal(expected, nlbNICName)
+func (s *nlbSuite) TestNLBNICName() {
+	nlbNICName := s.service.nlbNICName(s.infraLoadBalancer)
+	expected := "nic-nlb-" + s.infraLoadBalancer.Namespace + "-" + s.infraLoadBalancer.Name
+	s.Equal(expected, nlbNICName)
 }
 
-func (n *nlbSuite) TestNLBName() {
-	nlbName := n.service.nlbName(n.infraLoadBalancer)
-	expected := n.infraLoadBalancer.Namespace + "-" + n.infraLoadBalancer.Name
-	n.Equal(expected, nlbName)
+func (s *nlbSuite) TestNLBName() {
+	nlbName := s.service.nlbName(s.infraLoadBalancer)
+	expected := s.infraLoadBalancer.Namespace + "-" + s.infraLoadBalancer.Name
+	s.Equal(expected, nlbName)
 }
 
-func (n *nlbSuite) TestReconcileNLBCreateNLB() {
-	status := n.loadBalancerScope.LoadBalancer.Status.NLBStatus
+func (s *nlbSuite) TestReconcileNLBCreateNLB() {
+	status := s.loadBalancerScope.LoadBalancer.Status.NLBStatus
 
 	status.PublicLANID = 2
 	status.PrivateLANID = 3
 
-	n.mockListNLBsCall().Return(nil, nil).Once()
-	n.mockGetNLBCreationRequestCall().Return(nil, nil).Once()
-	n.mockCreateNLBCall().Return("test/nlb/request/path", nil).Once()
+	s.mockListNLBsCall().Return(nil, nil).Once()
+	s.mockGetNLBCreationRequestCall().Return(nil, nil).Once()
+	s.mockCreateNLBCall().Return("test/nlb/request/path", nil).Once()
 
-	requeue, err := n.service.ReconcileNLB(n.ctx, n.loadBalancerScope)
-	n.NoError(err)
-	n.True(requeue)
-	n.NotNil(n.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
+	requeue, err := s.service.ReconcileNLB(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.True(requeue)
+	s.NotNil(s.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
 }
 
-func (n *nlbSuite) TestReconcileNLBRequestIsPending() {
-	n.mockListNLBsCall().Return(nil, nil).Once()
-	n.mockGetNLBCreationRequestCall().Return([]sdk.Request{n.examplePostRequest()}, nil)
+func (s *nlbSuite) TestReconcileNLBRequestIsPending() {
+	s.mockListNLBsCall().Return(nil, nil).Once()
+	s.mockGetNLBCreationRequestCall().Return([]sdk.Request{s.examplePostRequest()}, nil)
 
-	requeue, err := n.service.ReconcileNLB(n.ctx, n.loadBalancerScope)
-	n.NoError(err)
-	n.True(requeue)
+	requeue, err := s.service.ReconcileNLB(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.True(requeue)
 }
 
-func (n *nlbSuite) TestReconcileNLBNoControlPlaneMachines() {
-	n.setupExistingNLBScenario(n.defaultNLB())
+func (s *nlbSuite) TestReconcileNLBNoControlPlaneMachines() {
+	s.setupExistingNLBScenario(s.defaultNLB())
 
-	requeue, err := n.service.ReconcileNLB(n.ctx, n.loadBalancerScope)
+	requeue, err := s.service.ReconcileNLB(s.ctx, s.loadBalancerScope)
 
-	n.NoError(err)
-	n.False(requeue)
-	n.Nil(n.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
+	s.NoError(err)
+	s.False(requeue)
+	s.Nil(s.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
 }
 
-func (n *nlbSuite) TestReconcileNLBControlPlaneMachinesAvailableNoNICs() {
-	n.setupExistingNLBScenario(n.defaultNLB())
+func (s *nlbSuite) TestReconcileNLBControlPlaneMachinesAvailableNoNICs() {
+	s.setupExistingNLBScenario(s.defaultNLB())
 
-	machines := n.createControlPlaneMachines(0, 3)
+	machines := s.createControlPlaneMachines(0, 3)
 	for _, m := range machines {
-		n.NoError(n.k8sClient.Create(n.ctx, &m))
+		s.NoError(s.k8sClient.Create(s.ctx, &m))
 	}
 
-	n.mockListServersCall(exampleDatacenterID).Return(
-		&sdk.Servers{Items: ptr.To(n.machinesToServers(machines))}, nil,
+	s.mockListServersCall(exampleDatacenterID).Return(
+		&sdk.Servers{Items: ptr.To(s.machinesToServers(machines))}, nil,
 	).Once()
 
-	requeue, err := n.service.ReconcileNLB(n.ctx, n.loadBalancerScope)
+	requeue, err := s.service.ReconcileNLB(s.ctx, s.loadBalancerScope)
 
-	n.NoError(err)
-	n.False(requeue)
-	n.Nil(n.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
+	s.NoError(err)
+	s.False(requeue)
+	s.Nil(s.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
 }
 
-func (n *nlbSuite) TestReconcileNLBControlPlaneMachinesAvailable() {
-	n.setupExistingNLBScenario(n.defaultNLB())
+func (s *nlbSuite) TestReconcileNLBControlPlaneMachinesAvailable() {
+	s.setupExistingNLBScenario(s.defaultNLB())
 
-	machines := n.createControlPlaneMachines(0, 3)
+	machines := s.createControlPlaneMachines(0, 3)
 	for _, m := range machines {
-		n.NoError(n.k8sClient.Create(n.ctx, &m))
+		s.NoError(s.k8sClient.Create(s.ctx, &m))
 	}
 
-	n.mockListServersCall(exampleDatacenterID).Return(
-		&sdk.Servers{Items: ptr.To(n.machinesToServers(
+	s.mockListServersCall(exampleDatacenterID).Return(
+		&sdk.Servers{Items: ptr.To(s.machinesToServers(
 			machines,
 			func(server *sdk.Server) {
 				server.SetEntities(sdk.ServerEntities{
 					Nics: &sdk.Nics{
 						Items: &[]sdk.Nic{{
 							Properties: &sdk.NicProperties{
-								Name: ptr.To(n.service.nlbNICName(n.infraLoadBalancer)),
+								Name: ptr.To(s.service.nlbNICName(s.infraLoadBalancer)),
 								Ips:  ptr.To([]string{"203.0.113.10"}),
 								Lan:  ptr.To(int32(2)),
 							},
@@ -140,23 +140,23 @@ func (n *nlbSuite) TestReconcileNLBControlPlaneMachinesAvailable() {
 			}))}, nil,
 	).Once()
 
-	n.mockCreateNLBForwardingRuleCall(exampleDatacenterID, exampleNLBID).Return("path/to/nlb/", nil).Once()
-	requeue, err := n.service.ReconcileNLB(n.ctx, n.loadBalancerScope)
+	s.mockCreateNLBForwardingRuleCall(exampleDatacenterID, exampleNLBID).Return("path/to/nlb/", nil).Once()
+	requeue, err := s.service.ReconcileNLB(s.ctx, s.loadBalancerScope)
 
-	n.NoError(err)
-	n.True(requeue)
-	n.NotNil(n.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
+	s.NoError(err)
+	s.True(requeue)
+	s.NotNil(s.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
 }
 
-func (n *nlbSuite) TestReconcileNLBUpdateForwardingRules() {
-	nlb := n.defaultNLB()
-	n.setupExistingNLBScenario(nlb)
+func (s *nlbSuite) TestReconcileNLBUpdateForwardingRules() {
+	nlb := s.defaultNLB()
+	s.setupExistingNLBScenario(nlb)
 
-	machinesFirstCall := n.createControlPlaneMachines(0, 2)
-	machinesSecondCall := n.createControlPlaneMachines(2, 2)
+	machinesFirstCall := s.createControlPlaneMachines(0, 2)
+	machinesSecondCall := s.createControlPlaneMachines(2, 2)
 
 	for _, m := range machinesFirstCall {
-		n.NoError(n.k8sClient.Create(n.ctx, &m))
+		s.NoError(s.k8sClient.Create(s.ctx, &m))
 	}
 
 	ipAddress := new(string)
@@ -164,14 +164,14 @@ func (n *nlbSuite) TestReconcileNLBUpdateForwardingRules() {
 
 	applyLBNIC := func(server *sdk.Server) {
 		oldIP, err := netip.ParseAddr(*ipAddress)
-		n.NoError(err)
+		s.NoError(err)
 		nextIP := oldIP.Next()
 
 		server.SetEntities(sdk.ServerEntities{
 			Nics: &sdk.Nics{
 				Items: &[]sdk.Nic{{
 					Properties: &sdk.NicProperties{
-						Name: ptr.To(n.service.nlbNICName(n.infraLoadBalancer)),
+						Name: ptr.To(s.service.nlbNICName(s.infraLoadBalancer)),
 						Ips:  ptr.To([]string{oldIP.String()}),
 						Lan:  ptr.To(int32(2)),
 					},
@@ -182,16 +182,16 @@ func (n *nlbSuite) TestReconcileNLBUpdateForwardingRules() {
 		*ipAddress = nextIP.String()
 	}
 
-	initialServers := n.machinesToServers(machinesFirstCall, applyLBNIC)
+	initialServers := s.machinesToServers(machinesFirstCall, applyLBNIC)
 
-	n.mockListServersCall(exampleDatacenterID).Return(&sdk.Servers{
+	s.mockListServersCall(exampleDatacenterID).Return(&sdk.Servers{
 		Items: ptr.To(initialServers),
 	}, nil).Once()
-	n.mockCreateNLBForwardingRuleCall(exampleDatacenterID, exampleNLBID).Return("path/to/nlb/", nil).Once()
+	s.mockCreateNLBForwardingRuleCall(exampleDatacenterID, exampleNLBID).Return("path/to/nlb/", nil).Once()
 
-	requeue, err := n.service.ReconcileNLB(n.ctx, n.loadBalancerScope)
-	n.NoError(err)
-	n.True(requeue)
+	requeue, err := s.service.ReconcileNLB(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.True(requeue)
 
 	// We need to pretend we have a rule now
 	rule := sdk.NetworkLoadBalancerForwardingRule{
@@ -221,77 +221,77 @@ func (n *nlbSuite) TestReconcileNLBUpdateForwardingRules() {
 	nlb.Entities.SetForwardingrules(rules)
 
 	for _, m := range machinesSecondCall {
-		n.NoError(n.k8sClient.Create(n.ctx, &m))
+		s.NoError(s.k8sClient.Create(s.ctx, &m))
 	}
 
-	n.setupExistingNLBScenario(nlb)
+	s.setupExistingNLBScenario(nlb)
 
-	finalServers := n.machinesToServers(machinesSecondCall, applyLBNIC)
+	finalServers := s.machinesToServers(machinesSecondCall, applyLBNIC)
 	allServers := append(initialServers, finalServers...)
 
-	n.mockListServersCall(exampleDatacenterID).Return(&sdk.Servers{
+	s.mockListServersCall(exampleDatacenterID).Return(&sdk.Servers{
 		Items: ptr.To(allServers),
 	}, nil).Once()
 
-	n.mockUpdateNLBForwardingRuleCall(exampleDatacenterID, exampleNLBID, exampleForwardingRuleID, 4).
+	s.mockUpdateNLBForwardingRuleCall(exampleDatacenterID, exampleNLBID, exampleForwardingRuleID, 4).
 		Return("/path/to/update", nil).Once()
 
-	requeue, err = n.service.ReconcileNLB(n.ctx, n.loadBalancerScope)
-	n.NoError(err)
-	n.True(requeue)
+	requeue, err = s.service.ReconcileNLB(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.True(requeue)
 
-	n.NotNil(n.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
+	s.NotNil(s.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
 }
 
-func (n *nlbSuite) TestEnsureNLBAvailable() {
-	n.loadBalancerScope.LoadBalancer.Status.NLBStatus.ID = exampleNLBID
-	n.loadBalancerScope.LoadBalancer.Status.CurrentRequest = &infrav1.ProvisioningRequest{}
-	n.mockGetNLBCall(exampleNLBID).Return(n.defaultNLB(), nil).Once()
+func (s *nlbSuite) TestEnsureNLBAvailable() {
+	s.loadBalancerScope.LoadBalancer.Status.NLBStatus.ID = exampleNLBID
+	s.loadBalancerScope.LoadBalancer.Status.CurrentRequest = &infrav1.ProvisioningRequest{}
+	s.mockGetNLBCall(exampleNLBID).Return(s.defaultNLB(), nil).Once()
 
-	nlb, requeue, err := n.service.ensureNLB(n.ctx, n.loadBalancerScope)
-	n.NoError(err)
-	n.False(requeue)
-	n.Nil(n.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
-	n.NotNil(nlb)
+	nlb, requeue, err := s.service.ensureNLB(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.False(requeue)
+	s.Nil(s.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
+	s.NotNil(nlb)
 }
 
-func (n *nlbSuite) TestReconcileNLBDeletionRequestPending() {
-	n.mockGetNLBCreationRequestCall().Return([]sdk.Request{n.examplePostRequest()}, nil).Once()
+func (s *nlbSuite) TestReconcileNLBDeletionRequestPending() {
+	s.mockGetNLBCreationRequestCall().Return([]sdk.Request{s.examplePostRequest()}, nil).Once()
 
-	requeue, err := n.service.ReconcileNLBDeletion(n.ctx, n.loadBalancerScope)
-	n.NoError(err)
-	n.True(requeue)
+	requeue, err := s.service.ReconcileNLBDeletion(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.True(requeue)
 }
 
-func (n *nlbSuite) TestReconcileNLBDeletionDeletionInProgress() {
-	n.mockGetNLBCreationRequestCall().Return(nil, nil).Once()
-	n.mockGetNLBDeletionRequestCall(exampleNLBID).Return([]sdk.Request{n.exampleDeleteRequest(exampleNLBID)}, nil)
-	n.loadBalancerScope.LoadBalancer.SetNLBID(exampleNLBID)
+func (s *nlbSuite) TestReconcileNLBDeletionDeletionInProgress() {
+	s.mockGetNLBCreationRequestCall().Return(nil, nil).Once()
+	s.mockGetNLBDeletionRequestCall(exampleNLBID).Return([]sdk.Request{s.exampleDeleteRequest(exampleNLBID)}, nil)
+	s.loadBalancerScope.LoadBalancer.SetNLBID(exampleNLBID)
 
-	requeue, err := n.service.ReconcileNLBDeletion(n.ctx, n.loadBalancerScope)
-	n.NoError(err)
-	n.True(requeue)
+	requeue, err := s.service.ReconcileNLBDeletion(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.True(requeue)
 }
 
-func (n *nlbSuite) TestReconcileNLBDeletion() {
-	n.setupExistingNLBScenario(n.defaultNLB())
-	n.mockGetNLBCreationRequestCall().Return(nil, nil).Once()
-	n.mockGetNLBDeletionRequestCall(exampleNLBID).Return(nil, nil)
+func (s *nlbSuite) TestReconcileNLBDeletion() {
+	s.setupExistingNLBScenario(s.defaultNLB())
+	s.mockGetNLBCreationRequestCall().Return(nil, nil).Once()
+	s.mockGetNLBDeletionRequestCall(exampleNLBID).Return(nil, nil)
 
-	n.mockDeleteNLBCall(exampleNLBID).Return("path/to/deletion", nil).Once()
+	s.mockDeleteNLBCall(exampleNLBID).Return("path/to/deletion", nil).Once()
 
-	requeue, err := n.service.ReconcileNLBDeletion(n.ctx, n.loadBalancerScope)
-	n.NoError(err)
-	n.True(requeue)
-	n.NotNil(n.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
+	requeue, err := s.service.ReconcileNLBDeletion(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.True(requeue)
+	s.NotNil(s.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
 }
 
-func (n *nlbSuite) TestReconcileLoadBalancerNetworksCreateIncomingAndOutgoing() {
-	n.mockListLANsCall(n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(nil, nil).Once()
-	n.mockGetLANCreationRequestsCall(n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(nil, nil).Twice()
+func (s *nlbSuite) TestReconcileLoadBalancerNetworksCreateIncomingAndOutgoing() {
+	s.mockListLANsCall(s.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(nil, nil).Once()
+	s.mockGetLANCreationRequestsCall(s.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(nil, nil).Twice()
 
-	n.mockCreateNLBLANCall(sdk.LanProperties{
-		Name:          ptr.To(n.service.nlbLANName(n.infraLoadBalancer, lanTypePublic)),
+	s.mockCreateNLBLANCall(sdk.LanProperties{
+		Name:          ptr.To(s.service.nlbLANName(s.infraLoadBalancer, lanTypePublic)),
 		Ipv6CidrBlock: ptr.To("AUTO"),
 		Public:        ptr.To(true),
 	}).Return("path/to/lan", nil).Once()
@@ -301,24 +301,24 @@ func (n *nlbSuite) TestReconcileLoadBalancerNetworksCreateIncomingAndOutgoing() 
 		outgoingLANID = "3"
 	)
 
-	n.mockWaitForRequestCall("path/to/lan").Return(nil).Twice()
+	s.mockWaitForRequestCall("path/to/lan").Return(nil).Twice()
 
 	firstLans := []sdk.Lan{{
 		Id:       ptr.To(incomingLANID),
 		Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(sdk.Available)},
 		Properties: &sdk.LanProperties{
-			Name:          ptr.To(n.service.nlbLANName(n.infraLoadBalancer, lanTypePublic)),
+			Name:          ptr.To(s.service.nlbLANName(s.infraLoadBalancer, lanTypePublic)),
 			Ipv6CidrBlock: ptr.To("AUTO"),
 			Public:        ptr.To(true),
 		},
 	}}
 
-	call := n.mockListLANsCall(n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(&sdk.Lans{
+	call := s.mockListLANsCall(s.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(&sdk.Lans{
 		Items: &firstLans,
 	}, nil).Twice()
 
-	n.mockCreateNLBLANCall(sdk.LanProperties{
-		Name:          ptr.To(n.service.nlbLANName(n.infraLoadBalancer, lanTypePrivate)),
+	s.mockCreateNLBLANCall(sdk.LanProperties{
+		Name:          ptr.To(s.service.nlbLANName(s.infraLoadBalancer, lanTypePrivate)),
 		Ipv6CidrBlock: ptr.To("AUTO"),
 		Public:        ptr.To(false),
 	}).Return("path/to/lan", nil).Once().NotBefore(call)
@@ -327,117 +327,179 @@ func (n *nlbSuite) TestReconcileLoadBalancerNetworksCreateIncomingAndOutgoing() 
 		Id:       ptr.To(outgoingLANID),
 		Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(sdk.Available)},
 		Properties: &sdk.LanProperties{
-			Name:          ptr.To(n.service.nlbLANName(n.infraLoadBalancer, lanTypePrivate)),
+			Name:          ptr.To(s.service.nlbLANName(s.infraLoadBalancer, lanTypePrivate)),
 			Ipv6CidrBlock: ptr.To("AUTO"),
 			Public:        ptr.To(false),
 		},
 	})
 
-	n.mockListLANsCall(n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(&sdk.Lans{
+	s.mockListLANsCall(s.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(&sdk.Lans{
 		Items: &secondLANs,
 	}, nil).Once()
 
-	requeue, err := n.service.ReconcileNLBNetworks(n.ctx, n.loadBalancerScope)
-	n.NoError(err)
-	n.False(requeue)
+	requeue, err := s.service.ReconcileNLBNetworks(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.False(requeue)
 }
 
-func (n *nlbSuite) setupExistingNLBScenario(nlb *sdk.NetworkLoadBalancer) {
-	n.T().Helper()
+func (s *nlbSuite) TestReconcileLoadBalancerNetworksLANsExist() {
+	const (
+		incomingLANID = "2"
+		outgoingLANID = "3"
+	)
 
-	n.loadBalancerScope.LoadBalancer.Status.NLBStatus.ID = exampleNLBID
-	n.loadBalancerScope.LoadBalancer.Status.CurrentRequest = &infrav1.ProvisioningRequest{}
-	n.mockGetNLBCall(exampleNLBID).Return(nlb, nil).Once()
+	lans := []sdk.Lan{{
+		Id:       ptr.To(incomingLANID),
+		Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(sdk.Available)},
+		Properties: &sdk.LanProperties{
+			Name:          ptr.To(s.service.nlbLANName(s.infraLoadBalancer, lanTypePublic)),
+			Ipv6CidrBlock: ptr.To("AUTO"),
+			Public:        ptr.To(true),
+		},
+	}, {
+		Id:       ptr.To(outgoingLANID),
+		Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(sdk.Busy)},
+		Properties: &sdk.LanProperties{
+			Name:          ptr.To(s.service.nlbLANName(s.infraLoadBalancer, lanTypePrivate)),
+			Ipv6CidrBlock: ptr.To("AUTO"),
+			Public:        ptr.To(false),
+		},
+	}}
+	s.mockListLANsCall(s.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(&sdk.Lans{Items: &lans}, nil).Twice()
+
+	requeue, err := s.service.ReconcileNLBNetworks(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.True(requeue)
 }
 
-func (n *nlbSuite) mockGetNLBCall(nlbID string) *clienttest.MockClient_GetNLB_Call {
-	return n.ionosClient.EXPECT().GetNLB(n.ctx, n.infraLoadBalancer.Spec.NLB.DatacenterID, nlbID)
+func (s *nlbSuite) TestReconcileControlPlaneLAN() {
+	machines := s.createControlPlaneMachines(0, 2)
+	servers := s.machinesToServers(machines)
+	s.NoError(s.loadBalancerScope.LoadBalancer.SetPrivateLANID("2"))
+
+	for _, m := range machines {
+		s.NoError(s.k8sClient.Create(s.ctx, &m))
+	}
+
+	for _, srv := range servers {
+		s.mockGetNICCreationRequestCall(*srv.GetId()).Return(nil, nil).Once()
+		s.mockGetServerCall(s.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID, *srv.GetId()).
+			Return(&srv, nil).
+			Once()
+
+		s.mockCreateNICCall(*srv.GetId()).Return("path/to/nic", nil).Once()
+		s.mockWaitForRequestCall("path/to/nic").Return(nil).Once()
+	}
+
+	requeue, err := s.service.reconcileControlPlaneLAN(s.ctx, s.loadBalancerScope)
+	s.NoError(err)
+	s.False(requeue)
 }
 
-func (n *nlbSuite) mockListNLBsCall() *clienttest.MockClient_ListNLBs_Call {
-	return n.ionosClient.EXPECT().ListNLBs(n.ctx, n.infraLoadBalancer.Spec.NLB.DatacenterID)
+func (s *nlbSuite) setupExistingNLBScenario(nlb *sdk.NetworkLoadBalancer) {
+	s.T().Helper()
+
+	s.loadBalancerScope.LoadBalancer.Status.NLBStatus.ID = exampleNLBID
+	s.loadBalancerScope.LoadBalancer.Status.CurrentRequest = &infrav1.ProvisioningRequest{}
+	s.mockGetNLBCall(exampleNLBID).Return(nlb, nil).Once()
 }
 
-func (n *nlbSuite) mockCreateNLBCall() *clienttest.MockClient_CreateNLB_Call {
-	return n.ionosClient.EXPECT().CreateNLB(n.ctx,
-		n.infraLoadBalancer.Spec.NLB.DatacenterID,
+func (s *nlbSuite) mockGetNLBCall(nlbID string) *clienttest.MockClient_GetNLB_Call {
+	return s.ionosClient.EXPECT().GetNLB(mock.MatchedBy(nonNilCtx), s.infraLoadBalancer.Spec.NLB.DatacenterID, nlbID)
+}
+
+func (s *nlbSuite) mockListNLBsCall() *clienttest.MockClient_ListNLBs_Call {
+	return s.ionosClient.EXPECT().ListNLBs(mock.MatchedBy(nonNilCtx), s.infraLoadBalancer.Spec.NLB.DatacenterID)
+}
+
+func (s *nlbSuite) mockCreateNLBCall() *clienttest.MockClient_CreateNLB_Call {
+	return s.ionosClient.EXPECT().CreateNLB(mock.MatchedBy(nonNilCtx),
+		s.infraLoadBalancer.Spec.NLB.DatacenterID,
 		mock.Anything,
 	)
 }
 
-func (n *nlbSuite) mockDeleteNLBCall(nlbID string) *clienttest.MockClient_DeleteNLB_Call {
-	return n.ionosClient.EXPECT().DeleteNLB(n.ctx, n.infraLoadBalancer.Spec.NLB.DatacenterID, nlbID)
+func (s *nlbSuite) mockDeleteNLBCall(nlbID string) *clienttest.MockClient_DeleteNLB_Call {
+	return s.ionosClient.EXPECT().DeleteNLB(mock.MatchedBy(nonNilCtx), s.infraLoadBalancer.Spec.NLB.DatacenterID, nlbID)
 }
 
-func (n *nlbSuite) mockCreateNLBForwardingRuleCall(datacenterID, nlbID string) *clienttest.MockClient_CreateNLBForwardingRule_Call {
-	return n.ionosClient.EXPECT().CreateNLBForwardingRule(n.ctx, datacenterID, nlbID, mock.Anything)
+func (s *nlbSuite) mockCreateNLBForwardingRuleCall(datacenterID, nlbID string) *clienttest.MockClient_CreateNLBForwardingRule_Call {
+	return s.ionosClient.EXPECT().CreateNLBForwardingRule(mock.MatchedBy(nonNilCtx), datacenterID, nlbID, mock.Anything)
 }
 
-func (n *nlbSuite) mockUpdateNLBForwardingRuleCall(datacenterID, nlbID, ruleID string, targetLen int) *clienttest.MockClient_UpdateNLBForwardingRule_Call {
-	return n.ionosClient.EXPECT().UpdateNLBForwardingRule(n.ctx, datacenterID, nlbID, ruleID, mock.MatchedBy(func(rule sdk.NetworkLoadBalancerForwardingRule) bool {
+func (s *nlbSuite) mockUpdateNLBForwardingRuleCall(datacenterID, nlbID, ruleID string, targetLen int) *clienttest.MockClient_UpdateNLBForwardingRule_Call {
+	return s.ionosClient.EXPECT().UpdateNLBForwardingRule(mock.MatchedBy(nonNilCtx), datacenterID, nlbID, ruleID, mock.MatchedBy(func(rule sdk.NetworkLoadBalancerForwardingRule) bool {
 		targets := *rule.GetProperties().GetTargets()
 		return len(targets) == targetLen
 	}))
 }
 
-func (n *nlbSuite) mockGetNLBCreationRequestCall() *clienttest.MockClient_GetRequests_Call {
-	return n.ionosClient.EXPECT().GetRequests(n.ctx, http.MethodPost, n.service.nlbsURL(n.infraLoadBalancer.Spec.NLB.DatacenterID))
+func (s *nlbSuite) mockGetNLBCreationRequestCall() *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(mock.MatchedBy(nonNilCtx), http.MethodPost, s.service.nlbsURL(s.infraLoadBalancer.Spec.NLB.DatacenterID))
 }
 
-func (n *nlbSuite) mockGetNLBDeletionRequestCall(nlbID string) *clienttest.MockClient_GetRequests_Call {
-	return n.ionosClient.EXPECT().GetRequests(n.ctx, http.MethodDelete, n.service.nlbURL(n.infraLoadBalancer.Spec.NLB.DatacenterID, nlbID))
+func (s *nlbSuite) mockGetNLBDeletionRequestCall(nlbID string) *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(mock.MatchedBy(nonNilCtx), http.MethodDelete, s.service.nlbURL(s.infraLoadBalancer.Spec.NLB.DatacenterID, nlbID))
 }
 
-func (n *nlbSuite) mockCreateNLBLANCall(properties sdk.LanProperties) *clienttest.MockClient_CreateLAN_Call {
-	return n.ionosClient.EXPECT().CreateLAN(n.ctx, n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID, properties)
+func (s *nlbSuite) mockCreateNLBLANCall(properties sdk.LanProperties) *clienttest.MockClient_CreateLAN_Call {
+	return s.ionosClient.EXPECT().CreateLAN(mock.MatchedBy(nonNilCtx), s.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID, properties)
 }
 
-func (n *nlbSuite) defaultNLB() *sdk.NetworkLoadBalancer {
+func (s *nlbSuite) mockGetNICCreationRequestCall(serverID string) *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(mock.MatchedBy(nonNilCtx), http.MethodPost, s.service.nicsURL(s.infraLoadBalancer.Spec.NLB.DatacenterID, serverID))
+}
+
+func (s *nlbSuite) mockCreateNICCall(serverID string) *clienttest.MockClient_CreateNIC_Call {
+	return s.ionosClient.EXPECT().CreateNIC(mock.MatchedBy(nonNilCtx), s.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID, serverID, mock.Anything)
+}
+
+func (s *nlbSuite) defaultNLB() *sdk.NetworkLoadBalancer {
 	return &sdk.NetworkLoadBalancer{
 		Id: ptr.To(exampleNLBID),
 		Metadata: &sdk.DatacenterElementMetadata{
 			State: ptr.To(sdk.Available),
 		},
 		Properties: &sdk.NetworkLoadBalancerProperties{
-			Name: ptr.To(n.service.nlbName(n.infraLoadBalancer)),
+			Name: ptr.To(s.service.nlbName(s.infraLoadBalancer)),
 		},
 		Entities: &sdk.NetworkLoadBalancerEntities{},
 	}
 }
 
-func (n *nlbSuite) examplePostRequest() sdk.Request {
-	return n.exampleRequest(requestBuildOptions{
+func (s *nlbSuite) examplePostRequest() sdk.Request {
+	return s.exampleRequest(requestBuildOptions{
 		status:     sdk.RequestStatusQueued,
 		method:     http.MethodPost,
-		url:        n.service.nlbsURL(n.infraLoadBalancer.Spec.NLB.DatacenterID),
-		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, n.service.nlbName(n.infraLoadBalancer)),
+		url:        s.service.nlbsURL(s.infraLoadBalancer.Spec.NLB.DatacenterID),
+		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.nlbName(s.infraLoadBalancer)),
 		href:       exampleRequestPath,
 		targetID:   exampleNLBID,
 		targetType: sdk.NETWORKLOADBALANCER,
 	})
 }
 
-func (n *nlbSuite) exampleDeleteRequest(nlbID string) sdk.Request {
-	return n.exampleRequest(requestBuildOptions{
+func (s *nlbSuite) exampleDeleteRequest(nlbID string) sdk.Request {
+	return s.exampleRequest(requestBuildOptions{
 		status:     sdk.RequestStatusQueued,
 		method:     http.MethodDelete,
-		url:        n.service.nlbURL(n.infraLoadBalancer.Spec.NLB.DatacenterID, nlbID),
-		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, n.service.nlbName(n.infraLoadBalancer)),
+		url:        s.service.nlbURL(s.infraLoadBalancer.Spec.NLB.DatacenterID, nlbID),
+		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.nlbName(s.infraLoadBalancer)),
 		href:       exampleRequestPath,
 		targetID:   exampleNLBID,
 		targetType: sdk.NETWORKLOADBALANCER,
 	})
 }
 
-func (n *nlbSuite) createControlPlaneMachines(start, count int) []infrav1.IonosCloudMachine {
+func (s *nlbSuite) createControlPlaneMachines(start, count int) []infrav1.IonosCloudMachine {
 	cpMachines := make([]infrav1.IonosCloudMachine, count)
 	index := 0
 	for nameIndex := start; nameIndex < (start + count); nameIndex++ {
-		cpMachines[index] = n.createMachineWithLabels(
+		cpMachines[index] = s.createMachineWithLabels(
 			fmt.Sprintf("cp-test-%d", nameIndex),
 			uuid.New().String(),
 			map[string]string{
-				clusterv1.ClusterNameLabel:         n.clusterScope.Cluster.Name,
+				clusterv1.ClusterNameLabel:         s.clusterScope.Cluster.Name,
 				clusterv1.MachineControlPlaneLabel: "",
 			},
 		)

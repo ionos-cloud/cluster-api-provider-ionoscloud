@@ -26,6 +26,7 @@ import (
 
 	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -376,45 +377,49 @@ func (s *ServiceTestSuite) defaultServerComponents() (sdk.ServerProperties, sdk.
 }
 
 func (s *ServiceTestSuite) mockGetIPBlocksRequestsPostCall() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, ipBlocksPath)
+	return s.ionosClient.EXPECT().GetRequests(mock.MatchedBy(nonNilCtx), http.MethodPost, ipBlocksPath)
 }
 
 func (s *ServiceTestSuite) mockGetIPBlocksRequestsDeleteCall(id string) *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, path.Join(ipBlocksPath, id))
+	return s.ionosClient.EXPECT().GetRequests(mock.MatchedBy(nonNilCtx), http.MethodDelete, path.Join(ipBlocksPath, id))
 }
 
 func (s *ServiceTestSuite) mockListIPBlocksCall() *clienttest.MockClient_ListIPBlocks_Call {
-	return s.ionosClient.EXPECT().ListIPBlocks(s.ctx)
+	return s.ionosClient.EXPECT().ListIPBlocks(mock.MatchedBy(nonNilCtx))
 }
 
 func (s *ServiceTestSuite) mockGetIPBlockByIDCall(ipBlockID string) *clienttest.MockClient_GetIPBlock_Call {
-	return s.ionosClient.EXPECT().GetIPBlock(s.ctx, ipBlockID)
+	return s.ionosClient.EXPECT().GetIPBlock(mock.MatchedBy(nonNilCtx), ipBlockID)
 }
 
 func (s *ServiceTestSuite) mockReserveIPBlockCall(name, location string) *clienttest.MockClient_ReserveIPBlock_Call {
-	return s.ionosClient.EXPECT().ReserveIPBlock(s.ctx, name, location, int32(1))
+	return s.ionosClient.EXPECT().ReserveIPBlock(mock.MatchedBy(nonNilCtx), name, location, int32(1))
 }
 
 func (s *ServiceTestSuite) mockWaitForRequestCall(location string) *clienttest.MockClient_WaitForRequest_Call {
-	return s.ionosClient.EXPECT().WaitForRequest(s.ctx, location)
+	return s.ionosClient.EXPECT().WaitForRequest(mock.MatchedBy(nonNilCtx), location)
 }
 
-func (s *ServiceTestSuite) mockGetServerCall(serverID string) *clienttest.MockClient_GetServer_Call {
-	return s.ionosClient.EXPECT().GetServer(s.ctx, s.machineScope.DatacenterID(), serverID)
+func (s *ServiceTestSuite) mockGetServerCall(datacenterID, serverID string) *clienttest.MockClient_GetServer_Call {
+	return s.ionosClient.EXPECT().GetServer(mock.MatchedBy(nonNilCtx), datacenterID, serverID)
 }
 
 func (s *ServiceTestSuite) mockListServersCall(datacenterID string) *clienttest.MockClient_ListServers_Call {
-	return s.ionosClient.EXPECT().ListServers(s.ctx, datacenterID)
+	return s.ionosClient.EXPECT().ListServers(mock.MatchedBy(nonNilCtx), datacenterID)
 }
 
 func (s *ServiceTestSuite) mockListLANsCall(datacenterID string) *clienttest.MockClient_ListLANs_Call {
-	return s.ionosClient.EXPECT().ListLANs(s.ctx, datacenterID)
+	return s.ionosClient.EXPECT().ListLANs(mock.MatchedBy(nonNilCtx), datacenterID)
 }
 
 func (s *ServiceTestSuite) mockGetDatacenterLocationByIDCall(datacenterID string) *clienttest.MockClient_GetDatacenterLocationByID_Call {
-	return s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, datacenterID)
+	return s.ionosClient.EXPECT().GetDatacenterLocationByID(mock.MatchedBy(nonNilCtx), datacenterID)
 }
 
 func (s *ServiceTestSuite) mockGetLANCreationRequestsCall(datacenterID string) *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, s.service.lansURL(datacenterID))
+	return s.ionosClient.EXPECT().GetRequests(mock.MatchedBy(nonNilCtx), http.MethodPost, s.service.lansURL(datacenterID))
+}
+
+func nonNilCtx(c context.Context) bool {
+	return c != nil
 }

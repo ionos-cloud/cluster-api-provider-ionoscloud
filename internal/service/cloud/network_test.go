@@ -205,7 +205,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
 
-	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 	s.mockGetLANPatchRequestCall().Return([]sdk.Request{s.examplePatchRequest(sdk.RequestStatusDone)}, nil).Once()
 
@@ -232,7 +232,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
 		NicUuid: ptr.To(exampleNICID),
 	}}
 
-	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.mockGetLANPatchRequestCall().Return([]sdk.Request{s.examplePatchRequest(sdk.RequestStatusDone)}, nil).Once()
 
@@ -265,7 +265,7 @@ func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 		nil).Once()
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{ipBlock}}, nil).Once()
 
-	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 
 	patchRequest := s.examplePatchRequest(sdk.RequestStatusDone)
@@ -314,7 +314,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 		NicUuid: ptr.To(exampleNICID),
 	}}
 
-	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.setupSuccessfulLANPatchMocks()
 
@@ -356,7 +356,7 @@ func (s *lanSuite) TestReconcileIPFailoverAnotherNICInFailoverGroup() {
 		NicUuid: ptr.To("f3b3f8e4-1f3d-11ec-82a8-0242ac130003"),
 	}}
 
-	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.mockGetLANPatchRequestCall().Return([]sdk.Request{s.examplePatchRequest(sdk.RequestStatusDone)}, nil).Once()
 
@@ -374,7 +374,7 @@ func setControlPlaneLabel(ctx context.Context, k8sClient client.Client, machine 
 }
 
 func (s *lanSuite) reconcileIPFailoverDeletion(testServer *sdk.Server, testLAN sdk.Lan) (requeue bool, err error) {
-	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.setupSuccessfulLANPatchMocks()
 
@@ -462,8 +462,8 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlaneSwitchNIC() {
 	testSecondaryServer.Id = ptr.To(exampleSecondaryServerID)
 	(*testSecondaryServer.Entities.Nics.Items)[0].Id = ptr.To(exampleSecondaryNICID)
 
-	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
-	s.mockGetServerCall(exampleSecondaryServerID).Return(testSecondaryServer, nil).Once()
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(testServer, nil).Once()
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleSecondaryServerID).Return(testSecondaryServer, nil).Once()
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 
 	s.setupSuccessfulLANPatchMocks()
@@ -510,7 +510,7 @@ func (s *lanSuite) TestReconcileFailoverDeletionWorkerNoSwap() {
 		NicUuid: ptr.To(exampleSecondaryNICID),
 	}}
 
-	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(testServer, nil).Once()
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.mockGetLANPatchRequestCall().Return(nil, nil).Once()
 	requeue, err := s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope)
@@ -540,7 +540,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionServerNotFound() {
 	err := setControlPlaneLabel(s.ctx, s.k8sClient, s.machineScope.IonosMachine)
 	s.NoError(err)
 
-	s.mockGetServerCall(exampleServerID).
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).
 		Return(nil, sdk.NewGenericOpenAPIError("server not found", nil, nil, 404)).
 		Once()
 	s.mockListServerCall().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
@@ -562,7 +562,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionPrimaryNICNotFound() {
 		Id: ptr.To(exampleServerID),
 	}
 
-	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(testServer, nil).Once()
 
 	requeue, err := s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope)
 
