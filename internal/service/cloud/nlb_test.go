@@ -286,6 +286,10 @@ func (n *nlbSuite) TestReconcileNLBDeletion() {
 	n.NotNil(n.loadBalancerScope.LoadBalancer.Status.CurrentRequest)
 }
 
+func (n *nlbSuite) TestReconcileLoadBalancerNetworksCreateIncomingAndOutgoing() {
+	n.mockListLANsCall(n.loadBalancerScope.LoadBalancer.Spec.NLB.DatacenterID).Return(nil, nil).Once()
+}
+
 func (n *nlbSuite) setupExistingNLBScenario(nlb *sdk.NetworkLoadBalancer) {
 	n.T().Helper()
 

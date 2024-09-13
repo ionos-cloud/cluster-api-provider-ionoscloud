@@ -161,7 +161,7 @@ func (s *serverSuite) TestReconcileServerAdditionalNetworks() {
 
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To(exampleLANID),
 		Properties: &sdk.LanProperties{
 			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
@@ -193,7 +193,7 @@ func (s *serverSuite) TestReconcileEnterpriseServerNoRequest() {
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
 	s.mockCreateServerCall(s.defaultServerComponents()).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To(exampleLANID),
 		Properties: &sdk.LanProperties{
 			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
@@ -214,7 +214,7 @@ func (s *serverSuite) TestReconcileVCPUServerNoRequest() {
 	props, entities := s.defaultServerComponents()
 	props.Type = ptr.To(infrav1.ServerTypeVCPU.String())
 	s.mockCreateServerCall(props, entities).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To(exampleLANID),
 		Properties: &sdk.LanProperties{
 			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),

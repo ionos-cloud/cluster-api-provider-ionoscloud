@@ -407,8 +407,8 @@ func (s *ServiceTestSuite) mockListServersCall(datacenterID string) *clienttest.
 	return s.ionosClient.EXPECT().ListServers(s.ctx, datacenterID)
 }
 
-func (s *ServiceTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
-	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
+func (s *ServiceTestSuite) mockListLANsCall(datacenterID string) *clienttest.MockClient_ListLANs_Call {
+	return s.ionosClient.EXPECT().ListLANs(s.ctx, datacenterID)
 }
 
 func (s *ServiceTestSuite) mockGetDatacenterLocationByIDCall(datacenterID string) *clienttest.MockClient_GetDatacenterLocationByID_Call {

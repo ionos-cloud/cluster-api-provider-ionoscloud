@@ -85,7 +85,7 @@ func (s *lanSuite) TestNetworkDeleteLANSuccessful() {
 
 func (s *lanSuite) TestNetworkGetLANSuccessful() {
 	lan := s.exampleLAN()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 	foundLAN, err := s.service.getLAN(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.NotNil(foundLAN)
@@ -93,14 +93,14 @@ func (s *lanSuite) TestNetworkGetLANSuccessful() {
 }
 
 func (s *lanSuite) TestNetworkGetLANNotFound() {
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	lan, err := s.service.getLAN(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.Nil(lan)
 }
 
 func (s *lanSuite) TestNetworkGetLANErrorNotUnique() {
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN(), s.exampleLAN()}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN(), s.exampleLAN()}}, nil).Once()
 	lan, err := s.service.getLAN(s.ctx, s.machineScope)
 	s.Error(err)
 	s.Nil(lan)
@@ -119,7 +119,7 @@ func (s *lanSuite) TestNetworkRemoveLANPendingRequestFromClusterNoRequest() {
 }
 
 func (s *lanSuite) TestNetworkReconcileLANNoExistingLANNoRequestCreate() {
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	s.mockGetLANCreationRequestsCall().Return([]sdk.Request{}, nil).Once()
 	s.mockCreateLANCall().Return(exampleRequestPath, nil).Once()
 	requeue, err := s.service.ReconcileLAN(s.ctx, s.machineScope)
@@ -128,7 +128,7 @@ func (s *lanSuite) TestNetworkReconcileLANNoExistingLANNoRequestCreate() {
 }
 
 func (s *lanSuite) TestNetworkReconcileLANNoExistingLANExistingRequestPending() {
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	s.mockGetLANCreationRequestsCall().Return(s.examplePostRequest(sdk.RequestStatusQueued), nil).Once()
 	requeue, err := s.service.ReconcileLAN(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -136,7 +136,7 @@ func (s *lanSuite) TestNetworkReconcileLANNoExistingLANExistingRequestPending() 
 }
 
 func (s *lanSuite) TestNetworkReconcileLANExistingLAN() {
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 	requeue, err := s.service.ReconcileLAN(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.False(requeue)
@@ -145,14 +145,14 @@ func (s *lanSuite) TestNetworkReconcileLANExistingLAN() {
 func (s *lanSuite) TestNetworkReconcileLANExistingLANUnavailable() {
 	lan := s.exampleLAN()
 	lan.Metadata.State = ptr.To("BUSY")
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 	requeue, err := s.service.ReconcileLAN(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.True(requeue)
 }
 
 func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsNoOtherUsersDelete() {
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 	s.mockGetLANDeletionRequestsCall().Return([]sdk.Request{}, nil).Once()
 	s.mockDeleteLANCall(exampleLANID).Return(exampleRequestPath, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
@@ -163,7 +163,7 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsNoOthe
 func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsHasOtherUsersNoDelete() {
 	lan := s.exampleLAN()
 	lan.Entities.Nics.Items = &[]sdk.Nic{{Id: ptr.To("1")}}
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 	s.mockGetLANDeletionRequestsCall().Return([]sdk.Request{}, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -173,7 +173,7 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsHasOth
 }
 
 func (s *lanSuite) TestNetworkReconcileLANDeleteNoExistingLANExistingRequestPending() {
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	s.mockGetLANCreationRequestsCall().Return(s.examplePostRequest(sdk.RequestStatusQueued), nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -181,7 +181,7 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteNoExistingLANExistingRequestPend
 }
 
 func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsExistingRequestPending() {
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 	requests := s.exampleDeleteRequest(sdk.RequestStatusQueued)
 	s.mockGetLANDeletionRequestsCall().Return(requests, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
@@ -190,7 +190,7 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsExistingRequestPending(
 }
 
 func (s *lanSuite) TestNetworkReconcileLANDeleteLANDoesNotExist() {
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
 	s.mockGetLANCreationRequestsCall().Return(nil, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -206,7 +206,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 	s.mockGetLANPatchRequestCall().Return([]sdk.Request{s.examplePatchRequest(sdk.RequestStatusDone)}, nil).Once()
 
 	props := sdk.LanProperties{
@@ -233,7 +233,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
 	}}
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.mockGetLANPatchRequestCall().Return([]sdk.Request{s.examplePatchRequest(sdk.RequestStatusDone)}, nil).Once()
 
 	requeue, err := s.service.ReconcileIPFailover(s.ctx, s.machineScope)
@@ -266,7 +266,7 @@ func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{ipBlock}}, nil).Once()
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 
 	patchRequest := s.examplePatchRequest(sdk.RequestStatusDone)
 	s.mockGetLANPatchRequestCall().Return([]sdk.Request{patchRequest}, nil).Once()
@@ -315,7 +315,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 	}}
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.setupSuccessfulLANPatchMocks()
 
 	// expect a patch request to update the IP
@@ -357,7 +357,7 @@ func (s *lanSuite) TestReconcileIPFailoverAnotherNICInFailoverGroup() {
 	}}
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.mockGetLANPatchRequestCall().Return([]sdk.Request{s.examplePatchRequest(sdk.RequestStatusDone)}, nil).Once()
 
 	requeue, err := s.service.ReconcileIPFailover(s.ctx, s.machineScope)
@@ -375,7 +375,7 @@ func setControlPlaneLabel(ctx context.Context, k8sClient client.Client, machine 
 
 func (s *lanSuite) reconcileIPFailoverDeletion(testServer *sdk.Server, testLAN sdk.Lan) (requeue bool, err error) {
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.setupSuccessfulLANPatchMocks()
 
 	props := sdk.LanProperties{
@@ -464,7 +464,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlaneSwitchNIC() {
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
 	s.mockGetServerCall(exampleSecondaryServerID).Return(testSecondaryServer, nil).Once()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 
 	s.setupSuccessfulLANPatchMocks()
 
@@ -511,7 +511,7 @@ func (s *lanSuite) TestReconcileFailoverDeletionWorkerNoSwap() {
 	}}
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{testLAN}}, nil).Once()
 	s.mockGetLANPatchRequestCall().Return(nil, nil).Once()
 	requeue, err := s.service.ReconcileIPFailoverDeletion(s.ctx, s.machineScope)
 
