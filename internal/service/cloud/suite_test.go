@@ -65,6 +65,8 @@ const (
 	exampleSecondaryDHCPIP = "192.0.2.3"
 )
 
+const ionosProviderIDPrefix = "ionos://"
+
 const (
 	exampleLANID             = "42"
 	exampleNICID             = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3e"
@@ -144,7 +146,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: s.capiCluster.Name,
 			Version:     ptr.To("v1.26.12"),
-			ProviderID:  ptr.To("ionos://" + exampleServerID),
+			ProviderID:  ptr.To(ionosProviderIDPrefix + exampleServerID),
 		},
 	}
 	s.infraMachine = &infrav1.IonosCloudMachine{
@@ -157,7 +159,7 @@ func (s *ServiceTestSuite) SetupTest() {
 			},
 		},
 		Spec: infrav1.IonosCloudMachineSpec{
-			ProviderID:       ptr.To("ionos://" + exampleServerID),
+			ProviderID:       ptr.To(ionosProviderIDPrefix + exampleServerID),
 			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
@@ -412,6 +414,10 @@ func (s *ServiceTestSuite) mockListLANsCall(datacenterID string) *clienttest.Moc
 	return s.ionosClient.EXPECT().ListLANs(mock.MatchedBy(nonNilCtx), datacenterID)
 }
 
+func (s *ServiceTestSuite) mockDeleteLANCall(id string) *clienttest.MockClient_DeleteLAN_Call {
+	return s.ionosClient.EXPECT().DeleteLAN(s.ctx, s.machineScope.DatacenterID(), id)
+}
+
 func (s *ServiceTestSuite) mockGetDatacenterLocationByIDCall(datacenterID string) *clienttest.MockClient_GetDatacenterLocationByID_Call {
 	return s.ionosClient.EXPECT().GetDatacenterLocationByID(mock.MatchedBy(nonNilCtx), datacenterID)
 }
@@ -422,4 +428,29 @@ func (s *ServiceTestSuite) mockGetLANCreationRequestsCall(datacenterID string) *
 
 func nonNilCtx(c context.Context) bool {
 	return c != nil
+}
+
+func (s *ServiceTestSuite) exampleLANDeleteRequest(lanID, status string) []sdk.Request {
+	opts := requestBuildOptions{
+		status:     status,
+		method:     http.MethodDelete,
+		url:        s.service.lanURL(s.machineScope.DatacenterID(), lanID),
+		href:       exampleRequestPath,
+		targetID:   lanID,
+		targetType: sdk.LAN,
+	}
+	return []sdk.Request{s.exampleRequest(opts)}
+}
+
+func (s *lanSuite) exampleLANPostRequest(lanID, status string) []sdk.Request {
+	opts := requestBuildOptions{
+		status:     status,
+		method:     http.MethodPost,
+		url:        s.service.lansURL(s.machineScope.DatacenterID()),
+		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName(s.clusterScope.Cluster)),
+		href:       exampleRequestPath,
+		targetID:   lanID,
+		targetType: sdk.LAN,
+	}
+	return []sdk.Request{s.exampleRequest(opts)}
 }

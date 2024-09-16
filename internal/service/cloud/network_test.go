@@ -18,7 +18,6 @@ package cloud
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -129,7 +128,7 @@ func (s *lanSuite) TestNetworkReconcileLANNoExistingLANNoRequestCreate() {
 
 func (s *lanSuite) TestNetworkReconcileLANNoExistingLANExistingRequestPending() {
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-	s.mockGetLANCreationRequestsCall(s.machineScope.DatacenterID()).Return(s.examplePostRequest(sdk.RequestStatusQueued), nil).Once()
+	s.mockGetLANCreationRequestsCall(s.machineScope.DatacenterID()).Return(s.exampleLANPostRequest(exampleLANID, sdk.RequestStatusQueued), nil).Once()
 	requeue, err := s.service.ReconcileLAN(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.True(requeue)
@@ -174,7 +173,7 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsHasOth
 
 func (s *lanSuite) TestNetworkReconcileLANDeleteNoExistingLANExistingRequestPending() {
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-	s.mockGetLANCreationRequestsCall(s.machineScope.DatacenterID()).Return(s.examplePostRequest(sdk.RequestStatusQueued), nil).Once()
+	s.mockGetLANCreationRequestsCall(s.machineScope.DatacenterID()).Return(s.exampleLANPostRequest(exampleLANID, sdk.RequestStatusQueued), nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.True(requeue)
@@ -182,7 +181,7 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteNoExistingLANExistingRequestPend
 
 func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsExistingRequestPending() {
 	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
-	requests := s.exampleDeleteRequest(sdk.RequestStatusQueued)
+	requests := s.exampleLANDeleteRequest(exampleLANID, sdk.RequestStatusQueued)
 	s.mockGetLANDeletionRequestsCall().Return(requests, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -444,7 +443,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlaneSwitchNIC() {
 	newIonosMachine.SetName("test-machine-2")
 	newIonosMachine.SetResourceVersion("")
 	newIonosMachine.SetCreationTimestamp(metav1.NewTime(time.Now()))
-	newIonosMachine.Spec.ProviderID = ptr.To("ionos://" + exampleSecondaryServerID) //nolint: goconst
+	newIonosMachine.Spec.ProviderID = ptr.To("ionos://" + exampleSecondaryServerID)
 	err = s.k8sClient.Create(s.ctx, newIonosMachine)
 	s.NoError(err)
 
@@ -591,31 +590,6 @@ func (s *lanSuite) exampleIPBlock() sdk.IpBlock {
 	}
 }
 
-func (s *lanSuite) examplePostRequest(status string) []sdk.Request {
-	opts := requestBuildOptions{
-		status:     status,
-		method:     http.MethodPost,
-		url:        s.service.lansURL(s.machineScope.DatacenterID()),
-		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName(s.clusterScope.Cluster)),
-		href:       exampleRequestPath,
-		targetID:   exampleLANID,
-		targetType: sdk.LAN,
-	}
-	return []sdk.Request{s.exampleRequest(opts)}
-}
-
-func (s *lanSuite) exampleDeleteRequest(status string) []sdk.Request {
-	opts := requestBuildOptions{
-		status:     status,
-		method:     http.MethodDelete,
-		url:        s.service.lanURL(s.machineScope.DatacenterID(), exampleLANID),
-		href:       exampleRequestPath,
-		targetID:   exampleLANID,
-		targetType: sdk.LAN,
-	}
-	return []sdk.Request{s.exampleRequest(opts)}
-}
-
 func (s *lanSuite) examplePatchRequest(status string) sdk.Request {
 	opts := requestBuildOptions{
 		status:     status,
@@ -634,10 +608,6 @@ func (s *lanSuite) mockCreateLANCall() *clienttest.MockClient_CreateLAN_Call {
 		Public:        ptr.To(true),
 		Ipv6CidrBlock: ptr.To("AUTO"),
 	})
-}
-
-func (s *lanSuite) mockDeleteLANCall(id string) *clienttest.MockClient_DeleteLAN_Call {
-	return s.ionosClient.EXPECT().DeleteLAN(s.ctx, s.machineScope.DatacenterID(), id)
 }
 
 func (s *lanSuite) mockPatchLANCall(props sdk.LanProperties) *clienttest.MockClient_PatchLAN_Call {

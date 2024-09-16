@@ -58,7 +58,16 @@ func (*Service) nlbName(lb *infrav1.IonosCloudLoadBalancer) string {
 	return lb.Namespace + "-" + lb.Name
 }
 
-// ReconcileNLB ensures the creation and update of the NLB.
+// ReconcileNLB ensures that a Network Load Balancer will be created and have the correct rules applied.
+//
+// The Network Load Balancer setup consists of multiple cloud components.
+// * Network Load Balancer (NLB) itself
+// * Public and Private LAN
+// * Forwarding rules
+// * Machines receiving the traffic
+// NLB connects to two LANs, one for the public network and one for the private network.
+// We need to ensure that all machines that need to be load balanced, have a NIC which is connected to the private LAN.
+// Once the machines have been provisioned and the NICs are attached, we can define the forwarding rules.
 func (s *Service) ReconcileNLB(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
 	logger := s.logger.WithName("ReconcileNLB")
 	logger.V(4).Info("Reconciling NLB")
@@ -490,30 +499,6 @@ func (s *Service) createLoadBalancerLAN(ctx context.Context, lanName, datacenter
 	})
 }
 
-func (s *Service) findLoadBalancerLANByName(ctx context.Context, lb *scope.LoadBalancer, lanType string) (lan *sdk.Lan, requeue bool, err error) {
-	log := s.logger.WithName("findLoadBalancerLANByName")
-
-	var (
-		datacenterID = lb.LoadBalancer.Spec.NLB.DatacenterID
-		lanName      = s.nlbLANName(lb.LoadBalancer, lanType)
-	)
-
-	lan, request, err := scopedFindResource(
-		ctx, lb,
-		s.getLANByNameFunc(datacenterID, lanName),
-		s.getLatestLoadBalancerLANCreationRequest(lanType))
-	if err != nil {
-		return nil, true, fmt.Errorf("could not find or create incoming LAN: %w", err)
-	}
-
-	if request != nil && request.isPending() {
-		log.Info("Request for incoming LAN is pending. Waiting for it to be finished")
-		return nil, true, nil
-	}
-
-	return lan, false, nil
-}
-
 func (s *Service) reconcileIncomingLANDeletion(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
 	return s.reconcileLoadBalancerLANDeletion(ctx, lb, lanTypePublic)
 }
@@ -530,25 +515,10 @@ func (s *Service) reconcileLoadBalancerLANDeletion(ctx context.Context, lb *scop
 		lanID = lb.LoadBalancer.GetPrivateLANID()
 	}
 
-	if lanID == "" {
-		lan, requeue, err := s.findLoadBalancerLANByName(ctx, lb, lanType)
-		if err != nil || requeue {
-			return requeue, err
-		}
-
-		if lan == nil {
-			// LAN was already deleted
-			lb.LoadBalancer.DeleteCurrentRequest()
-			return false, nil
-		}
-
-		return s.deleteAndWaitForLAN(ctx, lb, ptr.Deref(lan.GetId(), ""))
-	}
-
 	log.V(4).Info("Deleting LAN for NLB", "ID", lanID)
 
 	// check if the LAN exists or if there is a pending creation request
-	lan, requeue, err := s.findLoadBalancerLANByID(ctx, lb, lanID)
+	lan, requeue, err := s.findLoadBalancerLAN(ctx, lb, lanID, lanType)
 	if err != nil || requeue {
 		return requeue, err
 	}
@@ -587,7 +557,23 @@ func (s *Service) deleteAndWaitForLAN(ctx context.Context, lb *scope.LoadBalance
 	return false, nil
 }
 
-func (s *Service) findLoadBalancerLANByID(ctx context.Context, lb *scope.LoadBalancer, lanID string) (lan *sdk.Lan, requeue bool, err error) {
+func (s *Service) findLoadBalancerLAN(
+	ctx context.Context,
+	lb *scope.LoadBalancer,
+	lanID, lanType string,
+) (lan *sdk.Lan, requeue bool, err error) {
+	if lanID != "" {
+		return s.findLoadBalancerLANByID(ctx, lb, lanID)
+	}
+
+	return s.findLoadBalancerLANByName(ctx, lb, lanType)
+}
+
+func (s *Service) findLoadBalancerLANByID(
+	ctx context.Context,
+	lb *scope.LoadBalancer,
+	lanID string,
+) (lan *sdk.Lan, requeue bool, err error) {
 	log := s.logger.WithName("findLoadBalancerLANByID")
 
 	datacenterID := lb.LoadBalancer.Spec.NLB.DatacenterID
@@ -596,6 +582,28 @@ func (s *Service) findLoadBalancerLANByID(ctx context.Context, lb *scope.LoadBal
 		ctx, lb,
 		s.getLANByIDFunc(datacenterID, lanID),
 		s.getLatestLoadBalancerLANCreationRequest(lanID))
+	if err != nil {
+		return nil, true, fmt.Errorf("could not find or create incoming LAN: %w", err)
+	}
+
+	if request != nil && request.isPending() {
+		log.Info("Request for incoming LAN is pending. Waiting for it to be finished")
+		return nil, true, nil
+	}
+
+	return lan, false, nil
+}
+
+func (s *Service) findLoadBalancerLANByName(ctx context.Context, lb *scope.LoadBalancer, lanType string) (lan *sdk.Lan, requeue bool, err error) {
+	log := s.logger.WithName("findLoadBalancerLANByName")
+
+	datacenterID := lb.LoadBalancer.Spec.NLB.DatacenterID
+	lanName := s.nlbLANName(lb.LoadBalancer, lanType)
+
+	lan, request, err := scopedFindResource(
+		ctx, lb,
+		s.getLANByNameFunc(datacenterID, lanName),
+		s.getLatestLoadBalancerLANCreationRequest(lanType))
 	if err != nil {
 		return nil, true, fmt.Errorf("could not find or create incoming LAN: %w", err)
 	}
@@ -672,13 +680,15 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 	errGrp.SetLimit(len(cpMachines))
 
 	for _, machine := range cpMachines {
-		var (
-			datacenterID = machine.Spec.DatacenterID
-			serverID     = machine.ExtractServerID()
-		)
+		datacenterID := machine.Spec.DatacenterID
+		serverID := machine.ExtractServerID()
 
-		if pending, err := s.isNICCreationPending(ctx, datacenterID, serverID, expectedNICName); err != nil || pending {
-			return pending, err
+		if creationPending, err := s.isNICCreationPending(ctx, datacenterID, serverID, expectedNICName); err != nil {
+			// only return if there is an error.
+			return true, err
+		} else if creationPending {
+			requeue = true
+			continue
 		}
 
 		server, err := s.getServerByServerID(ctx, datacenterID, serverID)
@@ -687,7 +697,8 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 		}
 
 		if state := getState(server); !isAvailable(state) {
-			return true, nil
+			requeue = true
+			continue
 		}
 
 		nics := ptr.Deref(server.GetEntities().GetNics().GetItems(), []sdk.Nic{})
@@ -717,7 +728,8 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 		return true, err
 	}
 
-	return false, nil
+	// If any NIC has a pending creation request, we need to requeue
+	return requeue, nil
 }
 
 func (s *Service) isNICCreationPending(ctx context.Context, datacenterID, serverID, expectedName string) (bool, error) {
