@@ -43,11 +43,12 @@ If you need help with CAPIC, please visit the [#cluster-api-ionoscloud][slack] c
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|                        | Cluster API v1beta1 (v1.7) | Cluster API v1beta1 (v1.8) |
-|------------------------|:--------------------------:|:--------------------------:|
-| CAPIC v1alpha1 (v0.2)  |             ✓              |             ☓              |
-| CAPIC v1alpha1 (v0.3)  |             ✓              |             ☓              |
-| CAPIC v1alpha1 (v0.4)  |             ✓              |             ✓              |
+|                       | Cluster API v1beta1 (v1.7) | Cluster API v1beta1 (v1.8) |
+|-----------------------|:--------------------------:|:--------------------------:|
+| CAPIC v1alpha1 (v0.2) |             ✓              |             ☓              |
+| CAPIC v1alpha1 (v0.3) |             ✓              |             ☓              |
+| CAPIC v1alpha1 (v0.4) |             ✓              |             ✓              |
+| CAPIC v1alpha1 (v0.5) |             ✓              |             ✓              |
 
 ### Kubernetes Versions 
 
