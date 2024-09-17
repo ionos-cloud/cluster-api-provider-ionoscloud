@@ -119,7 +119,7 @@ func (s *Service) ensureNLB(
 		Name:        ptr.To(s.nlbName(lb.LoadBalancer)),
 		ListenerLan: ptr.To(lb.LoadBalancer.Status.NLBStatus.PublicLANID),
 		TargetLan:   ptr.To(lb.LoadBalancer.Status.NLBStatus.PrivateLANID),
-		Ips:         ptr.To(ips), // TODO resolve IP address
+		Ips:         ptr.To(ips),
 	})
 	if err != nil {
 		return nil, true, err
@@ -447,8 +447,7 @@ func (s *Service) reconcileLoadBalancerLAN(
 	lanType string,
 ) (lan *sdk.Lan, requeue bool, err error) {
 	log := s.logger.WithName("createLoadBalancerLAN")
-
-	log.Info("Creating LAN for NLB", "type", lanType)
+	log.Info("Reconciling LoadBalancer LAN", "type", lanType)
 
 	var (
 		datacenterID = lb.LoadBalancer.Spec.NLB.DatacenterID
@@ -466,9 +465,11 @@ func (s *Service) reconcileLoadBalancerLAN(
 			return nil, true, nil
 		}
 
+		log.V(4).Info("LAN is available", "ID", *lan.GetId(), "type", lanType)
 		return lan, false, nil
 	}
 
+	log.Info("No LAN found, creating LAN for NLB", "type", lanType)
 	path, err := s.createLoadBalancerLAN(ctx, lanName, datacenterID, lanType == lanTypePublic)
 	if err != nil {
 		return nil, false, fmt.Errorf("could not create incoming LAN: %w", err)
