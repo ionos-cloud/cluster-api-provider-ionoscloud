@@ -725,12 +725,9 @@ func (s *Service) reconcileControlPlaneLAN(ctx context.Context, lb *scope.LoadBa
 		})
 	}
 
-	if err := errGrp.Wait(); err != nil {
-		return true, err
-	}
-
+	err = errGrp.Wait()
 	// If any NIC has a pending creation request, we need to requeue
-	return requeue, nil
+	return requeue, err
 }
 
 func (s *Service) isNICCreationPending(ctx context.Context, datacenterID, serverID, expectedName string) (bool, error) {
