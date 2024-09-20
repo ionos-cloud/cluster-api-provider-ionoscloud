@@ -25,6 +25,8 @@ var (
 	errLANIDIsEmpty        = errors.New("error parsing LAN ID: value cannot be empty")
 	errNICIDIsEmpty        = errors.New("error parsing NIC ID: value cannot be empty")
 	errIPBlockIDIsEmpty    = errors.New("error parsing IP block ID: value cannot be empty")
+	errNLBIDIsEmpty        = errors.New("error parsing NLB ID: value cannot be empty")
+	errNLBRuleIDIsEmpty    = errors.New("error parsing NLB rule ID: value cannot be empty")
 	errRequestURLIsEmpty   = errors.New("a request URL is necessary for the operation")
 	errLocationHeaderEmpty = errors.New(apiNoLocationErrMessage)
 )

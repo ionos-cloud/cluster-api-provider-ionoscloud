@@ -405,7 +405,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletion() {
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{*ipBlock}}, nil).Once()
 	s.mockGetIPBlocksRequestsDeleteCall(exampleIPBlockID).Return(nil, nil).Once()
 	s.mockDeleteIPBlockCall().Return(exampleRequestPath, nil).Once()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN()}}, nil).Once()
 
 	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -424,7 +424,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionSkipped() {
 	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil).Once()
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{Items: &[]sdk.IpBlock{*ipBlock}}, nil).Once()
 	s.mockGetIPBlocksRequestsDeleteCall(exampleIPBlockID).Return(nil, nil).Once()
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 
 	requeue, err := s.service.ReconcileFailoverIPBlockDeletion(s.ctx, s.machineScope)
 	s.NoError(err)

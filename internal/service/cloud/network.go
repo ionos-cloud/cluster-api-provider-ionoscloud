@@ -647,5 +647,7 @@ func (s *Service) patchLAN(ctx context.Context, ms *scope.Machine, lanID string,
 }
 
 func failoverRequired(ms *scope.Machine) bool {
-	return util.IsControlPlaneMachine(ms.Machine) || ms.IonosMachine.Spec.FailoverIP != nil
+	return (util.IsControlPlaneMachine(ms.Machine) &&
+		ms.ClusterScope.IonosCluster.Spec.LoadBalancerProviderRef == nil) ||
+		ms.IonosMachine.Spec.FailoverIP != nil
 }

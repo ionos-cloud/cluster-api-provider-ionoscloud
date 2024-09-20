@@ -45,16 +45,6 @@ spec:
           spec:
             description: IonosCloudLoadBalancerSpec defines the desired state of IonosCloudLoadBalancer.
             properties:
-              kubeVIP:
-                description: KubeVIP is used for setting up a highly available control
-                  plane.
-                properties:
-                  image:
-                    description: |-
-                      Image is the container image to use for the KubeVIP static pod.
-                      If not provided, the default image will be used.
-                    type: string
-                type: object
               loadBalancerEndpoint:
                 description: |-
                   LoadBalancerEndpoint represents the endpoint of the load balanced control plane.
@@ -82,6 +72,15 @@ spec:
               nlb:
                 description: NLB is used for setting up a network load balancer.
                 properties:
+                  algorithm:
+                    default: ROUND_ROBIN
+                    description: Algorithm is the load balancing algorithm.
+                    enum:
+                    - ROUND_ROBIN
+                    - LEAST_CONNECTION
+                    - RANDOM
+                    - SOURCE_IP
+                    type: string
                   datacenterID:
                     description: DatacenterID is the ID of the datacenter where the
                       load balancer should be created.
@@ -90,6 +89,13 @@ spec:
                     x-kubernetes-validations:
                     - message: datacenterID is immutable
                       rule: self == oldSelf
+                  protocol:
+                    default: TCP
+                    description: Protocol is the load balancing protocol.
+                    enum:
+                    - TCP
+                    - HTTP
+                    type: string
                 required:
                 - datacenterID
                 type: object
@@ -166,6 +172,23 @@ spec:
                 required:
                 - method
                 - requestPath
+                type: object
+              nlbStatus:
+                description: NLBStatus defines the status for a network load balancer.
+                properties:
+                  id:
+                    description: ID is the ID of the network load balancer.
+                    type: string
+                  privateLANID:
+                    description: PrivateLANID is the ID of the LAN used for outgoing
+                      traffic.
+                    format: int32
+                    type: integer
+                  publicLANID:
+                    description: PublicLANID is the ID of the LAN used for incoming
+                      traffic.
+                    format: int32
+                    type: integer
                 type: object
               ready:
                 description: Ready indicates that the load balancer is ready.

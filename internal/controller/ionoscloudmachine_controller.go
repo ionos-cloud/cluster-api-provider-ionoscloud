@@ -178,7 +178,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
-	k8sHelper := k8s.NewHelper(r.Client, log)
+	k8sHelper := k8s.NewHelper(r.Client, logger)
 	reconcileSequence := []serviceReconcileStep[scope.Machine]{
 		{"ReconcileLAN", cloudService.ReconcileLAN},
 		{"ReconcileIPAddressClaims", k8sHelper.ReconcileIPAddresses},
@@ -220,7 +220,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		return ctrl.Result{RequeueAfter: reducedReconcileDuration}, nil
 	}
 
-	ipamHelper := k8s.NewHelper(r.Client, log)
+	ipamHelper := k8s.NewHelper(r.Client, logger)
 	reconcileSequence := []serviceReconcileStep[scope.Machine]{
 		// NOTE(avorima): NICs, which are configured in an IP failover configuration, cannot be deleted
 		// by a request to delete the server. Therefore, during deletion, we need to remove the NIC from
@@ -342,7 +342,7 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options
 			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind(infrav1.IonosCloudMachineType)))).
-		Complete(reconcile.AsReconciler(r.Client, r))
+		Complete(reconcile.AsReconciler[*infrav1.IonosCloudMachine](r.Client, r))
 }
 
 func (r *IonosCloudMachineReconciler) getClusterScope(

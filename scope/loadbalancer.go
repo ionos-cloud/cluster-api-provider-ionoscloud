@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/netip"
 	"time"
 
 	"k8s.io/client-go/util/retry"
@@ -46,6 +48,7 @@ type LoadBalancer struct {
 	client      client.Client
 	patchHelper *patch.Helper
 	Locker      *locker.Locker
+	resolver    resolver
 
 	LoadBalancer *infrav1.IonosCloudLoadBalancer
 
@@ -75,6 +78,7 @@ func NewLoadBalancer(params LoadBalancerParams) (*LoadBalancer, error) {
 	return &LoadBalancer{
 		client:       params.Client,
 		patchHelper:  helper,
+		resolver:     net.DefaultResolver,
 		Locker:       params.Locker,
 		LoadBalancer: params.LoadBalancer,
 		ClusterScope: params.ClusterScope,
@@ -84,6 +88,32 @@ func NewLoadBalancer(params LoadBalancerParams) (*LoadBalancer, error) {
 // Endpoint returns the load balancer endpoint.
 func (l *LoadBalancer) Endpoint() clusterv1.APIEndpoint {
 	return l.LoadBalancer.Spec.LoadBalancerEndpoint
+}
+
+// ResolveEndpoint resolves the IP addresses for the given Endpoint of the Load Balancer.
+func (l *LoadBalancer) ResolveEndpoint(ctx context.Context) ([]string, error) {
+	host := l.Endpoint().Host
+
+	if host == "" {
+		return nil, nil
+	}
+
+	if ip, err := netip.ParseAddr(host); err == nil {
+		return []string{ip.String()}, nil
+	}
+
+	ips, err := l.resolver.LookupNetIP(ctx, "ip4", host)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve host %q: %w", host, err)
+	}
+
+	ret := make([]string, 0, len(ips))
+
+	for _, ip := range ips {
+		ret = append(ret, ip.String())
+	}
+
+	return ret, nil
 }
 
 // InfraClusterEndpoint returns the endpoint from the infra cluster..

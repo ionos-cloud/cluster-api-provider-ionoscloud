@@ -30,6 +30,10 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
+func (*Service) nicsURL(datacenterID, serverID string) string {
+	return path.Join("datacenters", datacenterID, "servers", serverID, "nics")
+}
+
 func (*Service) nicURL(ms *scope.Machine, serverID, nicID string) string {
 	return path.Join("datacenters", ms.DatacenterID(), "servers", serverID, "nics", nicID)
 }
@@ -131,6 +135,19 @@ func (s *Service) patchNIC(
 	return s.ionosClient.WaitForRequest(ctx, location)
 }
 
+func (s *Service) createAndAttachNIC(
+	ctx context.Context,
+	datacenterID, serverID string,
+	properties sdk.NicProperties,
+) error {
+	location, err := s.ionosClient.CreateNIC(ctx, datacenterID, serverID, properties)
+	if err != nil {
+		return err
+	}
+
+	return s.ionosClient.WaitForRequest(ctx, location)
+}
+
 func (s *Service) getLatestNICPatchRequest(
 	ctx context.Context, ms *scope.Machine, serverID string, nicID string,
 ) (*requestInfo, error) {
@@ -140,6 +157,16 @@ func (s *Service) getLatestNICPatchRequest(
 		http.MethodPatch,
 		s.nicURL(ms, serverID, nicID),
 	)
+}
+
+func (s *Service) getLatestNICCreateRequest(
+	ctx context.Context, datacenterID, serverID, nicName string,
+) (*requestInfo, error) {
+	return getMatchingRequest[sdk.Nic](
+		ctx, s,
+		http.MethodPost,
+		s.nicsURL(datacenterID, serverID),
+		matchByName[*sdk.Nic, *sdk.NicProperties](nicName))
 }
 
 // nicHasIP returns true if the NIC contains the given IP address.

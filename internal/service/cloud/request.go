@@ -64,6 +64,8 @@ func mapResourceType(cloudResource any) sdk.Type {
 		return sdk.SERVER
 	case sdk.IpBlock, *sdk.IpBlock:
 		return sdk.IPBLOCK
+	case sdk.NetworkLoadBalancer, *sdk.NetworkLoadBalancer:
+		return sdk.NETWORKLOADBALANCER
 	default:
 		return ""
 	}

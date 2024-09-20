@@ -19,15 +19,31 @@ package loadbalancing
 import (
 	"context"
 
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
-type nlbProvisioner struct{}
-
-func (*nlbProvisioner) Provision(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	panic("implement me")
+type nlbProvisioner struct {
+	svc *cloud.Service
 }
 
-func (*nlbProvisioner) Destroy(_ context.Context, _ *scope.LoadBalancer) (requeue bool, err error) {
-	panic("implement me")
+// Provision is responsible for creating the Network Load Balancer.
+func (n *nlbProvisioner) Provision(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
+	requeue, err = n.svc.ReconcileNLBNetworks(ctx, lb)
+	if err != nil || requeue {
+		return requeue, err
+	}
+
+	return n.svc.ReconcileNLB(ctx, lb)
+}
+
+func (n *nlbProvisioner) Destroy(ctx context.Context, lb *scope.LoadBalancer) (requeue bool, err error) {
+	// Destroy NLB
+	requeue, err = n.svc.ReconcileNLBDeletion(ctx, lb)
+	if err != nil || requeue {
+		return requeue, err
+	}
+
+	// Destroy LANs
+	return n.svc.ReconcileNLBNetworksDeletion(ctx, lb)
 }

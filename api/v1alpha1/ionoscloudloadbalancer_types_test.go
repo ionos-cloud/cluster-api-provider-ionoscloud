@@ -56,17 +56,6 @@ var _ = Describe("IonosCloudLoadBalancer", func() {
 	})
 
 	Context("Create", func() {
-		When("Using a KubeVIP load balancer", func() {
-			It("Should succeed when no image is provided", func() {
-				dlb := defaultLoadBalancer(LoadBalancerSource{KubeVIP: &KubeVIPSpec{}})
-				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
-			})
-			It("Should succeed with an endpoint and a port", func() {
-				dlb := defaultLoadBalancer(LoadBalancerSource{KubeVIP: &KubeVIPSpec{}})
-				dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
-				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
-			})
-		})
 		When("Using an NLB", func() {
 			It("Should fail when not providing a datacenter ID", func() {
 				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{}})
@@ -80,6 +69,24 @@ var _ = Describe("IonosCloudLoadBalancer", func() {
 				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
 				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
 			})
+			It("Should have ROUND_ROBIN as the default algorithm", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
+				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
+				Expect(dlb.Spec.NLB.Algorithm).To(Equal("ROUND_ROBIN"))
+			})
+			It("Should fail when providing an invalid algorithm", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID, Algorithm: "INVALID"}})
+				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
+			})
+			It("Should have TCP as the default protocol", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
+				Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
+				Expect(dlb.Spec.NLB.Protocol).To(Equal("TCP"))
+			})
+			It("Should fail when providing an invalid protocol", func() {
+				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID, Protocol: "INVALID"}})
+				Expect(k8sClient.Create(context.Background(), dlb)).NotTo(Succeed())
+			})
 			It("Should succeed providing an endpoint and a port", func() {
 				dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
 				dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
@@ -92,15 +99,6 @@ var _ = Describe("IonosCloudLoadBalancer", func() {
 			})
 		})
 		Context("Update", func() {
-			When("Using a KubeVIP load balancer", func() {
-				It("Should succeed creating a KubeVIP load balancer with an empty endpoint and updating it", func() {
-					dlb := defaultLoadBalancer(LoadBalancerSource{KubeVIP: &KubeVIPSpec{}})
-					Expect(k8sClient.Create(context.Background(), dlb)).To(Succeed())
-
-					dlb.Spec.LoadBalancerEndpoint = exampleEndpoint
-					Expect(k8sClient.Update(context.Background(), dlb)).To(Succeed())
-				})
-			})
 			When("Using an NLB", func() {
 				It("Should fail when attempting to update the datacenter ID", func() {
 					dlb := defaultLoadBalancer(LoadBalancerSource{NLB: &NLBSpec{DatacenterID: exampleDatacenterID}})
