@@ -161,7 +161,7 @@ func (s *serverSuite) TestReconcileServerAdditionalNetworks() {
 
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To(exampleLANID),
 		Properties: &sdk.LanProperties{
 			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
@@ -193,7 +193,7 @@ func (s *serverSuite) TestReconcileEnterpriseServerNoRequest() {
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
 	s.mockCreateServerCall(s.defaultServerComponents()).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To(exampleLANID),
 		Properties: &sdk.LanProperties{
 			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
@@ -214,7 +214,7 @@ func (s *serverSuite) TestReconcileVCPUServerNoRequest() {
 	props, entities := s.defaultServerComponents()
 	props.Type = ptr.To(infrav1.ServerTypeVCPU.String())
 	s.mockCreateServerCall(props, entities).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
-	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+	s.mockListLANsCall(s.machineScope.DatacenterID()).Return(&sdk.Lans{Items: &[]sdk.Lan{{
 		Id: ptr.To(exampleLANID),
 		Properties: &sdk.LanProperties{
 			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
@@ -249,7 +249,7 @@ func (s *serverSuite) prepareReconcileServerRequestTest() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletion() {
-	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(&sdk.Server{
 		Id: ptr.To(exampleServerID),
 	}, nil)
 
@@ -263,7 +263,7 @@ func (s *serverSuite) TestReconcileServerDeletion() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionDeleteBootVolume() {
-	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(&sdk.Server{
 		Id: ptr.To(exampleServerID),
 		Properties: &sdk.ServerProperties{
 			BootVolume: &sdk.ResourceReference{
@@ -272,7 +272,7 @@ func (s *serverSuite) TestReconcileServerDeletionDeleteBootVolume() {
 		},
 	}, nil).Once()
 
-	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(&sdk.Server{
 		Id: ptr.To(exampleServerID),
 	}, nil).Once()
 
@@ -293,7 +293,7 @@ func (s *serverSuite) TestReconcileServerDeletionDeleteBootVolume() {
 
 func (s *serverSuite) TestReconcileServerDeletionDeleteAllVolumes() {
 	s.clusterScope.Cluster.DeletionTimestamp = ptr.To(metav1.Now())
-	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(&sdk.Server{
 		Id: ptr.To(exampleServerID),
 		Properties: &sdk.ServerProperties{
 			BootVolume: &sdk.ResourceReference{
@@ -321,7 +321,7 @@ func (s *serverSuite) validateSuccessfulDeletionResponse(success bool, err error
 }
 
 func (s *serverSuite) TestReconcileServerDeletionServerNotFound() {
-	s.mockGetServerCall(exampleServerID).Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404))
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404))
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
 	s.mockListServersCall().Return(&sdk.Servers{}, nil)
 
@@ -332,7 +332,7 @@ func (s *serverSuite) TestReconcileServerDeletionServerNotFound() {
 
 func (s *serverSuite) TestReconcileServerDeletionUnexpectedError() {
 	internalError := sdk.NewGenericOpenAPIError("unexpected error returned", nil, nil, 500)
-	s.mockGetServerCall(exampleServerID).Return(
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(
 		nil,
 		internalError,
 	)
@@ -342,7 +342,7 @@ func (s *serverSuite) TestReconcileServerDeletionUnexpectedError() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionCreateRequestPending() {
-	s.mockGetServerCall(exampleServerID).Return(nil, nil)
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(nil, nil)
 	s.mockListServersCall().Return(&sdk.Servers{}, nil)
 	exampleRequest := s.examplePostRequest(sdk.RequestStatusQueued)
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{exampleRequest}, nil)
@@ -357,7 +357,7 @@ func (s *serverSuite) TestReconcileServerDeletionCreateRequestPending() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionRequestPending() {
-	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(&sdk.Server{
 		Id: ptr.To(exampleServerID),
 	}, nil)
 
@@ -375,7 +375,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestPending() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionRequestDone() {
-	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(&sdk.Server{
 		Id: ptr.To(exampleServerID),
 	}, nil)
 
@@ -391,7 +391,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestDone() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
-	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+	s.mockGetServerCall(s.machineScope.DatacenterID(), exampleServerID).Return(&sdk.Server{
 		Id: ptr.To(exampleServerID),
 	}, nil)
 
@@ -411,7 +411,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
 
 func (s *serverSuite) TestGetServerWithProviderID() {
 	serverID := exampleServerID
-	s.mockGetServerCall(serverID).Return(&sdk.Server{}, nil)
+	s.mockGetServerCall(s.machineScope.DatacenterID(), serverID).Return(&sdk.Server{}, nil)
 	server, err := s.service.getServer(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.NotNil(server)
@@ -419,7 +419,7 @@ func (s *serverSuite) TestGetServerWithProviderID() {
 
 func (s *serverSuite) TestGetServerWithProviderIDNotFound() {
 	serverID := exampleServerID
-	s.mockGetServerCall(serverID).Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404))
+	s.mockGetServerCall(s.machineScope.DatacenterID(), serverID).Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, 404))
 	s.mockListServersCall().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
 			Properties: nil,

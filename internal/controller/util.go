@@ -39,7 +39,11 @@ const (
 	reducedReconcileDuration = time.Second * 10
 )
 
-type serviceReconcileStep[T scope.Cluster | scope.Machine] struct {
+type scoped interface {
+	scope.Cluster | scope.Machine | scope.LoadBalancer
+}
+
+type serviceReconcileStep[T scoped] struct {
 	name string
 	fn   func(context.Context, *T) (requeue bool, err error)
 }

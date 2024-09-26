@@ -195,6 +195,29 @@ func (c *IonosCloudClient) StartServer(ctx context.Context, datacenterID, server
 	return "", errLocationHeaderEmpty
 }
 
+// CreateNIC creates a new NIC with the provided properties in the specified data center and server.
+func (c *IonosCloudClient) CreateNIC(
+	ctx context.Context, datacenterID, serverID string, properties sdk.NicProperties,
+) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+	if serverID == "" {
+		return "", errServerIDIsEmpty
+	}
+	nic := sdk.Nic{
+		Properties: &properties,
+	}
+	_, req, err := c.API.NetworkInterfacesApi.DatacentersServersNicsPost(ctx, datacenterID, serverID).Nic(nic).Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+	if location := req.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+	return "", errLocationHeaderEmpty
+}
+
 // DeleteVolume deletes the volume that matches the provided volumeID in the specified data center.
 func (c *IonosCloudClient) DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error) {
 	if datacenterID == "" {
@@ -215,6 +238,21 @@ func (c *IonosCloudClient) DeleteVolume(ctx context.Context, datacenterID, volum
 	}
 
 	return "", errLocationHeaderEmpty
+}
+
+// GetLAN returns the LAN that matches the provided lanID in the specified data center.
+func (c *IonosCloudClient) GetLAN(ctx context.Context, datacenterID, lanID string) (*sdk.Lan, error) {
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
+	}
+	if lanID == "" {
+		return nil, errLANIDIsEmpty
+	}
+	lan, _, err := c.API.LANsApi.DatacentersLansFindById(ctx, datacenterID, lanID).Depth(c.requestDepth).Execute()
+	if err != nil {
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
+	}
+	return &lan, nil
 }
 
 // CreateLAN creates a new LAN with the provided properties in the specified data center,
@@ -499,4 +537,153 @@ func (c *IonosCloudClient) ListLabels(ctx context.Context) ([]sdk.Label, error) 
 	}
 
 	return *labels.Items, nil
+}
+
+// CreateNLB creates a new Network Load Balancer with the provided properties in the specified data center.
+func (c *IonosCloudClient) CreateNLB(ctx context.Context, datacenterID string, properties sdk.NetworkLoadBalancerProperties) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+
+	newNLB := sdk.NetworkLoadBalancer{
+		Properties: &properties,
+	}
+
+	_, res, err := c.API.NetworkLoadBalancersApi.
+		DatacentersNetworkloadbalancersPost(ctx, datacenterID).
+		NetworkLoadBalancer(newNLB).
+		Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	if location := res.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
+}
+
+// DeleteNLB deletes the Network Load Balancer identified by the ID in the specified data center.
+func (c *IonosCloudClient) DeleteNLB(ctx context.Context, datacenterID, nlbID string) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+
+	if nlbID == "" {
+		return "", errNLBIDIsEmpty
+	}
+
+	req, err := c.API.NetworkLoadBalancersApi.
+		DatacentersNetworkloadbalancersDelete(ctx, datacenterID, nlbID).
+		Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	if location := req.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
+}
+
+// GetNLB returns the Network Load Balancer identified by the ID in the specified data center.
+func (c *IonosCloudClient) GetNLB(ctx context.Context, datacenterID, nlbID string) (*sdk.NetworkLoadBalancer, error) {
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
+	}
+
+	if nlbID == "" {
+		return nil, errNLBIDIsEmpty
+	}
+
+	nlb, _, err := c.API.NetworkLoadBalancersApi.
+		DatacentersNetworkloadbalancersFindByNetworkLoadBalancerId(ctx, datacenterID, nlbID).
+		Depth(c.requestDepth).
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	return &nlb, nil
+}
+
+// ListNLBs returns a list of Network Load Balancers in the specified data center.
+func (c *IonosCloudClient) ListNLBs(ctx context.Context, datacenterID string) (*sdk.NetworkLoadBalancers, error) {
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
+	}
+
+	nlbs, _, err := c.API.NetworkLoadBalancersApi.
+		DatacentersNetworkloadbalancersGet(ctx, datacenterID).
+		Depth(c.requestDepth).
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	return &nlbs, nil
+}
+
+// CreateNLBForwardingRule creates a new forwarding rule with the provided properties in the specified data center and NLB.
+func (c *IonosCloudClient) CreateNLBForwardingRule(ctx context.Context, datacenterID, nlbID string, rule sdk.NetworkLoadBalancerForwardingRule) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+
+	if nlbID == "" {
+		return "", errNLBIDIsEmpty
+	}
+
+	_, req, err := c.API.NetworkLoadBalancersApi.
+		DatacentersNetworkloadbalancersForwardingrulesPost(ctx, datacenterID, nlbID).
+		NetworkLoadBalancerForwardingRule(rule).
+		Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	if location := req.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
+}
+
+// UpdateNLBForwardingRule updates the forwarding rule identified by ruleID with the provided properties in the specified data center and NLB.
+func (c *IonosCloudClient) UpdateNLBForwardingRule(
+	ctx context.Context,
+	datacenterID, nlbID, ruleID string,
+	rule sdk.NetworkLoadBalancerForwardingRule,
+) (string, error) {
+	if datacenterID == "" {
+		return "", errDatacenterIDIsEmpty
+	}
+
+	if nlbID == "" {
+		return "", errNLBIDIsEmpty
+	}
+
+	if ruleID == "" {
+		return "", errNLBRuleIDIsEmpty
+	}
+
+	putRule := sdk.NetworkLoadBalancerForwardingRulePut{
+		Properties: rule.Properties,
+	}
+
+	_, req, err := c.API.NetworkLoadBalancersApi.
+		DatacentersNetworkloadbalancersForwardingrulesPut(ctx, datacenterID, nlbID, ruleID).
+		NetworkLoadBalancerForwardingRule(putRule).
+		Execute()
+	if err != nil {
+		return "", fmt.Errorf(apiCallErrWrapper, err)
+	}
+
+	if location := req.Header.Get(locationHeaderKey); location != "" {
+		return location, nil
+	}
+
+	return "", errLocationHeaderEmpty
 }

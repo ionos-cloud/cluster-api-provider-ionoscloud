@@ -26,6 +26,7 @@ import (
 
 	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,6 +65,8 @@ const (
 	exampleSecondaryDHCPIP = "192.0.2.3"
 )
 
+const ionosProviderIDPrefix = "ionos://"
+
 const (
 	exampleLANID             = "42"
 	exampleNICID             = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3e"
@@ -75,22 +78,26 @@ const (
 	exampleRequestPath       = "/test"
 	exampleLocation          = "de/txl"
 	exampleDatacenterID      = "ccf27092-34e8-499e-a2f5-2bdee9d34a12"
+	exampleNLBID             = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3f"
+	exampleForwardingRuleID  = "f3b3f8e4-3b6d-4b6d-8f1d-3e3e6e3e3e3e"
 )
 
 type ServiceTestSuite struct {
 	*require.Assertions
 	suite.Suite
-	k8sClient    client.Client
-	ctx          context.Context
-	machineScope *scope.Machine
-	clusterScope *scope.Cluster
-	log          logr.Logger
-	service      *Service
-	capiCluster  *clusterv1.Cluster
-	capiMachine  *clusterv1.Machine
-	infraCluster *infrav1.IonosCloudCluster
-	infraMachine *infrav1.IonosCloudMachine
-	ionosClient  *clienttest.MockClient
+	k8sClient         client.Client
+	ctx               context.Context
+	machineScope      *scope.Machine
+	clusterScope      *scope.Cluster
+	loadBalancerScope *scope.LoadBalancer
+	log               logr.Logger
+	service           *Service
+	capiCluster       *clusterv1.Cluster
+	capiMachine       *clusterv1.Machine
+	infraCluster      *infrav1.IonosCloudCluster
+	infraMachine      *infrav1.IonosCloudMachine
+	infraLoadBalancer *infrav1.IonosCloudLoadBalancer
+	ionosClient       *clienttest.MockClient
 }
 
 func (s *ServiceTestSuite) SetupSuite() {
@@ -139,7 +146,7 @@ func (s *ServiceTestSuite) SetupTest() {
 		Spec: clusterv1.MachineSpec{
 			ClusterName: s.capiCluster.Name,
 			Version:     ptr.To("v1.26.12"),
-			ProviderID:  ptr.To("ionos://" + exampleServerID),
+			ProviderID:  ptr.To(ionosProviderIDPrefix + exampleServerID),
 		},
 	}
 	s.infraMachine = &infrav1.IonosCloudMachine{
@@ -152,7 +159,7 @@ func (s *ServiceTestSuite) SetupTest() {
 			},
 		},
 		Spec: infrav1.IonosCloudMachineSpec{
-			ProviderID:       ptr.To("ionos://" + exampleServerID),
+			ProviderID:       ptr.To(ionosProviderIDPrefix + exampleServerID),
 			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
@@ -170,6 +177,26 @@ func (s *ServiceTestSuite) SetupTest() {
 			Type: infrav1.ServerTypeEnterprise,
 		},
 		Status: infrav1.IonosCloudMachineStatus{},
+	}
+
+	s.infraLoadBalancer = &infrav1.IonosCloudLoadBalancer{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "test-loadbalancer",
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel: s.capiCluster.Name,
+			},
+		},
+		Spec: infrav1.IonosCloudLoadBalancerSpec{
+			LoadBalancerSource: infrav1.LoadBalancerSource{
+				NLB: &infrav1.NLBSpec{
+					DatacenterID: exampleDatacenterID,
+				},
+			},
+		},
+		Status: infrav1.IonosCloudLoadBalancerStatus{
+			NLBStatus: &infrav1.NLBStatus{},
+		},
 	}
 
 	scheme := runtime.NewScheme()
@@ -198,6 +225,15 @@ func (s *ServiceTestSuite) SetupTest() {
 		Machine:      s.capiMachine,
 		ClusterScope: s.clusterScope,
 		IonosMachine: s.infraMachine,
+		Locker:       locker.New(),
+	})
+
+	s.NoError(err)
+
+	s.loadBalancerScope, err = scope.NewLoadBalancer(scope.LoadBalancerParams{
+		Client:       s.k8sClient,
+		LoadBalancer: s.infraLoadBalancer,
+		ClusterScope: s.clusterScope,
 		Locker:       locker.New(),
 	})
 	s.NoError(err, "failed to create machine scope")
@@ -343,37 +379,78 @@ func (s *ServiceTestSuite) defaultServerComponents() (sdk.ServerProperties, sdk.
 }
 
 func (s *ServiceTestSuite) mockGetIPBlocksRequestsPostCall() *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodPost, ipBlocksPath)
+	return s.ionosClient.EXPECT().GetRequests(mock.MatchedBy(nonNilCtx), http.MethodPost, ipBlocksPath)
 }
 
 func (s *ServiceTestSuite) mockGetIPBlocksRequestsDeleteCall(id string) *clienttest.MockClient_GetRequests_Call {
-	return s.ionosClient.EXPECT().GetRequests(s.ctx, http.MethodDelete, path.Join(ipBlocksPath, id))
+	return s.ionosClient.EXPECT().GetRequests(mock.MatchedBy(nonNilCtx), http.MethodDelete, path.Join(ipBlocksPath, id))
 }
 
 func (s *ServiceTestSuite) mockListIPBlocksCall() *clienttest.MockClient_ListIPBlocks_Call {
-	return s.ionosClient.EXPECT().ListIPBlocks(s.ctx)
+	return s.ionosClient.EXPECT().ListIPBlocks(mock.MatchedBy(nonNilCtx))
 }
 
 func (s *ServiceTestSuite) mockGetIPBlockByIDCall(ipBlockID string) *clienttest.MockClient_GetIPBlock_Call {
-	return s.ionosClient.EXPECT().GetIPBlock(s.ctx, ipBlockID)
+	return s.ionosClient.EXPECT().GetIPBlock(mock.MatchedBy(nonNilCtx), ipBlockID)
 }
 
 func (s *ServiceTestSuite) mockReserveIPBlockCall(name, location string) *clienttest.MockClient_ReserveIPBlock_Call {
-	return s.ionosClient.EXPECT().ReserveIPBlock(s.ctx, name, location, int32(1))
+	return s.ionosClient.EXPECT().ReserveIPBlock(mock.MatchedBy(nonNilCtx), name, location, int32(1))
 }
 
 func (s *ServiceTestSuite) mockWaitForRequestCall(location string) *clienttest.MockClient_WaitForRequest_Call {
-	return s.ionosClient.EXPECT().WaitForRequest(s.ctx, location)
+	return s.ionosClient.EXPECT().WaitForRequest(mock.MatchedBy(nonNilCtx), location)
 }
 
-func (s *ServiceTestSuite) mockGetServerCall(serverID string) *clienttest.MockClient_GetServer_Call {
-	return s.ionosClient.EXPECT().GetServer(s.ctx, s.machineScope.DatacenterID(), serverID)
+func (s *ServiceTestSuite) mockGetServerCall(datacenterID, serverID string) *clienttest.MockClient_GetServer_Call {
+	return s.ionosClient.EXPECT().GetServer(mock.MatchedBy(nonNilCtx), datacenterID, serverID)
 }
 
-func (s *ServiceTestSuite) mockListLANsCall() *clienttest.MockClient_ListLANs_Call {
-	return s.ionosClient.EXPECT().ListLANs(s.ctx, s.machineScope.DatacenterID())
+func (s *ServiceTestSuite) mockListServersCall(datacenterID string) *clienttest.MockClient_ListServers_Call {
+	return s.ionosClient.EXPECT().ListServers(mock.MatchedBy(nonNilCtx), datacenterID)
+}
+
+func (s *ServiceTestSuite) mockListLANsCall(datacenterID string) *clienttest.MockClient_ListLANs_Call {
+	return s.ionosClient.EXPECT().ListLANs(mock.MatchedBy(nonNilCtx), datacenterID)
+}
+
+func (s *ServiceTestSuite) mockDeleteLANCall(id string) *clienttest.MockClient_DeleteLAN_Call {
+	return s.ionosClient.EXPECT().DeleteLAN(s.ctx, s.machineScope.DatacenterID(), id)
 }
 
 func (s *ServiceTestSuite) mockGetDatacenterLocationByIDCall(datacenterID string) *clienttest.MockClient_GetDatacenterLocationByID_Call {
-	return s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, datacenterID)
+	return s.ionosClient.EXPECT().GetDatacenterLocationByID(mock.MatchedBy(nonNilCtx), datacenterID)
+}
+
+func (s *ServiceTestSuite) mockGetLANCreationRequestsCall(datacenterID string) *clienttest.MockClient_GetRequests_Call {
+	return s.ionosClient.EXPECT().GetRequests(mock.MatchedBy(nonNilCtx), http.MethodPost, s.service.lansURL(datacenterID))
+}
+
+func nonNilCtx(c context.Context) bool {
+	return c != nil
+}
+
+func (s *ServiceTestSuite) exampleLANDeleteRequest(lanID, status string) []sdk.Request {
+	opts := requestBuildOptions{
+		status:     status,
+		method:     http.MethodDelete,
+		url:        s.service.lanURL(s.machineScope.DatacenterID(), lanID),
+		href:       exampleRequestPath,
+		targetID:   lanID,
+		targetType: sdk.LAN,
+	}
+	return []sdk.Request{s.exampleRequest(opts)}
+}
+
+func (s *lanSuite) exampleLANPostRequest(lanID, status string) []sdk.Request {
+	opts := requestBuildOptions{
+		status:     status,
+		method:     http.MethodPost,
+		url:        s.service.lansURL(s.machineScope.DatacenterID()),
+		body:       fmt.Sprintf(`{"properties": {"name": "%s"}}`, s.service.lanName(s.clusterScope.Cluster)),
+		href:       exampleRequestPath,
+		targetID:   lanID,
+		targetType: sdk.LAN,
+	}
+	return []sdk.Request{s.exampleRequest(opts)}
 }

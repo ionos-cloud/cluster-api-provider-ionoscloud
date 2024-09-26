@@ -39,6 +39,8 @@ type Client interface {
 	StartServer(ctx context.Context, datacenterID, serverID string) (string, error)
 	// DeleteVolume deletes the volume that matches the provided volumeID in the specified data center.
 	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
+	// GetLAN returns the LAN that matches the provided lanID in the specified data center.
+	GetLAN(ctx context.Context, datacenterID, lanID string) (*sdk.Lan, error)
 	// CreateLAN creates a new LAN with the provided properties in the specified data center,
 	// returning the request path.
 	CreateLAN(ctx context.Context, datacenterID string, properties sdk.LanProperties) (string, error)
@@ -64,6 +66,8 @@ type Client interface {
 	WaitForRequest(ctx context.Context, requestURL string) error
 	// GetRequests returns the requests made in the last 24 hours that match the provided method and path.
 	GetRequests(ctx context.Context, method, path string) ([]sdk.Request, error)
+	// CreateNIC creates a new NIC with the provided properties in the specified data center and server.
+	CreateNIC(ctx context.Context, datacenterID, serverID string, properties sdk.NicProperties) (string, error)
 	// PatchNIC updates the NIC identified by nicID with the provided properties, returning the request location.
 	PatchNIC(ctx context.Context, datacenterID, serverID, nicID string, properties sdk.NicProperties) (string, error)
 	// GetDatacenterLocationByID returns the location of the data center identified by datacenterID.
@@ -72,4 +76,16 @@ type Client interface {
 	GetImage(ctx context.Context, imageID string) (*sdk.Image, error)
 	// ListLabels returns a list of all available resource labels.
 	ListLabels(ctx context.Context) ([]sdk.Label, error)
+	// CreateNLB creates a new Network Load Balancer with the provided properties in the specified data center.
+	CreateNLB(ctx context.Context, datacenterID string, properties sdk.NetworkLoadBalancerProperties) (string, error)
+	// DeleteNLB deletes the Network Load Balancer identified by the ID in the specified data center.
+	DeleteNLB(ctx context.Context, datacenterID, nlbID string) (string, error)
+	// GetNLB returns the Network Load Balancer identified by the ID in the specified data center.
+	GetNLB(ctx context.Context, datacenterID, nlbID string) (*sdk.NetworkLoadBalancer, error)
+	// ListNLBs returns a list of Network Load Balancers in the specified data center.
+	ListNLBs(ctx context.Context, datacenterID string) (*sdk.NetworkLoadBalancers, error)
+	// CreateNLBForwardingRule creates a new forwarding rule with the provided properties in the specified data center and NLB.
+	CreateNLBForwardingRule(ctx context.Context, datacenterID, nlbID string, rule sdk.NetworkLoadBalancerForwardingRule) (string, error)
+	// UpdateNLBForwardingRule updates the forwarding rule identified by ruleID with the provided properties in the specified data center and NLB.
+	UpdateNLBForwardingRule(ctx context.Context, datacenterID, nlbID, ruleID string, rule sdk.NetworkLoadBalancerForwardingRule) (string, error)
 }

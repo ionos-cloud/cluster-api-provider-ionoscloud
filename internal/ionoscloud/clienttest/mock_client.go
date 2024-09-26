@@ -155,6 +155,182 @@ func (_c *MockClient_CreateLAN_Call) RunAndReturn(run func(context.Context, stri
 	return _c
 }
 
+// CreateNIC provides a mock function with given fields: ctx, datacenterID, serverID, properties
+func (_m *MockClient) CreateNIC(ctx context.Context, datacenterID string, serverID string, properties ionoscloud.NicProperties) (string, error) {
+	ret := _m.Called(ctx, datacenterID, serverID, properties)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateNIC")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.NicProperties) (string, error)); ok {
+		return rf(ctx, datacenterID, serverID, properties)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.NicProperties) string); ok {
+		r0 = rf(ctx, datacenterID, serverID, properties)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, ionoscloud.NicProperties) error); ok {
+		r1 = rf(ctx, datacenterID, serverID, properties)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_CreateNIC_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateNIC'
+type MockClient_CreateNIC_Call struct {
+	*mock.Call
+}
+
+// CreateNIC is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - serverID string
+//   - properties ionoscloud.NicProperties
+func (_e *MockClient_Expecter) CreateNIC(ctx interface{}, datacenterID interface{}, serverID interface{}, properties interface{}) *MockClient_CreateNIC_Call {
+	return &MockClient_CreateNIC_Call{Call: _e.mock.On("CreateNIC", ctx, datacenterID, serverID, properties)}
+}
+
+func (_c *MockClient_CreateNIC_Call) Run(run func(ctx context.Context, datacenterID string, serverID string, properties ionoscloud.NicProperties)) *MockClient_CreateNIC_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(ionoscloud.NicProperties))
+	})
+	return _c
+}
+
+func (_c *MockClient_CreateNIC_Call) Return(_a0 string, _a1 error) *MockClient_CreateNIC_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_CreateNIC_Call) RunAndReturn(run func(context.Context, string, string, ionoscloud.NicProperties) (string, error)) *MockClient_CreateNIC_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateNLB provides a mock function with given fields: ctx, datacenterID, properties
+func (_m *MockClient) CreateNLB(ctx context.Context, datacenterID string, properties ionoscloud.NetworkLoadBalancerProperties) (string, error) {
+	ret := _m.Called(ctx, datacenterID, properties)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateNLB")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.NetworkLoadBalancerProperties) (string, error)); ok {
+		return rf(ctx, datacenterID, properties)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, ionoscloud.NetworkLoadBalancerProperties) string); ok {
+		r0 = rf(ctx, datacenterID, properties)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, ionoscloud.NetworkLoadBalancerProperties) error); ok {
+		r1 = rf(ctx, datacenterID, properties)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_CreateNLB_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateNLB'
+type MockClient_CreateNLB_Call struct {
+	*mock.Call
+}
+
+// CreateNLB is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - properties ionoscloud.NetworkLoadBalancerProperties
+func (_e *MockClient_Expecter) CreateNLB(ctx interface{}, datacenterID interface{}, properties interface{}) *MockClient_CreateNLB_Call {
+	return &MockClient_CreateNLB_Call{Call: _e.mock.On("CreateNLB", ctx, datacenterID, properties)}
+}
+
+func (_c *MockClient_CreateNLB_Call) Run(run func(ctx context.Context, datacenterID string, properties ionoscloud.NetworkLoadBalancerProperties)) *MockClient_CreateNLB_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(ionoscloud.NetworkLoadBalancerProperties))
+	})
+	return _c
+}
+
+func (_c *MockClient_CreateNLB_Call) Return(_a0 string, _a1 error) *MockClient_CreateNLB_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_CreateNLB_Call) RunAndReturn(run func(context.Context, string, ionoscloud.NetworkLoadBalancerProperties) (string, error)) *MockClient_CreateNLB_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateNLBForwardingRule provides a mock function with given fields: ctx, datacenterID, nlbID, rule
+func (_m *MockClient) CreateNLBForwardingRule(ctx context.Context, datacenterID string, nlbID string, rule ionoscloud.NetworkLoadBalancerForwardingRule) (string, error) {
+	ret := _m.Called(ctx, datacenterID, nlbID, rule)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateNLBForwardingRule")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.NetworkLoadBalancerForwardingRule) (string, error)); ok {
+		return rf(ctx, datacenterID, nlbID, rule)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, ionoscloud.NetworkLoadBalancerForwardingRule) string); ok {
+		r0 = rf(ctx, datacenterID, nlbID, rule)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, ionoscloud.NetworkLoadBalancerForwardingRule) error); ok {
+		r1 = rf(ctx, datacenterID, nlbID, rule)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_CreateNLBForwardingRule_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateNLBForwardingRule'
+type MockClient_CreateNLBForwardingRule_Call struct {
+	*mock.Call
+}
+
+// CreateNLBForwardingRule is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - nlbID string
+//   - rule ionoscloud.NetworkLoadBalancerForwardingRule
+func (_e *MockClient_Expecter) CreateNLBForwardingRule(ctx interface{}, datacenterID interface{}, nlbID interface{}, rule interface{}) *MockClient_CreateNLBForwardingRule_Call {
+	return &MockClient_CreateNLBForwardingRule_Call{Call: _e.mock.On("CreateNLBForwardingRule", ctx, datacenterID, nlbID, rule)}
+}
+
+func (_c *MockClient_CreateNLBForwardingRule_Call) Run(run func(ctx context.Context, datacenterID string, nlbID string, rule ionoscloud.NetworkLoadBalancerForwardingRule)) *MockClient_CreateNLBForwardingRule_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(ionoscloud.NetworkLoadBalancerForwardingRule))
+	})
+	return _c
+}
+
+func (_c *MockClient_CreateNLBForwardingRule_Call) Return(_a0 string, _a1 error) *MockClient_CreateNLBForwardingRule_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_CreateNLBForwardingRule_Call) RunAndReturn(run func(context.Context, string, string, ionoscloud.NetworkLoadBalancerForwardingRule) (string, error)) *MockClient_CreateNLBForwardingRule_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateServer provides a mock function with given fields: ctx, datacenterID, properties, entities
 func (_m *MockClient) CreateServer(ctx context.Context, datacenterID string, properties ionoscloud.ServerProperties, entities ionoscloud.ServerEntities) (*ionoscloud.Server, string, error) {
 	ret := _m.Called(ctx, datacenterID, properties, entities)
@@ -334,6 +510,64 @@ func (_c *MockClient_DeleteLAN_Call) Return(_a0 string, _a1 error) *MockClient_D
 }
 
 func (_c *MockClient_DeleteLAN_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DeleteLAN_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteNLB provides a mock function with given fields: ctx, datacenterID, nlbID
+func (_m *MockClient) DeleteNLB(ctx context.Context, datacenterID string, nlbID string) (string, error) {
+	ret := _m.Called(ctx, datacenterID, nlbID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteNLB")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+		return rf(ctx, datacenterID, nlbID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+		r0 = rf(ctx, datacenterID, nlbID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, datacenterID, nlbID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_DeleteNLB_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteNLB'
+type MockClient_DeleteNLB_Call struct {
+	*mock.Call
+}
+
+// DeleteNLB is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - nlbID string
+func (_e *MockClient_Expecter) DeleteNLB(ctx interface{}, datacenterID interface{}, nlbID interface{}) *MockClient_DeleteNLB_Call {
+	return &MockClient_DeleteNLB_Call{Call: _e.mock.On("DeleteNLB", ctx, datacenterID, nlbID)}
+}
+
+func (_c *MockClient_DeleteNLB_Call) Run(run func(ctx context.Context, datacenterID string, nlbID string)) *MockClient_DeleteNLB_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_DeleteNLB_Call) Return(_a0 string, _a1 error) *MockClient_DeleteNLB_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_DeleteNLB_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_DeleteNLB_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -626,6 +860,126 @@ func (_c *MockClient_GetImage_Call) Return(_a0 *ionoscloud.Image, _a1 error) *Mo
 }
 
 func (_c *MockClient_GetImage_Call) RunAndReturn(run func(context.Context, string) (*ionoscloud.Image, error)) *MockClient_GetImage_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetLAN provides a mock function with given fields: ctx, datacenterID, lanID
+func (_m *MockClient) GetLAN(ctx context.Context, datacenterID string, lanID string) (*ionoscloud.Lan, error) {
+	ret := _m.Called(ctx, datacenterID, lanID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetLAN")
+	}
+
+	var r0 *ionoscloud.Lan
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*ionoscloud.Lan, error)); ok {
+		return rf(ctx, datacenterID, lanID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *ionoscloud.Lan); ok {
+		r0 = rf(ctx, datacenterID, lanID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*ionoscloud.Lan)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, datacenterID, lanID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_GetLAN_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLAN'
+type MockClient_GetLAN_Call struct {
+	*mock.Call
+}
+
+// GetLAN is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - lanID string
+func (_e *MockClient_Expecter) GetLAN(ctx interface{}, datacenterID interface{}, lanID interface{}) *MockClient_GetLAN_Call {
+	return &MockClient_GetLAN_Call{Call: _e.mock.On("GetLAN", ctx, datacenterID, lanID)}
+}
+
+func (_c *MockClient_GetLAN_Call) Run(run func(ctx context.Context, datacenterID string, lanID string)) *MockClient_GetLAN_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_GetLAN_Call) Return(_a0 *ionoscloud.Lan, _a1 error) *MockClient_GetLAN_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_GetLAN_Call) RunAndReturn(run func(context.Context, string, string) (*ionoscloud.Lan, error)) *MockClient_GetLAN_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetNLB provides a mock function with given fields: ctx, datacenterID, nlbID
+func (_m *MockClient) GetNLB(ctx context.Context, datacenterID string, nlbID string) (*ionoscloud.NetworkLoadBalancer, error) {
+	ret := _m.Called(ctx, datacenterID, nlbID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetNLB")
+	}
+
+	var r0 *ionoscloud.NetworkLoadBalancer
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*ionoscloud.NetworkLoadBalancer, error)); ok {
+		return rf(ctx, datacenterID, nlbID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *ionoscloud.NetworkLoadBalancer); ok {
+		r0 = rf(ctx, datacenterID, nlbID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*ionoscloud.NetworkLoadBalancer)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, datacenterID, nlbID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_GetNLB_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetNLB'
+type MockClient_GetNLB_Call struct {
+	*mock.Call
+}
+
+// GetNLB is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - nlbID string
+func (_e *MockClient_Expecter) GetNLB(ctx interface{}, datacenterID interface{}, nlbID interface{}) *MockClient_GetNLB_Call {
+	return &MockClient_GetNLB_Call{Call: _e.mock.On("GetNLB", ctx, datacenterID, nlbID)}
+}
+
+func (_c *MockClient_GetNLB_Call) Run(run func(ctx context.Context, datacenterID string, nlbID string)) *MockClient_GetNLB_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_GetNLB_Call) Return(_a0 *ionoscloud.NetworkLoadBalancer, _a1 error) *MockClient_GetNLB_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_GetNLB_Call) RunAndReturn(run func(context.Context, string, string) (*ionoscloud.NetworkLoadBalancer, error)) *MockClient_GetNLB_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -925,6 +1279,65 @@ func (_c *MockClient_ListLabels_Call) RunAndReturn(run func(context.Context) ([]
 	return _c
 }
 
+// ListNLBs provides a mock function with given fields: ctx, datacenterID
+func (_m *MockClient) ListNLBs(ctx context.Context, datacenterID string) (*ionoscloud.NetworkLoadBalancers, error) {
+	ret := _m.Called(ctx, datacenterID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListNLBs")
+	}
+
+	var r0 *ionoscloud.NetworkLoadBalancers
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*ionoscloud.NetworkLoadBalancers, error)); ok {
+		return rf(ctx, datacenterID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *ionoscloud.NetworkLoadBalancers); ok {
+		r0 = rf(ctx, datacenterID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*ionoscloud.NetworkLoadBalancers)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, datacenterID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_ListNLBs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListNLBs'
+type MockClient_ListNLBs_Call struct {
+	*mock.Call
+}
+
+// ListNLBs is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+func (_e *MockClient_Expecter) ListNLBs(ctx interface{}, datacenterID interface{}) *MockClient_ListNLBs_Call {
+	return &MockClient_ListNLBs_Call{Call: _e.mock.On("ListNLBs", ctx, datacenterID)}
+}
+
+func (_c *MockClient_ListNLBs_Call) Run(run func(ctx context.Context, datacenterID string)) *MockClient_ListNLBs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockClient_ListNLBs_Call) Return(_a0 *ionoscloud.NetworkLoadBalancers, _a1 error) *MockClient_ListNLBs_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_ListNLBs_Call) RunAndReturn(run func(context.Context, string) (*ionoscloud.NetworkLoadBalancers, error)) *MockClient_ListNLBs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListServers provides a mock function with given fields: ctx, datacenterID
 func (_m *MockClient) ListServers(ctx context.Context, datacenterID string) (*ionoscloud.Servers, error) {
 	ret := _m.Called(ctx, datacenterID)
@@ -1216,6 +1629,66 @@ func (_c *MockClient_StartServer_Call) Return(_a0 string, _a1 error) *MockClient
 }
 
 func (_c *MockClient_StartServer_Call) RunAndReturn(run func(context.Context, string, string) (string, error)) *MockClient_StartServer_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateNLBForwardingRule provides a mock function with given fields: ctx, datacenterID, nlbID, ruleID, rule
+func (_m *MockClient) UpdateNLBForwardingRule(ctx context.Context, datacenterID string, nlbID string, ruleID string, rule ionoscloud.NetworkLoadBalancerForwardingRule) (string, error) {
+	ret := _m.Called(ctx, datacenterID, nlbID, ruleID, rule)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateNLBForwardingRule")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, ionoscloud.NetworkLoadBalancerForwardingRule) (string, error)); ok {
+		return rf(ctx, datacenterID, nlbID, ruleID, rule)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, ionoscloud.NetworkLoadBalancerForwardingRule) string); ok {
+		r0 = rf(ctx, datacenterID, nlbID, ruleID, rule)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, ionoscloud.NetworkLoadBalancerForwardingRule) error); ok {
+		r1 = rf(ctx, datacenterID, nlbID, ruleID, rule)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockClient_UpdateNLBForwardingRule_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateNLBForwardingRule'
+type MockClient_UpdateNLBForwardingRule_Call struct {
+	*mock.Call
+}
+
+// UpdateNLBForwardingRule is a helper method to define mock.On call
+//   - ctx context.Context
+//   - datacenterID string
+//   - nlbID string
+//   - ruleID string
+//   - rule ionoscloud.NetworkLoadBalancerForwardingRule
+func (_e *MockClient_Expecter) UpdateNLBForwardingRule(ctx interface{}, datacenterID interface{}, nlbID interface{}, ruleID interface{}, rule interface{}) *MockClient_UpdateNLBForwardingRule_Call {
+	return &MockClient_UpdateNLBForwardingRule_Call{Call: _e.mock.On("UpdateNLBForwardingRule", ctx, datacenterID, nlbID, ruleID, rule)}
+}
+
+func (_c *MockClient_UpdateNLBForwardingRule_Call) Run(run func(ctx context.Context, datacenterID string, nlbID string, ruleID string, rule ionoscloud.NetworkLoadBalancerForwardingRule)) *MockClient_UpdateNLBForwardingRule_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(string), args[3].(string), args[4].(ionoscloud.NetworkLoadBalancerForwardingRule))
+	})
+	return _c
+}
+
+func (_c *MockClient_UpdateNLBForwardingRule_Call) Return(_a0 string, _a1 error) *MockClient_UpdateNLBForwardingRule_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockClient_UpdateNLBForwardingRule_Call) RunAndReturn(run func(context.Context, string, string, string, ionoscloud.NetworkLoadBalancerForwardingRule) (string, error)) *MockClient_UpdateNLBForwardingRule_Call {
 	_c.Call.Return(run)
 	return _c
 }
