@@ -16,6 +16,7 @@ Besides the tools, the following environment variables need to be set:
 - `IONOS_TOKEN`: The IONOS API token
 - `CONTROL_PLANE_ENDPOINT_LOCATION`: The location for the control plane endpoint and machine image.
 - `IONOSCLOUD_MACHINE_IMAGE_ID`: The ID of the machine image to be used for the nodes. MUST be in the location specified by `CONTROL_PLANE_ENDPOINT_LOCATION`.
+- `CI`: If running the tests locally, this has to be `false`. Otherwise (running in a CI), it has to be `true`.
 
 Before running the tests, you need to build the provider image.
 
