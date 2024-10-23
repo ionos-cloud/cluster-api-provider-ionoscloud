@@ -12,12 +12,12 @@ require (
 	github.com/onsi/gomega v1.34.2
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
-	k8s.io/api v0.30.5
-	k8s.io/apimachinery v0.30.5
-	k8s.io/client-go v0.30.5
+	k8s.io/api v0.30.6
+	k8s.io/apimachinery v0.30.6
+	k8s.io/client-go v0.30.6
 	k8s.io/klog/v2 v2.130.1
-	sigs.k8s.io/cluster-api v1.8.3
-	sigs.k8s.io/cluster-api/test v1.8.3
+	sigs.k8s.io/cluster-api v1.8.4
+	sigs.k8s.io/cluster-api/test v1.8.4
 	sigs.k8s.io/controller-runtime v0.18.5
 )
 
