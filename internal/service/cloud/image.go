@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -70,8 +71,19 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 		images = filterImagesByName(images, version)
 	}
 
-	if n := len(images); n != 1 {
+	if len(images) == 0 {
+		return "", imageMatchError{selector: imageSpec.Selector}
+	}
+
+	if len(images) > 1 && imageSpec.Selector.ResolutionPolicy == infrav1.ResolutionPolicyExact {
 		return "", imageMatchError{imageIDs: getImageIDs(images), selector: imageSpec.Selector}
+	}
+
+	if imageSpec.Selector.ResolutionPolicy == infrav1.ResolutionPolicyNewest {
+		slices.SortFunc(images, func(lhs, rhs *sdk.Image) int {
+			// swap lhs and rhs to produce reverse order
+			return rhs.Metadata.CreatedDate.Compare(lhs.Metadata.CreatedDate.Time)
+		})
 	}
 
 	return ptr.Deref(images[0].GetId(), ""), nil

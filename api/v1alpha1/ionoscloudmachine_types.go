@@ -240,12 +240,31 @@ type ImageSpec struct {
 	Selector *ImageSelector `json:"selector,omitempty"`
 }
 
+// ImageSelectorResolutionPolicy defines what action to take when the image selector has ambiguous results.
+// +kubebuilder:validation:Enum=Exact;Newest
+type ImageSelectorResolutionPolicy string
+
+const (
+	// ResolutionPolicyExact only succeeds if the image selector resolves to exactly 1 image.
+	ResolutionPolicyExact ImageSelectorResolutionPolicy = "Exact"
+	// ResolutionPolicyNewest uses the newest entry if the image selector resolves to more than 1 image.
+	ResolutionPolicyNewest ImageSelectorResolutionPolicy = "Newest"
+)
+
 // ImageSelector defines label selectors for looking up images.
 type ImageSelector struct {
 	// MatchLabels is a map of key/value pairs.
 	//
 	//+kubebuilder:validation:MinProperties=1
 	MatchLabels map[string]string `json:"matchLabels"`
+
+	// ResolutionPolicy controls the lookup behavior.
+	// The default policy 'Exact' will raise an error if the selector resolves to more than 1 image.
+	// Use policy 'Newest' to select the newest image instead.
+	//
+	//+kubebuilder:default=`Exact`
+	//+optional
+	ResolutionPolicy ImageSelectorResolutionPolicy `json:"resolutionPolicy,omitempty"`
 
 	// UseMachineVersion indicates whether to use the parent Machine's version field to look up image names.
 	// Enabled by default.

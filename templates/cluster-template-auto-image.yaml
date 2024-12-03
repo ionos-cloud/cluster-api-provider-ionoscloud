@@ -291,6 +291,7 @@ spec:
       disk:
         image:
           selector:
+            resolutionPolicy: ${IONOSCLOUD_IMAGE_RESOLUTION_POLICY:-Newest}
             matchLabels:
               ${IONOSCLOUD_IMAGE_LABEL_KEY}: ${IONOSCLOUD_IMAGE_LABEL_VALUE}
 ---
@@ -336,6 +337,7 @@ spec:
       disk:
         image:
           selector:
+            resolutionPolicy: ${IONOSCLOUD_IMAGE_RESOLUTION_POLICY:-Newest}
             matchLabels:
               ${IONOSCLOUD_IMAGE_LABEL_KEY}: ${IONOSCLOUD_IMAGE_LABEL_VALUE}
 ---

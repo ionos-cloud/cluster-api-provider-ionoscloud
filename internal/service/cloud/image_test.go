@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/go-logr/logr"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
@@ -47,6 +48,7 @@ func (s *imageTestSuite) SetupTest() {
 		MatchLabels: map[string]string{
 			"test": "image",
 		},
+		ResolutionPolicy: infrav1.ResolutionPolicyExact,
 	}
 }
 
@@ -121,7 +123,7 @@ func (s *imageTestSuite) TestLookupImageIgnoreMissingMachineVersion() {
 	s.Equal("image-1", imageID)
 }
 
-func (s *imageTestSuite) TestLookupImageOK() {
+func (s *imageTestSuite) TestLookupImageExactOK() {
 	s.ionosClient.EXPECT().ListLabels(s.ctx).Return(
 		[]sdk.Label{
 			makeTestLabel("image", "image-1", "test", "image"),
@@ -135,8 +137,35 @@ func (s *imageTestSuite) TestLookupImageOK() {
 	s.Equal("image-1", imageID)
 }
 
+func (s *imageTestSuite) TestLookupImageNewestOK() {
+	s.ionosClient.EXPECT().ListLabels(s.ctx).Return(
+		[]sdk.Label{
+			makeTestLabel("image", "image-1", "test", "image"),
+			makeTestLabel("image", "image-2", "test", "image"),
+			makeTestLabel("image", "image-3", "test", "image"),
+		}, nil,
+	).Once()
+	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
+	baseTime := time.Now().Round(time.Second)
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImageWithDate("image-1", "img-ver1-", "loc", baseTime), nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-2").Return(s.makeTestImageWithDate("image-2", "img-ver2-", "loc", baseTime.Add(2*time.Minute)), nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-3").Return(s.makeTestImageWithDate("image-3", "img-ver3-", "loc", baseTime.Add(1*time.Minute)), nil).Once()
+
+	s.infraMachine.Spec.Disk.Image.Selector.ResolutionPolicy = infrav1.ResolutionPolicyNewest
+
+	imageID, err := s.service.lookupImageID(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.Equal("image-2", imageID)
+}
+
 func (s *imageTestSuite) makeTestImage(id, namePrefix, location string) *sdk.Image {
 	return makeTestImage(id, namePrefix+*s.capiMachine.Spec.Version, location)
+}
+
+func (s *imageTestSuite) makeTestImageWithDate(id, namePrefix, location string, createdDate time.Time) *sdk.Image {
+	img := s.makeTestImage(id, namePrefix, location)
+	img.Metadata.CreatedDate = &sdk.IonosTime{Time: createdDate}
+	return img
 }
 
 func TestFilterImagesByName(t *testing.T) {
@@ -194,7 +223,8 @@ func TestLookupImagesBySelector(t *testing.T) {
 
 func makeTestImage(id, name, location string) *sdk.Image {
 	return &sdk.Image{
-		Id: &id,
+		Id:       &id,
+		Metadata: &sdk.DatacenterElementMetadata{},
 		Properties: &sdk.ImageProperties{
 			Name:     &name,
 			Location: &location,
