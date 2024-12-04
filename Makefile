@@ -256,7 +256,7 @@ release-templates: ## Generate release templates
 ## CRS
 ## --------------------------------------
 
-CALICO_VERSION ?= v3.26.3
+CALICO_VERSION ?= v3.28.2
 
 .PHONY: crs-calico
 crs-calico: ## Generates crs manifests for Calico.
