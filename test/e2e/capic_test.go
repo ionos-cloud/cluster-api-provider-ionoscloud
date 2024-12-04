@@ -121,3 +121,17 @@ var _ = Describe("Should be able to create a cluster with 1 control-plane using 
 		}
 	})
 })
+
+var _ = Describe("Should be able to create a cluster with 1 control-plane and 2 workers using an image selector", func() {
+	capie2e.QuickStartSpec(ctx, func() capie2e.QuickStartSpecInput {
+		return capie2e.QuickStartSpecInput{
+			E2EConfig:             e2eConfig,
+			ClusterctlConfigPath:  clusterctlConfigPath,
+			BootstrapClusterProxy: bootstrapClusterProxy,
+			ArtifactFolder:        artifactFolder,
+			SkipCleanup:           skipCleanup,
+			Flavor:                ptr.To("image-selector"),
+			PostNamespaceCreated:  cloudEnv.createCredentialsSecretPNC,
+		}
+	})
+})
