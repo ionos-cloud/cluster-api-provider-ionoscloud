@@ -103,14 +103,14 @@ func (e *ionosCloudEnv) createDatacenter(ctx context.Context, location string) (
 		name = defaultCloudResourceNamePrefix + os.Getenv("GITHUB_RUN_ID")
 		description = "CI run: " + e.githubCIRunURL()
 	}
-	datacenter := sdk.Datacenter{
-		Properties: &sdk.DatacenterProperties{
+	datacenterPost := sdk.DatacenterPost{
+		Properties: &sdk.DatacenterPropertiesPost{
 			Name:        &name,
 			Location:    &location,
 			Description: &description,
 		},
 	}
-	datacenter, res, err := e.api.DataCentersApi.DatacentersPost(ctx).Datacenter(datacenter).Execute()
+	datacenter, res, err := e.api.DataCentersApi.DatacentersPost(ctx).Datacenter(datacenterPost).Execute()
 	Expect(err).ToNot(HaveOccurred(), "Failed requesting data center creation")
 	e.datacenterID = *datacenter.Id
 	if e.ciMode {
