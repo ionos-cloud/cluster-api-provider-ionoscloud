@@ -71,9 +71,13 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 		images = filterImagesByName(images, version)
 	}
 
+	if len(images) == 0 {
+		return "", imageMatchError{selector: imageSpec.Selector}
+	}
+
 	switch imageSpec.Selector.ResolutionPolicy {
 	case infrav1.ResolutionPolicyExact:
-		if len(images) != 1 {
+		if len(images) > 1 {
 			return "", imageMatchError{imageIDs: getImageIDs(images), selector: imageSpec.Selector}
 		}
 	case infrav1.ResolutionPolicyNewest:
@@ -81,10 +85,6 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 			// swap lhs and rhs to produce reverse order
 			return rhs.Metadata.CreatedDate.Compare(lhs.Metadata.CreatedDate.Time)
 		})
-	}
-
-	if len(images) == 0 {
-		return "", imageMatchError{selector: imageSpec.Selector}
 	}
 
 	return ptr.Deref(images[0].GetId(), ""), nil
