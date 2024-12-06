@@ -65,12 +65,13 @@ providers:
           - sourcePath: "../../../metadata.yaml"
           - sourcePath: "../data/infrastructure-ionoscloud/cluster-template.yaml"
           - sourcePath: "../data/infrastructure-ionoscloud/cluster-template-ipam.yaml"
+          - sourcePath: "../data/infrastructure-ionoscloud/cluster-template-image-selector.yaml"
 variables:
   # Default variables for the e2e test; those values could be overridden via env variables, thus
   # allowing the same e2e config file to be re-used in different Prow jobs e.g. each one with a K8s version permutation.
   # The following Kubernetes versions should be the latest versions with already published kindest/node images.
   # This avoids building node images in the default case which improves the test duration significantly.
-  KUBERNETES_VERSION: "v1.29.2"
+  KUBERNETES_VERSION: "v1.30.6"
   CNI: "./data/cni/calico.yaml"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   CLUSTER_NAME: "e2e-cluster-${RANDOM}"
