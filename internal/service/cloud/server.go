@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"path"
 	"strconv"
@@ -29,7 +30,10 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -334,6 +338,11 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 		return fmt.Errorf("image lookup: %w", err)
 	}
 
+	err = reconcileAvailabilityZone(ctx, ms)
+	if err != nil {
+		return fmt.Errorf("failed to reconcile availability zone %w", err)
+	}
+
 	renderedData := s.renderUserData(ms, string(bootstrapData))
 	copySpec := ms.IonosMachine.Spec.DeepCopy()
 	entityParams := serverEntityParams{
@@ -481,4 +490,68 @@ func (*Service) serversURL(datacenterID string) string {
 
 func (*Service) volumeName(m *infrav1.IonosCloudMachine) string {
 	return "vol-" + m.Name
+}
+
+func reconcileAvailabilityZone(ctx context.Context, ms *scope.Machine) error {
+	// Always return early if the AvailabilityZone is already set.
+	if ms.IonosMachine.Spec.AvailabilityZone != nil {
+		return nil
+	}
+
+	// Set default availability zone, if none is set.
+	if ms.IonosMachine.Spec.AvailabilityZone == nil && ms.IonosMachine.Spec.AvailabilityZones == nil {
+		ms.IonosMachine.Spec.AvailabilityZone = ptr.To(infrav1.AvailabilityZoneAuto)
+		return nil
+	}
+
+	if ms.IonosMachine.Spec.AvailabilityZones == nil {
+		return errors.New("availability zones are not set")
+	}
+
+	// if control plane machine, we distribute the machines across the zones.
+	if util.IsControlPlaneMachine(ms.Machine) {
+		machines, err := ms.ListMachines(ctx, client.MatchingLabels{
+			clusterv1.ClusterNameLabel:         ms.ClusterScope.Cluster.GetName(),
+			clusterv1.MachineControlPlaneLabel: "",
+		})
+		if err != nil {
+			return fmt.Errorf("failed to list machines %w", err)
+		}
+
+		// Track zone usage
+		usedZones := make(map[infrav1.AvailabilityZone]int)
+		for _, machine := range machines {
+			if machine.Name == ms.IonosMachine.GetName() {
+				// Skip the current machine
+				continue
+			}
+			if machine.Spec.AvailabilityZone != nil {
+				usedZones[*machine.Spec.AvailabilityZone]++
+			}
+		}
+
+		// Find the next least used availability zone
+		var selectedZone infrav1.AvailabilityZone
+
+		if len(usedZones) == 0 {
+			// If no zones are currently used, start with the first zone
+			selectedZone = ms.IonosMachine.Spec.AvailabilityZones[0]
+		} else {
+			minUsage := int(^uint(0) >> 1) // max int value for finding minimum
+
+			for _, zone := range ms.IonosMachine.Spec.AvailabilityZones {
+				if usage, found := usedZones[zone]; !found || usage < minUsage {
+					selectedZone = zone
+					minUsage = usage
+				}
+			}
+		}
+
+		// Set the selected zone
+		ms.IonosMachine.Spec.AvailabilityZone = ptr.To(selectedZone)
+	} else {
+		// if worker machine, we randomly select a zone.
+		ms.IonosMachine.Spec.AvailabilityZone = ptr.To(ms.IonosMachine.Spec.AvailabilityZones[rand.Intn(len(ms.IonosMachine.Spec.AvailabilityZones))]) //nolint:gosec
+	}
+	return nil
 }

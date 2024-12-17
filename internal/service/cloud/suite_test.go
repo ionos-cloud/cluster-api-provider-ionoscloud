@@ -155,7 +155,7 @@ func (s *ServiceTestSuite) SetupTest() {
 			ProviderID:       ptr.To("ionos://" + exampleServerID),
 			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
 			NumCores:         2,
-			AvailabilityZone: infrav1.AvailabilityZoneAuto,
+			AvailabilityZone: ptr.To(infrav1.AvailabilityZoneAuto),
 			MemoryMB:         4096,
 			CPUFamily:        ptr.To("AMD_OPTERON"),
 			Disk: &infrav1.Volume{
