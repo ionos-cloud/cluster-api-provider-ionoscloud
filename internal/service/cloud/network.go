@@ -148,8 +148,18 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.Machine) (
 
 // getLAN tries to retrieve the cluster-related LAN in the data center.
 func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, error) {
-	// check if the LAN exists
 	depth := int32(2) // for listing the LANs with their number of NICs
+
+	// Use an existing LAN if it's already specified.
+	if ms.IonosMachine.Spec.FailoverIPLanID != nil {
+		lan, err := s.apiWithDepth(depth).GetLANByID(ctx, ms.DatacenterID(), *ms.IonosMachine.Spec.FailoverIPLanID)
+		if err != nil {
+			return nil, fmt.Errorf("could not get LAN %s in data center %s: %w", *ms.IonosMachine.Spec.FailoverIPLanID, ms.DatacenterID(), err)
+		}
+		return lan, nil
+	}
+
+	// check if the LAN exists
 	lans, err := s.apiWithDepth(depth).ListLANs(ctx, ms.DatacenterID())
 	if err != nil {
 		return nil, fmt.Errorf("could not list LANs in data center %s: %w", ms.DatacenterID(), err)
