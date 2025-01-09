@@ -47,6 +47,8 @@ type Client interface {
 	PatchLAN(ctx context.Context, datacenterID, lanID string, properties sdk.LanProperties) (string, error)
 	// ListLANs returns a list of LANs in the specified data center.
 	ListLANs(ctx context.Context, datacenterID string) (*sdk.Lans, error)
+	// GetLANByID returns the LAN that matches the provided lanID in the specified data center.
+	GetLANByID(ctx context.Context, datacenterID, lanID string) (*sdk.Lan, error)
 	// DeleteLAN deletes the LAN that matches the provided lanID in the specified data center,
 	// returning the request path.
 	DeleteLAN(ctx context.Context, datacenterID, lanID string) (string, error)
