@@ -234,6 +234,16 @@ spec:
                                       pairs.
                                     minProperties: 1
                                     type: object
+                                  resolutionPolicy:
+                                    default: Exact
+                                    description: |-
+                                      ResolutionPolicy controls the lookup behavior.
+                                      The default policy 'Exact' will raise an error if the selector resolves to more than 1 image.
+                                      Use policy 'Newest' to select the newest image instead.
+                                    enum:
+                                    - Exact
+                                    - Newest
+                                    type: string
                                   useMachineVersion:
                                     default: true
                                     description: |-

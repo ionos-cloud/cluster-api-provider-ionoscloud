@@ -5,6 +5,7 @@ metadata:
   name: "${CLUSTER_NAME}"
   labels:
     cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+    cni: "${CLUSTER_NAME}-crs-0"
 spec:
   clusterNetwork:
     pods:
@@ -18,14 +19,6 @@ spec:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     name: "${CLUSTER_NAME}-control-plane"
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: "${CLUSTER_NAME}-credentials"
-type: Opaque
-stringData:
-  token: "${IONOS_TOKEN}"
----
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: IonosCloudCluster
 metadata:
@@ -36,7 +29,7 @@ spec:
     port: ${CONTROL_PLANE_ENDPOINT_PORT:-6443}
   location: ${CONTROL_PLANE_ENDPOINT_LOCATION}
   credentialsRef:
-    name: "${CLUSTER_NAME}-credentials"
+    name: "ionoscloud-credentials"
 ---
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -291,9 +284,9 @@ spec:
       disk:
         image:
           selector:
-            resolutionPolicy: ${IONOSCLOUD_IMAGE_RESOLUTION_POLICY:-Newest}
+            resolutionPolicy: Newest
             matchLabels:
-              ${IONOSCLOUD_IMAGE_LABEL_KEY}: ${IONOSCLOUD_IMAGE_LABEL_VALUE}
+              ${IONOSCLOUD_IMAGE_LABEL_KEY:-e2etest}: ${IONOSCLOUD_IMAGE_LABEL_VALUE:-capic}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -337,9 +330,9 @@ spec:
       disk:
         image:
           selector:
-            resolutionPolicy: ${IONOSCLOUD_IMAGE_RESOLUTION_POLICY:-Newest}
+            resolutionPolicy: Newest
             matchLabels:
-              ${IONOSCLOUD_IMAGE_LABEL_KEY}: ${IONOSCLOUD_IMAGE_LABEL_VALUE}
+              ${IONOSCLOUD_IMAGE_LABEL_KEY:-e2etest}: ${IONOSCLOUD_IMAGE_LABEL_VALUE:-capic}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
@@ -434,3 +427,28 @@ spec:
             # use cloud-provider: external when using a CCM
             cloud-provider: ""
           criSocket: unix:///run/containerd/containerd.sock
+---
+# ConfigMap object referenced by the ClusterResourceSet object and with
+# the CNI resource defined in the test config file
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "cni-${CLUSTER_NAME}-crs-0"
+data: ${CNI_RESOURCES}
+---
+# ClusterResourceSet object with
+# a selector that targets all the Cluster with label cni=${CLUSTER_NAME}-crs-0
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name:  "${CLUSTER_NAME}-crs-0"
+spec:
+  strategy: ApplyOnce
+  clusterSelector:
+    matchLabels:
+      cni: "${CLUSTER_NAME}-crs-0"
+  resources:
+    - name: "cni-${CLUSTER_NAME}-crs-0"
+      kind: ConfigMap
