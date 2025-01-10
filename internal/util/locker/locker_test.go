@@ -118,7 +118,7 @@ func TestLockerConcurrency(t *testing.T) {
 	l := New()
 
 	var wg sync.WaitGroup
-	for i := 0; i <= 10_000; i++ {
+	for range 10_000 {
 		wg.Add(1)
 		go func(t *testing.T) {
 			assert.NoError(t, l.Lock(context.Background(), "test"))
