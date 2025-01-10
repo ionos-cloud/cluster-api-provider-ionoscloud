@@ -364,7 +364,7 @@ func TestCurrentRequestByDatacenterAccessors(t *testing.T) {
 
 	// If there is a concurrency issue, it will very likely become visible here.
 	var wg sync.WaitGroup
-	for i := 0; i <= 10_000; i++ {
+	for i := range 10_000 {
 		wg.Add(1)
 		go func(t *testing.T, id string) {
 			defer wg.Done()
