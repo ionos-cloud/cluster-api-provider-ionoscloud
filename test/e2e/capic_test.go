@@ -92,6 +92,7 @@ var _ = Describe("Should be able to create a cluster with 1 control-plane and 1 
 			E2EConfig:             e2eConfig,
 			ClusterctlConfigPath:  clusterctlConfigPath,
 			BootstrapClusterProxy: bootstrapClusterProxy,
+			Flavor:                "image-selector",
 			ArtifactFolder:        artifactFolder,
 			SkipCleanup:           skipCleanup,
 			PostNamespaceCreated:  cloudEnv.createCredentialsSecretPNC,

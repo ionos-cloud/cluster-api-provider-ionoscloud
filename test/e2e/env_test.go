@@ -79,7 +79,7 @@ func (e *ionosCloudEnv) setup() {
 }
 
 func (e *ionosCloudEnv) teardown() {
-	if !skipCleanup {
+	if !skipCleanup && e.api != nil {
 		By("Deleting environment resources")
 
 		By("Requesting the deletion of the data center")
