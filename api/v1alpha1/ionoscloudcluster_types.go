@@ -34,7 +34,7 @@ const (
 	IonosCloudClusterKind = "IonosCloudCluster"
 )
 
-//+kubebuilder:validation:XValidation:rule="self.controlPlaneEndpoint.host == '' || has(self.location)",message="location is required when controlPlaneEndpoint.host is set"
+//+kubebuilder:validation:XValidation:rule="!has(self.loadBalancerProviderRef) || has(self.location)",message="location is required when loadBalancerProviderRef is set"
 
 // IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
 type IonosCloudClusterSpec struct {
