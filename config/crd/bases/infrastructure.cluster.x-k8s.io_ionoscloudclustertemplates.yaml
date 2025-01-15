@@ -116,6 +116,10 @@ spec:
                     required:
                     - credentialsRef
                     type: object
+                    x-kubernetes-validations:
+                    - message: location is required when loadBalancerProviderRef is
+                        set
+                      rule: '!has(self.loadBalancerProviderRef) || has(self.location)'
                 required:
                 - spec
                 type: object

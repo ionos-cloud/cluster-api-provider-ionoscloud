@@ -86,14 +86,15 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(k8sClient.Create(context.Background(), cluster)).
 				Should(MatchError(ContainSubstring("credentialsRef.name must be provided")))
 		})
-		It("should not allow creating clusters with empty location when ControlPlaneEndpoint host is set", func() {
+		It("should not allow creating clusters with empty location when loadBalancerProviderRef is set", func() {
 			cluster := defaultCluster()
 			cluster.Spec.Location = ""
 			Expect(k8sClient.Create(context.Background(), cluster)).
-				Should(MatchError(ContainSubstring("location is required when controlPlaneEndpoint.host is set")))
+				Should(MatchError(ContainSubstring("location is required when loadBalancerProviderRef is set")))
 		})
 		It("should allow creating clusters with empty location when ControlPlaneEndpoint host is not set", func() {
 			cluster := defaultCluster()
+			cluster.Spec.LoadBalancerProviderRef = nil
 			cluster.Spec.Location = ""
 			cluster.Spec.ControlPlaneEndpoint.Host = ""
 			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
