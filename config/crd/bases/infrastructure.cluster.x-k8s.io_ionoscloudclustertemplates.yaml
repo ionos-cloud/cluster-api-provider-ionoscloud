@@ -117,9 +117,9 @@ spec:
                     - credentialsRef
                     type: object
                     x-kubernetes-validations:
-                    - message: location is required when controlPlaneEndpoint.host
-                        is set
-                      rule: self.controlPlaneEndpoint.host == '' || has(self.location)
+                    - message: location is required when loadBalancerProviderRef is
+                        set
+                      rule: '!has(self.loadBalancerProviderRef) || has(self.location)'
                 required:
                 - spec
                 type: object
