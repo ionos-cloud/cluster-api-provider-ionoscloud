@@ -630,66 +630,6 @@ func (_c *MockClient_GetImage_Call) RunAndReturn(run func(context.Context, strin
 	return _c
 }
 
-// GetLANByID provides a mock function with given fields: ctx, datacenterID, lanID
-func (_m *MockClient) GetLANByID(ctx context.Context, datacenterID string, lanID string) (*ionoscloud.Lan, error) {
-	ret := _m.Called(ctx, datacenterID, lanID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetLANByID")
-	}
-
-	var r0 *ionoscloud.Lan
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*ionoscloud.Lan, error)); ok {
-		return rf(ctx, datacenterID, lanID)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *ionoscloud.Lan); ok {
-		r0 = rf(ctx, datacenterID, lanID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ionoscloud.Lan)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, datacenterID, lanID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// MockClient_GetLANByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLANByID'
-type MockClient_GetLANByID_Call struct {
-	*mock.Call
-}
-
-// GetLANByID is a helper method to define mock.On call
-//   - ctx context.Context
-//   - datacenterID string
-//   - lanID string
-func (_e *MockClient_Expecter) GetLANByID(ctx interface{}, datacenterID interface{}, lanID interface{}) *MockClient_GetLANByID_Call {
-	return &MockClient_GetLANByID_Call{Call: _e.mock.On("GetLANByID", ctx, datacenterID, lanID)}
-}
-
-func (_c *MockClient_GetLANByID_Call) Run(run func(ctx context.Context, datacenterID string, lanID string)) *MockClient_GetLANByID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(string))
-	})
-	return _c
-}
-
-func (_c *MockClient_GetLANByID_Call) Return(_a0 *ionoscloud.Lan, _a1 error) *MockClient_GetLANByID_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-func (_c *MockClient_GetLANByID_Call) RunAndReturn(run func(context.Context, string, string) (*ionoscloud.Lan, error)) *MockClient_GetLANByID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetRequests provides a mock function with given fields: ctx, method, path
 func (_m *MockClient) GetRequests(ctx context.Context, method string, path string) ([]ionoscloud.Request, error) {
 	ret := _m.Called(ctx, method, path)

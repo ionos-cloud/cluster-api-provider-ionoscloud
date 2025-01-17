@@ -168,12 +168,17 @@ type IonosCloudMachineSpec struct {
 	//+optional
 	FailoverIP *string `json:"failoverIP,omitempty"`
 
-	// FailoverIPLanID is the ID of the LAN where the Failover Group is created and FailoverIP is configured.
+	// LanID is the ID of the LAN if an existing LAN is required.
+	// a typical use-case is when an existing LAN has a Failover Group and the FailoverIP configured.
 	// This field is used when the Failover Group is created in another LAN.
 	//
 	// If the machine is a control plane machine, this field will not be taken into account.
-	//+optional
-	FailoverIPLanID *string `json:"failoverIPLanID,omitempty"`
+	// +optional
+	// +immutable
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="lanID is immutable"
+	// +kubebuilder:validation:MinLength=1
+	//nolint:revive
+	LanID *string `json:"lanID,omitempty"`
 
 	// Type is the server type of the VM. Can be either ENTERPRISE or VCPU.
 	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="type is immutable"
