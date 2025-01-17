@@ -394,8 +394,8 @@ func (in *IonosCloudMachineSpec) DeepCopyInto(out *IonosCloudMachineSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.FailoverIPLanID != nil {
-		in, out := &in.FailoverIPLanID, &out.FailoverIPLanID
+	if in.LanID != nil {
+		in, out := &in.LanID, &out.LanID
 		*out = new(string)
 		**out = **in
 	}
