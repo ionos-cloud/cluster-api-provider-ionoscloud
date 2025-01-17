@@ -24,6 +24,7 @@ import (
 	"path"
 	"slices"
 
+	"github.com/google/go-cmp/cmp"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -148,8 +149,9 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.Machine) (
 
 // getLAN tries to retrieve the cluster-related LAN in the data center.
 func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, error) {
-	// check if the LAN exists
 	depth := int32(2) // for listing the LANs with their number of NICs
+
+	// check if the LAN exists
 	lans, err := s.apiWithDepth(depth).ListLANs(ctx, ms.DatacenterID())
 	if err != nil {
 		return nil, fmt.Errorf("could not list LANs in data center %s: %w", ms.DatacenterID(), err)
@@ -162,6 +164,11 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 	)
 
 	for _, l := range *lans.Items {
+		// Use an existing LAN if it's specified in the spec.
+		if ms.IonosMachine.Spec.LanID != nil && cmp.Equal(l.GetId(), ms.IonosMachine.Spec.LanID) {
+			return &l, nil
+		}
+
 		if l.Properties.HasName() && *l.Properties.Name == expectedName {
 			foundLAN = &l
 			lanCount++
@@ -172,6 +179,10 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 		if lanCount > 1 {
 			return nil, fmt.Errorf("found multiple LANs with the name: %s", expectedName)
 		}
+	}
+
+	if ms.IonosMachine.Spec.LanID != nil && !cmp.Equal(foundLAN.GetId(), ms.IonosMachine.Spec.LanID) {
+		return nil, fmt.Errorf("LAN with ID %s not found", *ms.IonosMachine.Spec.LanID)
 	}
 
 	return foundLAN, nil
