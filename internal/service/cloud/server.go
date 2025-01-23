@@ -36,6 +36,11 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
+const (
+	FormatCloudInit = "cloud-config"
+	FormatIgnition  = "ignition"
+)
+
 // ReconcileServer ensures the cluster server exist, creating one if it doesn't.
 func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (requeue bool, retErr error) {
 	log := s.logger.WithName("ReconcileServer")
@@ -318,6 +323,12 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
+	bootstrapFormat := FormatCloudInit
+	f, exists := secret.Data["format"]
+	if exists {
+		bootstrapFormat = string(f)
+	}
+
 	lan, err := s.getLAN(ctx, ms)
 	if err != nil {
 		return err
@@ -334,7 +345,7 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 		return fmt.Errorf("image lookup: %w", err)
 	}
 
-	renderedData := s.renderUserData(ms, string(bootstrapData))
+	renderedData := s.renderUserData(ms, bootstrapFormat, string(bootstrapData))
 	copySpec := ms.IonosMachine.Spec.DeepCopy()
 	entityParams := serverEntityParams{
 		boostrapData: renderedData,
@@ -464,15 +475,20 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	}
 }
 
-func (*Service) renderUserData(ms *scope.Machine, input string) string {
+func (*Service) renderUserData(ms *scope.Machine, format string, userdata string) string {
+	if format == FormatIgnition {
+		// TODO
+		return base64.StdEncoding.EncodeToString([]byte(userdata))
+	}
+
 	const bootCmdFormat = `bootcmd:
   - echo %[1]s > /etc/hostname
   - hostname %[1]s
 `
 	bootCmdString := fmt.Sprintf(bootCmdFormat, ms.IonosMachine.Name)
-	input = fmt.Sprintf("%s\n%s", input, bootCmdString)
+	userdata = fmt.Sprintf("%s\n%s", userdata, bootCmdString)
 
-	return base64.StdEncoding.EncodeToString([]byte(input))
+	return base64.StdEncoding.EncodeToString([]byte(userdata))
 }
 
 func (*Service) serversURL(datacenterID string) string {
