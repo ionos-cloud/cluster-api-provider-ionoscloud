@@ -37,10 +37,9 @@ import (
 )
 
 const (
-	// Bootstrap data format constants
-	// Default cloud-init format
+	// FormatCloudInit is the default bootstrap data format.
 	FormatCloudInit = "cloud-config"
-	// Support for ignition format
+	// FormatIgnition is used for ignition support.
 	FormatIgnition = "ignition"
 )
 
@@ -348,7 +347,11 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 		return fmt.Errorf("image lookup: %w", err)
 	}
 
-	renderedData := s.renderUserData(ms, bootstrapFormat, string(bootstrapData))
+	renderedData, err := s.enrichUserData(ms, bootstrapFormat, string(bootstrapData))
+	if err != nil {
+		return fmt.Errorf("enriching user data: %w", err)
+	}
+
 	copySpec := ms.IonosMachine.Spec.DeepCopy()
 	entityParams := serverEntityParams{
 		boostrapData: renderedData,
@@ -478,20 +481,17 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	}
 }
 
-func (*Service) renderUserData(ms *scope.Machine, format string, userdata string) string {
+func (*Service) enrichUserData(ms *scope.Machine, format string, userData string) (string, error) {
 	if format == FormatIgnition {
-		// TODO
-		return base64.StdEncoding.EncodeToString([]byte(userdata))
+		enrichedData, err := enrichIgnitionConfig(ms.IonosMachine, []byte(userData))
+		if err != nil {
+			return "", fmt.Errorf("couldn't enrich ignition config: %w", err)
+		}
+
+		return base64.StdEncoding.EncodeToString(enrichedData), nil
 	}
 
-	const bootCmdFormat = `bootcmd:
-  - echo %[1]s > /etc/hostname
-  - hostname %[1]s
-`
-	bootCmdString := fmt.Sprintf(bootCmdFormat, ms.IonosMachine.Name)
-	userdata = fmt.Sprintf("%s\n%s", userdata, bootCmdString)
-
-	return base64.StdEncoding.EncodeToString([]byte(userdata))
+	return enrichCloudInitConfig(ms.IonosMachine.Name, userData), nil
 }
 
 func (*Service) serversURL(datacenterID string) string {
