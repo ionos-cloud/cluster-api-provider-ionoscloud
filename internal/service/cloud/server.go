@@ -37,8 +37,11 @@ import (
 )
 
 const (
+	// Bootstrap data format constants
+	// Default cloud-init format
 	FormatCloudInit = "cloud-config"
-	FormatIgnition  = "ignition"
+	// Support for ignition format
+	FormatIgnition = "ignition"
 )
 
 // ReconcileServer ensures the cluster server exist, creating one if it doesn't.
