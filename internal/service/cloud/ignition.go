@@ -19,6 +19,7 @@ package cloud
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	ignition "github.com/flatcar/ignition/config/v2_3"
 	igntypes "github.com/flatcar/ignition/config/v2_3/types"
@@ -57,7 +58,7 @@ func convertToIgnition(data []byte) (igntypes.Config, error) {
 }
 
 func getIgnitionBaseConfig(machine *infrav1.IonosCloudMachine) igntypes.Config {
-	metadata := fmt.Sprintf("data:,COREOS_CUSTOM_HOSTNAME=%s\n", machine.Name)
+	metadata := fmt.Sprintf("COREOS_CUSTOM_HOSTNAME=%s\n", machine.Name)
 	return igntypes.Config{
 		Storage: igntypes.Storage{
 			Files: []igntypes.File{
@@ -83,7 +84,7 @@ func getIgnitionBaseConfig(machine *infrav1.IonosCloudMachine) igntypes.Config {
 					FileEmbedded1: igntypes.FileEmbedded1{
 						Mode: ptr.To(420),
 						Contents: igntypes.FileContents{
-							Source: metadata,
+							Source: "data:," + url.PathEscape(metadata),
 						},
 					},
 				},
