@@ -326,8 +326,7 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 	}
 
 	bootstrapFormat := FormatCloudInit
-	f, exists := secret.Data["format"]
-	if exists {
+	if f, exists := secret.Data["format"]; exists {
 		bootstrapFormat = string(f)
 	}
 
@@ -482,16 +481,18 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 }
 
 func (*Service) enrichUserData(ms *scope.Machine, format string, userData string) (string, error) {
-	if format == FormatIgnition {
+	switch format {
+	case FormatIgnition:
 		enrichedData, err := enrichIgnitionConfig(ms.IonosMachine, []byte(userData))
 		if err != nil {
 			return "", fmt.Errorf("couldn't enrich ignition config: %w", err)
 		}
 
 		return base64.StdEncoding.EncodeToString(enrichedData), nil
-	}
 
-	return enrichCloudInitConfig(ms.IonosMachine.Name, userData), nil
+	default:
+		return enrichCloudInitConfig(ms.IonosMachine.Name, userData), nil
+	}
 }
 
 func (*Service) serversURL(datacenterID string) string {

@@ -407,7 +407,7 @@ spec:
       preKubeadmCommands:
         - rm /etc/ionoscloud-env
         - envsubst < /etc/kubeadm.yml > /etc/kubeadm.yml.tmp
-        - mv /etc/kubeadm.yml.tmp /etc/kubeadm.yml
+        - cp /etc/kubeadm.yml.tmp /etc/kubeadm.yml
       postKubeadmCommands:
       - export system_uuid=$(kubectl --kubeconfig /etc/kubernetes/kubelet.conf get
         node $(hostname) -ojsonpath='{..systemUUID }')
