@@ -68,7 +68,7 @@ providers:
           - sourcePath: "../data/infrastructure-ionoscloud/cluster-template-image-selector.yaml"
 variables:
   # Default variables for the e2e test; those values could be overridden via env variables, thus
-  # allowing the same e2e config file to be re-used in different Prow jobs e.g. each one with a K8s version permutation.
+  # allowing the same e2e config file to be reused in different Prow jobs e.g. each one with a K8s version permutation.
   # The following Kubernetes versions should be the latest versions with already published kindest/node images.
   # This avoids building node images in the default case which improves the test duration significantly.
   KUBERNETES_VERSION: "v1.30.6"
