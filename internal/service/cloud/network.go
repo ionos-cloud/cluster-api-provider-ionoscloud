@@ -24,7 +24,6 @@ import (
 	"path"
 	"slices"
 
-	"github.com/google/go-cmp/cmp"
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -165,7 +164,7 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 
 	for _, l := range *lans.Items {
 		// Use an existing LAN if it's specified in the spec.
-		if ms.IonosMachine.Spec.LanID != nil && cmp.Equal(l.GetId(), ms.IonosMachine.Spec.LanID) {
+		if ms.IonosMachine.Spec.LanID != nil && ptr.Equal(l.GetId(), ms.IonosMachine.Spec.LanID) {
 			return &l, nil
 		}
 
@@ -181,7 +180,7 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 		}
 	}
 
-	if ms.IonosMachine.Spec.LanID != nil && !cmp.Equal(foundLAN.GetId(), ms.IonosMachine.Spec.LanID) {
+	if ms.IonosMachine.Spec.LanID != nil && !ptr.Equal(foundLAN.GetId(), ms.IonosMachine.Spec.LanID) {
 		return nil, fmt.Errorf("LAN with ID %s not found", *ms.IonosMachine.Spec.LanID)
 	}
 
