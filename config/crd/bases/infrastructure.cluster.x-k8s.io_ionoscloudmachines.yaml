@@ -321,7 +321,7 @@ spec:
               lanID:
                 description: |-
                   LanID is the ID of the LAN if an existing LAN is required.
-                  a typical use-case is when an existing LAN has a Failover Group and the FailoverIP configured.
+                  A typical use-case is when an existing LAN has a Failover Group and the FailoverIP configured.
                   This field is used when the Failover Group is created in another LAN.
 
                   If the machine is a control plane machine, this field will not be taken into account.
