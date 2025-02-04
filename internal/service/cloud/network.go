@@ -164,7 +164,7 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 
 	for _, l := range *lans.Items {
 		// Use an existing LAN if it's specified in the spec.
-		if ms.IonosMachine.Spec.LanID != nil && ptr.Equal(l.GetId(), ms.IonosMachine.Spec.LanID) {
+		if ms.IonosMachine.Spec.NetworkID != nil && ptr.Equal(l.GetId(), ms.IonosMachine.Spec.NetworkID) {
 			return &l, nil
 		}
 
@@ -180,8 +180,8 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 		}
 	}
 
-	if ms.IonosMachine.Spec.LanID != nil && !ptr.Equal(foundLAN.GetId(), ms.IonosMachine.Spec.LanID) {
-		return nil, fmt.Errorf("LAN with ID %s not found", *ms.IonosMachine.Spec.LanID)
+	if ms.IonosMachine.Spec.NetworkID != nil && !ptr.Equal(foundLAN.GetId(), ms.IonosMachine.Spec.NetworkID) {
+		return nil, fmt.Errorf("LAN with ID %s not found", *ms.IonosMachine.Spec.NetworkID)
 	}
 
 	return foundLAN, nil

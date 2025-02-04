@@ -103,7 +103,7 @@ func (s *lanSuite) TestNetworkGetLAN_ExistingLAN() {
 	lan := s.exampleLAN()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 
-	s.machineScope.IonosMachine.Spec.LanID = ptr.To("42")
+	s.machineScope.IonosMachine.Spec.NetworkID = ptr.To("42")
 	foundLAN, err := s.service.getLAN(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.NotNil(foundLAN)
@@ -114,9 +114,9 @@ func (s *lanSuite) TestNetworkGetLAN_LANIDNotFound() {
 	lan := s.exampleLAN()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 
-	s.machineScope.IonosMachine.Spec.LanID = ptr.To("2")
+	s.machineScope.IonosMachine.Spec.NetworkID = ptr.To("2")
 	foundLAN, err := s.service.getLAN(s.ctx, s.machineScope)
-	s.Error(err, "LAN with ID 2 not found")
+	s.EqualError(err, "LAN with ID 2 not found")
 	s.Nil(foundLAN)
 }
 

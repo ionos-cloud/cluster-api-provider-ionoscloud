@@ -341,18 +341,6 @@ spec:
                           rule: self.kind == 'InClusterIPPool' || self.kind == 'GlobalInClusterIPPool'
                         - message: ipv6PoolRef.name is required
                           rule: self.name != ''
-                      lanID:
-                        description: |-
-                          LanID is the ID of the LAN if an existing LAN is required.
-                          A typical use-case is when an existing LAN has a Failover Group and the FailoverIP configured.
-                          This field is used when the Failover Group is created in another LAN.
-
-                          If the machine is a control plane machine, this field will not be taken into account.
-                        minLength: 1
-                        type: string
-                        x-kubernetes-validations:
-                        - message: lanID is immutable
-                          rule: self == oldSelf
                       memoryMB:
                         default: 3072
                         description: |-
@@ -363,6 +351,12 @@ spec:
                         minimum: 2048
                         multipleOf: 1024
                         type: integer
+                      networkID:
+                        minLength: 1
+                        type: string
+                        x-kubernetes-validations:
+                        - message: lanID is immutable
+                          rule: self == oldSelf
                       numCores:
                         default: 1
                         description: NumCores defines the number of cores for the
