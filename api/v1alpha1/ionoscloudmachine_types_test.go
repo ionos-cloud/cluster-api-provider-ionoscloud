@@ -457,31 +457,31 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 		})
 	})
-	Context("LanID", func() {
-		It("should allow setting an existing LanID in the spec", func() {
+	Context("NetworkID", func() {
+		It("should allow setting an existing NetworkID in the spec", func() {
 			m := defaultMachine()
-			m.Spec.LanID = ptr.To("1")
+			m.Spec.NetworkID = ptr.To("1")
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(m.Spec.LanID).To(Equal(ptr.To("1")))
+			Expect(m.Spec.NetworkID).To(Equal(ptr.To("1")))
 		})
 		It("should allow setting null", func() {
 			m := defaultMachine()
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(m.Spec.LanID).To(BeNil())
+			Expect(m.Spec.NetworkID).To(BeNil())
 		})
-		It("should not allow setting empty LanID", func() {
+		It("should not allow setting empty NetworkID", func() {
 			m := defaultMachine()
-			m.Spec.LanID = ptr.To("")
+			m.Spec.NetworkID = ptr.To("")
 			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 		})
 		It("should be immutable", func() {
 			m := defaultMachine()
-			m.Spec.LanID = ptr.To("1")
+			m.Spec.NetworkID = ptr.To("1")
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(m.Spec.LanID).To(Equal(ptr.To("1")))
-			m.Spec.LanID = ptr.To("2")
+			Expect(m.Spec.NetworkID).To(Equal(ptr.To("1")))
+			m.Spec.NetworkID = ptr.To("2")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
-			m.Spec.LanID = ptr.To("")
+			m.Spec.NetworkID = ptr.To("")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 		})
 	})
