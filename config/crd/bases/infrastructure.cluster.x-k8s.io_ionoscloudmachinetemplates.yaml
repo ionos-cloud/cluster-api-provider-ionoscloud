@@ -351,6 +351,12 @@ spec:
                         minimum: 2048
                         multipleOf: 1024
                         type: integer
+                      networkID:
+                        minLength: 1
+                        type: string
+                        x-kubernetes-validations:
+                        - message: lanID is immutable
+                          rule: self == oldSelf
                       numCores:
                         default: 1
                         description: NumCores defines the number of cores for the

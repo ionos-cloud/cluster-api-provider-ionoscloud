@@ -34,3 +34,15 @@ func Deref[T any](ptr *T, def T) T {
 	}
 	return def
 }
+
+// Equal returns true if both arguments are nil or both arguments
+// dereference to the same value.
+func Equal[T comparable](a, b *T) bool {
+	if (a == nil) != (b == nil) {
+		return false
+	}
+	if a == nil {
+		return true
+	}
+	return *a == *b
+}
