@@ -124,10 +124,20 @@ type IonosCloudMachineSpec struct {
 	NumCores int32 `json:"numCores,omitempty"`
 
 	// AvailabilityZone is the availability zone in which the VM should be provisioned.
-	//+kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2
-	//+kubebuilder:default=AUTO
+	// AvailabilityZone is mutually exclusive with AvailabilityZones.
+	// If specified, AvailabilityZone will be used to provision the VM.
+	// +kubebuilder:validation:default=AUTO
+	// +kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2
 	//+optional
-	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
+	AvailabilityZone *AvailabilityZone `json:"availabilityZone,omitempty"`
+
+	// AvailabilityZones is the list of availability zones where the VM should be provisioned.
+	// AvailabilityZones is mutually exclusive with AvailabilityZone.
+	// If specified, and the machine is a CP the VM will be created in one of the specified availability zones.
+	// +kube:validation:MinItems=1
+	// +kubebuilder:validation:items:Enum=ZONE_1;ZONE_2
+	//+optional
+	AvailabilityZones []AvailabilityZone `json:"availabilityZones,omitempty"`
 
 	// MemoryMB is the memory size for the VM in MB.
 	// Size must be specified in multiples of 256 MB with a minimum of 1024 MB
@@ -216,9 +226,9 @@ type Volume struct {
 	SizeGB int `json:"sizeGB,omitempty"`
 
 	// AvailabilityZone is the availability zone where the volume will be created.
-	//+kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2;ZONE_3
-	//+kubebuilder:default=AUTO
-	//+optional
+	// +kubebuilder:validation:Enum=AUTO;ZONE_1;ZONE_2;ZONE_3
+	// +kubebuilder:default=AUTO
+	// +optional
 	AvailabilityZone AvailabilityZone `json:"availabilityZone,omitempty"`
 
 	// Image is the image to use for the VM.
