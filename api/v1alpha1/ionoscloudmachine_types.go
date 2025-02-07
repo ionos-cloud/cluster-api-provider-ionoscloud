@@ -106,6 +106,7 @@ func (a ServerType) String() string {
 }
 
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.networkID) || has(self.networkID)", message="networkID is required once set"
 type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
@@ -172,12 +173,12 @@ type IonosCloudMachineSpec struct {
 	// A typical use-case is when an existing LAN has a Failover Group and the FailoverIP configured.
 	// This field is used when the Failover Group is created in another LAN.
 	//
-	// If the machine is a control plane machine, this field will not be taken into account.
+	// If tLhe machine is a control plane machine, this field will not be taken into account.
+	// The LAN must be public and IPv6 enabled.
 	// +optional
 	// +immutable
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="lanID is immutable"
 	// +kubebuilder:validation:MinLength=1
-
 	NetworkID *string `json:"networkID,omitempty"`
 
 	// Type is the server type of the VM. Can be either ENTERPRISE or VCPU.

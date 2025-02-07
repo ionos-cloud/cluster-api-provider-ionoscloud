@@ -483,6 +483,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 			m.Spec.NetworkID = ptr.To("")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+			m.Spec.NetworkID = nil
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 		})
 	})
 	Context("ServerType", func() {

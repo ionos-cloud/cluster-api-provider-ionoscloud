@@ -180,7 +180,7 @@ func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, erro
 		}
 	}
 
-	if ms.IonosMachine.Spec.NetworkID != nil && !ptr.Equal(foundLAN.GetId(), ms.IonosMachine.Spec.NetworkID) {
+	if ms.IonosMachine.Spec.NetworkID != nil {
 		return nil, fmt.Errorf("LAN with ID %s not found", *ms.IonosMachine.Spec.NetworkID)
 	}
 

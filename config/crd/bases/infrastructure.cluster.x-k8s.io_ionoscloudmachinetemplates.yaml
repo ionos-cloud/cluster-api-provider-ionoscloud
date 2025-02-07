@@ -352,6 +352,13 @@ spec:
                         multipleOf: 1024
                         type: integer
                       networkID:
+                        description: |-
+                          NetworkID is the ID of the LAN if an existing LAN is required.
+                          A typical use-case is when an existing LAN has a Failover Group and the FailoverIP configured.
+                          This field is used when the Failover Group is created in another LAN.
+
+                          If tLhe machine is a control plane machine, this field will not be taken into account.
+                          The LAN must be public and IPv6 enabled.
                         minLength: 1
                         type: string
                         x-kubernetes-validations:
@@ -384,6 +391,9 @@ spec:
                     - datacenterID
                     - disk
                     type: object
+                    x-kubernetes-validations:
+                    - message: networkID is required once set
+                      rule: '!has(oldSelf.networkID) || has(self.networkID)'
                 required:
                 - spec
                 type: object
