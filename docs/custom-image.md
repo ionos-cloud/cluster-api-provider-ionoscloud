@@ -104,7 +104,7 @@ curl -H "Authorization: Bearer <JWT>" -H "Content-Type: application/json" -X POS
     https://api.ionos.com/cloudapi/v6/images/<image-id>/labels -d '{"properties":{"key":"<some key>","value":"<some value>"}}'
 ```
 
-Now, you can set the key and value as `IONOSCLOUD_IMAGE_LABEL_KEY` and `IONOSCLOUD_IMAGE_LABEL_VALUE` environment variables.
+Now, you can set the key and value as `IONOSCLOUD_MACHINE_IMAGE_LABEL_KEY` and `IONOSCLOUD_MACHINE_IMAGE_LABEL_VALUE` environment variables.
 Your custom image will then be used when using the [`auto-image`](/templates/cluster-template-auto-image.yaml) template.
 
 Given the correct labels the Kubernetes version is the only value that needs to be updated for version upgrades.

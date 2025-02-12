@@ -288,12 +288,13 @@ spec:
       datacenterID: ${IONOSCLOUD_DATACENTER_ID}
       numCores: ${IONOSCLOUD_MACHINE_NUM_CORES:-4}
       memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB:-8192}
+      type: ${IONOSCLOUD_MACHINE_TYPE:-VCPU}
       disk:
         image:
           selector:
-            resolutionPolicy: ${IONOSCLOUD_IMAGE_RESOLUTION_POLICY:-Newest}
+            resolutionPolicy: ${IONOSCLOUD_MACHINE_IMAGE_RESOLUTION_POLICY:-Newest}
             matchLabels:
-              ${IONOSCLOUD_IMAGE_LABEL_KEY}: ${IONOSCLOUD_IMAGE_LABEL_VALUE}
+              ${IONOSCLOUD_MACHINE_IMAGE_LABEL_KEY}: ${IONOSCLOUD_MACHINE_IMAGE_LABEL_VALUE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -334,12 +335,13 @@ spec:
       datacenterID: ${IONOSCLOUD_DATACENTER_ID}
       numCores: ${IONOSCLOUD_MACHINE_NUM_CORES:-2}
       memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB:-4096}
+      type: ${IONOSCLOUD_MACHINE_TYPE:-VCPU}
       disk:
         image:
           selector:
-            resolutionPolicy: ${IONOSCLOUD_IMAGE_RESOLUTION_POLICY:-Newest}
+            resolutionPolicy: ${IONOSCLOUD_MACHINE_IMAGE_RESOLUTION_POLICY:-Newest}
             matchLabels:
-              ${IONOSCLOUD_IMAGE_LABEL_KEY}: ${IONOSCLOUD_IMAGE_LABEL_VALUE}
+              ${IONOSCLOUD_MACHINE_IMAGE_LABEL_KEY}: ${IONOSCLOUD_MACHINE_IMAGE_LABEL_VALUE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
