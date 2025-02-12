@@ -171,7 +171,8 @@ spec:
           variable: workerMemoryMB
       - op: add
         path: /spec/template/spec/type
-        valueFrom: workerType
+        valueFrom:
+          variable: workerType
       - op: add
         path: /spec/template/spec/disk/image/id
         valueFrom:
@@ -196,7 +197,8 @@ spec:
           variable: controlPlaneMemoryMB
       - op: add
         path: /spec/template/spec/type
-        valueFrom: controlPlaneType
+        valueFrom:
+          variable: controlPlaneType
       - op: add
         path: /spec/template/spec/disk/image/id
         valueFrom:
