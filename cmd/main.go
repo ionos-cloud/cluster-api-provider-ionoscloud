@@ -30,6 +30,7 @@ import (
 	logsv1 "k8s.io/component-base/logs/api/v1"
 	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/remote"
 	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -43,9 +44,12 @@ import (
 var (
 	scheme               = runtime.NewScheme()
 	setupLog             = ctrl.Log.WithName("setup")
+	controllerName       = "cluster-api-ionoscloud-controller-manager"
 	healthProbeAddr      string
 	enableLeaderElection bool
 	managerOptions       = flags.ManagerOptions{}
+	restConfigQPS        float32
+	restConfigBurst      int
 	logOptions           = logs.NewOptions()
 
 	icClusterConcurrency int
@@ -80,13 +84,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	restConfig := ctrl.GetConfigOrDie()
+	restConfig.QPS = restConfigQPS
+	restConfig.Burst = restConfigBurst
+	restConfig.UserAgent = remote.DefaultClusterAPIUserAgent(controllerName)
+
 	_, metricsOptions, err := flags.GetManagerOptions(managerOptions)
 	if err != nil {
 		setupLog.Error(err, "unable to get manager options")
 		os.Exit(1)
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	mgr, err := ctrl.NewManager(restConfig, ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                *metricsOptions,
 		HealthProbeBindAddress: healthProbeAddr,
@@ -159,4 +168,8 @@ func initFlags() {
 		"Number of IonosCloudClusters to process simultaneously")
 	pflag.IntVar(&icMachineConcurrency, "ionoscloudmachine-concurrency", 1,
 		"Number of IonosCloudMachines to process simultaneously")
+	pflag.Float32Var(&restConfigQPS, "kube-api-qps", 20,
+		"Maximum queries per second from the controller client to the Kubernetes API server.")
+	pflag.IntVar(&restConfigBurst, "kube-api-burst", 30,
+		"Maximum number of queries that should be allowed in one burst from the controller client to the Kubernetes API server.")
 }
