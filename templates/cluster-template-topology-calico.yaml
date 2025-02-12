@@ -28,12 +28,16 @@ spec:
       value: ${IONOSCLOUD_MACHINE_NUM_CORES}
     - name: controlPlaneMemoryMB
       value: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+    - name: controlPlaneType:
+      value: ${IONOSCLOUD_MACHINE_TYPE:-VCPU}
     - name: controlPlaneImageID
       value: '${IONOSCLOUD_MACHINE_IMAGE_ID}'
     - name: workerNumCores
       value: ${IONOSCLOUD_MACHINE_NUM_CORES}
     - name: workerMemoryMB
       value: ${IONOSCLOUD_MACHINE_MEMORY_MB}
+    - name: workerType:
+      value: ${IONOSCLOUD_MACHINE_TYPE:-VCPU}
     - name: workerImageID
       value: '${IONOSCLOUD_MACHINE_IMAGE_ID}'
     version: '${KUBERNETES_VERSION}'

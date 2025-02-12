@@ -285,6 +285,7 @@ spec:
       datacenterID: ${IONOSCLOUD_DATACENTER_ID}
       numCores: ${IONOSCLOUD_MACHINE_NUM_CORES:-4}
       memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB:-8192}
+      type: ${IONOSCLOUD_MACHINE_TYPE:-VCPU}
       disk:
         image:
           id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
@@ -332,6 +333,7 @@ spec:
       datacenterID: ${IONOSCLOUD_DATACENTER_ID}
       numCores: ${IONOSCLOUD_MACHINE_NUM_CORES:-2}
       memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB:-4096}
+      type: ${IONOSCLOUD_MACHINE_TYPE:-VCPU}
       disk:
         image:
           id: ${IONOSCLOUD_MACHINE_IMAGE_ID}

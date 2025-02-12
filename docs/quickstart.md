@@ -57,11 +57,17 @@ KUBERNETES_VERSION                          # The version of Kubernetes to be in
 
 ## -- Kubernetes Cluster-related environment variables -- ##
 IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluster should be created.
+IONOSCLOUD_MACHINE_TYPE                     # The server type (optional)
+                                            #   Default to VCPU.
 IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores (optional).
                                             #   Defaults to 4 for control plane and 2 for worker nodes.
 IONOSCLOUD_MACHINE_MEMORY_MB                # The memory in MB (optional).
                                             #   Defaults to 8192 for control plane and 4096 for worker nodes.
 IONOSCLOUD_MACHINE_IMAGE_ID                 # The image ID.
+IONOSCLOUD_MACHINE_IMAGE_LABEL_KEY          # Label key used for image lookup. Only used for the auto-image template.
+IONOSCLOUD_MACHINE_IMAGE_LABEL_VALUE        # Label value used for image lookup. Only used for the auto-image template.
+IONOSCLOUD_MACHINE_IMAGE_RESOLUTION_POLICY  # Image resolution policy. Only used for the auto-image template.
+                                            #   Defaults to Newest.
 IONOSCLOUD_MACHINE_SSH_KEYS                 # The SSH keys to be used.
 ```
 
@@ -177,8 +183,8 @@ need to generate a manifest. Simply use our Makefile:
 
 ```
 make crs-calico
-
 ```
+
 Now install the ConfigMap into your k8s:
 
 ```
