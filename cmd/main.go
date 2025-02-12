@@ -26,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/component-base/logs"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
@@ -44,6 +46,7 @@ var (
 	healthProbeAddr      string
 	enableLeaderElection bool
 	managerOptions       = flags.ManagerOptions{}
+	logOptions           = logs.NewOptions()
 
 	icClusterConcurrency int
 	icMachineConcurrency int
@@ -66,7 +69,16 @@ func init() {
 func main() {
 	ctrl.SetLogger(klog.Background())
 	initFlags()
+	// Set log level 2 as default.
+	if err := pflag.CommandLine.Set("v", "2"); err != nil {
+		setupLog.Error(err, "Failed to set default log level")
+		os.Exit(1)
+	}
 	pflag.Parse()
+	if err := logsv1.ValidateAndApply(logOptions, nil); err != nil {
+		setupLog.Error(err, "Unable to start manager")
+		os.Exit(1)
+	}
 
 	_, metricsOptions, err := flags.GetManagerOptions(managerOptions)
 	if err != nil {
@@ -134,6 +146,7 @@ func main() {
 
 // initFlags parses the command line flags.
 func initFlags() {
+	logsv1.AddFlags(logOptions, pflag.CommandLine)
 	klog.InitFlags(nil)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	flags.AddManagerOptions(pflag.CommandLine, &managerOptions)
