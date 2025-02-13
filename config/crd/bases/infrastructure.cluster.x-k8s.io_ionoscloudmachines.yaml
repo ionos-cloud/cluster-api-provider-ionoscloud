@@ -334,12 +334,12 @@ spec:
                   A typical use-case is when an existing LAN has a Failover Group and the FailoverIP configured.
                   This field is used when the Failover Group is created in another LAN.
 
-                  If tLhe machine is a control plane machine, this field will not be taken into account.
+                  If the machine is a control plane machine, this field will not be taken into account.
                   The LAN must be public and IPv6 enabled.
                 minLength: 1
                 type: string
                 x-kubernetes-validations:
-                - message: lanID is immutable
+                - message: networkID is immutable
                   rule: self == oldSelf
               numCores:
                 default: 1
