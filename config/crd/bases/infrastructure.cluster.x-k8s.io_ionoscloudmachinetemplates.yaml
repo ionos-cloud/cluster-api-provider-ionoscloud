@@ -357,7 +357,6 @@ spec:
                           A typical use-case is when an existing LAN has a Failover Group and the FailoverIP configured.
                           This field is used when the Failover Group is created in another LAN.
 
-                          If the machine is a control plane machine, this field will not be taken into account.
                           The LAN must be public and IPv6 enabled.
                         minLength: 1
                         type: string
