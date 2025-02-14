@@ -457,6 +457,36 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 		})
 	})
+	Context("NetworkID", func() {
+		It("should allow setting an existing NetworkID in the spec", func() {
+			m := defaultMachine()
+			m.Spec.NetworkID = ptr.To("1")
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.NetworkID).To(Equal(ptr.To("1")))
+		})
+		It("should allow setting null", func() {
+			m := defaultMachine()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.NetworkID).To(BeNil())
+		})
+		It("should not allow setting empty NetworkID", func() {
+			m := defaultMachine()
+			m.Spec.NetworkID = ptr.To("")
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+		It("should be immutable", func() {
+			m := defaultMachine()
+			m.Spec.NetworkID = ptr.To("1")
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.NetworkID).To(Equal(ptr.To("1")))
+			m.Spec.NetworkID = ptr.To("2")
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+			m.Spec.NetworkID = ptr.To("")
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+			m.Spec.NetworkID = nil
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+		})
+	})
 	Context("ServerType", func() {
 		It("should default to ENTERPRISE", func() {
 			m := defaultMachine()
