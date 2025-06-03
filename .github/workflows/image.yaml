@@ -50,7 +50,7 @@ jobs:
 
       - name: Scan image
         if: github.event_name == 'pull_request'
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.31.0
         with:
           scan-ref: ${{ steps.meta.outputs.tags }}
           exit-code: '1'
