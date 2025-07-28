@@ -1,6 +1,6 @@
 module github.com/ionos-cloud/cluster-api-provider-ionoscloud
 
-go 1.24.3
+go 1.24.5
 
 require (
 	github.com/go-logr/logr v1.4.2
@@ -120,7 +120,7 @@ require (
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/oauth2 v0.21.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
