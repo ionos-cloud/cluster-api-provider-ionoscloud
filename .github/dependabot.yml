@@ -2,19 +2,6 @@
 version: 2
 updates:
 - package-ecosystem: "gomod"
-  directory: "/tools/"
-  schedule:
-    interval: "daily"
-  commit-message:
-    prefix: ":seedling:"
-  groups:
-    all-go-mod-patch-and-minor:
-      patterns: ["*"]
-      update-types: ["patch", "minor"]
-  labels:
-  - "area/dependency"
-
-- package-ecosystem: "gomod"
   directory: "/"
   schedule:
     interval: "daily"
