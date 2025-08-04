@@ -60,13 +60,13 @@ cover: ## Print the test coverage.
 
 .PHONY: lint
 lint: ## Run lint.
-	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml
+	go tool golangci-lint run --timeout 5m -c .golangci.yml
 
 .PHONY: lint-fix
 lint-fix: ## Fix linter problems.
 	# gci collides with gofumpt. But if we run gci before gofumpt, this will solve the issue.
-	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml --enable-only gci --fix
-	go run -modfile ./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout 5m -c .golangci.yml --fix
+	go tool golangci-lint run --timeout 5m -c .golangci.yml --enable-only gci --fix
+	go tool golangci-lint run --timeout 5m -c .golangci.yml --fix
 
 .PHONY: vet
 vet: ## Run go vet against code.
@@ -202,7 +202,7 @@ $(ENVTEST): $(LOCALBIN)
 
 .PHONY: mocks
 mocks:
-	go run -modfile ./tools/go.mod github.com/vektra/mockery/v2
+	go tool mockery
 
 # CI
 
