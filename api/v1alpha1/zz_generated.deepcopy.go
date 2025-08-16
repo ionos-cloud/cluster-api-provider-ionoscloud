@@ -371,6 +371,16 @@ func (in *IonosCloudMachineSpec) DeepCopyInto(out *IonosCloudMachineSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.AvailabilityZone != nil {
+		in, out := &in.AvailabilityZone, &out.AvailabilityZone
+		*out = new(AvailabilityZone)
+		**out = **in
+	}
+	if in.AvailabilityZones != nil {
+		in, out := &in.AvailabilityZones, &out.AvailabilityZones
+		*out = make([]AvailabilityZone, len(*in))
+		copy(*out, *in)
+	}
 	if in.CPUFamily != nil {
 		in, out := &in.CPUFamily, &out.CPUFamily
 		*out = new(string)

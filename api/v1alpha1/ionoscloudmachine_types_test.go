@@ -43,7 +43,7 @@ func defaultMachine() *IonosCloudMachine {
 			ProviderID:       ptr.To("ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
 			DatacenterID:     "ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
 			NumCores:         1,
-			AvailabilityZone: AvailabilityZoneTwo,
+			AvailabilityZone: ptr.To(AvailabilityZoneTwo),
 			MemoryMB:         2048,
 			CPUFamily:        ptr.To("AMD_OPTERON"),
 			Disk: &Volume{
@@ -162,24 +162,18 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		})
 
 		Context("Availability zone", func() {
-			It("should default to AUTO", func() {
-				m := defaultMachine()
-				// because AvailabilityZone is a string, setting the value as "" is the same as not setting anything
-				m.Spec.AvailabilityZone = ""
-				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(m.Spec.AvailabilityZone).To(Equal(AvailabilityZoneAuto))
-			})
 			It("should fail if not part of the enum", func() {
 				m := defaultMachine()
-				m.Spec.AvailabilityZone = "this-should-not-work"
+				var unknown AvailabilityZone = "this-should-not-work"
+				m.Spec.AvailabilityZone = ptr.To(unknown)
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 			DescribeTable("should work for value",
 				func(zone AvailabilityZone) {
 					m := defaultMachine()
-					m.Spec.AvailabilityZone = zone
+					m.Spec.AvailabilityZone = &zone
 					Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-					Expect(m.Spec.AvailabilityZone).To(Equal(zone))
+					Expect(ptr.Deref(m.Spec.AvailabilityZone, "")).To(Equal(zone))
 				},
 				Entry("AUTO", AvailabilityZoneAuto),
 				Entry("ZONE_1", AvailabilityZoneOne),
@@ -187,7 +181,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			)
 			It("Should fail for ZONE_3", func() {
 				m := defaultMachine()
-				m.Spec.AvailabilityZone = AvailabilityZoneThree
+				m.Spec.AvailabilityZone = ptr.To(AvailabilityZoneThree)
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			})
 		})

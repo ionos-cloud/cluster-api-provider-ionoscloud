@@ -115,7 +115,7 @@ func (s *IpamTestSuite) SetupTest() {
 			ProviderID:       ptr.To("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),
 			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
 			NumCores:         2,
-			AvailabilityZone: infrav1.AvailabilityZoneAuto,
+			AvailabilityZone: ptr.To(infrav1.AvailabilityZoneAuto),
 			MemoryMB:         4096,
 			CPUFamily:        ptr.To("AMD_OPTERON"),
 			Disk: &infrav1.Volume{

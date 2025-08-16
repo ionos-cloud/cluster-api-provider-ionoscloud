@@ -17,6 +17,7 @@ limitations under the License.
 package cloud
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"path"
@@ -28,6 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
@@ -444,6 +446,72 @@ func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
 	server, err := s.service.getServer(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.NotNil(server)
+}
+
+func (s *serverSuite) TestReconcileAvailabilityZoneDefault() {
+	// Given
+	s.machineScope.IonosMachine.Spec.AvailabilityZone = nil
+
+	err := reconcileAvailabilityZone(context.Background(), s.machineScope)
+	s.NoError(err)
+	s.Equal(infrav1.AvailabilityZoneAuto, ptr.Deref(s.machineScope.IonosMachine.Spec.AvailabilityZone, ""))
+}
+
+func (s *serverSuite) TestReconcileAvailabilityZoneDistribute() {
+	// First Machine
+	// Given
+	s.capiMachine.Labels[clusterv1.MachineControlPlaneLabel] = ""
+	s.infraMachine.Labels[clusterv1.MachineControlPlaneLabel] = ""
+	s.machineScope.IonosMachine.Spec.AvailabilityZone = nil
+	s.machineScope.IonosMachine.Spec.AvailabilityZones = []infrav1.AvailabilityZone{infrav1.AvailabilityZoneOne, infrav1.AvailabilityZoneTwo}
+
+	err := reconcileAvailabilityZone(context.Background(), s.machineScope)
+	s.NoError(err)
+	s.Equal(infrav1.AvailabilityZoneOne, ptr.Deref(s.machineScope.IonosMachine.Spec.AvailabilityZone, ""))
+
+	// Update the machine to distribute
+	err = s.k8sClient.Update(context.Background(), s.machineScope.IonosMachine)
+	s.NoError(err)
+
+	// Second Machine
+	machine := &infrav1.IonosCloudMachine{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "test-cp-2",
+			Labels: map[string]string{
+				clusterv1.ClusterNameLabel:         s.capiCluster.Name,
+				clusterv1.MachineControlPlaneLabel: "",
+			},
+		},
+		Spec: infrav1.IonosCloudMachineSpec{
+			ProviderID:        ptr.To("ionos://" + exampleServerID),
+			DatacenterID:      "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
+			NumCores:          2,
+			AvailabilityZones: []infrav1.AvailabilityZone{infrav1.AvailabilityZoneOne, infrav1.AvailabilityZoneTwo},
+			MemoryMB:          4096,
+			CPUFamily:         ptr.To("AMD_OPTERON"),
+			Disk: &infrav1.Volume{
+				Name:             "test-cp-2-hdd",
+				DiskType:         infrav1.VolumeDiskTypeHDD,
+				SizeGB:           20,
+				AvailabilityZone: infrav1.AvailabilityZoneAuto,
+				Image: &infrav1.ImageSpec{
+					ID: "3e3e3e3e-3e3e-3e3e-3e3e-3e3e3e3e3e3e",
+				},
+			},
+			Type: infrav1.ServerTypeEnterprise,
+		},
+		Status: infrav1.IonosCloudMachineStatus{},
+	}
+
+	err = s.k8sClient.Create(context.Background(), machine)
+	s.NoError(err)
+
+	s.machineScope.IonosMachine = machine
+
+	err = reconcileAvailabilityZone(context.Background(), s.machineScope)
+	s.NoError(err)
+	s.Equal(infrav1.AvailabilityZoneTwo, ptr.Deref(s.machineScope.IonosMachine.Spec.AvailabilityZone, ""))
 }
 
 //nolint:unused
