@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capierrors "sigs.k8s.io/cluster-api/errors"
+	capierrors "sigs.k8s.io/cluster-api/errors" //nolint:staticcheck
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -101,14 +101,14 @@ func TestMachineParamsNilLockerShouldFail(t *testing.T) {
 func TestMachineHasFailedFailureMessage(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
-	scope.IonosMachine.Status.FailureMessage = ptr.To("¯\\_(ツ)_/¯")
+	scope.IonosMachine.Status.FailureMessage = ptr.To("¯\\_(ツ)_/¯") //nolint:staticcheck
 	require.True(t, scope.HasFailed())
 }
 
 func TestMachineHasFailedFailureReason(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
-	scope.IonosMachine.Status.FailureReason = (*capierrors.MachineStatusError)(ptr.To("¯\\_(ツ)_/¯"))
+	scope.IonosMachine.Status.FailureReason = (*capierrors.MachineStatusError)(ptr.To("¯\\_(ツ)_/¯")) //nolint:staticcheck
 	require.True(t, scope.HasFailed())
 }
 
