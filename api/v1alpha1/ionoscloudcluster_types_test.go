@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -67,29 +66,29 @@ func defaultCluster() *IonosCloudCluster {
 
 var _ = Describe("IonosCloudCluster", func() {
 	AfterEach(func() {
-		err := k8sClient.Delete(context.Background(), defaultCluster())
+		err := k8sClient.Delete(GinkgoT().Context(), defaultCluster())
 		Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred())
 	})
 
 	Context("Create", func() {
 		It("should allow creating valid clusters", func() {
-			Expect(k8sClient.Create(context.Background(), defaultCluster())).To(Succeed())
+			Expect(k8sClient.Create(GinkgoT().Context(), defaultCluster())).To(Succeed())
 		})
 		It("should work with a FQDN controlplane endpoint", func() {
 			cluster := defaultCluster()
 			cluster.Spec.ControlPlaneEndpoint.Host = "example.org"
-			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+			Expect(k8sClient.Create(GinkgoT().Context(), cluster)).To(Succeed())
 		})
 		It("should not allow creating clusters with empty credential secret", func() {
 			cluster := defaultCluster()
 			cluster.Spec.CredentialsRef.Name = ""
-			Expect(k8sClient.Create(context.Background(), cluster)).
+			Expect(k8sClient.Create(GinkgoT().Context(), cluster)).
 				Should(MatchError(ContainSubstring("credentialsRef.name must be provided")))
 		})
 		It("should not allow creating clusters with empty location when loadBalancerProviderRef is set", func() {
 			cluster := defaultCluster()
 			cluster.Spec.Location = ""
-			Expect(k8sClient.Create(context.Background(), cluster)).
+			Expect(k8sClient.Create(GinkgoT().Context(), cluster)).
 				Should(MatchError(ContainSubstring("location is required when loadBalancerProviderRef is set")))
 		})
 		It("should allow creating clusters with empty location and ControlPlaneEndpoint host when loadBalancerProviderRef is not set", func() {
@@ -97,45 +96,45 @@ var _ = Describe("IonosCloudCluster", func() {
 			cluster.Spec.LoadBalancerProviderRef = nil
 			cluster.Spec.Location = ""
 			cluster.Spec.ControlPlaneEndpoint.Host = ""
-			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+			Expect(k8sClient.Create(GinkgoT().Context(), cluster)).To(Succeed())
 		})
 	})
 
 	Context("Update", func() {
 		It("should not allow changing the location", func() {
 			cluster := defaultCluster()
-			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+			Expect(k8sClient.Create(GinkgoT().Context(), cluster)).To(Succeed())
 
 			cluster.Spec.Location = newValueStr
-			Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
+			Expect(k8sClient.Update(GinkgoT().Context(), cluster)).ToNot(Succeed())
 		})
 
 		When("trying to update the control plane endpoint", func() {
 			It("should fail when attempting to set an invalid port number", func() {
 				cluster := defaultCluster()
-				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+				Expect(k8sClient.Create(GinkgoT().Context(), cluster)).To(Succeed())
 
 				cluster.Spec.ControlPlaneEndpoint.Port = 0
-				Expect(k8sClient.Update(context.Background(), cluster)).
+				Expect(k8sClient.Update(GinkgoT().Context(), cluster)).
 					Should(MatchError(ContainSubstring("port must be within 1-65535")))
 			})
 			It("should not fail when updating the endpoint correctly", func() {
 				cluster := defaultCluster()
-				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+				Expect(k8sClient.Create(GinkgoT().Context(), cluster)).To(Succeed())
 
 				cluster.Spec.ControlPlaneEndpoint.Port = 1234
 				cluster.Spec.ControlPlaneEndpoint.Host = "example.org"
-				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
+				Expect(k8sClient.Update(GinkgoT().Context(), cluster)).To(Succeed())
 			})
 			It("should not fail when when location is empty and loadBalancerProviderRef is not set", func() {
 				cluster := defaultCluster()
 				cluster.Spec.LoadBalancerProviderRef = nil
 				cluster.Spec.Location = ""
 				cluster.Spec.ControlPlaneEndpoint.Host = ""
-				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+				Expect(k8sClient.Create(GinkgoT().Context(), cluster)).To(Succeed())
 
 				cluster.Spec.ControlPlaneEndpoint = defaultCluster().Spec.ControlPlaneEndpoint
-				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
+				Expect(k8sClient.Update(GinkgoT().Context(), cluster)).To(Succeed())
 			})
 		})
 	})
@@ -144,11 +143,11 @@ var _ = Describe("IonosCloudCluster", func() {
 			By("initially having an empty status")
 
 			cluster := defaultCluster()
-			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+			Expect(k8sClient.Create(GinkgoT().Context(), cluster)).To(Succeed())
 
 			key := client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name}
 			fetched := &IonosCloudCluster{}
-			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
+			Expect(k8sClient.Get(GinkgoT().Context(), key, fetched)).To(Succeed())
 			Expect(fetched.Status.Ready).To(BeFalse())
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
 			Expect(fetched.Status.Conditions).To(BeEmpty())
@@ -166,9 +165,9 @@ var _ = Describe("IonosCloudCluster", func() {
 			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
 
 			By("updating the cluster status")
-			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
+			Expect(k8sClient.Status().Update(GinkgoT().Context(), fetched)).To(Succeed())
 
-			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
+			Expect(k8sClient.Get(GinkgoT().Context(), key, fetched)).To(Succeed())
 			Expect(fetched.Status.Ready).To(BeTrue())
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(HaveLen(1))
 			Expect(fetched.Status.CurrentRequestByDatacenter["123"]).To(Equal(wantProvisionRequest))
@@ -177,9 +176,9 @@ var _ = Describe("IonosCloudCluster", func() {
 
 			By("Removing the entry from the status again")
 			delete(fetched.Status.CurrentRequestByDatacenter, "123")
-			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
+			Expect(k8sClient.Status().Update(GinkgoT().Context(), fetched)).To(Succeed())
 
-			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
+			Expect(k8sClient.Get(GinkgoT().Context(), key, fetched)).To(Succeed())
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
 		})
 	})

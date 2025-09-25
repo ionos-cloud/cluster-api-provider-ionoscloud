@@ -22,7 +22,7 @@ In addition to that, we compiled a list of a few more things that are quite comm
 - Use correct variable and import alias names.
 - Wrap errors with fmt.Errorf(“...%w”, err) and compare them via errors.Is.
 - Contexts must be passed down the call stack and should be the first argument.
-- Do not use context.Background() or context.TODO(), except in tests.
+- Use testing.T.Context() GinkgoT().Context, suite.T().Context() in tests instead of context.Background/TODO().
 - Check Go Docs and comments for validity even in unchanged but affected places.
 - All public functions must be tested
 - Tests must run with enabled race detection.

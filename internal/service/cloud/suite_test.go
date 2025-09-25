@@ -95,7 +95,6 @@ type ServiceTestSuite struct {
 
 func (s *ServiceTestSuite) SetupSuite() {
 	s.log = logr.Discard()
-	s.ctx = context.Background()
 	s.Assertions = s.Require()
 }
 
@@ -105,6 +104,8 @@ func TestServiceTestSuite(t *testing.T) {
 
 func (s *ServiceTestSuite) SetupTest() {
 	var err error
+
+	s.ctx = s.T().Context()
 	s.ionosClient = clienttest.NewMockClient(s.T())
 
 	s.capiCluster = &clusterv1.Cluster{

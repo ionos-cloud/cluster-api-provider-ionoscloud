@@ -181,7 +181,7 @@ func TestCluster_GetControlPlaneEndpointIP(t *testing.T) {
 					},
 				},
 			}
-			got, err := c.GetControlPlaneEndpointIP(context.Background())
+			got, err := c.GetControlPlaneEndpointIP(t.Context())
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
 		})
@@ -272,7 +272,7 @@ func TestClusterListMachines(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, cs)
 
-			machines, err := cs.ListMachines(context.Background(), test.searchLabels)
+			machines, err := cs.ListMachines(t.Context(), test.searchLabels)
 			require.NoError(t, err)
 			require.Len(t, machines, len(test.expectedNames))
 
@@ -365,9 +365,8 @@ func TestCurrentRequestByDatacenterAccessors(t *testing.T) {
 	// If there is a concurrency issue, it will very likely become visible here.
 	var wg sync.WaitGroup
 	for i := range 10_000 {
-		wg.Add(1)
-		go func(t *testing.T, id string) {
-			defer wg.Done()
+		wg.Go(func() {
+			id := strconv.Itoa(i)
 
 			req, exists := cluster.GetCurrentRequestByDatacenter(id)
 			assert.False(t, exists)
@@ -386,7 +385,7 @@ func TestCurrentRequestByDatacenterAccessors(t *testing.T) {
 			req, exists = cluster.GetCurrentRequestByDatacenter(id)
 			assert.False(t, exists)
 			assert.Zero(t, req)
-		}(t, strconv.Itoa(i))
+		})
 	}
 
 	wg.Wait()
@@ -394,7 +393,7 @@ func TestCurrentRequestByDatacenterAccessors(t *testing.T) {
 	lockKey := cluster.currentRequestByDatacenterLockKey()
 	require.Equal(t, "uid/currentRequestByDatacenter", lockKey)
 
-	_ = cluster.Locker.Lock(context.Background(), lockKey)
+	_ = cluster.Locker.Lock(t.Context(), lockKey)
 	require.Empty(t, cluster.IonosCluster.Status.CurrentRequestByDatacenter)
 	cluster.Locker.Unlock(lockKey)
 }

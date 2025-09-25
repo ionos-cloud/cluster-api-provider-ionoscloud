@@ -59,12 +59,12 @@ type IpamTestSuite struct {
 
 func (s *IpamTestSuite) SetupSuite() {
 	s.log = logr.Discard()
-	s.ctx = context.Background()
 	s.Assertions = s.Require()
 }
 
 func (s *IpamTestSuite) SetupTest() {
 	var err error
+	s.ctx = s.T().Context()
 	s.ionosClient = clienttest.NewMockClient(s.T())
 
 	s.capiCluster = &clusterv1.Cluster{

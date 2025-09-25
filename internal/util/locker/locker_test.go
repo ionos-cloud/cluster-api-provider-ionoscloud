@@ -59,14 +59,14 @@ func TestLockWithCounter(t *testing.T) {
 
 func TestLockerLock(t *testing.T) {
 	l := New()
-	require.NoError(t, l.Lock(context.Background(), "test"))
+	require.NoError(t, l.Lock(t.Context(), "test"))
 	lwc := l.locks["test"]
 
 	require.EqualValues(t, 0, lwc.count())
 
 	chDone := make(chan struct{})
 	go func(t *testing.T) {
-		assert.NoError(t, l.Lock(context.Background(), "test"))
+		assert.NoError(t, l.Lock(t.Context(), "test"))
 		close(chDone)
 	}(t)
 
@@ -102,7 +102,7 @@ func TestLockerLock(t *testing.T) {
 func TestLockerUnlock(t *testing.T) {
 	l := New()
 
-	require.NoError(t, l.Lock(context.Background(), "test"))
+	require.NoError(t, l.Lock(t.Context(), "test"))
 	l.Unlock("test")
 
 	require.PanicsWithValue(t, "no such lock: test", func() {
@@ -110,7 +110,7 @@ func TestLockerUnlock(t *testing.T) {
 	})
 
 	withTimeout(t, func() {
-		require.NoError(t, l.Lock(context.Background(), "test"))
+		require.NoError(t, l.Lock(t.Context(), "test"))
 	})
 }
 
@@ -119,13 +119,12 @@ func TestLockerConcurrency(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 10_000 {
-		wg.Add(1)
-		go func(t *testing.T) {
-			assert.NoError(t, l.Lock(context.Background(), "test"))
+		wg.Go(func() {
+			require.NoError(t, l.Lock(t.Context(), "test"))
 			// If there is a concurrency issue, it will very likely become visible here.
 			l.Unlock("test")
 			wg.Done()
-		}(t)
+		})
 	}
 
 	withTimeout(t, wg.Wait)
@@ -135,7 +134,7 @@ func TestLockerConcurrency(t *testing.T) {
 }
 
 func TestLockerContextCanceled(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	l := New()
@@ -147,7 +146,7 @@ func TestLockerContextCanceled(t *testing.T) {
 }
 
 func TestLockerContextDeadlineExceeded(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Millisecond)
 	defer cancel()
 
 	l := New()

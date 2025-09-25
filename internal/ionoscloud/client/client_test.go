@@ -152,7 +152,7 @@ func TestIonosCloudClientTestSuite(t *testing.T) {
 
 func (s *IonosCloudClientTestSuite) SetupSuite() {
 	s.Assertions = s.Require()
-	s.ctx = context.Background()
+	s.ctx = s.T().Context()
 
 	var err error
 	s.client, err = NewClient("token", "localhost", nil)
