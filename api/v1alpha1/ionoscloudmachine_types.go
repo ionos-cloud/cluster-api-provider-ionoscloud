@@ -238,9 +238,9 @@ type Volume struct {
 }
 
 // ImageSpec defines the image to use for the VM.
-// +kubebuilder:validation:ExactlyOneOf=id;selector
+//+kubebuilder:validation:ExactlyOneOf=id;selector
 type ImageSpec struct {
-	// ID is the ID of the image to use for the VM. Has precedence over selector.
+	// ID is the ID of the image to use for the VM.
 	//
 	//+optional
 	ID string `json:"id,omitempty"`
