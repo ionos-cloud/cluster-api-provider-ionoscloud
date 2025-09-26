@@ -255,9 +255,10 @@ spec:
                                 type: object
                             type: object
                             x-kubernetes-validations:
-                            - message: must provide either id or selector
-                              rule: has(self.id) && !has(self.selector) || !has(self.id)
-                                && has(self.selector)
+                            - message: exactly one of the fields in [id selector]
+                                must be set
+                              rule: '[has(self.id),has(self.selector)].filter(x,x==true).size()
+                                == 1'
                           name:
                             description: Name is the name of the volume
                             type: string
