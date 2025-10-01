@@ -60,13 +60,13 @@ cover: ## Print the test coverage.
 
 .PHONY: lint
 lint: ## Run lint.
-	go tool golangci-lint run --timeout 5m -c .golangci.yml
+	$(GOLANGCI) run --timeout 5m -c .golangci.yml
 
 .PHONY: lint-fix
 lint-fix: ## Fix linter problems.
 	# gci collides with gofumpt. But if we run gci before gofumpt, this will solve the issue.
-	go tool golangci-lint run --timeout 5m -c .golangci.yml --enable-only gci --fix
-	go tool golangci-lint run --timeout 5m -c .golangci.yml --fix
+	$(GOLANGCI) run --timeout 5m -c .golangci.yml --enable-only gci --fix
+	$(GOLANGCI) run --timeout 5m -c .golangci.yml --fix
 
 .PHONY: vet
 vet: ## Run go vet against code.
@@ -175,6 +175,8 @@ KUBECTL ?= kubectl
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
+GOLANGCI ?= go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1
+MOCKERY ?= go run github.com/vektra/mockery/v2@v2
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.7.1
@@ -202,7 +204,7 @@ $(ENVTEST): $(LOCALBIN)
 
 .PHONY: mocks
 mocks:
-	go tool mockery
+	$(MOCKERY)
 
 # CI
 
