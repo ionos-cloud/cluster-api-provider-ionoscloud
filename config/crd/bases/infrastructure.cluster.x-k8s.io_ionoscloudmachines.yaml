@@ -200,7 +200,6 @@ spec:
                     properties:
                       id:
                         description: ID is the ID of the image to use for the VM.
-                          Has precedence over selector.
                         type: string
                       selector:
                         description: |-
