@@ -65,7 +65,8 @@ lint: ## Run lint.
 .PHONY: lint-fix
 lint-fix: ## Fix linter problems.
 	# gci collides with gofumpt. But if we run gci before gofumpt, this will solve the issue.
-	$(GOLANGCI) run --timeout 5m -c .golangci.yml --enable-only gci --fix
+	$(GOLANGCI) fmt -c .golangci.yml --enable gci
+	$(GOLANGCI) fmt -c .golangci.yml --enable gofumpt
 	$(GOLANGCI) run --timeout 5m -c .golangci.yml --fix
 
 .PHONY: vet
