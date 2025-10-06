@@ -1,5 +1,10 @@
+version: "2"
+run:
+  build-tags:
+    - e2e
+  allow-parallel-runners: true
 linters:
-  disable-all: true
+  default: none
   enable:
     - asciicheck
     - bidichk
@@ -13,14 +18,11 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    - gci
     - ginkgolinter
     - goconst
     - gocritic
     - godot
-    - gofumpt
     - gosec
-    - gosimple
     - govet
     - importas
     - inamedparam
@@ -34,175 +36,171 @@ linters:
     - nilerr
     - nolintlint
     - nosprintfhostport
-    - prealloc
     - perfsprint
-    - revive
+    - prealloc
     - reassign
+    - revive
     - staticcheck
-    - stylecheck
     - tagalign
     - testifylint
-    - tenv
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
-
-linters-settings:
-  depguard:
+  settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: github.com/pkg/errors
+              desc: Should be replaced by stdlib errors package
+    gosec:
+      excludes:
+        - G601
+    importas:
+      alias:
+        - pkg: k8s.io/api/(\w+)/(v[\w\d]+)
+          alias: $1$2
+        - pkg: k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
+          alias: apiextensionsv1
+        - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
+          alias: metav1
+        - pkg: k8s.io/apimachinery/pkg/api/errors
+          alias: apierrors
+        - pkg: k8s.io/apimachinery/pkg/util/errors
+          alias: kerrors
+        - pkg: sigs.k8s.io/controller-runtime
+          alias: ctrl
+        - pkg: sigs.k8s.io/cluster-api/api/v1beta1
+          alias: clusterv1
+        - pkg: sigs.k8s.io/cluster-api/test/e2e
+          alias: capie2e
+        - pkg: github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1
+          alias: infrav1
+        - pkg: github.com/ionos-cloud/sdk-go/v6
+          alias: sdk
+      no-unaliased: true
+    ireturn:
+      allow:
+        - error
+        - generic
+        - ionoscloud.Client
+        - bootstrap.ClusterProvider
+        - framework.ClusterProxy
+    loggercheck:
+      require-string-key: true
+      no-printf-like: true
+    revive:
+      enable-all-rules: true
+      rules:
+        - name: add-constant
+          disabled: true
+        - name: cognitive-complexity
+          arguments:
+            - 25
+        - name: cyclomatic
+          arguments:
+            - 15
+        - name: enforce-switch-style
+          disabled: true
+        - name: line-length-limit
+          disabled: true
+        - name: max-public-structs
+          disabled: true
+        - name: range-val-address
+          disabled: true
+        - name: struct-tag
+          arguments:
+            - json,inline
+        - name: var-naming
+          arguments:
+            - []
+            - - LAN
+              - IP
+              - NIC
+    testifylint:
+      enable-all: true
+  exclusions:
+    generated: lax
     rules:
-      main:
-        deny:
-          - pkg: "github.com/pkg/errors"
-            desc: Should be replaced by stdlib errors package
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(github.com/ionos-cloud/cluster-api-provider-ionoscloud)
-      - blank
-      - dot
-  gosec:
-    excludes:
-      - G601 # Implicit memory aliasing of items from a range statement: Obsolete since Go 1.22
-  importas:
-    no-unaliased: true
-    alias:
-      # Kubernetes
-      - pkg: k8s.io/api/(\w+)/(v[\w\d]+)
-        alias: $1$2
-      - pkg: k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
-        alias: apiextensionsv1
-      - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
-        alias: metav1
-      - pkg: k8s.io/apimachinery/pkg/api/errors
-        alias: apierrors
-      - pkg: k8s.io/apimachinery/pkg/util/errors
-        alias: kerrors
-      # Controller Runtime
-      - pkg: sigs.k8s.io/controller-runtime
-        alias: ctrl
-      # Cluster API
-      - pkg: sigs.k8s.io/cluster-api/api/v1beta1
-        alias: clusterv1
-      - pkg: "sigs.k8s.io/cluster-api/test/e2e"
-        alias: capie2e
-      # Own module
-      - pkg: github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1
-        alias: infrav1
-      - pkg: github.com/ionos-cloud/sdk-go/v6
-        alias: sdk
-  ireturn:
-    allow:
-      - error
-      - generic
-      - ionoscloud.Client
-      - bootstrap.ClusterProvider
-      - framework.ClusterProxy
-  loggercheck:
-    require-string-key: true
-    no-printf-like: true
-  revive:
-    enable-all-rules: true
-    rules:
-      - name: add-constant
-        disabled: true
-      - name: cognitive-complexity
-        arguments:
-          - 25
-      - name: cyclomatic
-        arguments:
-          - 15
-      - name: line-length-limit
-        disabled: true
-      - name: max-public-structs
-        disabled: true
-      - name: range-val-address
-        disabled: true # Obsolete since Go 1.22
-      - name: struct-tag
-        arguments:
-          - json,inline
-      - name: var-naming
-        arguments:
-          - [] # first list is an allow list. All initialisms placed here will be ignored
-          - [LAN, IP, NIC] # second list is a deny list. These rules will be enforced
-  testifylint:
-    enable-all: true
-
+      - linters:
+          - containedctx
+        path: (.+)_test\.go
+      - linters:
+          - gocritic
+        text: 'appendAssign: append result not assigned to the same slice'
+      - linters:
+          - revive
+        text: 'comment-spacings: no space between comment delimiter and comment text'
+        source: //(\+(kubebuilder|optional|required)|#nosec)
+      - linters:
+          - revive
+        text: 'exported: exported method .*\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported'
+      - linters:
+          - revive
+        path: suite_test.go
+        text: maximum number of lines per function exceeded
+      - linters:
+          - revive
+        text: exported (method|function|type|const) (.+) should have comment or be unexported
+        source: (func|type).*Fake.*
+      - linters:
+          - revive
+        path: fake_\.go
+        text: exported (method|function|type|const) (.+) should have comment or be unexported
+      - linters:
+          - revive
+        path: (framework|e2e|infrastructure/docker)/.*.go
+        text: exported (method|function|type|const) (.+) should have comment or be unexported
+      - linters:
+          - revive
+        text: line is \d+ characters, out of limit \d+
+        source: \s*//\+kubebuilder:.*
+      - linters:
+          - revive
+        text: line is \d+ characters, out of limit \d+
+        source: \s*//.*[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?$
+      - linters:
+          - revive
+        path: _test\.go
+        text: 'function-length: maximum number of lines per function exceeded'
+      - linters:
+          - unparam
+        text: always receives
+      - path: _test\.go
+        text: should not use dot imports
+      - path: _test\.go
+        text: cyclomatic complexity
+      - path: (framework|e2e)/.*.go
+        text: should not use dot imports
+    paths:
+      - zz_generated.*\.go$
+      - .*conversion.*\.go$
+      - mock*
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  max-same-issues: 0
   max-issues-per-linter: 0
-  # We are disabling default golangci exclusions because we want to help reviewers to focus on reviewing the most relevant
-  # changes in PRs and avoid nitpicking.
-  exclude-use-default: false
-  exclude-rules:
-    - linters:
-        - containedctx
-      path: '(.+)_test\.go'
-    - linters:
-        - gocritic
-      text: "appendAssign: append result not assigned to the same slice"
-    - linters:
-        - revive
-      text: "comment-spacings: no space between comment delimiter and comment text"
-      source: "//(\\+(kubebuilder|optional|required)|#nosec)"
-    - linters:
-        - revive
-      text: "exported: exported method .*\\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported"
-    - linters:
-        - revive
-      text: maximum number of lines per function exceeded
-      path: suite_test.go
-    # Exclude some packages or code to require comments, for example test code, or fake clients.
-    - linters:
-        - revive
-      text: exported (method|function|type|const) (.+) should have comment or be unexported
-      source: (func|type).*Fake.*
-    - linters:
-        - revive
-      text: exported (method|function|type|const) (.+) should have comment or be unexported
-      path: fake_\.go
-    - linters:
-        - revive
-      text: exported (method|function|type|const) (.+) should have comment or be unexported
-      path: "(framework|e2e|infrastructure/docker)/.*.go"
-    - linters:
-        - revive
-      text: "line is \\d+ characters, out of limit \\d+"
-      source: "\\s*//\\+kubebuilder:.*"
-    - linters:
-        - revive
-      text: "line is \\d+ characters, out of limit \\d+"
-      # If a line comment ends with something that looks like a URL, we ignore the line length limit.
-      source: "\\s*//.*[-a-zA-Z0-9@:%_\\+.~#?&//=]{2,256}\\.[a-z]{2,4}\\b(\\/[-a-zA-Z0-9@:%_\\+.~#?&//=]*)?$"
-    - linters:
-        - revive
-      text: "function-length: maximum number of lines per function exceeded"
-      path: _test\.go
-    # Disable unparam "always receives" which might not be really
-    # useful when building libraries.
-    - linters:
-        - unparam
-      text: always receives
-    # Dot imports for gomega or ginkgo are allowed
-    # within test files.
-    - path: _test\.go
-      text: should not use dot imports
-    - path: _test\.go
-      text: cyclomatic complexity
-    # Append should be able to assign to a different var/slice.
-    - path: (framework|e2e)/.*.go
-      text: should not use dot imports
-  exclude-files:
-    - "zz_generated.*\\.go$"
-    - ".*conversion.*\\.go$"
-  exclude-dirs:
-    - mock*
-
-run:
-  build-tags:
-    - e2e
-  timeout: 10m
-  allow-parallel-runners: true
-  go: "1.22"
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/ionos-cloud/cluster-api-provider-ionoscloud)
+        - blank
+        - dot
+  exclusions:
+    generated: lax
+    paths:
+      - zz_generated.*\.go$
+      - .*conversion.*\.go$
+      - mock*
+      - third_party$
+      - builtin$
+      - examples$
