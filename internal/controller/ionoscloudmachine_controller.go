@@ -1,5 +1,5 @@
 /*
-Copyright 2024 IONOS Cloud.
+Copyright 2025 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -134,7 +134,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 		return ctrl.Result{}, fmt.Errorf("failed to create ionos client: %w", err)
 	}
 
-	if !ionosCloudMachine.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !ionosCloudMachine.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, machineScope, cloudService)
 	}
 
@@ -340,7 +340,7 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options
 			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind(infrav1.IonosCloudMachineType)))).
-		Complete(reconcile.AsReconciler(r.Client, r))
+		Complete(reconcile.AsReconciler[*infrav1.IonosCloudMachine](r.Client, r))
 }
 
 func (r *IonosCloudMachineReconciler) getClusterScope(
@@ -356,7 +356,7 @@ func (r *IonosCloudMachineReconciler) getClusterScope(
 		Name:      cluster.Spec.InfrastructureRef.Name,
 	}
 
-	if err := r.Client.Get(ctx, infraClusterName, ionosCloudCluster); err != nil {
+	if err := r.Get(ctx, infraClusterName, ionosCloudCluster); err != nil {
 		if apierrors.IsNotFound(err) {
 			// Cluster has not yet been created
 			return nil, nil

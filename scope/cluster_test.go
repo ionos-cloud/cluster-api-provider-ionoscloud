@@ -1,5 +1,5 @@
 /*
-Copyright 2024 IONOS Cloud.
+Copyright 2025 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -365,10 +365,8 @@ func TestCurrentRequestByDatacenterAccessors(t *testing.T) {
 	// If there is a concurrency issue, it will very likely become visible here.
 	var wg sync.WaitGroup
 	for i := range 10_000 {
-		wg.Add(1)
-		go func(t *testing.T, id string) {
-			defer wg.Done()
-
+		id := strconv.Itoa(i)
+		wg.Go(func() {
 			req, exists := cluster.GetCurrentRequestByDatacenter(id)
 			assert.False(t, exists)
 			assert.Zero(t, req)
@@ -386,7 +384,7 @@ func TestCurrentRequestByDatacenterAccessors(t *testing.T) {
 			req, exists = cluster.GetCurrentRequestByDatacenter(id)
 			assert.False(t, exists)
 			assert.Zero(t, req)
-		}(t, strconv.Itoa(i))
+		})
 	}
 
 	wg.Wait()

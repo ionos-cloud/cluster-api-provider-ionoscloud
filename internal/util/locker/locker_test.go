@@ -1,5 +1,5 @@
 /*
-Copyright 2024 IONOS Cloud.
+Copyright 2025 IONOS Cloud.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -119,13 +119,11 @@ func TestLockerConcurrency(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 10_000 {
-		wg.Add(1)
-		go func(t *testing.T) {
-			assert.NoError(t, l.Lock(context.Background(), "test"))
+		wg.Go(func() {
+			require.NoError(t, l.Lock(context.Background(), "test"))
 			// If there is a concurrency issue, it will very likely become visible here.
 			l.Unlock("test")
-			wg.Done()
-		}(t)
+		})
 	}
 
 	withTimeout(t, wg.Wait)

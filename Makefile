@@ -65,7 +65,8 @@ lint: ## Run lint.
 .PHONY: lint-fix
 lint-fix: ## Fix linter problems.
 	# gci collides with gofumpt. But if we run gci before gofumpt, this will solve the issue.
-	$(GOLANGCI) run --timeout 5m -c .golangci.yml --enable-only gci --fix
+	$(GOLANGCI) fmt -c .golangci.yml --enable gci
+	$(GOLANGCI) fmt -c .golangci.yml --enable gofumpt
 	$(GOLANGCI) run --timeout 5m -c .golangci.yml --fix
 
 .PHONY: vet
@@ -175,8 +176,8 @@ KUBECTL ?= kubectl
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-GOLANGCI ?= go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
-MOCKERY ?= go run github.com/vektra/mockery/v2@v2.53.5
+GOLANGCI ?= go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0
+MOCKERY ?= go run github.com/vektra/mockery/v3@v3.5.5
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.7.1
