@@ -134,6 +134,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				m := defaultMachine()
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.DatacenterID).To(Equal(defaultMachine().Spec.DatacenterID))
+				// Get the object from the server to ensure we have the latest version
+				Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 				m.Spec.DatacenterID = "6ded8c5f-8df2-46ef-b4ce-61833daf0961"
 				Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 			})
