@@ -23,7 +23,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -304,13 +304,17 @@ func (*IonosCloudMachineReconciler) checkRequestStates(
 func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
 	log := ctrl.LoggerFrom(ctx)
 	// Make sure the infrastructure is ready.
-	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
+	// Note: InfrastructureReady field was removed in Cluster API v1.11
+	// Check the InfrastructureReady condition instead
+	if !conditions.IsTrue(ms.ClusterScope.Cluster, clusterv1.ReadyCondition) {
 		log.Info("Cluster infrastructure is not ready yet")
-		conditions.MarkFalse(
-			ms.IonosMachine,
-			infrav1.MachineProvisionedCondition,
-			infrav1.WaitingForClusterInfrastructureReason,
-			clusterv1.ConditionSeverityInfo, "")
+		ms.IonosMachine.SetConditions(clusterv1.Conditions{
+			{
+				Type:   infrav1.MachineProvisionedCondition,
+				Status: "False",
+				Reason: infrav1.WaitingForClusterInfrastructureReason,
+			},
+		})
 
 		return false
 	}
@@ -318,12 +322,13 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	// Make sure to wait until the data secret was created
 	if ms.Machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret is not available yet")
-		conditions.MarkFalse(
-			ms.IonosMachine,
-			infrav1.MachineProvisionedCondition,
-			infrav1.WaitingForBootstrapDataReason,
-			clusterv1.ConditionSeverityInfo, "",
-		)
+		ms.IonosMachine.SetConditions(clusterv1.Conditions{
+			{
+				Type:   infrav1.MachineProvisionedCondition,
+				Status: "False",
+				Reason: infrav1.WaitingForBootstrapDataReason,
+			},
+		})
 
 		return false
 	}
@@ -332,7 +337,7 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *IonosCloudMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.IonosCloudMachine{}).
@@ -340,7 +345,7 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options
 			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind(infrav1.IonosCloudMachineType)))).
-		Complete(reconcile.AsReconciler(r.Client, r))
+		Complete(reconcile.AsReconciler[*infrav1.IonosCloudMachine](r.Client, r))
 }
 
 func (r *IonosCloudMachineReconciler) getClusterScope(

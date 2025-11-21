@@ -47,13 +47,15 @@ This provider requires **Go 1.25 or newer**. The exact version is specified in `
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|                       | Cluster API v1beta1 (v1.7) | Cluster API v1beta1 (v1.8) |
-|-----------------------|:--------------------------:|:--------------------------:|
-| CAPIC v1alpha1 (v0.2) |             ✓              |             ☓              |
-| CAPIC v1alpha1 (v0.3) |             ✓              |             ☓              |
-| CAPIC v1alpha1 (v0.4) |             ✓              |             ✓              |
-| CAPIC v1alpha1 (v0.5) |             ✓              |             ✓              |
-| CAPIC v1alpha1 (v0.6) |             ✓              |             ✓              |
+|                       | Cluster API v1beta1 (v1.7) | Cluster API v1beta1 (v1.8) | Cluster API v1beta2 (v1.11) |
+|-----------------------|:--------------------------:|:--------------------------:|:---------------------------:|
+| CAPIC v1alpha1 (v0.2) |             ✓              |             ☓              |             ☓               |
+| CAPIC v1alpha1 (v0.3) |             ✓              |             ☓              |             ☓               |
+| CAPIC v1alpha1 (v0.4) |             ✓              |             ✓              |             ☓               |
+| CAPIC v1alpha1 (v0.5) |             ✓              |             ✓              |             ☓               |
+| CAPIC v1alpha1 (v0.6) |             ✓              |             ✓              |             ✓               |
+
+**Note**: This provider has been upgraded to support Cluster API v1.11.3 (v1beta2 contract). The contract version remains v1beta1 for backward compatibility, but the codebase now uses v1beta2 APIs internally.
 
 ### Kubernetes Versions 
 

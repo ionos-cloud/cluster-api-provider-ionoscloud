@@ -23,8 +23,8 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/errors"
-	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -536,7 +536,14 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			// Calls SetConditions with required fields
-			conditions.MarkTrue(m, MachineProvisionedCondition)
+			m.SetConditions(clusterv1.Conditions{
+				{
+					Type:               MachineProvisionedCondition,
+					Status:             corev1.ConditionTrue,
+					LastTransitionTime: metav1.Now(),
+					Reason:             "MachineProvisioned",
+				},
+			})
 
 			Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
 			Expect(k8sClient.Get(context.Background(),
@@ -556,7 +563,14 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			m.Status.Ready = true
-			conditions.MarkTrue(m, MachineProvisionedCondition)
+			m.SetConditions(clusterv1.Conditions{
+				{
+					Type:               MachineProvisionedCondition,
+					Status:             corev1.ConditionTrue,
+					LastTransitionTime: metav1.Now(),
+					Reason:             "MachineProvisioned",
+				},
+			})
 			m.Status.CurrentRequest = &ProvisioningRequest{
 				Method:      "GET",
 				RequestPath: "path/to/resource",

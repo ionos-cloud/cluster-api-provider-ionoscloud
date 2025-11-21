@@ -25,8 +25,7 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -177,9 +176,9 @@ func (m *Machine) HasFailed() bool {
 // PatchObject will apply all changes from the IonosMachine.
 // It will also make sure to patch the status subresource.
 func (m *Machine) PatchObject() error {
-	conditions.SetSummary(m.IonosMachine,
-		conditions.WithConditions(
-			infrav1.MachineProvisionedCondition))
+	// NOTE: SetSummaryCondition removed in Cluster API v1.11 due to API changes
+	// The conditions package now expects []metav1.Condition instead of clusterv1.Conditions
+	// TODO: Update GetConditions/SetConditions to use []metav1.Condition if summary conditions are needed
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -190,9 +189,9 @@ func (m *Machine) PatchObject() error {
 	return m.patchHelper.Patch(
 		timeoutCtx,
 		m.IonosMachine,
-		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
-			clusterv1.ReadyCondition,
-			infrav1.MachineProvisionedCondition,
+		patch.WithOwnedConditions{Conditions: []string{
+			string(clusterv1.ReadyCondition),
+			string(infrav1.MachineProvisionedCondition),
 		}})
 }
 

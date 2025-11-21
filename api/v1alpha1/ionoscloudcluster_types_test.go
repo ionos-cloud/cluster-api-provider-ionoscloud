@@ -23,8 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -163,7 +162,14 @@ var _ = Describe("IonosCloudCluster", func() {
 			fetched.Status.CurrentRequestByDatacenter = map[string]ProvisioningRequest{
 				"123": wantProvisionRequest,
 			}
-			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
+			fetched.SetConditions(clusterv1.Conditions{
+				{
+					Type:               clusterv1.ReadyCondition,
+					Status:             corev1.ConditionTrue,
+					LastTransitionTime: metav1.Now(),
+					Reason:             "ClusterReady",
+				},
+			})
 
 			By("updating the cluster status")
 			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
@@ -173,7 +179,8 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(HaveLen(1))
 			Expect(fetched.Status.CurrentRequestByDatacenter["123"]).To(Equal(wantProvisionRequest))
 			Expect(fetched.Status.Conditions).To(HaveLen(1))
-			Expect(conditions.IsTrue(fetched, clusterv1.ReadyCondition)).To(BeTrue())
+			Expect(fetched.Status.Conditions[0].Type).To(Equal(clusterv1.ReadyCondition))
+			Expect(fetched.Status.Conditions[0].Status).To(Equal(corev1.ConditionTrue))
 
 			By("Removing the entry from the status again")
 			delete(fetched.Status.CurrentRequestByDatacenter, "123")

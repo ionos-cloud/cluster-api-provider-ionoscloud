@@ -27,8 +27,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	ipamv1 "sigs.k8s.io/cluster-api/api/ipam/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -98,8 +98,8 @@ func (s *IpamTestSuite) SetupTest() {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: s.capiCluster.Name,
-			Version:     ptr.To("v1.26.12"),
-			ProviderID:  ptr.To("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),
+			Version:     "v1.26.12",
+			ProviderID:  "ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf",
 		},
 	}
 	s.infraMachine = &infrav1.IonosCloudMachine{
