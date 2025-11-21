@@ -463,8 +463,12 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			m.Spec.FailoverIP = ptr.To(CloudResourceConfigAuto)
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 			Expect(m.Spec.FailoverIP).To(Equal(ptr.To(CloudResourceConfigAuto)))
+			// Get the object from the server to ensure we have the latest version
+			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 			m.Spec.FailoverIP = ptr.To("127.0.0.1")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+			// Get the object again before the next update attempt
+			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 			m.Spec.FailoverIP = ptr.To("")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 		})

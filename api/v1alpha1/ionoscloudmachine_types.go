@@ -164,7 +164,7 @@ type IonosCloudMachineSpec struct {
 	//
 	// If the machine is a control plane machine, this field will not be taken into account.
 	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="failoverIP is immutable"
-	//+kubebuilder:validation:XValidation:rule=`self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")`,message="failoverIP must be either 'AUTO' or a valid IPv4 address"
+	//+kubebuilder:validation:XValidation:rule=`!has(self) || self == "AUTO" || self.matches("^((25[0-5]|(2[0-4]|1[0-9]|[1-9])?[0-9])\\.){3}(25[0-5]|(2[0-4]|1[0-9]|[1-9])?[0-9])$")`,message="failoverIP must be either 'AUTO' or a valid IPv4 address"
 	//+optional
 	FailoverIP *string `json:"failoverIP,omitempty"`
 
