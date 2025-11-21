@@ -193,6 +193,12 @@ issues:
     # Append should be able to assign to a different var/slice.
     - path: (framework|e2e)/.*.go
       text: should not use dot imports
+    # Suppress deprecation warnings for Cluster API packages that are still in use
+    # These packages are deprecated but still part of Cluster API v1.11.3
+    - linters:
+        - staticcheck
+      text: "SA1019:.*is deprecated"
+      source: "sigs\\.k8s\\.io/cluster-api"
   exclude-files:
     - "zz_generated.*\\.go$"
     - ".*conversion.*\\.go$"
