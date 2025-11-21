@@ -178,7 +178,12 @@ func (m *Machine) HasFailed() bool {
 // It will also make sure to patch the status subresource.
 func (m *Machine) PatchObject() error {
 	// Set the summary condition based on the infrastructure machine conditions
-	if err := conditions.SetSummaryCondition(m.IonosMachine, m.Machine, clusterv1.ReadyCondition); err != nil {
+	if err := conditions.SetSummaryCondition(
+		m.IonosMachine,
+		m.Machine,
+		clusterv1.ReadyCondition,
+		conditions.ForConditionTypes([]string{infrav1.MachineProvisionedCondition}),
+	); err != nil {
 		return fmt.Errorf("failed to set summary condition: %w", err)
 	}
 

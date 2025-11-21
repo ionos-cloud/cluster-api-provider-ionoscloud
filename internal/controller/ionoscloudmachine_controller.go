@@ -334,7 +334,7 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *IonosCloudMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+func (r *IonosCloudMachineReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.IonosCloudMachine{}).

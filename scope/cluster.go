@@ -203,7 +203,12 @@ func (c *Cluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
 // It will also make sure to patch the status subresource.
 func (c *Cluster) PatchObject() error {
 	// Set the summary condition based on the infrastructure cluster conditions
-	if err := conditions.SetSummaryCondition(c.IonosCluster, c.Cluster, clusterv1.ReadyCondition); err != nil {
+	if err := conditions.SetSummaryCondition(
+		c.IonosCluster,
+		c.Cluster,
+		clusterv1.ReadyCondition,
+		conditions.ForConditionTypes([]string{infrav1.IonosCloudClusterReady}),
+	); err != nil {
 		return fmt.Errorf("failed to set summary condition: %w", err)
 	}
 
