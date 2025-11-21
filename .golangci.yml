@@ -42,7 +42,6 @@ linters:
     - stylecheck
     - tagalign
     - testifylint
-    - tenv
     - typecheck
     - unconvert
     - unparam

@@ -39,6 +39,10 @@ If you need help with CAPIC, please visit the [#cluster-api-ionoscloud][slack] c
 
 ## Compatibility
 
+### Go Version
+
+This provider requires **Go 1.25 or newer**. The exact version is specified in `go.mod`.
+
 ### Cluster API Versions
 
 This provider's versions are compatible with the following versions of Cluster API:
