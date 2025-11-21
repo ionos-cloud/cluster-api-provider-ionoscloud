@@ -65,10 +65,10 @@ func TestLockerLock(t *testing.T) {
 	require.EqualValues(t, 0, lwc.count())
 
 	chDone := make(chan struct{})
-	go func(t *testing.T) {
+	go func() {
 		assert.NoError(t, l.Lock(context.Background(), "test"))
 		close(chDone)
-	}(t)
+	}()
 
 	chWaiting := make(chan struct{})
 	go func() {
@@ -120,12 +120,12 @@ func TestLockerConcurrency(t *testing.T) {
 	var wg sync.WaitGroup
 	for range 10_000 {
 		wg.Add(1)
-		go func(t *testing.T) {
+		go func() {
 			assert.NoError(t, l.Lock(context.Background(), "test"))
 			// If there is a concurrency issue, it will very likely become visible here.
 			l.Unlock("test")
 			wg.Done()
-		}(t)
+		}()
 	}
 
 	withTimeout(t, wg.Wait)

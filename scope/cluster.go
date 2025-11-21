@@ -123,6 +123,10 @@ func (c *Cluster) GetControlPlaneEndpointIP(ctx context.Context) (string, error)
 	// Sort IPs to deal with random order intended for load balancing.
 	slices.SortFunc(ips, func(a, b netip.Addr) int { return a.Compare(b) })
 
+	if len(ips) == 0 {
+		return "", fmt.Errorf("no IP addresses found for host %q", host)
+	}
+
 	return ips[0].String(), nil
 }
 
