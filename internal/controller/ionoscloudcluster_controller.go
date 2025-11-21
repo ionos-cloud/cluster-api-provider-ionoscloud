@@ -25,10 +25,12 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -171,12 +173,10 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		}
 	}
 
-	clusterScope.IonosCluster.SetConditions(clusterv1.Conditions{
-		{
-			Type:   infrav1.IonosCloudClusterReady,
-			Status: "True",
-			Reason: "ClusterReady",
-		},
+	conditions.Set(clusterScope.IonosCluster, metav1.Condition{
+		Type:   infrav1.IonosCloudClusterReady,
+		Status: metav1.ConditionTrue,
+		Reason: "ClusterReady",
 	})
 	clusterScope.IonosCluster.Status.Ready = true
 	return ctrl.Result{}, nil

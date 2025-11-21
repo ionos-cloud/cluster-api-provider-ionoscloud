@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/errors"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -38,7 +37,7 @@ const (
 
 	// MachineProvisionedCondition documents the status of the provisioning of a IonosCloudMachine and
 	// the underlying VM.
-	MachineProvisionedCondition clusterv1.ConditionType = "MachineProvisioned"
+	MachineProvisionedCondition = "MachineProvisioned"
 
 	// WaitingForClusterInfrastructureReason (Severity=Info) indicates that the IonosCloudMachine is currently
 	// waiting for the cluster infrastructure to become ready.
@@ -336,7 +335,7 @@ type IonosCloudMachineStatus struct {
 
 	// Conditions defines current service state of the IonosCloudMachine.
 	//+optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// CurrentRequest shows the current provisioning request for any
 	// cloud resource that is being provisioned.
@@ -407,12 +406,12 @@ type IonosCloudMachineList struct {
 }
 
 // GetConditions returns the observations of the operational state of the IonosCloudMachine resource.
-func (m *IonosCloudMachine) GetConditions() clusterv1.Conditions {
+func (m *IonosCloudMachine) GetConditions() []metav1.Condition {
 	return m.Status.Conditions
 }
 
-// SetConditions sets the underlying service state of the IonosCloudMachine to the predescribed clusterv1.Conditions.
-func (m *IonosCloudMachine) SetConditions(conditions clusterv1.Conditions) {
+// SetConditions sets the underlying service state of the IonosCloudMachine to the predescribed []metav1.Condition.
+func (m *IonosCloudMachine) SetConditions(conditions []metav1.Condition) {
 	m.Status.Conditions = conditions
 }
 

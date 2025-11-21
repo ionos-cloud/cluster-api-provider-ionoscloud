@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -176,9 +177,10 @@ func (m *Machine) HasFailed() bool {
 // PatchObject will apply all changes from the IonosMachine.
 // It will also make sure to patch the status subresource.
 func (m *Machine) PatchObject() error {
-	// NOTE: SetSummaryCondition removed in Cluster API v1.11 due to API changes
-	// The conditions package now expects []metav1.Condition instead of clusterv1.Conditions
-	// TODO: Update GetConditions/SetConditions to use []metav1.Condition if summary conditions are needed
+	// Set the summary condition based on the infrastructure machine conditions
+	if err := conditions.SetSummaryCondition(m.IonosMachine, m.Machine, clusterv1.ReadyCondition); err != nil {
+		return fmt.Errorf("failed to set summary condition: %w", err)
+	}
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()

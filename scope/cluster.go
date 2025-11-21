@@ -28,6 +28,7 @@ import (
 
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -201,9 +202,10 @@ func (c *Cluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
 // PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
 func (c *Cluster) PatchObject() error {
-	// NOTE: SetSummaryCondition removed in Cluster API v1.11 due to API changes
-	// The conditions package now expects []metav1.Condition instead of clusterv1.Conditions
-	// TODO: Update GetConditions/SetConditions to use []metav1.Condition if summary conditions are needed
+	// Set the summary condition based on the infrastructure cluster conditions
+	if err := conditions.SetSummaryCondition(c.IonosCluster, c.Cluster, clusterv1.ReadyCondition); err != nil {
+		return fmt.Errorf("failed to set summary condition: %w", err)
+	}
 
 	// NOTE(piepmatz): We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
 	//  aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation

@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
@@ -308,12 +309,10 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	// Check the InfrastructureReady condition instead
 	if !conditions.IsTrue(ms.ClusterScope.Cluster, clusterv1.ReadyCondition) {
 		log.Info("Cluster infrastructure is not ready yet")
-		ms.IonosMachine.SetConditions(clusterv1.Conditions{
-			{
-				Type:   infrav1.MachineProvisionedCondition,
-				Status: "False",
-				Reason: infrav1.WaitingForClusterInfrastructureReason,
-			},
+		conditions.Set(ms.IonosMachine, metav1.Condition{
+			Type:   infrav1.MachineProvisionedCondition,
+			Status: metav1.ConditionFalse,
+			Reason: infrav1.WaitingForClusterInfrastructureReason,
 		})
 
 		return false
@@ -322,12 +321,10 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	// Make sure to wait until the data secret was created
 	if ms.Machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret is not available yet")
-		ms.IonosMachine.SetConditions(clusterv1.Conditions{
-			{
-				Type:   infrav1.MachineProvisionedCondition,
-				Status: "False",
-				Reason: infrav1.WaitingForBootstrapDataReason,
-			},
+		conditions.Set(ms.IonosMachine, metav1.Condition{
+			Type:   infrav1.MachineProvisionedCondition,
+			Status: metav1.ConditionFalse,
+			Reason: infrav1.WaitingForBootstrapDataReason,
 		})
 
 		return false

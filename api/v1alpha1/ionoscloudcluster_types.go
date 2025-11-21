@@ -28,7 +28,7 @@ const (
 	ClusterFinalizer = "ionoscloudcluster.infrastructure.cluster.x-k8s.io"
 
 	// IonosCloudClusterReady is the condition for the IonosCloudCluster, which indicates that the cluster is ready.
-	IonosCloudClusterReady clusterv1.ConditionType = "ClusterReady"
+	IonosCloudClusterReady = "ClusterReady"
 
 	// IonosCloudClusterKind is the string resource kind of the IonosCloudCluster resource.
 	IonosCloudClusterKind = "IonosCloudCluster"
@@ -70,7 +70,7 @@ type IonosCloudClusterStatus struct {
 
 	// Conditions defines current service state of the IonosCloudCluster.
 	//+optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// CurrentRequestByDatacenter maps data center IDs to a pending provisioning request made during reconciliation.
 	//+optional
@@ -115,12 +115,12 @@ func init() {
 }
 
 // GetConditions returns the conditions from the status.
-func (i *IonosCloudCluster) GetConditions() clusterv1.Conditions {
+func (i *IonosCloudCluster) GetConditions() []metav1.Condition {
 	return i.Status.Conditions
 }
 
 // SetConditions sets the conditions in the status.
-func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
+func (i *IonosCloudCluster) SetConditions(conditions []metav1.Condition) {
 	i.Status.Conditions = conditions
 }
 
