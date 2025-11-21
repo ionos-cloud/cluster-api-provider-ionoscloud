@@ -237,7 +237,7 @@ type Volume struct {
 }
 
 // ImageSpec defines the image to use for the VM.
-// +kubebuilder:validation:ExactlyOneOf=id;selector
+// +kubebuilder:validation:XValidation:rule="[(has(self.id) && self.id != ''), has(self.selector)].filter(x, x == true).size() == 1",message="exactly one of id (non-empty) or selector must be set"
 type ImageSpec struct {
 	// ID is the ID of the image to use for the VM.
 	//

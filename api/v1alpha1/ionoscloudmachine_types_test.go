@@ -495,10 +495,16 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			m.Spec.NetworkID = ptr.To("1")
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 			Expect(m.Spec.NetworkID).To(Equal(ptr.To("1")))
+			// Get the object from the server to ensure we have the latest version
+			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 			m.Spec.NetworkID = ptr.To("2")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+			// Get the object again before the next update attempt
+			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 			m.Spec.NetworkID = ptr.To("")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+			// Get the object again before the next update attempt
+			Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 			m.Spec.NetworkID = nil
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 		})

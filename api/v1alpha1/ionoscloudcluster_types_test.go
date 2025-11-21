@@ -115,6 +115,8 @@ var _ = Describe("IonosCloudCluster", func() {
 				cluster := defaultCluster()
 				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
 
+				// Get the object from the server to ensure we have the latest version
+				Expect(k8sClient.Get(context.Background(), client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}, cluster)).To(Succeed())
 				cluster.Spec.ControlPlaneEndpoint.Port = 0
 				Expect(k8sClient.Update(context.Background(), cluster)).
 					Should(MatchError(ContainSubstring("port must be within 1-65535")))

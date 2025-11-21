@@ -113,13 +113,14 @@ spec:
                               x-kubernetes-validations:
                               - message: ipv4PoolRef allows only IPAMConfig apiGroup
                                   ipam.cluster.x-k8s.io
-                                rule: self.apiGroup == 'ipam.cluster.x-k8s.io'
+                                rule: has(self.apiGroup) && self.apiGroup == 'ipam.cluster.x-k8s.io'
                               - message: ipv4PoolRef allows either InClusterIPPool
                                   or GlobalInClusterIPPool
-                                rule: self.kind == 'InClusterIPPool' || self.kind
-                                  == 'GlobalInClusterIPPool'
-                              - message: ipv4PoolRef.name is required
-                                rule: self.name != ''
+                                rule: has(self.kind) && (self.kind == 'InClusterIPPool'
+                                  || self.kind == 'GlobalInClusterIPPool')
+                              - message: ipv4PoolRef.name is required and must not
+                                  be empty
+                                rule: has(self.name) && self.name != ''
                             ipv6PoolRef:
                               description: |-
                                 IPv6PoolRef is a reference to an IPAMConfig pool resource, which exposes IPv6 addresses.
@@ -147,13 +148,14 @@ spec:
                               x-kubernetes-validations:
                               - message: ipv6PoolRef allows only IPAMConfig apiGroup
                                   ipam.cluster.x-k8s.io
-                                rule: self.apiGroup == 'ipam.cluster.x-k8s.io'
+                                rule: has(self.apiGroup) && self.apiGroup == 'ipam.cluster.x-k8s.io'
                               - message: ipv6PoolRef allows either InClusterIPPool
                                   or GlobalInClusterIPPool
-                                rule: self.kind == 'InClusterIPPool' || self.kind
-                                  == 'GlobalInClusterIPPool'
-                              - message: ipv6PoolRef.name is required
-                                rule: self.name != ''
+                                rule: has(self.kind) && (self.kind == 'InClusterIPPool'
+                                  || self.kind == 'GlobalInClusterIPPool')
+                              - message: ipv6PoolRef.name is required and must not
+                                  be empty
+                                rule: has(self.name) && self.name != ''
                             networkID:
                               description: |-
                                 NetworkID represents an ID an existing LAN in the data center.
@@ -256,10 +258,10 @@ spec:
                                 type: object
                             type: object
                             x-kubernetes-validations:
-                            - message: exactly one of the fields in [id selector]
-                                must be set
-                              rule: '[has(self.id),has(self.selector)].filter(x,x==true).size()
-                                == 1'
+                            - message: exactly one of id (non-empty) or selector must
+                                be set
+                              rule: '[(has(self.id) && self.id != ''''), has(self.selector)].filter(x,
+                                x == true).size() == 1'
                           name:
                             description: Name is the name of the volume
                             type: string
@@ -285,7 +287,7 @@ spec:
                           rule: self == oldSelf
                         - message: failoverIP must be either 'AUTO' or a valid IPv4
                             address
-                          rule: self == "AUTO" || self.matches("((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$")
+                          rule: '!has(self) || self == "AUTO" || self.matches("^((25[0-5]|(2[0-4]|1[0-9]|[1-9])?[0-9])\\.){3}(25[0-5]|(2[0-4]|1[0-9]|[1-9])?[0-9])$")'
                       ipv4PoolRef:
                         description: |-
                           IPv4PoolRef is a reference to an IPAMConfig Pool resource, which exposes IPv4 addresses.
@@ -310,11 +312,12 @@ spec:
                         x-kubernetes-map-type: atomic
                         x-kubernetes-validations:
                         - message: ipv4PoolRef allows only IPAMConfig apiGroup ipam.cluster.x-k8s.io
-                          rule: self.apiGroup == 'ipam.cluster.x-k8s.io'
+                          rule: has(self.apiGroup) && self.apiGroup == 'ipam.cluster.x-k8s.io'
                         - message: ipv4PoolRef allows either InClusterIPPool or GlobalInClusterIPPool
-                          rule: self.kind == 'InClusterIPPool' || self.kind == 'GlobalInClusterIPPool'
-                        - message: ipv4PoolRef.name is required
-                          rule: self.name != ''
+                          rule: has(self.kind) && (self.kind == 'InClusterIPPool'
+                            || self.kind == 'GlobalInClusterIPPool')
+                        - message: ipv4PoolRef.name is required and must not be empty
+                          rule: has(self.name) && self.name != ''
                       ipv6PoolRef:
                         description: |-
                           IPv6PoolRef is a reference to an IPAMConfig pool resource, which exposes IPv6 addresses.
@@ -339,11 +342,12 @@ spec:
                         x-kubernetes-map-type: atomic
                         x-kubernetes-validations:
                         - message: ipv6PoolRef allows only IPAMConfig apiGroup ipam.cluster.x-k8s.io
-                          rule: self.apiGroup == 'ipam.cluster.x-k8s.io'
+                          rule: has(self.apiGroup) && self.apiGroup == 'ipam.cluster.x-k8s.io'
                         - message: ipv6PoolRef allows either InClusterIPPool or GlobalInClusterIPPool
-                          rule: self.kind == 'InClusterIPPool' || self.kind == 'GlobalInClusterIPPool'
-                        - message: ipv6PoolRef.name is required
-                          rule: self.name != ''
+                          rule: has(self.kind) && (self.kind == 'InClusterIPPool'
+                            || self.kind == 'GlobalInClusterIPPool')
+                        - message: ipv6PoolRef.name is required and must not be empty
+                          rule: has(self.name) && self.name != ''
                       memoryMB:
                         default: 3072
                         description: |-
