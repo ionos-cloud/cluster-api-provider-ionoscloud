@@ -34,20 +34,20 @@ type ProvisioningRequest struct {
 }
 
 // IPAMConfig optionally defines which IP Pools to use.
+// +kubebuilder:validation:XValidation:rule="!has(self.ipv4PoolRef) || (has(self.ipv4PoolRef.apiGroup) && self.ipv4PoolRef.apiGroup == 'ipam.cluster.x-k8s.io')",message="ipv4PoolRef.apiGroup must be 'ipam.cluster.x-k8s.io' when ipv4PoolRef is set"
+// +kubebuilder:validation:XValidation:rule="!has(self.ipv4PoolRef) || (self.ipv4PoolRef.kind == 'InClusterIPPool' || self.ipv4PoolRef.kind == 'GlobalInClusterIPPool')",message="ipv4PoolRef.kind must be 'InClusterIPPool' or 'GlobalInClusterIPPool' when ipv4PoolRef is set"
+// +kubebuilder:validation:XValidation:rule="!has(self.ipv4PoolRef) || (has(self.ipv4PoolRef.name) && size(self.ipv4PoolRef.name) > 0)",message="ipv4PoolRef.name must not be empty when ipv4PoolRef is set"
+// +kubebuilder:validation:XValidation:rule="!has(self.ipv6PoolRef) || (has(self.ipv6PoolRef.apiGroup) && self.ipv6PoolRef.apiGroup == 'ipam.cluster.x-k8s.io')",message="ipv6PoolRef.apiGroup must be 'ipam.cluster.x-k8s.io' when ipv6PoolRef is set"
+// +kubebuilder:validation:XValidation:rule="!has(self.ipv6PoolRef) || (self.ipv6PoolRef.kind == 'InClusterIPPool' || self.ipv6PoolRef.kind == 'GlobalInClusterIPPool')",message="ipv6PoolRef.kind must be 'InClusterIPPool' or 'GlobalInClusterIPPool' when ipv6PoolRef is set"
+// +kubebuilder:validation:XValidation:rule="!has(self.ipv6PoolRef) || (has(self.ipv6PoolRef.name) && size(self.ipv6PoolRef.name) > 0)",message="ipv6PoolRef.name must not be empty when ipv6PoolRef is set"
 type IPAMConfig struct {
 	// IPv4PoolRef is a reference to an IPAMConfig Pool resource, which exposes IPv4 addresses.
 	// The NIC will use an available IP address from the referenced pool.
-	// +kubebuilder:validation:XValidation:rule="has(self.apiGroup) && self.apiGroup == 'ipam.cluster.x-k8s.io'",message="ipv4PoolRef allows only IPAMConfig apiGroup ipam.cluster.x-k8s.io"
-	// +kubebuilder:validation:XValidation:rule="has(self.kind) && (self.kind == 'InClusterIPPool' || self.kind == 'GlobalInClusterIPPool')",message="ipv4PoolRef allows either InClusterIPPool or GlobalInClusterIPPool"
-	// +kubebuilder:validation:XValidation:rule="has(self.name) && self.name != ''",message="ipv4PoolRef.name is required and must not be empty"
 	// +optional
 	IPv4PoolRef *corev1.TypedLocalObjectReference `json:"ipv4PoolRef,omitempty"`
 
 	// IPv6PoolRef is a reference to an IPAMConfig pool resource, which exposes IPv6 addresses.
 	// The NIC will use an available IP address from the referenced pool.
-	// +kubebuilder:validation:XValidation:rule="has(self.apiGroup) && self.apiGroup == 'ipam.cluster.x-k8s.io'",message="ipv6PoolRef allows only IPAMConfig apiGroup ipam.cluster.x-k8s.io"
-	// +kubebuilder:validation:XValidation:rule="has(self.kind) && (self.kind == 'InClusterIPPool' || self.kind == 'GlobalInClusterIPPool')",message="ipv6PoolRef allows either InClusterIPPool or GlobalInClusterIPPool"
-	// +kubebuilder:validation:XValidation:rule="has(self.name) && self.name != ''",message="ipv6PoolRef.name is required and must not be empty"
 	// +optional
 	IPv6PoolRef *corev1.TypedLocalObjectReference `json:"ipv6PoolRef,omitempty"`
 }

@@ -39,7 +39,7 @@ const (
 // IonosCloudClusterSpec defines the desired state of IonosCloudCluster.
 type IonosCloudClusterSpec struct {
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
-	// +kubebuilder:validation:XValidation:rule="size(self.host) == 0 && self.port == 0 || self.port > 0 && self.port < 65536",message="port must be within 1-65535"
+	// +kubebuilder:validation:XValidation:rule="size(self.host) == 0 || (self.port >= 1 && self.port <= 65535)",message="port must be within 1-65535 when host is set"
 	//
 	// TODO(gfariasalves): as of now, IP must be provided by the user as we still don't insert the
 	// provider-provided block IP into the kube-vip manifest.

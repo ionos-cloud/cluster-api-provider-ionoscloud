@@ -77,9 +77,8 @@ spec:
                     type: integer
                 type: object
                 x-kubernetes-validations:
-                - message: port must be within 1-65535
-                  rule: size(self.host) == 0 && self.port == 0 || self.port > 0 &&
-                    self.port < 65536
+                - message: port must be within 1-65535 when host is set
+                  rule: size(self.host) == 0 || (self.port >= 1 && self.port <= 65535)
               credentialsRef:
                 description: CredentialsRef is a reference to the secret containing
                   the credentials to access the IONOS Cloud API.
