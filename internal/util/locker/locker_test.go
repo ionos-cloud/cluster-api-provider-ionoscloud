@@ -20,9 +20,9 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,11 +64,12 @@ func TestLockerLock(t *testing.T) {
 
 	require.EqualValues(t, 0, lwc.count())
 
+	var wg sync.WaitGroup
 	chDone := make(chan struct{})
-	go func(t *testing.T) {
-		assert.NoError(t, l.Lock(context.Background(), "test"))
+	wg.Go(func() {
+		require.NoError(t, l.Lock(context.Background(), "test"))
 		close(chDone)
-	}(t)
+	})
 
 	chWaiting := make(chan struct{})
 	go func() {
@@ -119,13 +120,11 @@ func TestLockerConcurrency(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 10_000 {
-		wg.Add(1)
-		go func(t *testing.T) {
-			assert.NoError(t, l.Lock(context.Background(), "test"))
+		wg.Go(func() {
+			require.NoError(t, l.Lock(context.Background(), "test"))
 			// If there is a concurrency issue, it will very likely become visible here.
 			l.Unlock("test")
-			wg.Done()
-		}(t)
+		})
 	}
 
 	withTimeout(t, wg.Wait)
@@ -159,4 +158,29 @@ func TestLockerContextDeadlineExceeded(t *testing.T) {
 	})
 
 	require.NotPanics(t, func() { l.Unlock("test") })
+}
+
+// TestLockerConcurrencyWithSynctest uses testing/synctest for deterministic concurrent testing.
+func TestLockerConcurrencyWithSynctest(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		l := New()
+
+		var wg sync.WaitGroup
+		// Use a smaller number for synctest to keep test execution time reasonable
+		for range 100 {
+			wg.Go(func() {
+				require.NoError(t, l.Lock(context.Background(), "test"))
+				// If there is a concurrency issue, it will very likely become visible here.
+				l.Unlock("test")
+			})
+		}
+
+		// Wait for all goroutines to complete
+		wg.Wait()
+		// Ensure all goroutines in the bubble are durably blocked or finished
+		synctest.Wait()
+
+		// Since everything has unlocked the map should be empty.
+		require.Empty(t, l.locks)
+	})
 }
