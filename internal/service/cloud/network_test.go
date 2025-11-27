@@ -86,7 +86,7 @@ func (s *lanSuite) TestNetworkDeleteLANSuccessful() {
 func (s *lanSuite) TestNetworkGetLANSuccessful() {
 	lan := s.exampleLAN()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
-	foundLAN, err := s.service.getLAN(s.ctx, s.machineScope)
+	foundLAN, err := s.service.lan(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.NotNil(foundLAN)
 	s.Equal(lan, *foundLAN)
@@ -94,7 +94,7 @@ func (s *lanSuite) TestNetworkGetLANSuccessful() {
 
 func (s *lanSuite) TestNetworkGetLANNotFound() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{}}, nil).Once()
-	lan, err := s.service.getLAN(s.ctx, s.machineScope)
+	lan, err := s.service.lan(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.Nil(lan)
 }
@@ -104,7 +104,7 @@ func (s *lanSuite) TestNetworkGetLAN_ExistingLAN() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 
 	s.machineScope.IonosMachine.Spec.NetworkID = ptr.To("42")
-	foundLAN, err := s.service.getLAN(s.ctx, s.machineScope)
+	foundLAN, err := s.service.lan(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.NotNil(foundLAN)
 	s.Equal(lan, *foundLAN)
@@ -115,14 +115,14 @@ func (s *lanSuite) TestNetworkGetLAN_LANIDNotFound() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 
 	s.machineScope.IonosMachine.Spec.NetworkID = ptr.To("2")
-	foundLAN, err := s.service.getLAN(s.ctx, s.machineScope)
+	foundLAN, err := s.service.lan(s.ctx, s.machineScope)
 	s.EqualError(err, "LAN with ID 2 not found")
 	s.Nil(foundLAN)
 }
 
 func (s *lanSuite) TestNetworkGetLANErrorNotUnique() {
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{s.exampleLAN(), s.exampleLAN()}}, nil).Once()
-	lan, err := s.service.getLAN(s.ctx, s.machineScope)
+	lan, err := s.service.lan(s.ctx, s.machineScope)
 	s.Error(err)
 	s.Nil(lan)
 }

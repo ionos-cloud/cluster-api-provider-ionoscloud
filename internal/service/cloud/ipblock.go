@@ -199,7 +199,7 @@ func (s *Service) ReconcileFailoverIPBlockDeletion(ctx context.Context, ms *scop
 	}
 
 	// Check if IPBlock is still being used
-	lan, err := s.getLAN(ctx, ms)
+	lan, err := s.lan(ctx, ms)
 	if err != nil {
 		return false, err
 	}

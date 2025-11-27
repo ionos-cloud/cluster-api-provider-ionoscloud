@@ -318,7 +318,7 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
-	lan, err := s.getLAN(ctx, ms)
+	lan, err := s.lan(ctx, ms)
 	if err != nil {
 		return err
 	}
