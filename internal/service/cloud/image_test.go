@@ -194,7 +194,7 @@ func TestLookupImagesBySelector(t *testing.T) {
 		makeTestLabel("image", "image-1", "baz", "qux"),
 		makeTestLabel("image", "image-2", "baz", "qux"),
 		makeTestLabel("image", "image-2", "lazy", "brown"),
-		// partial matche
+		// partial match
 		makeTestLabel("image", "image-1", "over", "the"),
 		makeTestLabel("image", "image-2", "fox", "jumps"),
 		// full match

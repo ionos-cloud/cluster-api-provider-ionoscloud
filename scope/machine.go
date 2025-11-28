@@ -100,7 +100,7 @@ func (m *Machine) GetBootstrapDataSecret(ctx context.Context, log logr.Logger) (
 		Namespace: m.IonosMachine.Namespace,
 	}
 
-	log.WithName("GetBoostrapDataSecret").
+	log.WithName("GetBootstrapDataSecret").
 		V(4).
 		Info("searching for bootstrap data", "secret", key.String())
 

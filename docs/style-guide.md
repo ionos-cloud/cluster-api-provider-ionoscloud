@@ -86,7 +86,7 @@ The following requirements are only applicable to your final squashed commit. It
 
 - Use camel-case with capital letters for acronyms, e.g. HTTP, API, etc.
 - Import names and aliases SHOULD be precise. v1 isn't. E.g. in the context of K8s, we use corev1, metav1, appsv1 etc.
-- Be consistent here, too: Match parameters and type names at package level, e.g. single name for a client parameter across different functions. Match import aliases across files and preferably across the whole project. The importas linter can be used to enforce this.
+- Be consistent here, too: Match parameters and type names at package level, e.g. single name for a client parameter across different functions. Match import aliases across files and preferably across the whole project. The imports linter can be used to enforce this.
 - Use meaningful names. This is not C. But also not Java. Getters should not be prefixed with Get, see effective_go.
 - Prefer “node pool” over “nodepool”; "Data center" is a special case: Variables should have it as one word `datacenter` but comments should have it as two words `// data center`.
 - Package names SHOULD be in singular not plural form. E.g. middleware instead of middlewares. From a package consumer point of view it can also be better to have distinct subpackages in middleware instead of having a collection of middlewares that have nothing in common (besides being a middleware). However, no need to change plural names created by code generation tools like kubebuilder that don’t provide configuration options. We don’t want to fight our tools.
