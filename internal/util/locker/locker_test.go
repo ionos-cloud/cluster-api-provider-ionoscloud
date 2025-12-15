@@ -214,6 +214,8 @@ func TestLockerMultipleWaiters(t *testing.T) {
 
 		// Start multiple waiters
 		for i := range numWaiters {
+			//nolint:copyloopvar // We want to use the loop variable in the goroutine
+			i := i
 			wg.Go(func() {
 				//nolint:testifylint // Using assert in goroutine per go-require rule
 				assert.NoError(t, l.Lock(context.Background(), "test"))
