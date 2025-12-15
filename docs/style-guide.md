@@ -121,11 +121,11 @@ The following requirements are only applicable to your final squashed commit. It
 - All public functions of a package SHOULD be tested even if they are trivial.
 - If you add or change logic, you probably also need to touch the unit tests.
 - No need to retest stuff in integration tests that were already covered by unit tests.
-- Code coverage is good, but it is not required to get it to 100%. Cover the important code paths. Simple `if err != nil { return fmt.Errorf("...: %w", err) }` occurrences don’t need to be covered, we have the nilerr linter for that.
+- Code coverage is good, but it is not required to get it to 100%. Cover the important code paths. Simple `if err != nil { return fmt.Errorf("...: %w", err) }` occurrences don’t need to be covered, we have the `nilerr` linter for that.
 - Tests MUST run with enabled race detection.
 - Your table-driven test cases SHOULD NOT share any lines, so please avoid `}`, `{`.
 - Don’t overcomplicate table-driven tests. If the setup becomes increasingly complex consider refactoring instead of extending the test. Each control flow statement in the test body increases the probability that a separate test function should be implemented.
-- If you need a context in tests, use `context.Background()`.
+- If you need a context in tests, use [T.Context](https://pkg.go.dev/testing#T.Context).
 - When mocking calls, try to be precise. `mock.Anything` is fine for complicated data structures we don't care too much about (e.g. contexts), but don't overuse it.
 - `github.com/stretchr/testify` has lots of convenient functions. Use them. There’s more than `Equal()`. Same goes for `gomega/ginkgo`. An IDE might help you find those helpers.
 - Use testify’s require instead of assert if all assertions afterwards would fail anyway and don't provide more insights for debugging the test. Test setup code (like writing files or initializing data) MUST use require instead of ignoring errors.
@@ -143,8 +143,8 @@ The following requirements are only applicable to your final squashed commit. It
 
 ## CRDs, controllers, operators
 
-- Optional fields in CRDs SHOULD also use omitempty in their `json` struct tags.
-- When writing kubebuilder RBAC markers think about whether you use a caching client. If so, each `GET` will also issue a `LIST` and a `WATCH`.
+- Optional fields in CRDs SHOULD also use `omitempty` or `omitzero` in their `json` struct tags.
+- When writing `kubebuilder` RBAC markers think about whether you use a caching client. If so, each `GET` will also issue a `LIST` and a `WATCH`.
 
 ## Logging
 
