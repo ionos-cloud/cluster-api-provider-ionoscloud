@@ -94,7 +94,7 @@ controller-integration-test: envtest ## Run controller integration tests.
 
 define run-ginkgo
 KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" \
-	CGO_ENABLED=1 go run github.com/onsi/ginkgo/v2/ginkgo \
+	CGO_ENABLED=1 go tool ginkgo \
 	--randomize-all --randomize-suites \
 	--fail-fast --fail-on-pending \
 	-v --trace --show-node-events \
@@ -172,18 +172,18 @@ $(LOCALBIN):
 
 ## Tool Binaries
 KUBECTL ?= kubectl
+GOLANGCI ?= go tool golangci-lint
+MOCKERY ?= go tool mockery
+
+## Tools installed via go run (their deps conflict with main module k8s versions)
+KUSTOMIZE_VERSION ?= v5.7.1
+CONTROLLER_TOOLS_VERSION ?= v0.19.0
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-GOLANGCI ?= go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
-MOCKERY ?= go run github.com/vektra/mockery/v2@v2.53.5
-
-## Tool Versions
-KUSTOMIZE_VERSION ?= v5.7.1
-CONTROLLER_TOOLS_VERSION ?= v0.19.0
 
 .PHONY: kustomize
-kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary. If wrong version is installed, it will be removed before downloading.
+kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
 	@if test -x $(LOCALBIN)/kustomize && ! $(LOCALBIN)/kustomize version | grep -q $(KUSTOMIZE_VERSION); then \
 		echo "$(LOCALBIN)/kustomize version is not expected $(KUSTOMIZE_VERSION). Removing it before installing."; \
@@ -192,7 +192,7 @@ $(KUSTOMIZE): $(LOCALBIN)
 	test -s $(LOCALBIN)/kustomize || GOBIN=$(LOCALBIN) GO111MODULE=on go install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
 
 .PHONY: controller-gen
-controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary. If wrong version is installed, it will be overwritten.
+controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
 	test -s $(LOCALBIN)/controller-gen && $(LOCALBIN)/controller-gen --version | grep -q $(CONTROLLER_TOOLS_VERSION) || \
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
@@ -298,7 +298,7 @@ docker-build-e2e: ## Build docker image with the manager.
 
 .PHONY: test-e2e
 test-e2e: docker-build-e2e ## Run the end-to-end tests
-	CGO_ENABLED=1 go run github.com/onsi/ginkgo/v2/ginkgo -v --trace \
+	CGO_ENABLED=1 go tool ginkgo -v --trace \
 	-poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
 	-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" --fail-fast \
 	$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --label-filter=$(GINKGO_LABEL) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
