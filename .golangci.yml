@@ -205,4 +205,4 @@ run:
     - e2e
   timeout: 10m
   allow-parallel-runners: true
-  go: "1.22"
+  go: "1.24"
