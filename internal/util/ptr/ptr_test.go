@@ -25,8 +25,8 @@ import (
 func Test_PtrTo(t *testing.T) {
 	type testType struct{}
 
-	require.IsType(t, (*testType)(nil), To(testType{}))
-	require.IsType(t, (**testType)(nil), To((*testType)(nil)))
+	require.IsType(t, (*testType)(nil), new(testType{}))
+	require.IsType(t, (**testType)(nil), new((*testType)(nil)))
 }
 
 func Test_PtrDeref(t *testing.T) {

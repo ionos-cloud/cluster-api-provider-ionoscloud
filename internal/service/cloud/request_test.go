@@ -41,11 +41,11 @@ func TestMatcher_MatchByName(t *testing.T) {
 	require.False(t, matchByNameFunc(&sdk.Server{}, sdk.Request{}))
 	testServer := sdk.Server{
 		Properties: &sdk.ServerProperties{
-			Name: ptr.To("test"),
+			Name: new("test"),
 		},
 	}
 	require.True(t, matchByNameFunc(&testServer, sdk.Request{}))
-	testServer.Properties.Name = ptr.To("wrong")
+	testServer.Properties.Name = new("wrong")
 	require.False(t, matchByNameFunc(&testServer, sdk.Request{}))
 
 	// l := (&sdk.Info{}).GetName()
@@ -63,8 +63,8 @@ func TestGetRequestStatusTestSuite(t *testing.T) {
 
 func (s *getRequestStatusSuite) TestGetRequestStatusMissingMetadata() {
 	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
-		Href:     ptr.To(baseTestURL),
-		Id:       ptr.To("12345"),
+		Href:     new(baseTestURL),
+		Id:       new("12345"),
 		Metadata: nil,
 	}, nil).Once()
 
@@ -85,11 +85,11 @@ func (s *getRequestStatusSuite) TestGetRequestStatusMissingMetadata() {
 
 func (s *getRequestStatusSuite) TestGetRequestStatus() {
 	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
-		Href: ptr.To(baseTestURL),
-		Id:   ptr.To("12345"),
+		Href: new(baseTestURL),
+		Id:   new("12345"),
 		Metadata: &sdk.RequestStatusMetadata{
 			Status:  ptr.To(sdk.RequestStatusFailed),
-			Message: ptr.To("Failed to do foo and bar"),
+			Message: new("Failed to do foo and bar"),
 		},
 	}, nil).Once()
 
@@ -99,8 +99,8 @@ func (s *getRequestStatusSuite) TestGetRequestStatus() {
 	s.Equal("Failed to do foo and bar", message, "message should be 'Failed to do foo and bar'")
 
 	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
-		Href: ptr.To(baseTestURL),
-		Id:   ptr.To("12345"),
+		Href: new(baseTestURL),
+		Id:   new("12345"),
 		Metadata: &sdk.RequestStatusMetadata{
 			Status:  ptr.To(sdk.RequestStatusQueued),
 			Message: nil,
@@ -225,7 +225,7 @@ func TestFindResourceTestSuite(t *testing.T) {
 func (s *findResourceSuite) TestListingIsEnough() {
 	resource, request, err := findResource(
 		s.ctx,
-		func(_ context.Context) (*int, error) { return ptr.To(42), nil },
+		func(_ context.Context) (*int, error) { return new(42), nil },
 		func(_ context.Context) (*requestInfo, error) { panic("don't call me") },
 	)
 	s.NoError(err)
@@ -257,7 +257,7 @@ func (s *findResourceSuite) TestFoundOnSecondListing() {
 			if listCalls == 1 {
 				return nil, nil
 			}
-			return ptr.To(42), nil
+			return new(42), nil
 		},
 		func(_ context.Context) (*requestInfo, error) { return &requestInfo{status: sdk.RequestStatusDone}, nil },
 	)
@@ -322,7 +322,7 @@ func TestRequestInfo(t *testing.T) {
 }
 
 func TestMetadataHolder(t *testing.T) {
-	lan1 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: ptr.To("BUSY")}}
+	lan1 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: new("BUSY")}}
 	lan2 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(sdk.Available)}}
 
 	require.False(t, isAvailable(getState(lan1)))

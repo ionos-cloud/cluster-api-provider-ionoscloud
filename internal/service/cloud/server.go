@@ -373,12 +373,12 @@ func (*Service) buildServerProperties(
 	ms *scope.Machine, machineSpec *infrav1.IonosCloudMachineSpec,
 ) sdk.ServerProperties {
 	props := sdk.ServerProperties{
-		AvailabilityZone: ptr.To(machineSpec.AvailabilityZone.String()),
+		AvailabilityZone: new(machineSpec.AvailabilityZone.String()),
 		Cores:            &machineSpec.NumCores,
-		Name:             ptr.To(ms.IonosMachine.Name),
+		Name:             new(ms.IonosMachine.Name),
 		Ram:              &machineSpec.MemoryMB,
 		CpuFamily:        machineSpec.CPUFamily,
-		Type:             ptr.To(machineSpec.Type.String()),
+		Type:             new(machineSpec.Type.String()),
 	}
 
 	return props
@@ -396,10 +396,10 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	machineSpec := params.machineSpec
 	bootVolume := sdk.Volume{
 		Properties: &sdk.VolumeProperties{
-			AvailabilityZone: ptr.To(machineSpec.Disk.AvailabilityZone.String()),
-			Name:             ptr.To(s.volumeName(ms.IonosMachine)),
-			Size:             ptr.To(float32(machineSpec.Disk.SizeGB)),
-			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
+			AvailabilityZone: new(machineSpec.Disk.AvailabilityZone.String()),
+			Name:             new(s.volumeName(ms.IonosMachine)),
+			Size:             new(float32(machineSpec.Disk.SizeGB)),
+			Type:             new(machineSpec.Disk.DiskType.String()),
 			UserData:         &params.boostrapData,
 		},
 	}
@@ -415,15 +415,15 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	primaryNIC := sdk.Nic{
 		Properties: &sdk.NicProperties{
 			Lan:  &params.lanID,
-			Name: ptr.To(s.nicName(ms.IonosMachine)),
-			Dhcp: ptr.To(true),
+			Name: new(s.nicName(ms.IonosMachine)),
+			Dhcp: new(true),
 		},
 	}
 
 	if ms.IonosMachine.Status.MachineNetworkInfo != nil {
 		nicInfo := ms.IonosMachine.Status.MachineNetworkInfo.NICInfo[0]
-		primaryNIC.Properties.Ips = ptr.To(nicInfo.IPv4Addresses)
-		primaryNIC.Properties.Ipv6Ips = ptr.To(nicInfo.IPv6Addresses)
+		primaryNIC.Properties.Ips = new(nicInfo.IPv4Addresses)
+		primaryNIC.Properties.Ipv6Ips = new(nicInfo.IPv6Addresses)
 	}
 
 	// In case we want to retrieve a public IP from the DHCP, we need to
@@ -449,8 +449,8 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 
 		if ms.IonosMachine.Status.MachineNetworkInfo != nil {
 			nicInfo := ms.IonosMachine.Status.MachineNetworkInfo.NICInfo[i+1]
-			nic.Properties.Ips = ptr.To(nicInfo.IPv4Addresses)
-			nic.Properties.Ipv6Ips = ptr.To(nicInfo.IPv6Addresses)
+			nic.Properties.Ips = new(nicInfo.IPv4Addresses)
+			nic.Properties.Ipv6Ips = new(nicInfo.IPv6Addresses)
 		}
 
 		items = append(items, nic)

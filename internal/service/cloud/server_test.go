@@ -53,7 +53,7 @@ func (s *serverSuite) TestReconcileServerNoBootstrapSecret() {
 	s.True(requeue)
 	s.Error(err)
 
-	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
+	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = new("test")
 	requeue, err = s.service.ReconcileServer(s.ctx, s.machineScope)
 	s.False(requeue)
 	s.NoError(err)
@@ -77,7 +77,7 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateBusy() {
 				State: ptr.To(sdk.Busy),
 			},
 			Properties: &sdk.ServerProperties{
-				Name: ptr.To(s.infraMachine.Name),
+				Name: new(s.infraMachine.Name),
 			},
 		},
 	}}, nil).Once()
@@ -96,19 +96,19 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailable() {
 				State: ptr.To(sdk.Available),
 			},
 			Properties: &sdk.ServerProperties{
-				Name:    ptr.To(s.infraMachine.Name),
-				VmState: ptr.To("RUNNING"),
+				Name:    new(s.infraMachine.Name),
+				VmState: new("RUNNING"),
 			},
 			Entities: &sdk.ServerEntities{
 				Nics: &sdk.Nics{
 					Items: &[]sdk.Nic{{
 						Properties: &sdk.NicProperties{
-							Name:          ptr.To(s.service.nicName(s.infraMachine)),
-							Dhcp:          ptr.To(true),
-							Lan:           ptr.To(int32(1)),
-							Ips:           ptr.To([]string{"198.51.100.10"}),
-							Ipv6CidrBlock: ptr.To("2001:db8:2c0:301::/64"),
-							Ipv6Ips:       ptr.To([]string{"2001:db8:2c0:301::1"}),
+							Name:          new(s.service.nicName(s.infraMachine)),
+							Dhcp:          new(true),
+							Lan:           new(int32(1)),
+							Ips:           new([]string{"198.51.100.10"}),
+							Ipv6CidrBlock: new("2001:db8:2c0:301::/64"),
+							Ipv6Ips:       new([]string{"2001:db8:2c0:301::1"}),
 						},
 					}},
 				},
@@ -132,13 +132,13 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{s.examplePostRequest(sdk.RequestStatusDone)}, nil)
 	s.mockListServersCall().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
-			Id: ptr.To(exampleServerID),
+			Id: new(exampleServerID),
 			Metadata: &sdk.DatacenterElementMetadata{
 				State: ptr.To(sdk.Available),
 			},
 			Properties: &sdk.ServerProperties{
-				Name:    ptr.To(s.infraMachine.Name),
-				VmState: ptr.To("SHUTOFF"),
+				Name:    new(s.infraMachine.Name),
+				VmState: new("SHUTOFF"),
 			},
 		},
 	}}, nil).Once()
@@ -153,19 +153,19 @@ func (s *serverSuite) TestReconcileServerRequestDoneStateAvailableTurnedOff() {
 func (s *serverSuite) TestReconcileServerAdditionalNetworks() {
 	s.machineScope.IonosMachine.Spec.AdditionalNetworks = []infrav1.Network{{
 		NetworkID: 43,
-		DHCP:      ptr.To(false),
+		DHCP:      new(false),
 	}, {
 		NetworkID: 44,
-		DHCP:      ptr.To(true),
+		DHCP:      new(true),
 	}}
 
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
-		Id: ptr.To(exampleLANID),
+		Id: new(exampleLANID),
 		Properties: &sdk.LanProperties{
-			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
-			Public: ptr.To(true),
+			Name:   new(s.service.lanName(s.clusterScope.Cluster)),
+			Public: new(true),
 		},
 	}}}, nil)
 
@@ -173,15 +173,15 @@ func (s *serverSuite) TestReconcileServerAdditionalNetworks() {
 	*entities.Nics.Items = append(*entities.Nics.Items, sdk.Nic{
 		Properties: &sdk.NicProperties{
 			Lan:  ptr.To[int32](43),
-			Dhcp: ptr.To(false),
+			Dhcp: new(false),
 		},
 	}, sdk.Nic{
 		Properties: &sdk.NicProperties{
 			Lan:  ptr.To[int32](44),
-			Dhcp: ptr.To(true),
+			Dhcp: new(true),
 		},
 	})
-	s.mockCreateServerCall(properties, entities).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
+	s.mockCreateServerCall(properties, entities).Return(&sdk.Server{Id: new("12345")}, "location/to/server", nil)
 
 	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
 	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
@@ -192,12 +192,12 @@ func (s *serverSuite) TestReconcileServerAdditionalNetworks() {
 func (s *serverSuite) TestReconcileEnterpriseServerNoRequest() {
 	s.prepareReconcileServerRequestTest()
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
-	s.mockCreateServerCall(s.defaultServerComponents()).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
+	s.mockCreateServerCall(s.defaultServerComponents()).Return(&sdk.Server{Id: new("12345")}, "location/to/server", nil)
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
-		Id: ptr.To(exampleLANID),
+		Id: new(exampleLANID),
 		Properties: &sdk.LanProperties{
-			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
-			Public: ptr.To(true),
+			Name:   new(s.service.lanName(s.clusterScope.Cluster)),
+			Public: new(true),
 		},
 	}}}, nil)
 
@@ -212,13 +212,13 @@ func (s *serverSuite) TestReconcileVCPUServerNoRequest() {
 	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
 
 	props, entities := s.defaultServerComponents()
-	props.Type = ptr.To(infrav1.ServerTypeVCPU.String())
-	s.mockCreateServerCall(props, entities).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
+	props.Type = new(infrav1.ServerTypeVCPU.String())
+	s.mockCreateServerCall(props, entities).Return(&sdk.Server{Id: new("12345")}, "location/to/server", nil)
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
-		Id: ptr.To(exampleLANID),
+		Id: new(exampleLANID),
 		Properties: &sdk.LanProperties{
-			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
-			Public: ptr.To(true),
+			Name:   new(s.service.lanName(s.clusterScope.Cluster)),
+			Public: new(true),
 		},
 	}}}, nil)
 
@@ -243,14 +243,14 @@ func (s *serverSuite) prepareReconcileServerRequestTest() {
 
 	s.NoError(s.k8sClient.Create(s.ctx, bootstrapSecret))
 
-	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("test")
+	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = new("test")
 	s.machineScope.IonosMachine.Spec.ProviderID = nil
 	s.mockListServersCall().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
 }
 
 func (s *serverSuite) TestReconcileServerDeletion() {
 	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
-		Id: ptr.To(exampleServerID),
+		Id: new(exampleServerID),
 	}, nil)
 
 	reqLocation := "delete/location"
@@ -264,16 +264,16 @@ func (s *serverSuite) TestReconcileServerDeletion() {
 
 func (s *serverSuite) TestReconcileServerDeletionDeleteBootVolume() {
 	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
-		Id: ptr.To(exampleServerID),
+		Id: new(exampleServerID),
 		Properties: &sdk.ServerProperties{
 			BootVolume: &sdk.ResourceReference{
-				Id: ptr.To(exampleBootVolumeID),
+				Id: new(exampleBootVolumeID),
 			},
 		},
 	}, nil).Once()
 
 	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
-		Id: ptr.To(exampleServerID),
+		Id: new(exampleServerID),
 	}, nil).Once()
 
 	reqLocationVolume := "delete/location/volume"
@@ -292,12 +292,12 @@ func (s *serverSuite) TestReconcileServerDeletionDeleteBootVolume() {
 }
 
 func (s *serverSuite) TestReconcileServerDeletionDeleteAllVolumes() {
-	s.clusterScope.Cluster.DeletionTimestamp = ptr.To(metav1.Now())
+	s.clusterScope.Cluster.DeletionTimestamp = new(metav1.Now())
 	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
-		Id: ptr.To(exampleServerID),
+		Id: new(exampleServerID),
 		Properties: &sdk.ServerProperties{
 			BootVolume: &sdk.ResourceReference{
-				Id: ptr.To(exampleBootVolumeID),
+				Id: new(exampleBootVolumeID),
 			},
 		},
 	}, nil).Once()
@@ -358,7 +358,7 @@ func (s *serverSuite) TestReconcileServerDeletionCreateRequestPending() {
 
 func (s *serverSuite) TestReconcileServerDeletionRequestPending() {
 	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
-		Id: ptr.To(exampleServerID),
+		Id: new(exampleServerID),
 	}, nil)
 
 	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusQueued, exampleServerID)
@@ -376,7 +376,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestPending() {
 
 func (s *serverSuite) TestReconcileServerDeletionRequestDone() {
 	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
-		Id: ptr.To(exampleServerID),
+		Id: new(exampleServerID),
 	}, nil)
 
 	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusDone, exampleServerID)
@@ -392,7 +392,7 @@ func (s *serverSuite) TestReconcileServerDeletionRequestDone() {
 
 func (s *serverSuite) TestReconcileServerDeletionRequestFailed() {
 	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
-		Id: ptr.To(exampleServerID),
+		Id: new(exampleServerID),
 	}, nil)
 
 	exampleRequest := s.exampleDeleteRequest(sdk.RequestStatusFailed, exampleServerID)
@@ -436,7 +436,7 @@ func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
 	s.mockListServersCall().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
 			Properties: &sdk.ServerProperties{
-				Name: ptr.To(s.infraMachine.Name),
+				Name: new(s.infraMachine.Name),
 			},
 		},
 	}}, nil)
@@ -449,14 +449,14 @@ func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
 //nolint:unused
 func (*serverSuite) exampleServer() sdk.Server {
 	return sdk.Server{
-		Id: ptr.To("1"),
+		Id: new("1"),
 		Metadata: &sdk.DatacenterElementMetadata{
 			State: ptr.To(sdk.Available),
 		},
 		Properties: &sdk.ServerProperties{
-			AvailabilityZone: ptr.To("AUTO"),
+			AvailabilityZone: new("AUTO"),
 			BootVolume: &sdk.ResourceReference{
-				Id:   ptr.To("1"),
+				Id:   new("1"),
 				Type: ptr.To(sdk.VOLUME),
 			},
 			Name:    nil,

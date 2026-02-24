@@ -138,8 +138,8 @@ func (s *ServiceTestSuite) SetupTest() {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: s.capiCluster.Name,
-			Version:     ptr.To("v1.26.12"),
-			ProviderID:  ptr.To("ionos://" + exampleServerID),
+			Version:     new("v1.26.12"),
+			ProviderID:  new("ionos://" + exampleServerID),
 		},
 	}
 	s.infraMachine = &infrav1.IonosCloudMachine{
@@ -152,12 +152,12 @@ func (s *ServiceTestSuite) SetupTest() {
 			},
 		},
 		Spec: infrav1.IonosCloudMachineSpec{
-			ProviderID:       ptr.To("ionos://" + exampleServerID),
+			ProviderID:       new("ionos://" + exampleServerID),
 			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
 			MemoryMB:         4096,
-			CPUFamily:        ptr.To("AMD_OPTERON"),
+			CPUFamily:        new("AMD_OPTERON"),
 			Disk: &infrav1.Volume{
 				Name:             "test-machine-hdd",
 				DiskType:         infrav1.VolumeDiskTypeHDD,
@@ -225,7 +225,7 @@ func (*ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request {
 				Href: &opts.href,
 				Metadata: &sdk.RequestStatusMetadata{
 					Status:  &opts.status,
-					Message: ptr.To("test"),
+					Message: new("test"),
 				},
 			},
 		},
@@ -252,14 +252,14 @@ func (*ServiceTestSuite) exampleRequest(opts requestBuildOptions) sdk.Request {
 
 func (s *ServiceTestSuite) defaultServer(m *infrav1.IonosCloudMachine, ips ...string) *sdk.Server {
 	return &sdk.Server{
-		Id: ptr.To(exampleServerID),
+		Id: new(exampleServerID),
 		Entities: &sdk.ServerEntities{
 			Nics: &sdk.Nics{
 				Items: &[]sdk.Nic{{
-					Id: ptr.To(exampleNICID),
+					Id: new(exampleNICID),
 					Properties: &sdk.NicProperties{
-						Dhcp: ptr.To(true),
-						Name: ptr.To(s.service.nicName(m)),
+						Dhcp: new(true),
+						Name: new(s.service.nicName(m)),
 						Ips:  &ips,
 					},
 				}},
@@ -289,9 +289,9 @@ func (s *ServiceTestSuite) buildIPBlockRequestWithName(name, status, method, id 
 
 func (s *ServiceTestSuite) exampleLAN() sdk.Lan {
 	return sdk.Lan{
-		Id: ptr.To(exampleLANID),
+		Id: new(exampleLANID),
 		Properties: &sdk.LanProperties{
-			Name: ptr.To(s.service.lanName(s.clusterScope.Cluster)),
+			Name: new(s.service.lanName(s.clusterScope.Cluster)),
 		},
 		Metadata: &sdk.DatacenterElementMetadata{
 			State: ptr.To(sdk.Available),
@@ -307,12 +307,12 @@ func (s *ServiceTestSuite) exampleLAN() sdk.Lan {
 func (s *ServiceTestSuite) defaultServerComponents() (sdk.ServerProperties, sdk.ServerEntities) {
 	m := s.machineScope.IonosMachine
 	props := sdk.ServerProperties{
-		AvailabilityZone: ptr.To(m.Spec.AvailabilityZone.String()),
-		Cores:            ptr.To(m.Spec.NumCores),
+		AvailabilityZone: new(m.Spec.AvailabilityZone.String()),
+		Cores:            new(m.Spec.NumCores),
 		CpuFamily:        m.Spec.CPUFamily,
-		Name:             ptr.To(m.Name),
-		Ram:              ptr.To(m.Spec.MemoryMB),
-		Type:             ptr.To(m.Spec.Type.String()),
+		Name:             new(m.Name),
+		Ram:              new(m.Spec.MemoryMB),
+		Type:             new(m.Spec.Type.String()),
 	}
 
 	lanID, _ := strconv.ParseInt(exampleLANID, 10, 32)
@@ -320,19 +320,19 @@ func (s *ServiceTestSuite) defaultServerComponents() (sdk.ServerProperties, sdk.
 	entities := sdk.ServerEntities{
 		Nics: &sdk.Nics{Items: &[]sdk.Nic{{
 			Properties: &sdk.NicProperties{
-				Lan:  ptr.To(int32(lanID)),
-				Name: ptr.To(s.service.nicName(m)),
-				Dhcp: ptr.To(true),
+				Lan:  new(int32(lanID)),
+				Name: new(s.service.nicName(m)),
+				Dhcp: new(true),
 			},
 		}}},
 		Volumes: &sdk.AttachedVolumes{
 			Items: &[]sdk.Volume{{
 				Properties: &sdk.VolumeProperties{
-					AvailabilityZone: ptr.To(m.Spec.Disk.AvailabilityZone.String()),
-					Image:            ptr.To(m.Spec.Disk.Image.ID),
-					Name:             ptr.To(s.service.volumeName(m)),
-					Type:             ptr.To(m.Spec.Disk.DiskType.String()),
-					Size:             ptr.To(float32(m.Spec.Disk.SizeGB)),
+					AvailabilityZone: new(m.Spec.Disk.AvailabilityZone.String()),
+					Image:            new(m.Spec.Disk.Image.ID),
+					Name:             new(s.service.volumeName(m)),
+					Type:             new(m.Spec.Disk.DiskType.String()),
+					Size:             new(float32(m.Spec.Disk.SizeGB)),
 					UserData:         nil,
 				},
 			}},

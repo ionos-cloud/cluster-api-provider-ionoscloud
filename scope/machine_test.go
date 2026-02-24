@@ -31,7 +31,6 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 func exampleParams(t *testing.T) MachineParams {
@@ -101,14 +100,14 @@ func TestMachineParamsNilLockerShouldFail(t *testing.T) {
 func TestMachineHasFailedFailureMessage(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
-	scope.IonosMachine.Status.FailureMessage = ptr.To("¯\\_(ツ)_/¯")
+	scope.IonosMachine.Status.FailureMessage = new("¯\\_(ツ)_/¯")
 	require.True(t, scope.HasFailed())
 }
 
 func TestMachineHasFailedFailureReason(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
-	scope.IonosMachine.Status.FailureReason = (*capierrors.MachineStatusError)(ptr.To("¯\\_(ツ)_/¯"))
+	scope.IonosMachine.Status.FailureReason = (*capierrors.MachineStatusError)(new("¯\\_(ツ)_/¯"))
 	require.True(t, scope.HasFailed())
 }
 
