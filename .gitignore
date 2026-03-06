@@ -33,6 +33,7 @@ envfile
 .idea
 .run
 .vscode
+.devcontainer
 *.swp
 *.swo
 *~
@@ -55,3 +56,8 @@ clusterctl-settings.json
 templates/clusterclass-template-replaced.yaml
 templates/cluster-template-topology-replaced.yaml
 output/
+
+# ai stuff
+.claude
+CLAUDE.md
+.cursor
