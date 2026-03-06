@@ -69,7 +69,7 @@ func (s *Service) ReconcileLAN(ctx context.Context, ms *scope.Machine) (requeue 
 	}
 	defer ms.Locker.Unlock(lockKey)
 
-	lan, request, err := scopedFindResource(ctx, ms, s.lan, s.getLatestLANCreationRequest)
+	lan, request, err := scopedFindResource(ctx, ms, s.getLAN, s.getLatestLANCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -109,7 +109,7 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.Machine) (
 	defer ms.Locker.Unlock(lockKey)
 
 	// Try to retrieve the cluster LAN or even check if it's currently still being created.
-	lan, request, err := scopedFindResource(ctx, ms, s.lan, s.getLatestLANCreationRequest)
+	lan, request, err := scopedFindResource(ctx, ms, s.getLAN, s.getLatestLANCreationRequest)
 	if err != nil {
 		return false, err
 	}
@@ -146,8 +146,8 @@ func (s *Service) ReconcileLANDeletion(ctx context.Context, ms *scope.Machine) (
 	return err == nil, err
 }
 
-// lan tries to retrieve the cluster-related LAN in the data center.
-func (s *Service) lan(ctx context.Context, ms *scope.Machine) (*sdk.Lan, error) {
+// getLAN tries to retrieve the cluster-related LAN in the data center.
+func (s *Service) getLAN(ctx context.Context, ms *scope.Machine) (*sdk.Lan, error) {
 	depth := int32(2) // for listing the LANs with their number of NICs
 
 	// check if the LAN exists
@@ -410,7 +410,7 @@ func (s *Service) swapNICInFailoverGroup(
 	matchLabels client.MatchingLabels,
 ) (requeue bool, err error) {
 	log := s.logger.WithName("swapNICInFailoverGroup")
-	nicID, err := s.serverNICID(ctx, ms)
+	nicID, err := s.getServerNICID(ctx, ms)
 	if err != nil {
 		return false, err
 	}
@@ -470,7 +470,7 @@ func (s *Service) swapNICInFailoverGroup(
 }
 
 func (s *Service) ensureFailoverDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
-	nicID, err := s.serverNICID(ctx, ms)
+	nicID, err := s.getServerNICID(ctx, ms)
 	if err != nil || nicID == "" {
 		return false, err
 	}
@@ -478,8 +478,8 @@ func (s *Service) ensureFailoverDeletion(ctx context.Context, ms *scope.Machine)
 	return s.removeNICFromFailoverGroup(ctx, ms, nicID)
 }
 
-func (s *Service) serverNICID(ctx context.Context, ms *scope.Machine) (string, error) {
-	log := s.logger.WithName("serverNICID")
+func (s *Service) getServerNICID(ctx context.Context, ms *scope.Machine) (string, error) {
+	log := s.logger.WithName("getServerNICID")
 	server, err := s.getServer(ctx, ms)
 	if err != nil {
 		if isNotFound(err) {
@@ -611,7 +611,7 @@ func (s *Service) retrieveLANFailoverConfig(
 ) (requeue bool, err error) {
 	log := s.logger.WithName("retrieveLANFailoverConfig")
 
-	gotLAN, err := s.lan(ctx, ms)
+	gotLAN, err := s.getLAN(ctx, ms)
 	if err != nil {
 		return true, err
 	}

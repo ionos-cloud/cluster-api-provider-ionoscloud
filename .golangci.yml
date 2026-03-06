@@ -43,6 +43,7 @@ linters:
     - tagalign
     - testifylint
     - typecheck
+    - usetesting
     - unconvert
     - unparam
     - unused

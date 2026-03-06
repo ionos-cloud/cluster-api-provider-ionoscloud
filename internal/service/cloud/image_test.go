@@ -17,7 +17,6 @@ limitations under the License.
 package cloud
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"testing"
@@ -184,7 +183,7 @@ func TestFilterImagesByName(t *testing.T) {
 }
 
 func TestLookupImagesBySelector(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ionosClient := clienttest.NewMockClient(t)
 	ionosClient.EXPECT().ListLabels(ctx).Return([]sdk.Label{
 		// wrong resource type

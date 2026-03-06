@@ -181,7 +181,7 @@ func TestCluster_GetControlPlaneEndpointIP(t *testing.T) {
 					},
 				},
 			}
-			got, err := c.GetControlPlaneEndpointIP(context.Background())
+			got, err := c.GetControlPlaneEndpointIP(t.Context())
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
 		})
@@ -272,7 +272,7 @@ func TestClusterListMachines(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, cs)
 
-			machines, err := cs.ListMachines(context.Background(), test.searchLabels)
+			machines, err := cs.ListMachines(t.Context(), test.searchLabels)
 			require.NoError(t, err)
 			require.Len(t, machines, len(test.expectedNames))
 
@@ -392,7 +392,7 @@ func TestCurrentRequestByDatacenterAccessors(t *testing.T) {
 	lockKey := cluster.currentRequestByDatacenterLockKey()
 	require.Equal(t, "uid/currentRequestByDatacenter", lockKey)
 
-	_ = cluster.Locker.Lock(context.Background(), lockKey)
+	_ = cluster.Locker.Lock(t.Context(), lockKey)
 	require.Empty(t, cluster.IonosCluster.Status.CurrentRequestByDatacenter)
 	cluster.Locker.Unlock(lockKey)
 }
