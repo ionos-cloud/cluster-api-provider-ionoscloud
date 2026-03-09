@@ -153,7 +153,6 @@ func TestLockerMultipleKeysIsolation(t *testing.T) {
 
 		l.Unlock("key1")
 		l.Unlock("key2")
-		synctest.Wait()
 
 		require.Empty(t, l.locks)
 	})
@@ -188,7 +187,6 @@ func TestLockerContextCanceledWhileWaiting(t *testing.T) {
 
 		// Unlock and verify cleanup
 		l.Unlock("test")
-		synctest.Wait()
 		require.Empty(t, l.locks)
 	})
 }
