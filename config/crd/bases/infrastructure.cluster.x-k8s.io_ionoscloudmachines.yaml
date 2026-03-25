@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: ionoscloudmachines.infrastructure.cluster.x-k8s.io
 spec:
   group: infrastructure.cluster.x-k8s.io
@@ -200,7 +200,6 @@ spec:
                     properties:
                       id:
                         description: ID is the ID of the image to use for the VM.
-                          Has precedence over selector.
                         type: string
                       selector:
                         description: |-
@@ -234,8 +233,10 @@ spec:
                         type: object
                     type: object
                     x-kubernetes-validations:
-                    - message: must provide either id or selector
-                      rule: self.id != '' || has(self.selector)
+                    - message: exactly one of the fields in [id selector] must be
+                        set
+                      rule: '[has(self.id),has(self.selector)].filter(x,x==true).size()
+                        == 1'
                   name:
                     description: Name is the name of the volume
                     type: string

@@ -352,6 +352,16 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 					Expect(m.Spec.Disk.Image.Selector.UseMachineVersion).ToNot(BeNil())
 					Expect(*m.Spec.Disk.Image.Selector.UseMachineVersion).To(BeTrue())
 				})
+				It("should fail if both ID and selector are set", func() {
+					m := defaultMachine()
+					m.Spec.Disk.Image.ID = "1eef-48ec-a246-a51a33aa4f3a"
+					m.Spec.Disk.Image.Selector = &ImageSelector{
+						MatchLabels: map[string]string{
+							"foo": "bar",
+						},
+					}
+					Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+				})
 			})
 		})
 		Context("Additional Networks", func() {
