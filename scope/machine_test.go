@@ -95,7 +95,6 @@ func TestMachineParamsNilLockerShouldFail(t *testing.T) {
 	require.Error(t, err)
 }
 
-
 func TestCountMachinesWithDifferentLabels(t *testing.T) {
 	scope, err := NewMachine(exampleParams(t))
 	require.NoError(t, err)
