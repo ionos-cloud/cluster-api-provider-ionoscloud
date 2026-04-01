@@ -219,7 +219,7 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 	// Ensuring a CNI file is defined in the config and register a FileTransformation to
 	// inject the referenced file in place of the CNI_RESOURCES envSubst variable.
 	Expect(config.Variables).To(HaveKey(CNIPath), "Missing %s variable in the config", CNIPath)
-	cniPath := config.GetVariable(CNIPath)
+	cniPath := config.MustGetVariable(CNIPath)
 	Expect(cniPath).To(BeAnExistingFile(), "The %s variable should resolve to an existing file", CNIPath)
 
 	createRepositoryInput.RegisterClusterResourceSetConfigMapTransformation(cniPath, CNIResources)
@@ -233,7 +233,7 @@ func setupBootstrapCluster(scheme *runtime.Scheme) (bootstrap.ClusterProvider, f
 	kubeconfigPath := ""
 	if !useExistingCluster {
 		clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(ctx, bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
-			KubernetesVersion: e2eConfig.GetVariable(KubernetesVersion),
+			KubernetesVersion: e2eConfig.MustGetVariable(KubernetesVersion),
 			Name:              e2eConfig.ManagementClusterName,
 			Images:            e2eConfig.Images,
 			LogFolder:         filepath.Join(artifactFolder, "kind"),
