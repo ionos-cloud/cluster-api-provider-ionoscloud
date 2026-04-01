@@ -1,6 +1,6 @@
 module github.com/ionos-cloud/cluster-api-provider-ionoscloud
 
-go 1.24.13
+go 1.25
 
 require (
 	github.com/go-logr/logr v1.4.3

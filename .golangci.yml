@@ -42,8 +42,8 @@ linters:
     - stylecheck
     - tagalign
     - testifylint
-    - tenv
     - typecheck
+    - usetesting
     - unconvert
     - unparam
     - unused

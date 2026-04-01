@@ -599,7 +599,7 @@ func (s *Service) removeNICFromFailoverGroup(
 
 	// Found the NIC, remove it from the failover group
 	log.V(4).Info("Found NIC in failover group", "nicID", nicID)
-	ipFailoverConfig = append(ipFailoverConfig[:index], ipFailoverConfig[index+1:]...)
+	ipFailoverConfig = slices.Delete(ipFailoverConfig, index, index+1)
 	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
 
 	log.V(4).Info("Patching LAN failover group to remove NIC", "nicID", nicID)
