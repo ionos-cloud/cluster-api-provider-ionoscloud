@@ -39,11 +39,12 @@ import (
 )
 
 var (
-	scheme               = runtime.NewScheme()
-	setupLog             = ctrl.Log.WithName("setup")
-	healthProbeAddr      string
-	enableLeaderElection bool
-	managerOptions       = flags.ManagerOptions{}
+	scheme                   = runtime.NewScheme()
+	setupLog                 = ctrl.Log.WithName("setup")
+	healthProbeAddr          string
+	enableLeaderElection     bool
+	managerOptions           = flags.ManagerOptions{}
+	skipCRDMigrationPhases   []string
 
 	icClusterConcurrency int
 	icMachineConcurrency int
@@ -142,6 +143,8 @@ func initFlags() {
 	pflag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	pflag.StringArrayVar(&skipCRDMigrationPhases, "skip-crd-migration-phases", []string{},
+		"CRD migration phases to skip. Use when the CAPI CRDMigrator handles migration.")
 	pflag.IntVar(&icClusterConcurrency, "ionoscloudcluster-concurrency", 1,
 		"Number of IonosCloudClusters to process simultaneously")
 	pflag.IntVar(&icMachineConcurrency, "ionoscloudmachine-concurrency", 1,
