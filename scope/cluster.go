@@ -27,8 +27,8 @@ import (
 	"time"
 
 	"k8s.io/client-go/util/retry"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -99,7 +99,11 @@ func NewCluster(params ClusterParams) (*Cluster, error) {
 
 // GetControlPlaneEndpoint returns the endpoint for the IonosCloudCluster.
 func (c *Cluster) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
-	return c.IonosCluster.Spec.ControlPlaneEndpoint
+	ep := c.IonosCluster.Spec.ControlPlaneEndpoint
+	return clusterv1.APIEndpoint{
+		Host: ep.Host,
+		Port: ep.Port,
+	}
 }
 
 // GetControlPlaneEndpointIP returns the endpoint IP for the IonosCloudCluster.

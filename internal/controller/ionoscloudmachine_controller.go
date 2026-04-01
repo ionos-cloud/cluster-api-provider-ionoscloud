@@ -24,10 +24,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -300,7 +300,7 @@ func (*IonosCloudMachineReconciler) checkRequestStates(
 func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
 	log := ctrl.LoggerFrom(ctx)
 	// Make sure the infrastructure is ready.
-	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
+	if ms.ClusterScope.Cluster.Status.Initialization.InfrastructureProvisioned == nil || !*ms.ClusterScope.Cluster.Status.Initialization.InfrastructureProvisioned {
 		log.Info("Cluster infrastructure is not ready yet")
 		conditions.Set(ms.IonosMachine, metav1.Condition{
 			Type:   string(infrav1.MachineProvisionedCondition),

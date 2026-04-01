@@ -25,8 +25,7 @@ import (
 	"slices"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -308,7 +307,7 @@ func (s *Service) retrieveFailoverIPForMachine(
 ) (requeue bool, failoverIP string, err error) {
 	log := s.logger.WithName("retrieveFailoverIPForMachine")
 
-	if util.IsControlPlaneMachine(ms.Machine) {
+	if isControlPlaneMachine(ms.Machine) {
 		ip, err := ms.ClusterScope.GetControlPlaneEndpointIP(ctx)
 		return false, ip, err
 	}
@@ -380,7 +379,7 @@ func (s *Service) ReconcileIPFailoverDeletion(
 
 	matchLabels := client.MatchingLabels{}
 
-	if util.IsControlPlaneMachine(ms.Machine) {
+	if isControlPlaneMachine(ms.Machine) {
 		matchLabels[clusterv1.MachineControlPlaneLabel] = ""
 	} else {
 		matchLabels[clusterv1.MachineDeploymentNameLabel] = ms.IonosMachine.Labels[clusterv1.MachineDeploymentNameLabel]
@@ -657,5 +656,10 @@ func (s *Service) patchLAN(ctx context.Context, ms *scope.Machine, lanID string,
 }
 
 func failoverRequired(ms *scope.Machine) bool {
-	return util.IsControlPlaneMachine(ms.Machine) || ms.IonosMachine.Spec.FailoverIP != nil
+	return isControlPlaneMachine(ms.Machine) || ms.IonosMachine.Spec.FailoverIP != nil
+}
+
+func isControlPlaneMachine(machine *clusterv1.Machine) bool {
+	_, ok := machine.Labels[clusterv1.MachineControlPlaneLabel]
+	return ok
 }
