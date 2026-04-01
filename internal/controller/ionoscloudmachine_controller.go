@@ -22,11 +22,12 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -146,11 +147,6 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(4).Info("Reconciling IonosCloudMachine")
-
-	if machineScope.HasFailed() {
-		log.Info("Error state detected, skipping reconciliation")
-		return ctrl.Result{}, nil
-	}
 
 	if !r.isInfrastructureReady(ctx, machineScope) {
 		return ctrl.Result{}, nil
@@ -306,11 +302,11 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	// Make sure the infrastructure is ready.
 	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
 		log.Info("Cluster infrastructure is not ready yet")
-		conditions.MarkFalse(
-			ms.IonosMachine,
-			infrav1.MachineProvisionedCondition,
-			infrav1.WaitingForClusterInfrastructureReason,
-			clusterv1.ConditionSeverityInfo, "")
+		conditions.Set(ms.IonosMachine, metav1.Condition{
+			Type:   string(infrav1.MachineProvisionedCondition),
+			Status: metav1.ConditionFalse,
+			Reason: infrav1.WaitingForClusterInfrastructureReason,
+		})
 
 		return false
 	}
@@ -318,12 +314,11 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	// Make sure to wait until the data secret was created
 	if ms.Machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret is not available yet")
-		conditions.MarkFalse(
-			ms.IonosMachine,
-			infrav1.MachineProvisionedCondition,
-			infrav1.WaitingForBootstrapDataReason,
-			clusterv1.ConditionSeverityInfo, "",
-		)
+		conditions.Set(ms.IonosMachine, metav1.Condition{
+			Type:   string(infrav1.MachineProvisionedCondition),
+			Status: metav1.ConditionFalse,
+			Reason: infrav1.WaitingForBootstrapDataReason,
+		})
 
 		return false
 	}
