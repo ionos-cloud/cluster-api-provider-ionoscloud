@@ -209,7 +209,7 @@ func (c *Cluster) PatchObject() error {
 	// Set the summary condition based on the infrastructure cluster conditions
 	if err := conditions.SetSummaryCondition(
 		c.IonosCluster,
-		c.Cluster,
+		c.IonosCluster,
 		clusterv1.ReadyCondition,
 		conditions.ForConditionTypes([]string{infrav1.IonosCloudClusterReady}),
 	); err != nil {

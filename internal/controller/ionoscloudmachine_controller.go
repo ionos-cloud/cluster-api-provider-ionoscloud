@@ -310,9 +310,10 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	if !conditions.IsTrue(ms.ClusterScope.Cluster, clusterv1.InfrastructureReadyCondition) {
 		log.Info("Cluster infrastructure is not ready yet")
 		conditions.Set(ms.IonosMachine, metav1.Condition{
-			Type:   infrav1.MachineProvisionedCondition,
-			Status: metav1.ConditionFalse,
-			Reason: infrav1.WaitingForClusterInfrastructureReason,
+			Type:    infrav1.MachineProvisionedCondition,
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.WaitingForClusterInfrastructureReason,
+			Message: "Waiting for the cluster infrastructure to become ready",
 		})
 
 		return false
@@ -322,9 +323,10 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	if ms.Machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret is not available yet")
 		conditions.Set(ms.IonosMachine, metav1.Condition{
-			Type:   infrav1.MachineProvisionedCondition,
-			Status: metav1.ConditionFalse,
-			Reason: infrav1.WaitingForBootstrapDataReason,
+			Type:    infrav1.MachineProvisionedCondition,
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.WaitingForBootstrapDataReason,
+			Message: "Waiting for the bootstrap data secret to be available",
 		})
 
 		return false

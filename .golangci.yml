@@ -84,7 +84,7 @@ linters-settings:
       - pkg: sigs.k8s.io/controller-runtime
         alias: ctrl
       # Cluster API
-      - pkg: sigs.k8s.io/cluster-api/api/v1beta1
+      - pkg: sigs.k8s.io/cluster-api/api/core/v1beta2
         alias: clusterv1
       - pkg: "sigs.k8s.io/cluster-api/test/e2e"
         alias: capie2e
@@ -194,12 +194,13 @@ issues:
     # Append should be able to assign to a different var/slice.
     - path: (framework|e2e)/.*.go
       text: should not use dot imports
-    # Suppress deprecation warnings for Cluster API packages that are still in use
-    # These packages are deprecated but still part of Cluster API v1.11.3
+    # sigs.k8s.io/cluster-api/errors is deprecated in CAPI v1.11 but still required
+    # because IonosCloudMachine.Status.FailureReason uses MachineStatusError from it.
+    # TODO: migrate FailureReason/FailureMessage to conditions when CAPI removes this field.
     - linters:
         - staticcheck
       text: "SA1019:.*is deprecated"
-      source: "sigs\\.k8s\\.io/cluster-api"
+      source: "sigs\\.k8s\\.io/cluster-api/errors"
   exclude-files:
     - "zz_generated.*\\.go$"
     - ".*conversion.*\\.go$"

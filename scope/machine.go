@@ -180,7 +180,7 @@ func (m *Machine) PatchObject() error {
 	// Set the summary condition based on the infrastructure machine conditions
 	if err := conditions.SetSummaryCondition(
 		m.IonosMachine,
-		m.Machine,
+		m.IonosMachine,
 		clusterv1.ReadyCondition,
 		conditions.ForConditionTypes([]string{infrav1.MachineProvisionedCondition}),
 	); err != nil {

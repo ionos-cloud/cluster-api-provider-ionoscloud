@@ -106,7 +106,6 @@ func (a ServerType) String() string {
 
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
 // +kubebuilder:validation:XValidation:rule="!has(oldSelf.networkID) || has(self.networkID)", message="networkID is required once set"
-// +kubebuilder:validation:XValidation:rule="self.type != 'VCPU' || !has(self.cpuFamily)", message="cpuFamily must not be set when type is VCPU"
 type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
@@ -165,7 +164,7 @@ type IonosCloudMachineSpec struct {
 	//
 	// If the machine is a control plane machine, this field will not be taken into account.
 	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="failoverIP is immutable"
-	//+kubebuilder:validation:XValidation:rule=`size(self) == 0 || self == "AUTO" || (size(self.split(".")) == 4 && int(self.split(".")[0]) >= 0 && int(self.split(".")[0]) <= 255 && int(self.split(".")[1]) >= 0 && int(self.split(".")[1]) <= 255 && int(self.split(".")[2]) >= 0 && int(self.split(".")[2]) <= 255 && int(self.split(".")[3]) >= 0 && int(self.split(".")[3]) <= 255)`,message="failoverIP must be either 'AUTO' (uppercase) or a valid IPv4 address"
+	//+kubebuilder:validation:XValidation:rule=`size(self) == 0 || self == "AUTO" || self.matches(r"""^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])$""")`,message="failoverIP must be either 'AUTO' (uppercase) or a valid IPv4 address"
 	//+optional
 	FailoverIP *string `json:"failoverIP,omitempty"`
 
