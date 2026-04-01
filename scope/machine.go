@@ -189,11 +189,11 @@ func (m *Machine) PatchObject() error {
 	return m.patchHelper.Patch(
 		timeoutCtx,
 		m.IonosMachine,
-		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
+		patch.WithOwnedV1Beta1Conditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 			infrav1.MachineProvisionedCondition,
 		}},
-		patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+		patch.WithOwnedConditions{Conditions: []string{
 			string(clusterv1.ReadyCondition),
 			string(infrav1.MachineProvisionedCondition),
 		}},
