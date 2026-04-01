@@ -21,7 +21,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/errors"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
@@ -296,47 +295,13 @@ type IonosCloudMachineStatus struct {
 	//+optional
 	MachineNetworkInfo *MachineNetworkInfo `json:"machineNetworkInfo,omitempty"`
 
-	// FailureReason will be set in the event that there is a terminal problem
-	// reconciling the Machine and will contain a succinct value suitable
-	// for machine interpretation.
-	//
-	// This field should not be set for transitive errors that a controller
-	// faces that are expected to be fixed automatically over
-	// time (like service outages), but instead indicate that something is
-	// fundamentally wrong with the Machine's spec or the configuration of
-	// the controller, and that manual intervention is required. Examples
-	// of terminal errors would be invalid combinations of settings in the
-	// spec, values that are unsupported by the controller, or the
-	// responsible controller itself being critically misconfigured.
-	//
-	// Any transient errors that occur during the reconciliation of IonosCloudMachines
-	// can be added as events to the IonosCloudMachine object and/or logged in the
-	// controller's output.
-	//+optional
-	FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
-
-	// FailureMessage will be set in the event that there is a terminal problem
-	// reconciling the Machine and will contain a more verbose string suitable
-	// for logging and human consumption.
-	//
-	// This field should not be set for transitive errors that a controller
-	// faces that are expected to be fixed automatically over
-	// time (like service outages), but instead indicate that something is
-	// fundamentally wrong with the Machine's spec or the configuration of
-	// the controller, and that manual intervention is required. Examples
-	// of terminal errors would be invalid combinations of settings in the
-	// spec, values that are unsupported by the controller, or the
-	// responsible controller itself being critically misconfigured.
-	//
-	// Any transient errors that occur during the reconciliation of IonosCloudMachines
-	// can be added as events to the IonosCloudMachine object and/or logged in the
-	// controller's output.
-	//+optional
-	FailureMessage *string `json:"failureMessage,omitempty"`
-
 	// Conditions defines current service state of the IonosCloudMachine.
 	//+optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	// V1Beta2 groups all status fields that will be used when the CAPI contract moves to v1beta2.
+	//+optional
+	V1Beta2 *IonosCloudMachineV1Beta2Status `json:"v1beta2,omitempty"`
 
 	// CurrentRequest shows the current provisioning request for any
 	// cloud resource that is being provisioned.
@@ -346,6 +311,15 @@ type IonosCloudMachineStatus struct {
 	// Location is the location of the datacenter the VM is provisioned in.
 	//+optional
 	Location string `json:"location"`
+}
+
+// IonosCloudMachineV1Beta2Status groups all status fields that will be used when the CAPI contract moves to v1beta2.
+type IonosCloudMachineV1Beta2Status struct {
+	// Conditions represents the observations of the current state of the IonosCloudMachine.
+	//+optional
+	//+listType=map
+	//+listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // MachineNetworkInfo contains information about the network configuration of the VM.
@@ -414,6 +388,22 @@ func (m *IonosCloudMachine) GetConditions() clusterv1.Conditions {
 // SetConditions sets the underlying service state of the IonosCloudMachine to the predescribed clusterv1.Conditions.
 func (m *IonosCloudMachine) SetConditions(conditions clusterv1.Conditions) {
 	m.Status.Conditions = conditions
+}
+
+// GetV1Beta2Conditions returns the v1beta2 conditions from the status.
+func (m *IonosCloudMachine) GetV1Beta2Conditions() []metav1.Condition {
+	if m.Status.V1Beta2 == nil {
+		return nil
+	}
+	return m.Status.V1Beta2.Conditions
+}
+
+// SetV1Beta2Conditions sets the v1beta2 conditions in the status.
+func (m *IonosCloudMachine) SetV1Beta2Conditions(conditions []metav1.Condition) {
+	if m.Status.V1Beta2 == nil {
+		m.Status.V1Beta2 = &IonosCloudMachineV1Beta2Status{}
+	}
+	m.Status.V1Beta2.Conditions = conditions
 }
 
 // ExtractServerID extracts the server ID from the provider ID.
