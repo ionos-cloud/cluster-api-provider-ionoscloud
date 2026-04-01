@@ -127,26 +127,26 @@ func init() {
 	objectTypes = append(objectTypes, &IonosCloudCluster{}, &IonosCloudClusterList{})
 }
 
-// GetConditions returns the conditions from the status.
-func (i *IonosCloudCluster) GetConditions() clusterv1.Conditions {
+// GetV1Beta1Conditions returns the conditions from the status.
+func (i *IonosCloudCluster) GetV1Beta1Conditions() clusterv1.Conditions {
 	return i.Status.Conditions
 }
 
-// SetConditions sets the conditions in the status.
-func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
+// SetV1Beta1Conditions sets the conditions in the status.
+func (i *IonosCloudCluster) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
 	i.Status.Conditions = conditions
 }
 
-// GetV1Beta2Conditions returns the v1beta2 conditions from the status.
-func (i *IonosCloudCluster) GetV1Beta2Conditions() []metav1.Condition {
+// GetConditions returns the v1beta2 conditions from the status.
+func (i *IonosCloudCluster) GetConditions() []metav1.Condition {
 	if i.Status.V1Beta2 == nil {
 		return nil
 	}
 	return i.Status.V1Beta2.Conditions
 }
 
-// SetV1Beta2Conditions sets the v1beta2 conditions in the status.
-func (i *IonosCloudCluster) SetV1Beta2Conditions(conditions []metav1.Condition) {
+// SetConditions sets the v1beta2 conditions in the status.
+func (i *IonosCloudCluster) SetConditions(conditions []metav1.Condition) {
 	if i.Status.V1Beta2 == nil {
 		i.Status.V1Beta2 = &IonosCloudClusterV1Beta2Status{}
 	}

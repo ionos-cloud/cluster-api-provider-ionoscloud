@@ -41,8 +41,8 @@ func TestIonosCloudCluster_Conditions(t *testing.T) {
 	conds := clusterv1.Conditions{{Type: "type"}}
 	cluster := &IonosCloudCluster{}
 
-	cluster.SetConditions(conds)
-	require.Equal(t, conds, cluster.GetConditions())
+	cluster.SetV1Beta1Conditions(conds)
+	require.Equal(t, conds, cluster.GetV1Beta1Conditions())
 }
 
 func defaultCluster() *IonosCloudCluster {

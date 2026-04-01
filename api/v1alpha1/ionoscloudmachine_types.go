@@ -380,26 +380,26 @@ type IonosCloudMachineList struct {
 	Items           []IonosCloudMachine `json:"items"`
 }
 
-// GetConditions returns the observations of the operational state of the IonosCloudMachine resource.
-func (m *IonosCloudMachine) GetConditions() clusterv1.Conditions {
+// GetV1Beta1Conditions returns the observations of the operational state of the IonosCloudMachine resource.
+func (m *IonosCloudMachine) GetV1Beta1Conditions() clusterv1.Conditions {
 	return m.Status.Conditions
 }
 
-// SetConditions sets the underlying service state of the IonosCloudMachine to the predescribed clusterv1.Conditions.
-func (m *IonosCloudMachine) SetConditions(conditions clusterv1.Conditions) {
+// SetV1Beta1Conditions sets the underlying service state of the IonosCloudMachine to the predescribed clusterv1.Conditions.
+func (m *IonosCloudMachine) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
 	m.Status.Conditions = conditions
 }
 
-// GetV1Beta2Conditions returns the v1beta2 conditions from the status.
-func (m *IonosCloudMachine) GetV1Beta2Conditions() []metav1.Condition {
+// GetConditions returns the v1beta2 conditions from the status.
+func (m *IonosCloudMachine) GetConditions() []metav1.Condition {
 	if m.Status.V1Beta2 == nil {
 		return nil
 	}
 	return m.Status.V1Beta2.Conditions
 }
 
-// SetV1Beta2Conditions sets the v1beta2 conditions in the status.
-func (m *IonosCloudMachine) SetV1Beta2Conditions(conditions []metav1.Condition) {
+// SetConditions sets the v1beta2 conditions in the status.
+func (m *IonosCloudMachine) SetConditions(conditions []metav1.Condition) {
 	if m.Status.V1Beta2 == nil {
 		m.Status.V1Beta2 = &IonosCloudMachineV1Beta2Status{}
 	}

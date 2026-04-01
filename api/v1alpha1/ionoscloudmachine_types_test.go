@@ -541,7 +541,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(k8sClient.Get(context.Background(),
 				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
-			machineConditions := m.GetConditions()
+			machineConditions := m.GetV1Beta1Conditions()
 			Expect(machineConditions).To(HaveLen(1))
 			Expect(machineConditions[0].Type).To(Equal(MachineProvisionedCondition))
 			Expect(machineConditions[0].Status).To(Equal(corev1.ConditionTrue))
