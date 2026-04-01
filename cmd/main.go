@@ -39,12 +39,12 @@ import (
 )
 
 var (
-	scheme                   = runtime.NewScheme()
-	setupLog                 = ctrl.Log.WithName("setup")
-	healthProbeAddr          string
-	enableLeaderElection     bool
-	managerOptions           = flags.ManagerOptions{}
-	skipCRDMigrationPhases   []string
+	scheme                 = runtime.NewScheme()
+	setupLog               = ctrl.Log.WithName("setup")
+	healthProbeAddr        string
+	enableLeaderElection   bool
+	managerOptions         = flags.ManagerOptions{}
+	skipCRDMigrationPhases []string
 
 	icClusterConcurrency int
 	icMachineConcurrency int
