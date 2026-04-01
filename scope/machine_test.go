@@ -17,7 +17,6 @@ limitations under the License.
 package scope
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -119,7 +118,7 @@ func TestCountMachinesWithDifferentLabels(t *testing.T) {
 	scope.ClusterScope.Cluster.SetName("test-cluster")
 
 	count, err := scope.CountMachines(
-		context.Background(),
+		t.Context(),
 		client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""},
 	)
 
@@ -133,7 +132,7 @@ func TestCountMachinesWithDifferentLabels(t *testing.T) {
 
 	cpMachines := []string{"cp-test-1", "cp-test-2", "cp-test-3"}
 	for _, machine := range cpMachines {
-		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, cpLabels, 0))
+		err = scope.client.Create(t.Context(), createMachineWithLabels(machine, cpLabels, 0))
 		require.NoError(t, err)
 	}
 
@@ -143,16 +142,16 @@ func TestCountMachinesWithDifferentLabels(t *testing.T) {
 
 	workerMachines := []string{"worker-test-1", "worker-test-2", "worker-test-3"}
 	for _, machine := range workerMachines {
-		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, workerLabels, 0))
+		err = scope.client.Create(t.Context(), createMachineWithLabels(machine, workerLabels, 0))
 		require.NoError(t, err)
 	}
 
-	count, err = scope.CountMachines(context.Background(), nil)
+	count, err = scope.CountMachines(t.Context(), nil)
 	require.NoError(t, err)
 	require.Equal(t, 6, count)
 
 	count, err = scope.CountMachines(
-		context.Background(),
+		t.Context(),
 		client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""},
 	)
 
@@ -168,7 +167,7 @@ func TestMachineFindLatestMachineWithControlPlaneLabel(t *testing.T) {
 	scope.IonosMachine.SetName("cp-test-1")
 
 	controlPlaneLabel := client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""}
-	latestMachine, err := scope.FindLatestMachine(context.Background(), controlPlaneLabel)
+	latestMachine, err := scope.FindLatestMachine(t.Context(), controlPlaneLabel)
 	require.NoError(t, err)
 	require.Nil(t, latestMachine)
 
@@ -179,19 +178,19 @@ func TestMachineFindLatestMachineWithControlPlaneLabel(t *testing.T) {
 
 	cpMachines := []string{"cp-test-1", "cp-test-2", "cp-test-3"}
 	for _, machine := range cpMachines {
-		err = scope.client.Create(context.Background(), createMachineWithLabels(machine, cpLabels, 0))
+		err = scope.client.Create(t.Context(), createMachineWithLabels(machine, cpLabels, 0))
 		require.NoError(t, err)
 	}
 
-	latestMachine, err = scope.FindLatestMachine(context.Background(), controlPlaneLabel)
+	latestMachine, err = scope.FindLatestMachine(t.Context(), controlPlaneLabel)
 	require.NoError(t, err)
 	require.NotNil(t, latestMachine)
 	require.Equal(t, "cp-test-3", latestMachine.Name)
 
-	err = scope.client.Delete(context.Background(), latestMachine)
+	err = scope.client.Delete(t.Context(), latestMachine)
 	require.NoError(t, err)
 
-	latestMachine, err = scope.FindLatestMachine(context.Background(), controlPlaneLabel)
+	latestMachine, err = scope.FindLatestMachine(t.Context(), controlPlaneLabel)
 	require.NoError(t, err)
 	require.NotNil(t, latestMachine)
 	require.Equal(t, "cp-test-2", latestMachine.Name)
@@ -213,13 +212,13 @@ func TestFindLatestMachineMachineIsReceiver(t *testing.T) {
 	cpMachines := []string{"cp-test-2", "cp-test-1"}
 	for index, machine := range cpMachines {
 		err = scope.client.Create(
-			context.Background(),
+			t.Context(),
 			createMachineWithLabels(machine, cpLabels, time.Duration(index)*time.Minute),
 		)
 		require.NoError(t, err)
 	}
 
-	latestMachine, err := scope.FindLatestMachine(context.Background(), controlPlaneLabel)
+	latestMachine, err := scope.FindLatestMachine(t.Context(), controlPlaneLabel)
 	require.NoError(t, err)
 	require.Nil(t, latestMachine)
 }
