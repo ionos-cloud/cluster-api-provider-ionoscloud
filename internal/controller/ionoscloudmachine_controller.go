@@ -307,7 +307,7 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	// Make sure the infrastructure is ready.
 	// Note: InfrastructureReady field was removed in Cluster API v1.11
 	// Check the InfrastructureReady condition instead
-	if !conditions.IsTrue(ms.ClusterScope.Cluster, clusterv1.ReadyCondition) {
+	if !conditions.IsTrue(ms.ClusterScope.Cluster, clusterv1.InfrastructureReadyCondition) {
 		log.Info("Cluster infrastructure is not ready yet")
 		conditions.Set(ms.IonosMachine, metav1.Condition{
 			Type:   infrav1.MachineProvisionedCondition,
