@@ -194,13 +194,29 @@ issues:
     # Append should be able to assign to a different var/slice.
     - path: (framework|e2e)/.*.go
       text: should not use dot imports
-    # sigs.k8s.io/cluster-api/errors is deprecated in CAPI v1.11 but still required
-    # because IonosCloudMachine.Status.FailureReason uses MachineStatusError from it.
-    # TODO: migrate FailureReason/FailureMessage to conditions when CAPI removes this field.
+    # The following sigs.k8s.io/cluster-api packages are deprecated in CAPI v1.11 but
+    # do not yet have stable v1beta2 replacements we can migrate to. They are suppressed
+    # individually with TODO comments tracking the migration path.
+    #
+    # sigs.k8s.io/cluster-api/errors: IonosCloudMachine.Status.FailureReason uses
+    # MachineStatusError from it. TODO: migrate to conditions when CAPI removes this field.
     - linters:
         - staticcheck
       text: "SA1019:.*is deprecated"
       source: "sigs\\.k8s\\.io/cluster-api/errors"
+    # sigs.k8s.io/cluster-api/api/ipam/v1beta1: used for IPAddressClaim/IPAddress scheme
+    # registration and reconciliation. TODO: migrate to ipam/v1beta2 once available.
+    - linters:
+        - staticcheck
+      text: "SA1019:.*is deprecated"
+      source: "sigs\\.k8s\\.io/cluster-api/api/ipam/v1beta1"
+    # sigs.k8s.io/cluster-api/api/addons/v1beta1, bootstrap/kubeadm/v1beta1,
+    # controlplane/kubeadm/v1beta1: used in e2e test helpers.
+    # TODO: migrate to v1beta2 equivalents once available.
+    - linters:
+        - staticcheck
+      text: "SA1019:.*is deprecated"
+      source: "sigs\\.k8s\\.io/cluster-api/api/(addons|bootstrap/kubeadm|controlplane/kubeadm)/v1beta1"
   exclude-files:
     - "zz_generated.*\\.go$"
     - ".*conversion.*\\.go$"
