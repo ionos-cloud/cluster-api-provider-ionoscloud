@@ -29,7 +29,8 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -145,7 +146,11 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 // FinalizeMachineProvisioning marks the machine as provisioned.
 func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
 	ms.IonosMachine.Status.Ready = true
-	conditions.MarkTrue(ms.IonosMachine, infrav1.MachineProvisionedCondition)
+	conditions.Set(ms.IonosMachine, metav1.Condition{
+		Type:   string(infrav1.MachineProvisionedCondition),
+		Status: metav1.ConditionTrue,
+		Reason: string(infrav1.MachineProvisionedCondition),
+	})
 	return false, nil
 }
 
