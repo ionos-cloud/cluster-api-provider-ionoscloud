@@ -223,7 +223,10 @@ func (c *Cluster) PatchObject() error {
 			Conditions: []clusterv1.ConditionType{clusterv1.ReadyCondition},
 		},
 		patch.WithOwnedV1Beta2Conditions{
-			Conditions: []string{string(clusterv1.ReadyCondition)},
+			Conditions: []string{
+				string(clusterv1.ReadyCondition),
+				string(infrav1.IonosCloudClusterReady),
+			},
 		},
 	)
 }
