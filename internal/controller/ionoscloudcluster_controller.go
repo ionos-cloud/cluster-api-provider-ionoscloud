@@ -25,11 +25,12 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -172,7 +173,11 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		}
 	}
 
-	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
+	conditions.Set(clusterScope.IonosCluster, metav1.Condition{
+		Type:   string(infrav1.IonosCloudClusterReady),
+		Status: metav1.ConditionTrue,
+		Reason: string(infrav1.IonosCloudClusterReady),
+	})
 	clusterScope.IonosCluster.Status.Ready = true
 	return ctrl.Result{}, nil
 }
@@ -261,7 +266,7 @@ func (r *IonosCloudClusterReconciler) SetupWithManager(
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.IonosCloudCluster{}).
-		WithEventFilter(predicates.ResourceNotPaused(ctrl.LoggerFrom(ctx))).
+		WithEventFilter(predicates.ResourceNotPaused(r.scheme, ctrl.LoggerFrom(ctx))).
 		Watches(&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.ClusterToInfrastructureMapFunc(
@@ -270,7 +275,7 @@ func (r *IonosCloudClusterReconciler) SetupWithManager(
 					r.Client, &infrav1.IonosCloudCluster{},
 				),
 			),
-			builder.WithPredicates(predicates.ClusterUnpaused(ctrl.LoggerFrom(ctx))),
+			builder.WithPredicates(predicates.ClusterUnpaused(r.scheme, ctrl.LoggerFrom(ctx))),
 		).
 		Complete(reconcile.AsReconciler[*infrav1.IonosCloudCluster](r.Client, r))
 }
