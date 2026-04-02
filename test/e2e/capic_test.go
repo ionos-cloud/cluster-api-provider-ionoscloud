@@ -79,7 +79,11 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 
 				// This check ensures that the resourceVersions are stable, i.e. it verifies there are no
 				// continuous reconciles when everything should be stable.
-				framework.ValidateResourceVersionStable(ctx, proxy, namespace, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName))
+				framework.ValidateResourceVersionStable(ctx, framework.ValidateResourceVersionStableInput{
+					ClusterProxy:             proxy,
+					Namespace:                namespace,
+					OwnerGraphFilterFunction: clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
+				})
 			},
 		}
 	})
