@@ -25,6 +25,7 @@ import (
 	"os"
 
 	"github.com/spf13/pflag"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -56,6 +57,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(infrav1.AddToScheme(scheme))
@@ -67,6 +69,10 @@ func init() {
 // Add RBAC for the authorized diagnostics endpoint.
 // +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
+
+// Add RBAC for CRDMigrator controller.
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;patch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions/status,verbs=get;patch
 
 func main() {
 	ctrl.SetLogger(klog.Background())
