@@ -99,11 +99,7 @@ func NewCluster(params ClusterParams) (*Cluster, error) {
 
 // GetControlPlaneEndpoint returns the endpoint for the IonosCloudCluster.
 func (c *Cluster) GetControlPlaneEndpoint() clusterv1.APIEndpoint {
-	ep := c.IonosCluster.Spec.ControlPlaneEndpoint
-	return clusterv1.APIEndpoint{
-		Host: ep.Host,
-		Port: ep.Port,
-	}
+	return c.IonosCluster.Spec.ControlPlaneEndpoint
 }
 
 // GetControlPlaneEndpointIP returns the endpoint IP for the IonosCloudCluster.
