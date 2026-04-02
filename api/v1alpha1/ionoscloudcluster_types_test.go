@@ -38,7 +38,7 @@ const (
 )
 
 func TestIonosCloudCluster_Conditions(t *testing.T) {
-	conds := clusterv1.Conditions{{Type: "type"}}
+	conds := clusterv1.Conditions{clusterv1.Condition{Type: "type"}}
 	cluster := &IonosCloudCluster{}
 
 	cluster.SetConditions(conds)

@@ -19,7 +19,9 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/spf13/pflag"
@@ -102,38 +104,8 @@ func main() {
 
 	ctx := ctrl.SetupSignalHandler()
 
-	skipPhases := make([]crdmigrator.Phase, 0, len(skipCRDMigrationPhases))
-	for _, p := range skipCRDMigrationPhases {
-		skipPhases = append(skipPhases, crdmigrator.Phase(p))
-	}
-	if err = (&crdmigrator.CRDMigrator{
-		Client:                 mgr.GetClient(),
-		APIReader:              mgr.GetAPIReader(),
-		SkipCRDMigrationPhases: skipPhases,
-		Config: map[client.Object]crdmigrator.ByObjectConfig{
-			&infrav1.IonosCloudCluster{}:         {UseCache: true},
-			&infrav1.IonosCloudClusterTemplate{}: {UseCache: false},
-			&infrav1.IonosCloudMachine{}:         {UseCache: true},
-			&infrav1.IonosCloudMachineTemplate{}: {UseCache: false},
-		},
-	}).SetupWithManager(ctx, mgr, controller.Options{}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CRDMigrator")
-		os.Exit(1)
-	}
-
-	if err = iccontroller.NewIonosCloudClusterReconciler(mgr).SetupWithManager(
-		ctx,
-		mgr,
-		controller.Options{MaxConcurrentReconciles: icClusterConcurrency},
-	); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudCluster")
-		os.Exit(1)
-	}
-	if err = iccontroller.NewIonosCloudMachineReconciler(mgr).SetupWithManager(
-		mgr,
-		controller.Options{MaxConcurrentReconciles: icMachineConcurrency},
-	); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
+	if err = setupControllers(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to setup controllers")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
@@ -152,6 +124,41 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func setupControllers(ctx context.Context, mgr ctrl.Manager) error {
+	skipPhases := make([]crdmigrator.Phase, 0, len(skipCRDMigrationPhases))
+	for _, p := range skipCRDMigrationPhases {
+		skipPhases = append(skipPhases, crdmigrator.Phase(p))
+	}
+	if err := (&crdmigrator.CRDMigrator{
+		Client:                 mgr.GetClient(),
+		APIReader:              mgr.GetAPIReader(),
+		SkipCRDMigrationPhases: skipPhases,
+		Config: map[client.Object]crdmigrator.ByObjectConfig{
+			&infrav1.IonosCloudCluster{}:         {UseCache: true},
+			&infrav1.IonosCloudClusterTemplate{}: {UseCache: false},
+			&infrav1.IonosCloudMachine{}:         {UseCache: true},
+			&infrav1.IonosCloudMachineTemplate{}: {UseCache: false},
+		},
+	}).SetupWithManager(ctx, mgr, controller.Options{}); err != nil {
+		return fmt.Errorf("unable to create CRDMigrator controller: %w", err)
+	}
+
+	if err := iccontroller.NewIonosCloudClusterReconciler(mgr).SetupWithManager(
+		ctx,
+		mgr,
+		controller.Options{MaxConcurrentReconciles: icClusterConcurrency},
+	); err != nil {
+		return fmt.Errorf("unable to create IonosCloudCluster controller: %w", err)
+	}
+	if err := iccontroller.NewIonosCloudMachineReconciler(mgr).SetupWithManager(
+		mgr,
+		controller.Options{MaxConcurrentReconciles: icMachineConcurrency},
+	); err != nil {
+		return fmt.Errorf("unable to create IonosCloudMachine controller: %w", err)
+	}
+	return nil
 }
 
 // initFlags parses the command line flags.
