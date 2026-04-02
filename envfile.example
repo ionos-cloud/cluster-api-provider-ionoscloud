@@ -23,6 +23,10 @@ export IONOSCLOUD_MACHINE_TYPE=VCPU
 export IONOSCLOUD_MACHINE_NUM_CORES=2
 export IONOSCLOUD_MACHINE_MEMORY_MB=4096
 export IONOSCLOUD_MACHINE_IMAGE_ID="123456"
+# Required for CUBE flavor. List templates with: ionosctl template list
+# export IONOSCLOUD_CUBE_TEMPLATE_ID="template-uuid"
+# Required for GPU flavor. List templates with: ionosctl template list
+# export IONOSCLOUD_GPU_TEMPLATE_ID="template-uuid"
 export IONOSCLOUD_MACHINE_SSH_KEYS="ssh-ed25519 ..., ssh-ed25519 ..."
 
 # ClusterClass related environment variables

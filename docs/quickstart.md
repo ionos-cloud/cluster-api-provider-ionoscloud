@@ -57,12 +57,19 @@ KUBERNETES_VERSION                          # The version of Kubernetes to be in
 
 ## -- Kubernetes Cluster-related environment variables -- ##
 IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluster should be created.
-IONOSCLOUD_MACHINE_TYPE                     # The server type (optional)
+IONOSCLOUD_MACHINE_TYPE                     # The server type (optional).
+                                            #   Valid values: ENTERPRISE, VCPU, CUBE, GPU.
                                             #   Defaults to VCPU.
 IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores (optional).
                                             #   Defaults to 4 for control plane and 2 for worker nodes.
+                                            #   Ignored when using CUBE or GPU type.
 IONOSCLOUD_MACHINE_MEMORY_MB                # The memory in MB (optional).
                                             #   Defaults to 8192 for control plane and 4096 for worker nodes.
+                                            #   Ignored when using CUBE or GPU type.
+IONOSCLOUD_CUBE_TEMPLATE_ID                 # The template ID for CUBE servers (required for cube flavor).
+                                            #   List available templates with: ionosctl template list
+IONOSCLOUD_GPU_TEMPLATE_ID                  # The template ID for GPU servers (required for gpu flavor).
+                                            #   List available templates with: ionosctl template list
 IONOSCLOUD_MACHINE_IMAGE_ID                 # The image ID.
 IONOSCLOUD_MACHINE_IMAGE_LABEL_KEY          # Label key used for image lookup. Only used for the auto-image template.
 IONOSCLOUD_MACHINE_IMAGE_LABEL_VALUE        # Label value used for image lookup. Only used for the auto-image template.
@@ -174,6 +181,8 @@ We provide the following templates:
 | ---------------- | ---------------------------------------------- | ------------------------------- |
 | default          | templates/cluster-template.yaml                | -                               |
 | calico           | templates/cluster-template-calico.yaml         | templates/crs/cni/calico.yaml   |
+| cube             | templates/cluster-template-cube.yaml           | -                               |
+| gpu              | templates/cluster-template-gpu.yaml            | -                               |
 | auto-image       | templates/cluster-template-auto-image.yaml     | -                               |
 
 
