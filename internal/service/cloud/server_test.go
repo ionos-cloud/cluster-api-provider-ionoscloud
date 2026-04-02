@@ -263,6 +263,39 @@ func (s *serverSuite) TestReconcileCUBEServerNoRequest() {
 	s.True(requeue)
 }
 
+func (s *serverSuite) TestReconcileGPUServerNoRequest() {
+	exampleTemplateID := "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+	s.infraMachine.Spec.Type = infrav1.ServerTypeGPU
+	s.infraMachine.Spec.TemplateID = exampleTemplateID
+	s.infraMachine.Spec.CPUFamily = nil
+
+	s.prepareReconcileServerRequestTest()
+	s.mockGetServerCreationRequestCall().Return([]sdk.Request{}, nil)
+
+	props, entities := s.defaultServerComponents()
+	props.Type = ptr.To(infrav1.ServerTypeGPU.String())
+	props.TemplateUuid = &exampleTemplateID
+	props.Cores = nil
+	props.Ram = nil
+	props.CpuFamily = nil
+	(*entities.Volumes.Items)[0].Properties.Size = nil
+	(*entities.Volumes.Items)[0].Properties.Type = nil
+
+	s.mockCreateServerCall(props, entities).Return(&sdk.Server{Id: ptr.To("12345")}, "location/to/server", nil)
+	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{{
+		Id: ptr.To(exampleLANID),
+		Properties: &sdk.LanProperties{
+			Name:   ptr.To(s.service.lanName(s.clusterScope.Cluster)),
+			Public: ptr.To(true),
+		},
+	}}}, nil)
+
+	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
+	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
+	s.NoError(err)
+	s.True(requeue)
+}
+
 func (s *serverSuite) TestReconcileServerDeletionSkipsBootVolumeForTemplateServer() {
 	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
 		Id: ptr.To(exampleServerID),

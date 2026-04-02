@@ -416,16 +416,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		},
 	}
 
-	if machineSpec.TemplateID != "" {
-		bootVolume.Properties.Size = nil // size cannot be set when using a template
-	}
-	if machineSpec.Disk.DiskType == infrav1.VolumeDiskTypeDAS {
-		bootVolume.Properties.AvailabilityZone = nil // availability zone cannot be set for DAS
-	}
-
-	if params.imageID != "" {
-		bootVolume.Properties.Image = &params.imageID
-	}
+	adjustBootVolumeProperties(bootVolume.Properties, &machineSpec, params.imageID)
 
 	serverVolumes := sdk.AttachedVolumes{
 		Items: &[]sdk.Volume{bootVolume},
@@ -478,6 +469,22 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 	return sdk.ServerEntities{
 		Nics:    &serverNICs,
 		Volumes: &serverVolumes,
+	}
+}
+
+// adjustBootVolumeProperties modifies boot volume properties based on server type and disk configuration.
+func adjustBootVolumeProperties(props *sdk.VolumeProperties, machineSpec *infrav1.IonosCloudMachineSpec, imageID string) {
+	if machineSpec.TemplateID != "" {
+		props.Size = nil // size cannot be set when using a template
+	}
+	if machineSpec.Disk.DiskType == infrav1.VolumeDiskTypeDAS {
+		props.AvailabilityZone = nil // availability zone cannot be set for DAS
+	}
+	if machineSpec.Type == infrav1.ServerTypeGPU {
+		props.Type = nil // disk type cannot be set for GPU servers
+	}
+	if imageID != "" {
+		props.Image = &imageID
 	}
 }
 

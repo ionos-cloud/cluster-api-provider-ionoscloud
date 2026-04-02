@@ -210,7 +210,9 @@ spec:
                             type: string
                           diskType:
                             default: HDD
-                            description: DiskType defines the type of the hard drive.
+                            description: |-
+                              DiskType defines the type of the hard drive.
+                              Ignored for the boot volume when using GPU server type.
                             enum:
                             - HDD
                             - SSD Standard

@@ -238,6 +238,7 @@ type Volume struct {
 	Name string `json:"name,omitempty"`
 
 	// DiskType defines the type of the hard drive.
+	// Ignored for the boot volume when using GPU server type.
 	//+kubebuilder:validation:Enum=HDD;SSD Standard;SSD Premium;DAS
 	//+kubebuilder:default=HDD
 	//+optional
