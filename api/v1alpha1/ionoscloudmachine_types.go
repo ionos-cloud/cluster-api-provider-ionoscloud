@@ -287,21 +287,23 @@ type ImageSelector struct {
 
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
 type IonosCloudMachineStatus struct {
-	// Ready indicates the VM has been provisioned and is ready.
+	// Initialization provides observations of the IonosCloudMachine initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial
+	// machine provisioning. The value of these fields is never updated after initial provisioning is completed.
+	// Use conditions to monitor the operational state of the machine's infrastructure.
 	//+optional
-	Ready bool `json:"ready"`
+	Initialization *IonosCloudMachineInitializationStatus `json:"initialization,omitempty"`
 
 	// MachineNetworkInfo contains information about the network configuration of the VM.
 	//+optional
 	MachineNetworkInfo *MachineNetworkInfo `json:"machineNetworkInfo,omitempty"`
 
-	// Conditions defines current service state of the IonosCloudMachine.
+	// Conditions represents the observations of the current state of the IonosCloudMachine.
 	//+optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
-
-	// V1Beta2 groups all status fields that will be used when the CAPI contract moves to v1beta2.
-	//+optional
-	V1Beta2 *IonosCloudMachineV1Beta2Status `json:"v1beta2,omitempty"`
+	//+listType=map
+	//+listMapKey=type
+	//+kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// CurrentRequest shows the current provisioning request for any
 	// cloud resource that is being provisioned.
@@ -311,15 +313,42 @@ type IonosCloudMachineStatus struct {
 	// Location is the location of the datacenter the VM is provisioned in.
 	//+optional
 	Location string `json:"location"`
+
+	// Deprecated groups all status fields deprecated and scheduled for removal when v1beta1 contract support is dropped.
+	//+optional
+	Deprecated *IonosCloudMachineDeprecatedStatus `json:"deprecated,omitempty"`
 }
 
-// IonosCloudMachineV1Beta2Status groups all status fields that will be used when the CAPI contract moves to v1beta2.
-type IonosCloudMachineV1Beta2Status struct {
-	// Conditions represents the observations of the current state of the IonosCloudMachine.
+// IonosCloudMachineInitializationStatus provides observations of the IonosCloudMachine initialization process.
+type IonosCloudMachineInitializationStatus struct {
+	// Provisioned is true when the machine infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract and is used to orchestrate provisioning.
+	// The value of this field is never updated after initial provisioning is completed.
 	//+optional
-	//+listType=map
-	//+listMapKey=type
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	Provisioned bool `json:"provisioned"`
+}
+
+// IonosCloudMachineDeprecatedStatus groups all status fields deprecated and scheduled for removal when
+// v1beta1 contract support is dropped.
+type IonosCloudMachineDeprecatedStatus struct {
+	// V1Beta1 groups all v1beta1 status fields that are deprecated and scheduled for removal.
+	//+optional
+	V1Beta1 *IonosCloudMachineV1Beta1DeprecatedStatus `json:"v1beta1,omitempty"`
+}
+
+// IonosCloudMachineV1Beta1DeprecatedStatus contains deprecated v1beta1 fields.
+type IonosCloudMachineV1Beta1DeprecatedStatus struct {
+	// Ready indicates the VM has been provisioned and is ready.
+	//
+	// Deprecated: Use Initialization.Provisioned instead.
+	//+optional
+	Ready bool `json:"ready,omitempty"`
+
+	// Conditions defines current service state of the IonosCloudMachine using the deprecated v1beta1 condition type.
+	//
+	// Deprecated: Use the top-level conditions field instead.
+	//+optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // MachineNetworkInfo contains information about the network configuration of the VM.
@@ -356,7 +385,7 @@ type NICInfo struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=ionoscloudmachines,scope=Namespaced,categories=cluster-api;ionoscloud,shortName=icm
 //+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
-//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine is ready"
+//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.initialization.provisioned",description="Machine is ready"
 //+kubebuilder:printcolumn:name="IPv4 Addresses",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].ipv4Addresses"
 //+kubebuilder:printcolumn:name="Machine Connected Networks",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].networkID"
 //+kubebuilder:printcolumn:name="IPv6 Addresses",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].ipv6Addresses",priority=1
@@ -380,30 +409,33 @@ type IonosCloudMachineList struct {
 	Items           []IonosCloudMachine `json:"items"`
 }
 
-// GetV1Beta1Conditions returns the observations of the operational state of the IonosCloudMachine resource.
+// GetV1Beta1Conditions returns the deprecated v1beta1 conditions from status.deprecated.v1beta1.conditions.
 func (m *IonosCloudMachine) GetV1Beta1Conditions() clusterv1.Conditions {
+	if m.Status.Deprecated == nil || m.Status.Deprecated.V1Beta1 == nil {
+		return nil
+	}
+	return m.Status.Deprecated.V1Beta1.Conditions
+}
+
+// SetV1Beta1Conditions sets the deprecated v1beta1 conditions in status.deprecated.v1beta1.conditions.
+func (m *IonosCloudMachine) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
+	if m.Status.Deprecated == nil {
+		m.Status.Deprecated = &IonosCloudMachineDeprecatedStatus{}
+	}
+	if m.Status.Deprecated.V1Beta1 == nil {
+		m.Status.Deprecated.V1Beta1 = &IonosCloudMachineV1Beta1DeprecatedStatus{}
+	}
+	m.Status.Deprecated.V1Beta1.Conditions = conditions
+}
+
+// GetConditions returns the v1beta2 conditions from status.conditions.
+func (m *IonosCloudMachine) GetConditions() []metav1.Condition {
 	return m.Status.Conditions
 }
 
-// SetV1Beta1Conditions sets the underlying service state of the IonosCloudMachine to the predescribed clusterv1.Conditions.
-func (m *IonosCloudMachine) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
-	m.Status.Conditions = conditions
-}
-
-// GetConditions returns the v1beta2 conditions from the status.
-func (m *IonosCloudMachine) GetConditions() []metav1.Condition {
-	if m.Status.V1Beta2 == nil {
-		return nil
-	}
-	return m.Status.V1Beta2.Conditions
-}
-
-// SetConditions sets the v1beta2 conditions in the status.
+// SetConditions sets the v1beta2 conditions in status.conditions.
 func (m *IonosCloudMachine) SetConditions(conditions []metav1.Condition) {
-	if m.Status.V1Beta2 == nil {
-		m.Status.V1Beta2 = &IonosCloudMachineV1Beta2Status{}
-	}
-	m.Status.V1Beta2.Conditions = conditions
+	m.Status.Conditions = conditions
 }
 
 // ExtractServerID extracts the server ID from the provider ID.

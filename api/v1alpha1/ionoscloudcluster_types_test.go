@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
+	deprecatedv1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -149,12 +149,12 @@ var _ = Describe("IonosCloudCluster", func() {
 			key := client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Name}
 			fetched := &IonosCloudCluster{}
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
-			Expect(fetched.Status.Ready).To(BeFalse())
+			Expect(fetched.Status.Initialization).To(BeNil())
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(BeEmpty())
-			Expect(fetched.Status.Conditions).To(BeEmpty())
+			Expect(fetched.GetV1Beta1Conditions()).To(BeEmpty())
 
 			By("retrieving the cluster and setting the status")
-			fetched.Status.Ready = true
+			fetched.Status.Initialization = &IonosCloudClusterInitializationStatus{Provisioned: true}
 			wantProvisionRequest := ProvisioningRequest{
 				Method:      "POST",
 				RequestPath: "/path/to/resource",
@@ -163,17 +163,18 @@ var _ = Describe("IonosCloudCluster", func() {
 			fetched.Status.CurrentRequestByDatacenter = map[string]ProvisioningRequest{
 				"123": wantProvisionRequest,
 			}
-			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
+			deprecatedv1beta1conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
 
 			By("updating the cluster status")
 			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
 
 			Expect(k8sClient.Get(context.Background(), key, fetched)).To(Succeed())
-			Expect(fetched.Status.Ready).To(BeTrue())
+			Expect(fetched.Status.Initialization).ToNot(BeNil())
+			Expect(fetched.Status.Initialization.Provisioned).To(BeTrue())
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(HaveLen(1))
 			Expect(fetched.Status.CurrentRequestByDatacenter["123"]).To(Equal(wantProvisionRequest))
-			Expect(fetched.Status.Conditions).To(HaveLen(1))
-			Expect(conditions.IsTrue(fetched, clusterv1.ReadyCondition)).To(BeTrue())
+			Expect(fetched.GetV1Beta1Conditions()).To(HaveLen(1))
+			Expect(deprecatedv1beta1conditions.IsTrue(fetched, clusterv1.ReadyCondition)).To(BeTrue())
 
 			By("Removing the entry from the status again")
 			delete(fetched.Status.CurrentRequestByDatacenter, "123")

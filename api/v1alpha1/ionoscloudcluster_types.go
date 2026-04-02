@@ -64,13 +64,19 @@ type IonosCloudClusterSpec struct {
 
 // IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
 type IonosCloudClusterStatus struct {
-	// Ready indicates that the cluster is ready.
+	// Initialization provides observations of the IonosCloudCluster initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial
+	// cluster provisioning. The value of these fields is never updated after initial provisioning is completed.
+	// Use conditions to monitor the operational state of the cluster's infrastructure.
 	//+optional
-	Ready bool `json:"ready,omitempty"`
+	Initialization *IonosCloudClusterInitializationStatus `json:"initialization,omitempty"`
 
-	// Conditions defines current service state of the IonosCloudCluster.
+	// Conditions represents the observations of the current state of the IonosCloudCluster.
 	//+optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	//+listType=map
+	//+listMapKey=type
+	//+kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// CurrentRequestByDatacenter maps data center IDs to a pending provisioning request made during reconciliation.
 	//+optional
@@ -84,25 +90,48 @@ type IonosCloudClusterStatus struct {
 	//+optional
 	ControlPlaneEndpointIPBlockID string `json:"controlPlaneEndpointIPBlockID,omitempty"`
 
-	// V1Beta2 groups all status fields that will be used when the CAPI contract moves to v1beta2.
+	// Deprecated groups all status fields deprecated and scheduled for removal when v1beta1 contract support is dropped.
 	//+optional
-	V1Beta2 *IonosCloudClusterV1Beta2Status `json:"v1beta2,omitempty"`
+	Deprecated *IonosCloudClusterDeprecatedStatus `json:"deprecated,omitempty"`
 }
 
-// IonosCloudClusterV1Beta2Status groups all status fields that will be used when the CAPI contract moves to v1beta2.
-type IonosCloudClusterV1Beta2Status struct {
-	// Conditions represents the observations of the current state of the IonosCloudCluster.
+// IonosCloudClusterInitializationStatus provides observations of the IonosCloudCluster initialization process.
+type IonosCloudClusterInitializationStatus struct {
+	// Provisioned is true when the infrastructure cluster is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract and is used to orchestrate provisioning.
+	// The value of this field is never updated after initial provisioning is completed.
 	//+optional
-	//+listType=map
-	//+listMapKey=type
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	Provisioned bool `json:"provisioned"`
+}
+
+// IonosCloudClusterDeprecatedStatus groups all status fields deprecated and scheduled for removal when
+// v1beta1 contract support is dropped.
+type IonosCloudClusterDeprecatedStatus struct {
+	// V1Beta1 groups all v1beta1 status fields that are deprecated and scheduled for removal.
+	//+optional
+	V1Beta1 *IonosCloudClusterV1Beta1DeprecatedStatus `json:"v1beta1,omitempty"`
+}
+
+// IonosCloudClusterV1Beta1DeprecatedStatus contains deprecated v1beta1 fields.
+type IonosCloudClusterV1Beta1DeprecatedStatus struct {
+	// Ready indicates that the cluster is ready.
+	//
+	// Deprecated: Use Initialization.Provisioned instead.
+	//+optional
+	Ready bool `json:"ready,omitempty"`
+
+	// Conditions defines current service state of the IonosCloudCluster using the deprecated v1beta1 condition type.
+	//
+	// Deprecated: Use the top-level conditions field instead.
+	//+optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=ionoscloudclusters,scope=Namespaced,categories=cluster-api;ionoscloud,shortName=icc
 //+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
-//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Cluster infrastructure is ready"
+//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.initialization.provisioned",description="Cluster infrastructure is ready"
 //+kubebuilder:printcolumn:name="Endpoint",type="string",JSONPath=".spec.controlPlaneEndpoint",description="API Endpoint"
 
 // IonosCloudCluster is the Schema for the ionoscloudclusters API.
@@ -127,30 +156,33 @@ func init() {
 	objectTypes = append(objectTypes, &IonosCloudCluster{}, &IonosCloudClusterList{})
 }
 
-// GetV1Beta1Conditions returns the conditions from the status.
+// GetV1Beta1Conditions returns the deprecated v1beta1 conditions from status.deprecated.v1beta1.conditions.
 func (i *IonosCloudCluster) GetV1Beta1Conditions() clusterv1.Conditions {
+	if i.Status.Deprecated == nil || i.Status.Deprecated.V1Beta1 == nil {
+		return nil
+	}
+	return i.Status.Deprecated.V1Beta1.Conditions
+}
+
+// SetV1Beta1Conditions sets the deprecated v1beta1 conditions in status.deprecated.v1beta1.conditions.
+func (i *IonosCloudCluster) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
+	if i.Status.Deprecated == nil {
+		i.Status.Deprecated = &IonosCloudClusterDeprecatedStatus{}
+	}
+	if i.Status.Deprecated.V1Beta1 == nil {
+		i.Status.Deprecated.V1Beta1 = &IonosCloudClusterV1Beta1DeprecatedStatus{}
+	}
+	i.Status.Deprecated.V1Beta1.Conditions = conditions
+}
+
+// GetConditions returns the v1beta2 conditions from status.conditions.
+func (i *IonosCloudCluster) GetConditions() []metav1.Condition {
 	return i.Status.Conditions
 }
 
-// SetV1Beta1Conditions sets the conditions in the status.
-func (i *IonosCloudCluster) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
-	i.Status.Conditions = conditions
-}
-
-// GetConditions returns the v1beta2 conditions from the status.
-func (i *IonosCloudCluster) GetConditions() []metav1.Condition {
-	if i.Status.V1Beta2 == nil {
-		return nil
-	}
-	return i.Status.V1Beta2.Conditions
-}
-
-// SetConditions sets the v1beta2 conditions in the status.
+// SetConditions sets the v1beta2 conditions in status.conditions.
 func (i *IonosCloudCluster) SetConditions(conditions []metav1.Condition) {
-	if i.Status.V1Beta2 == nil {
-		i.Status.V1Beta2 = &IonosCloudClusterV1Beta2Status{}
-	}
-	i.Status.V1Beta2.Conditions = conditions
+	i.Status.Conditions = conditions
 }
 
 // SetCurrentClusterRequest sets the current provisioning request for the cluster.

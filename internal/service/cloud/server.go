@@ -145,7 +145,18 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 
 // FinalizeMachineProvisioning marks the machine as provisioned.
 func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
-	ms.IonosMachine.Status.Ready = true
+	if ms.IonosMachine.Status.Initialization == nil {
+		ms.IonosMachine.Status.Initialization = &infrav1.IonosCloudMachineInitializationStatus{}
+	}
+	ms.IonosMachine.Status.Initialization.Provisioned = true
+	// Set deprecated v1beta1 ready field for backwards compatibility.
+	if ms.IonosMachine.Status.Deprecated == nil {
+		ms.IonosMachine.Status.Deprecated = &infrav1.IonosCloudMachineDeprecatedStatus{}
+	}
+	if ms.IonosMachine.Status.Deprecated.V1Beta1 == nil {
+		ms.IonosMachine.Status.Deprecated.V1Beta1 = &infrav1.IonosCloudMachineV1Beta1DeprecatedStatus{}
+	}
+	ms.IonosMachine.Status.Deprecated.V1Beta1.Ready = true
 	conditions.Set(ms.IonosMachine, metav1.Condition{
 		Type:   string(infrav1.MachineProvisionedCondition),
 		Status: metav1.ConditionTrue,
