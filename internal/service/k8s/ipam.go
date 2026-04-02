@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	ipamv1 "sigs.k8s.io/cluster-api/api/ipam/v1beta1"
+	ipamv1 "sigs.k8s.io/cluster-api/api/ipam/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -268,6 +268,14 @@ func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, 
 		return nil
 	}
 
+	ipPoolRef := ipamv1.IPPoolReference{
+		Name: poolRef.Name,
+		Kind: poolRef.Kind,
+	}
+	if poolRef.APIGroup != nil {
+		ipPoolRef.APIGroup = *poolRef.APIGroup
+	}
+
 	desired := &ipamv1.IPAddressClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      claimRef.Name,
@@ -275,7 +283,7 @@ func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, 
 			Labels:    map[string]string{clusterv1.ClusterNameLabel: cluster},
 		},
 		Spec: ipamv1.IPAddressClaimSpec{
-			PoolRef: *poolRef,
+			PoolRef: ipPoolRef,
 		},
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, h.client, desired, func() error {

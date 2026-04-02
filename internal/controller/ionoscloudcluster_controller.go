@@ -189,7 +189,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 	if clusterScope.IonosCluster.Status.Deprecated.V1Beta1 == nil {
 		clusterScope.IonosCluster.Status.Deprecated.V1Beta1 = &infrav1.IonosCloudClusterV1Beta1DeprecatedStatus{}
 	}
-	clusterScope.IonosCluster.Status.Deprecated.V1Beta1.Ready = true
+	clusterScope.IonosCluster.Status.Deprecated.V1Beta1.Ready = true //nolint:staticcheck // Intentionally setting deprecated field for v1beta1 backwards compatibility.
 	return ctrl.Result{}, nil
 }
 

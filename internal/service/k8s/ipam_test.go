@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	ipamv1 "sigs.k8s.io/cluster-api/api/ipam/v1beta1"
+	ipamv1 "sigs.k8s.io/cluster-api/api/ipam/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -320,10 +320,10 @@ func defaultIPv4Address(claim *ipamv1.IPAddressClaim, poolRef *corev1.TypedLocal
 			Namespace: "default",
 		},
 		Spec: ipamv1.IPAddressSpec{
-			ClaimRef: *localRef(claim),
-			PoolRef:  *poolRef,
+			ClaimRef: ipamv1.IPAddressClaimReference{Name: claim.GetName()},
+			PoolRef:  toIPPoolReference(poolRef),
 			Address:  "10.0.0.2",
-			Prefix:   16,
+			Prefix:   ptr.To[int32](16),
 		},
 	}
 }
@@ -336,10 +336,10 @@ func defaultIPv6Address(claim *ipamv1.IPAddressClaim, poolRef *corev1.TypedLocal
 			Namespace: "default",
 		},
 		Spec: ipamv1.IPAddressSpec{
-			ClaimRef: *localRef(claim),
-			PoolRef:  *poolRef,
+			ClaimRef: ipamv1.IPAddressClaimReference{Name: claim.GetName()},
+			PoolRef:  toIPPoolReference(poolRef),
 			Address:  "2001:db8::",
-			Prefix:   42,
+			Prefix:   ptr.To[int32](42),
 		},
 	}
 }
@@ -398,8 +398,13 @@ func defaultPrimaryIPv6Claim() *ipamv1.IPAddressClaim {
 	}
 }
 
-func localRef(obj client.Object) *corev1.LocalObjectReference {
-	return &corev1.LocalObjectReference{
-		Name: obj.GetName(),
+func toIPPoolReference(ref *corev1.TypedLocalObjectReference) ipamv1.IPPoolReference {
+	r := ipamv1.IPPoolReference{
+		Name: ref.Name,
+		Kind: ref.Kind,
 	}
+	if ref.APIGroup != nil {
+		r.APIGroup = *ref.APIGroup
+	}
+	return r
 }
