@@ -115,6 +115,7 @@ func (a ServerType) String() string {
 // +kubebuilder:validation:XValidation:rule="!has(oldSelf.networkID) || has(self.networkID)", message="networkID is required once set"
 // +kubebuilder:validation:XValidation:rule="(self.type != 'CUBE' && self.type != 'GPU') || size(self.templateID) > 0",message="templateID is required when type is CUBE or GPU"
 // +kubebuilder:validation:XValidation:rule="(self.type == 'CUBE' || self.type == 'GPU') || !has(self.templateID) || size(self.templateID) == 0",message="templateID must only be used with CUBE or GPU type"
+// +kubebuilder:validation:XValidation:rule="(self.type != 'VCPU' && self.type != 'CUBE' && self.type != 'GPU') || !has(self.cpuFamily)",message="cpuFamily must not be specified when using VCPU, CUBE or GPU"
 type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
@@ -414,7 +415,6 @@ type IonosCloudMachine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	//+kubebuilder:validation:XValidation:rule="(self.type != 'VCPU' && self.type != 'CUBE' && self.type != 'GPU') || !has(self.cpuFamily)",message="cpuFamily must not be specified when using VCPU, CUBE or GPU"
 	Spec   IonosCloudMachineSpec   `json:"spec,omitempty"`
 	Status IonosCloudMachineStatus `json:"status,omitempty"`
 }

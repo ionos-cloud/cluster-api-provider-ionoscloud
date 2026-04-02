@@ -387,9 +387,6 @@ spec:
             - disk
             type: object
             x-kubernetes-validations:
-            - message: cpuFamily must not be specified when using VCPU, CUBE or GPU
-              rule: (self.type != 'VCPU' && self.type != 'CUBE' && self.type != 'GPU')
-                || !has(self.cpuFamily)
             - message: networkID is required once set
               rule: '!has(oldSelf.networkID) || has(self.networkID)'
             - message: templateID is required when type is CUBE or GPU
@@ -398,6 +395,9 @@ spec:
             - message: templateID must only be used with CUBE or GPU type
               rule: (self.type == 'CUBE' || self.type == 'GPU') || !has(self.templateID)
                 || size(self.templateID) == 0
+            - message: cpuFamily must not be specified when using VCPU, CUBE or GPU
+              rule: (self.type != 'VCPU' && self.type != 'CUBE' && self.type != 'GPU')
+                || !has(self.cpuFamily)
           status:
             description: IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
             properties:

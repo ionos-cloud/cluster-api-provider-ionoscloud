@@ -418,6 +418,10 @@ spec:
                     - message: templateID must only be used with CUBE or GPU type
                       rule: (self.type == 'CUBE' || self.type == 'GPU') || !has(self.templateID)
                         || size(self.templateID) == 0
+                    - message: cpuFamily must not be specified when using VCPU, CUBE
+                        or GPU
+                      rule: (self.type != 'VCPU' && self.type != 'CUBE' && self.type
+                        != 'GPU') || !has(self.cpuFamily)
                 required:
                 - spec
                 type: object
