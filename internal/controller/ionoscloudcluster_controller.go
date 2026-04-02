@@ -174,9 +174,10 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 	}
 
 	conditions.Set(clusterScope.IonosCluster, metav1.Condition{
-		Type:   string(infrav1.IonosCloudClusterReady),
-		Status: metav1.ConditionTrue,
-		Reason: string(infrav1.IonosCloudClusterReady),
+		Type:    string(infrav1.IonosCloudClusterReady),
+		Status:  metav1.ConditionTrue,
+		Reason:  string(infrav1.IonosCloudClusterReady),
+		Message: "Cluster infrastructure is ready",
 	})
 	clusterScope.IonosCluster.Status.Ready = true
 	return ctrl.Result{}, nil
