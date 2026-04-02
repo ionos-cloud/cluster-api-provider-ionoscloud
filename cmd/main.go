@@ -28,9 +28,11 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/controllers/crdmigrator"
 	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
@@ -99,6 +101,25 @@ func main() {
 	}
 
 	ctx := ctrl.SetupSignalHandler()
+
+	skipPhases := make([]crdmigrator.Phase, 0, len(skipCRDMigrationPhases))
+	for _, p := range skipCRDMigrationPhases {
+		skipPhases = append(skipPhases, crdmigrator.Phase(p))
+	}
+	if err = (&crdmigrator.CRDMigrator{
+		Client:                 mgr.GetClient(),
+		APIReader:              mgr.GetAPIReader(),
+		SkipCRDMigrationPhases: skipPhases,
+		Config: map[client.Object]crdmigrator.ByObjectConfig{
+			&infrav1.IonosCloudCluster{}:         {UseCache: true},
+			&infrav1.IonosCloudClusterTemplate{}: {UseCache: false},
+			&infrav1.IonosCloudMachine{}:         {UseCache: true},
+			&infrav1.IonosCloudMachineTemplate{}: {UseCache: false},
+		},
+	}).SetupWithManager(ctx, mgr, controller.Options{}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CRDMigrator")
+		os.Exit(1)
+	}
 
 	if err = iccontroller.NewIonosCloudClusterReconciler(mgr).SetupWithManager(
 		ctx,
