@@ -19,6 +19,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
@@ -126,9 +127,29 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
 		os.Exit(1)
 	}
+	setupCRDMigrator(ctx, mgr)
+	//+kubebuilder:scaffold:builder
+
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up health check")
+		os.Exit(1)
+	}
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
+
+	setupLog.Info("Starting manager")
+	if err := mgr.Start(ctx); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}
+
+func setupCRDMigrator(ctx context.Context, mgr ctrl.Manager) {
 	crdMigratorConfig := map[client.Object]crdmigrator.ByObjectConfig{
 		&infrav1.IonosCloudCluster{}:         {UseCache: true, UseStatusForStorageVersionMigration: true},
-		&infrav1.IonosCloudMachine{}:          {UseCache: true, UseStatusForStorageVersionMigration: true},
+		&infrav1.IonosCloudMachine{}:         {UseCache: true, UseStatusForStorageVersionMigration: true},
 		&infrav1.IonosCloudClusterTemplate{}: {UseCache: false},
 		&infrav1.IonosCloudMachineTemplate{}: {UseCache: false},
 	}
@@ -144,22 +165,6 @@ func main() {
 		// Run with concurrency 1 to avoid overwhelming the apiserver.
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: 1}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CRDMigrator")
-		os.Exit(1)
-	}
-	//+kubebuilder:scaffold:builder
-
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
-
-	setupLog.Info("Starting manager")
-	if err := mgr.Start(ctx); err != nil {
-		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 }

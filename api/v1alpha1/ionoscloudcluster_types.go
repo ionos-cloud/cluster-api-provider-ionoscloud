@@ -161,7 +161,7 @@ func (i *IonosCloudCluster) GetV1Beta1Conditions() clusterv1.Conditions {
 	if i.Status.Deprecated == nil || i.Status.Deprecated.V1Beta1 == nil {
 		return nil
 	}
-	return i.Status.Deprecated.V1Beta1.Conditions //nolint:staticcheck // Implementing v1beta1 contract interface.
+	return i.Status.Deprecated.V1Beta1.Conditions
 }
 
 // SetV1Beta1Conditions sets the deprecated v1beta1 conditions in status.deprecated.v1beta1.conditions.
@@ -172,7 +172,7 @@ func (i *IonosCloudCluster) SetV1Beta1Conditions(conditions clusterv1.Conditions
 	if i.Status.Deprecated.V1Beta1 == nil {
 		i.Status.Deprecated.V1Beta1 = &IonosCloudClusterV1Beta1DeprecatedStatus{}
 	}
-	i.Status.Deprecated.V1Beta1.Conditions = conditions //nolint:staticcheck // Implementing v1beta1 contract interface.
+	i.Status.Deprecated.V1Beta1.Conditions = conditions
 }
 
 // GetConditions returns the v1beta2 conditions from status.conditions.
