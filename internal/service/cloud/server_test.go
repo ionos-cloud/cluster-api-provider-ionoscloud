@@ -274,7 +274,7 @@ func (s *serverSuite) TestReconcileServerDeletionSkipsBootVolumeForTemplateServe
 		},
 	}, nil)
 
-	reqLocation := "delete/location"
+	reqLocation := "delete/location/template-server"
 	s.mockGetServerDeletionRequestCall(exampleServerID).Return(nil, nil)
 	s.mockDeleteServerCall(exampleServerID, false).Return(reqLocation, nil)
 

@@ -65,6 +65,7 @@ providers:
           - sourcePath: "../../../metadata.yaml"
           - sourcePath: "../data/infrastructure-ionoscloud/cluster-template.yaml"
           - sourcePath: "../data/infrastructure-ionoscloud/cluster-template-ipam.yaml"
+          - sourcePath: "../data/infrastructure-ionoscloud/cluster-template-cube.yaml"
           - sourcePath: "../data/infrastructure-ionoscloud/cluster-template-image-selector.yaml"
 variables:
   # Default variables for the e2e test; those values could be overridden via env variables, thus
@@ -86,6 +87,7 @@ variables:
   CONTROL_PLANE_ENDPOINT_IP: ""
   CONTROL_PLANE_ENDPOINT_LOCATION: ""
   IONOSCLOUD_MACHINE_IMAGE_ID: ""
+  IONOSCLOUD_CUBE_TEMPLATE_ID: ""
 
 intervals:
   default/wait-controllers: [ "30m", "10s" ]

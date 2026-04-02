@@ -33,6 +33,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+const exampleUUID = "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+
 func defaultMachine() *IonosCloudMachine {
 	return &IonosCloudMachine{
 		ObjectMeta: metav1.ObjectMeta{
@@ -516,7 +518,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				m.Spec.CPUFamily = ptr.To("some-cpu-family")
 				m.Spec.Type = serverType
 				if serverType == ServerTypeCUBE || serverType == ServerTypeGPU {
-					m.Spec.TemplateID = "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+					m.Spec.TemplateID = exampleUUID
 				}
 				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 			},
@@ -527,7 +529,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		It("should fail if templateID is set with ENTERPRISE type", func() {
 			m := defaultMachine()
 			m.Spec.Type = ServerTypeEnterprise
-			m.Spec.TemplateID = "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+			m.Spec.TemplateID = exampleUUID
 			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 		})
 		DescribeTable("should fail if templateID is missing for",
@@ -547,7 +549,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				m.Spec.Type = serverType
 				m.Spec.CPUFamily = nil
 				if serverType == ServerTypeCUBE || serverType == ServerTypeGPU {
-					m.Spec.TemplateID = "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+					m.Spec.TemplateID = exampleUUID
 				}
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.Type).To(Equal(serverType))
