@@ -510,22 +510,52 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			m.Spec.Type = "this-should-fail"
 			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 		})
-		It("should fail if cpuFamily is set and type is VCPU", func() {
+		DescribeTable("should fail if cpuFamily is set",
+			func(serverType ServerType) {
+				m := defaultMachine()
+				m.Spec.CPUFamily = ptr.To("some-cpu-family")
+				m.Spec.Type = serverType
+				if serverType == ServerTypeCUBE || serverType == ServerTypeGPU {
+					m.Spec.TemplateID = "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+				}
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+			},
+			Entry("VCPU", ServerTypeVCPU),
+			Entry("CUBE", ServerTypeCUBE),
+			Entry("GPU", ServerTypeGPU),
+		)
+		It("should fail if templateID is set with ENTERPRISE type", func() {
 			m := defaultMachine()
-			m.Spec.CPUFamily = ptr.To("some-cpu-family")
-			m.Spec.Type = ServerTypeVCPU
+			m.Spec.Type = ServerTypeEnterprise
+			m.Spec.TemplateID = "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
 			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 		})
+		DescribeTable("should fail if templateID is missing for",
+			func(serverType ServerType) {
+				m := defaultMachine()
+				m.Spec.Type = serverType
+				m.Spec.CPUFamily = nil
+				m.Spec.TemplateID = ""
+				Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+			},
+			Entry("CUBE", ServerTypeCUBE),
+			Entry("GPU", ServerTypeGPU),
+		)
 		DescribeTable("should work for value",
 			func(serverType ServerType) {
 				m := defaultMachine()
 				m.Spec.Type = serverType
 				m.Spec.CPUFamily = nil
+				if serverType == ServerTypeCUBE || serverType == ServerTypeGPU {
+					m.Spec.TemplateID = "ee090ff2-1eef-48ec-a246-a51a33aa4f3a"
+				}
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 				Expect(m.Spec.Type).To(Equal(serverType))
 			},
 			Entry("ENTERPRISE", ServerTypeEnterprise),
 			Entry("VCPU", ServerTypeVCPU),
+			Entry("CUBE", ServerTypeCUBE),
+			Entry("GPU", ServerTypeGPU),
 		)
 	})
 	Context("Conditions", func() {
