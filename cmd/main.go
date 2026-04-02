@@ -127,7 +127,10 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
 		os.Exit(1)
 	}
-	setupCRDMigrator(ctx, mgr)
+	if err := setupCRDMigrator(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CRDMigrator")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -146,7 +149,7 @@ func main() {
 	}
 }
 
-func setupCRDMigrator(ctx context.Context, mgr ctrl.Manager) {
+func setupCRDMigrator(ctx context.Context, mgr ctrl.Manager) error {
 	crdMigratorConfig := map[client.Object]crdmigrator.ByObjectConfig{
 		&infrav1.IonosCloudCluster{}:         {UseCache: true, UseStatusForStorageVersionMigration: true},
 		&infrav1.IonosCloudMachine{}:         {UseCache: true, UseStatusForStorageVersionMigration: true},
@@ -157,16 +160,13 @@ func setupCRDMigrator(ctx context.Context, mgr ctrl.Manager) {
 	for _, p := range skipCRDMigrationPhases {
 		crdMigratorSkipPhases = append(crdMigratorSkipPhases, crdmigrator.Phase(p))
 	}
-	if err := (&crdmigrator.CRDMigrator{
+	return (&crdmigrator.CRDMigrator{
 		Client:                 mgr.GetClient(),
 		APIReader:              mgr.GetAPIReader(),
 		SkipCRDMigrationPhases: crdMigratorSkipPhases,
 		Config:                 crdMigratorConfig,
 		// Run with concurrency 1 to avoid overwhelming the apiserver.
-	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: 1}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CRDMigrator")
-		os.Exit(1)
-	}
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: 1})
 }
 
 // initFlags parses the command line flags.
