@@ -85,7 +85,7 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 	})
 })
 
-var _ = Describe("Should be able to create a CUBE cluster with 1 control-plane and 1 worker node", func() {
+var _ = Describe("Should be able to create a cluster with CUBE worker nodes", func() {
 	capie2e.QuickStartSpec(ctx, func() capie2e.QuickStartSpecInput {
 		return capie2e.QuickStartSpecInput{
 			E2EConfig:                e2eConfig,

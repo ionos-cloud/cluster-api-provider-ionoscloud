@@ -92,7 +92,7 @@ func (a AvailabilityZone) String() string {
 	return string(a)
 }
 
-// ServerType is the type of server which is created (ENTERPRISE or VCPU).
+// ServerType is the type of server which is created (ENTERPRISE, VCPU, CUBE or GPU).
 type ServerType string
 
 const (

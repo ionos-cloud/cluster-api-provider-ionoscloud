@@ -60,6 +60,8 @@ IONOSCLOUD_DATACENTER_ID                    # The datacenter ID where the cluste
 IONOSCLOUD_MACHINE_TYPE                     # The server type (optional).
                                             #   Valid values: ENTERPRISE, VCPU, CUBE, GPU.
                                             #   Defaults to VCPU.
+                                            #   Note: CUBE and GPU cannot be used for control plane nodes
+                                            #   due to IP failover limitations.
 IONOSCLOUD_MACHINE_NUM_CORES                # The number of cores (optional).
                                             #   Defaults to 4 for control plane and 2 for worker nodes.
                                             #   Ignored when using CUBE or GPU type.

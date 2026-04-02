@@ -279,10 +279,10 @@ spec:
   template:
     spec:
       datacenterID: ${IONOSCLOUD_DATACENTER_ID}
-      type: CUBE
-      templateID: ${IONOSCLOUD_CUBE_TEMPLATE_ID}
+      numCores: ${IONOSCLOUD_MACHINE_NUM_CORES:-4}
+      memoryMB: ${IONOSCLOUD_MACHINE_MEMORY_MB:-8192}
+      type: ${IONOSCLOUD_MACHINE_TYPE:-VCPU}
       disk:
-        diskType: DAS
         image:
           id: ${IONOSCLOUD_MACHINE_IMAGE_ID}
 ---
