@@ -64,6 +64,8 @@ const (
 	VolumeDiskTypeSSDStandard VolumeDiskType = "SSD Standard"
 	// VolumeDiskTypeSSDPremium defines the premium SSD disk type.
 	VolumeDiskTypeSSDPremium VolumeDiskType = "SSD Premium"
+	// VolumeDiskTypeDAS defines the direct attached storage disk type.
+	VolumeDiskTypeDAS VolumeDiskType = "DAS"
 )
 
 // String returns the string representation of the VolumeDiskType.
@@ -98,6 +100,10 @@ const (
 	ServerTypeEnterprise ServerType = "ENTERPRISE"
 	// ServerTypeVCPU server of type VCPU.
 	ServerTypeVCPU ServerType = "VCPU"
+	// ServerTypeCUBE server of type CUBE.
+	ServerTypeCUBE ServerType = "CUBE"
+	// ServerTypeGPU server of type GPU.
+	ServerTypeGPU ServerType = "GPU"
 )
 
 // String returns the string representation of the ServerType.
@@ -107,6 +113,8 @@ func (a ServerType) String() string {
 
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
 // +kubebuilder:validation:XValidation:rule="!has(oldSelf.networkID) || has(self.networkID)", message="networkID is required once set"
+// +kubebuilder:validation:XValidation:rule="(self.type != 'CUBE' && self.type != 'GPU') || size(self.templateID) > 0",message="templateID is required when type is CUBE or GPU"
+// +kubebuilder:validation:XValidation:rule="(self.type == 'CUBE' || self.type == 'GPU') || !has(self.templateID) || size(self.templateID) == 0",message="templateID must only be used with CUBE or GPU type"
 type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
@@ -118,7 +126,17 @@ type IonosCloudMachineSpec struct {
 	//+kubebuilder:validation:Format=uuid
 	DatacenterID string `json:"datacenterID"`
 
+	// TemplateID is the ID of the template for creating CUBE or GPU servers.
+	// If a template has GPU cards assigned, then it can only be used to create GPU servers,
+	// otherwise it can only be used for CUBE servers.
+	// NumCores, MemoryMB, CPUFamily and the size parameter of the first volume (boot Disk) are ignored when this is set.
+	// Available TemplateIDs can be listed using the cloud api.
+	//+kubebuilder:validation:Format=uuid
+	//+optional
+	TemplateID string `json:"templateID,omitempty"`
+
 	// NumCores defines the number of cores for the VM.
+	// Ignored when TemplateID is specified.
 	//+kubebuilder:validation:Minimum=1
 	//+kubebuilder:default=1
 	//+optional
@@ -133,6 +151,7 @@ type IonosCloudMachineSpec struct {
 	// MemoryMB is the memory size for the VM in MB.
 	// Size must be specified in multiples of 256 MB with a minimum of 1024 MB
 	// which is required as we are using hot-pluggable RAM by default.
+	// Ignored when TemplateID is specified.
 	//+kubebuilder:validation:MultipleOf=1024
 	//+kubebuilder:validation:Minimum=2048
 	//+kubebuilder:default=3072
@@ -144,6 +163,7 @@ type IonosCloudMachineSpec struct {
 	//
 	// If not specified, the cloud will select a suitable CPU family
 	// based on the availability in the data center.
+	// Ignored when TemplateID is specified.
 	//+kubebuilder:example=AMD_OPTERON
 	//+optional
 	CPUFamily *string `json:"cpuFamily,omitempty"`
@@ -180,9 +200,10 @@ type IonosCloudMachineSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	NetworkID *string `json:"networkID,omitempty"`
 
-	// Type is the server type of the VM. Can be either ENTERPRISE or VCPU.
+	// Type is the server type of the VM. Can be either ENTERPRISE, VCPU, CUBE or GPU.
+	// Use the types CUBE or GPU together with TemplateID.
 	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="type is immutable"
-	//+kubebuilder:validation:Enum=ENTERPRISE;VCPU
+	//+kubebuilder:validation:Enum=ENTERPRISE;VCPU;CUBE;GPU
 	//+kubebuilder:default=ENTERPRISE
 	//+optional
 	Type ServerType `json:"type,omitempty"`
@@ -216,12 +237,13 @@ type Volume struct {
 	Name string `json:"name,omitempty"`
 
 	// DiskType defines the type of the hard drive.
-	//+kubebuilder:validation:Enum=HDD;SSD Standard;SSD Premium
+	//+kubebuilder:validation:Enum=HDD;SSD Standard;SSD Premium;DAS
 	//+kubebuilder:default=HDD
 	//+optional
 	DiskType VolumeDiskType `json:"diskType,omitempty"`
 
-	// SizeGB defines the size of the volume in GB
+	// SizeGB defines the size of the volume in GB.
+	// Ignored when TemplateID of IonosCloudMachineSpec is specified (for the boot volume).
 	//+kubebuilder:validation:Minimum=10
 	//+kubebuilder:default=20
 	//+optional
@@ -392,7 +414,7 @@ type IonosCloudMachine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	//+kubebuilder:validation:XValidation:rule="self.type != 'VCPU' || !has(self.cpuFamily)",message="cpuFamily must not be specified when using VCPU"
+	//+kubebuilder:validation:XValidation:rule="(self.type != 'VCPU' && self.type != 'CUBE' && self.type != 'GPU') || !has(self.cpuFamily)",message="cpuFamily must not be specified when using VCPU, CUBE or GPU"
 	Spec   IonosCloudMachineSpec   `json:"spec,omitempty"`
 	Status IonosCloudMachineStatus `json:"status,omitempty"`
 }

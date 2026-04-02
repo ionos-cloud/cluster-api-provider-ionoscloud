@@ -246,7 +246,10 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, server *s
 
 	deleteVolumes := ms.ClusterScope.IsDeleted()
 	bootVolumeID := server.GetProperties().GetBootVolume().GetId()
-	if !deleteVolumes && bootVolumeID != nil {
+
+	// when using templates (cubes or gpu servers) we cannot delete the boot volume
+	// the whole server must be deleted at once
+	if !deleteVolumes && bootVolumeID != nil && (server.Properties != nil && server.Properties.TemplateUuid == nil) {
 		// We need to make sure to only delete volumes if the cluster is being deleted.
 		// If a node is being replaced, we only delete the boot volume and keep all other volumes.
 		// The CSI will take care of re-attaching the existing volumes to the new node.
@@ -381,6 +384,15 @@ func (*Service) buildServerProperties(
 		Type:             ptr.To(machineSpec.Type.String()),
 	}
 
+	if machineSpec.TemplateID != "" {
+		props.TemplateUuid = &machineSpec.TemplateID
+
+		// cores, ram and cpuFamily cannot be set when using a template
+		props.Cores = nil
+		props.Ram = nil
+		props.CpuFamily = nil
+	}
+
 	return props
 }
 
@@ -402,6 +414,13 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 			Type:             ptr.To(machineSpec.Disk.DiskType.String()),
 			UserData:         &params.boostrapData,
 		},
+	}
+
+	if machineSpec.TemplateID != "" {
+		bootVolume.Properties.Size = nil // size cannot be set when using a template
+	}
+	if machineSpec.Disk.DiskType == infrav1.VolumeDiskTypeDAS {
+		bootVolume.Properties.AvailabilityZone = nil // availability zone cannot be set for DAS
 	}
 
 	if params.imageID != "" {
@@ -426,9 +445,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		primaryNIC.Properties.Ipv6Ips = ptr.To(nicInfo.IPv6Addresses)
 	}
 
-	// In case we want to retrieve a public IP from the DHCP, we need to
-	// create a NIC with empty IP addresses and patch the NIC afterward.
-	// To simplify the code we also follow this approach when using IP pools.
+	// To retrieve a public IP from DHCP, we create a NIC with empty IP addresses and patch afterward.
 	serverNICs := sdk.Nics{
 		Items: &[]sdk.Nic{
 			primaryNIC,

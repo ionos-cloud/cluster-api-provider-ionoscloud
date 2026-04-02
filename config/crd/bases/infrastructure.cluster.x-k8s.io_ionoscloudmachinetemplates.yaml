@@ -184,6 +184,7 @@ spec:
 
                           If not specified, the cloud will select a suitable CPU family
                           based on the availability in the data center.
+                          Ignored when TemplateID is specified.
                         example: AMD_OPTERON
                         type: string
                       datacenterID:
@@ -214,6 +215,7 @@ spec:
                             - HDD
                             - SSD Standard
                             - SSD Premium
+                            - DAS
                             type: string
                           image:
                             description: Image is the image to use for the VM.
@@ -264,8 +266,9 @@ spec:
                             type: string
                           sizeGB:
                             default: 20
-                            description: SizeGB defines the size of the volume in
-                              GB
+                            description: |-
+                              SizeGB defines the size of the volume in GB.
+                              Ignored when TemplateID of IonosCloudMachineSpec is specified (for the boot volume).
                             minimum: 10
                             type: integer
                         required:
@@ -349,6 +352,7 @@ spec:
                           MemoryMB is the memory size for the VM in MB.
                           Size must be specified in multiples of 256 MB with a minimum of 1024 MB
                           which is required as we are using hot-pluggable RAM by default.
+                          Ignored when TemplateID is specified.
                         format: int32
                         minimum: 2048
                         multipleOf: 1024
@@ -367,8 +371,9 @@ spec:
                           rule: self == oldSelf
                       numCores:
                         default: 1
-                        description: NumCores defines the number of cores for the
-                          VM.
+                        description: |-
+                          NumCores defines the number of cores for the VM.
+                          Ignored when TemplateID is specified.
                         format: int32
                         minimum: 1
                         type: integer
@@ -377,13 +382,25 @@ spec:
                           ProviderID is the IONOS Cloud provider ID
                           will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
                         type: string
+                      templateID:
+                        description: |-
+                          TemplateID is the ID of the template for creating CUBE or GPU servers.
+                          If a template has GPU cards assigned, then it can only be used to create GPU servers,
+                          otherwise it can only be used for CUBE servers.
+                          NumCores, MemoryMB, CPUFamily and the size parameter of the first volume (boot Disk) are ignored when this is set.
+                          Available TemplateIDs can be listed using the cloud api.
+                        format: uuid
+                        type: string
                       type:
                         default: ENTERPRISE
-                        description: Type is the server type of the VM. Can be either
-                          ENTERPRISE or VCPU.
+                        description: |-
+                          Type is the server type of the VM. Can be either ENTERPRISE, VCPU, CUBE or GPU.
+                          Use the types CUBE or GPU together with TemplateID.
                         enum:
                         - ENTERPRISE
                         - VCPU
+                        - CUBE
+                        - GPU
                         type: string
                         x-kubernetes-validations:
                         - message: type is immutable
@@ -395,6 +412,12 @@ spec:
                     x-kubernetes-validations:
                     - message: networkID is required once set
                       rule: '!has(oldSelf.networkID) || has(self.networkID)'
+                    - message: templateID is required when type is CUBE or GPU
+                      rule: (self.type != 'CUBE' && self.type != 'GPU') || size(self.templateID)
+                        > 0
+                    - message: templateID must only be used with CUBE or GPU type
+                      rule: (self.type == 'CUBE' || self.type == 'GPU') || !has(self.templateID)
+                        || size(self.templateID) == 0
                 required:
                 - spec
                 type: object
