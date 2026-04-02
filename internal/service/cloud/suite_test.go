@@ -138,8 +138,8 @@ func (s *ServiceTestSuite) SetupTest() {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: s.capiCluster.Name,
-			Version:     ptr.To("v1.26.12"),
-			ProviderID:  ptr.To("ionos://" + exampleServerID),
+			Version:    "v1.26.12",
+			ProviderID: "ionos://" + exampleServerID,
 		},
 	}
 	s.infraMachine = &infrav1.IonosCloudMachine{

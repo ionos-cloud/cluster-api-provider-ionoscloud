@@ -98,8 +98,8 @@ func (s *IpamTestSuite) SetupTest() {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: s.capiCluster.Name,
-			Version:     ptr.To("v1.26.12"),
-			ProviderID:  ptr.To("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),
+			Version:    "v1.26.12",
+			ProviderID: "ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf",
 		},
 	}
 	s.infraMachine = &infrav1.IonosCloudMachine{
