@@ -30,6 +30,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions"
 	conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -173,6 +174,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		}
 	}
 
+	v1beta1conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
 	conditions.Set(clusterScope.IonosCluster, metav1.Condition{
 		Type:    string(infrav1.IonosCloudClusterReady),
 		Status:  metav1.ConditionTrue,

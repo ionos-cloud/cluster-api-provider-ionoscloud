@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions"
 	conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -171,6 +172,11 @@ func (m *Machine) FindLatestMachine(
 // PatchObject will apply all changes from the IonosMachine.
 // It will also make sure to patch the status subresource.
 func (m *Machine) PatchObject() error {
+	// set the v1beta1 ready condition summary
+	v1beta1conditions.SetSummary(m.IonosMachine,
+		v1beta1conditions.WithConditions(infrav1.MachineProvisionedCondition))
+
+	// set the v1beta2 ready condition summary
 	if err := conditions.SetSummaryCondition(
 		m.IonosMachine,
 		m.IonosMachine,
