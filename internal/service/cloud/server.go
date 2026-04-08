@@ -264,6 +264,11 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, server *s
 		return nil
 	}
 
+	// template servers (CUBE/GPU) do not support deleting volumes separately
+	if server.Properties != nil && server.Properties.TemplateUuid != nil {
+		deleteVolumes = false
+	}
+
 	log.V(4).Info("Deleting server", "serverID", serverID, "deleteVolumes", deleteVolumes)
 	requestLocation, err := s.ionosClient.DeleteServer(ctx, ms.DatacenterID(), serverID, deleteVolumes)
 	if err != nil {

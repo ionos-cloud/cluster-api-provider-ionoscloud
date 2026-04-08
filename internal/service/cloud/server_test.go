@@ -396,6 +396,27 @@ func (s *serverSuite) TestReconcileServerDeletionDeleteAllVolumes() {
 	s.validateSuccessfulDeletionResponse(res, err, reqLocation)
 }
 
+func (s *serverSuite) TestReconcileServerDeletionTemplateServerClusterDeletion() {
+	s.clusterScope.Cluster.DeletionTimestamp = ptr.To(metav1.Now())
+	s.mockGetServerCall(exampleServerID).Return(&sdk.Server{
+		Id: ptr.To(exampleServerID),
+		Properties: &sdk.ServerProperties{
+			TemplateUuid: ptr.To("ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
+			BootVolume: &sdk.ResourceReference{
+				Id: ptr.To(exampleBootVolumeID),
+			},
+		},
+	}, nil).Once()
+
+	reqLocation := "delete/location/template-cluster"
+	s.mockGetServerDeletionRequestCall(exampleServerID).Return(nil, nil)
+	// deleteVolumes must be false for template servers even during cluster deletion
+	s.mockDeleteServerCall(exampleServerID, false).Return(reqLocation, nil)
+
+	res, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
+	s.validateSuccessfulDeletionResponse(res, err, reqLocation)
+}
+
 func (s *serverSuite) validateSuccessfulDeletionResponse(success bool, err error, requestLocation string) {
 	s.T().Helper()
 
