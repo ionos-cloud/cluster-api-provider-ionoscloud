@@ -180,7 +180,7 @@ func (m *Machine) PatchObject() error {
 	if err := conditions.SetSummaryCondition(
 		m.IonosMachine,
 		m.IonosMachine,
-		string(clusterv1.ReadyCondition),
+		clusterv1.ReadyV1Beta2Condition,
 		conditions.ForConditionTypes{string(infrav1.MachineProvisionedCondition)},
 	); err != nil {
 		return err
@@ -200,7 +200,7 @@ func (m *Machine) PatchObject() error {
 			infrav1.MachineProvisionedCondition,
 		}},
 		patch.WithOwnedV1Beta2Conditions{Conditions: []string{
-			string(clusterv1.ReadyCondition),
+			clusterv1.ReadyV1Beta2Condition,
 			string(infrav1.MachineProvisionedCondition),
 		}},
 	)

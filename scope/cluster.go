@@ -211,7 +211,7 @@ func (c *Cluster) PatchObject() error {
 	if err := conditions.SetSummaryCondition(
 		c.IonosCluster,
 		c.IonosCluster,
-		string(clusterv1.ReadyCondition),
+		clusterv1.ReadyV1Beta2Condition,
 		conditions.ForConditionTypes{string(infrav1.IonosCloudClusterReady)},
 	); err != nil {
 		return err
@@ -232,7 +232,7 @@ func (c *Cluster) PatchObject() error {
 		},
 		patch.WithOwnedV1Beta2Conditions{
 			Conditions: []string{
-				string(clusterv1.ReadyCondition),
+				clusterv1.ReadyV1Beta2Condition,
 				string(infrav1.IonosCloudClusterReady),
 			},
 		},
