@@ -220,7 +220,10 @@ func (c *Cluster) PatchObject() error {
 	defer cancel()
 	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster,
 		patch.WithOwnedConditions{
-			Conditions: []clusterv1.ConditionType{clusterv1.ReadyCondition},
+			Conditions: []clusterv1.ConditionType{
+				clusterv1.ReadyCondition,
+				infrav1.IonosCloudClusterReady,
+			},
 		},
 		patch.WithOwnedV1Beta2Conditions{
 			Conditions: []string{

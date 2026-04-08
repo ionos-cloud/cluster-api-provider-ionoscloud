@@ -148,7 +148,7 @@ issues:
     - linters:
         - revive
       text: "comment-spacings: no space between comment delimiter and comment text"
-      source: "//(\\+(kubebuilder|optional|required|list)|#nosec)"
+      source: "//(\\+(kubebuilder|optional|required|listType|listMapKey)|#nosec)"
     - linters:
         - revive
       text: "exported: exported method .*\\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported"
