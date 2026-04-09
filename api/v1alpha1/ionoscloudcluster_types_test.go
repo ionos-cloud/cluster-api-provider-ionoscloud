@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -38,11 +38,16 @@ const (
 )
 
 func TestIonosCloudCluster_Conditions(t *testing.T) {
-	conds := clusterv1.Conditions{{Type: "type"}}
+	conds := []metav1.Condition{{
+		Type:               "type",
+		Status:             metav1.ConditionTrue,
+		Reason:             "reason",
+		LastTransitionTime: metav1.Now(),
+	}}
 	cluster := &IonosCloudCluster{}
 
-	cluster.SetConditions(conds)
-	require.Equal(t, conds, cluster.GetConditions())
+	cluster.SetV1Beta2Conditions(conds)
+	require.Equal(t, conds, cluster.GetV1Beta2Conditions())
 }
 
 func defaultCluster() *IonosCloudCluster {
@@ -163,7 +168,11 @@ var _ = Describe("IonosCloudCluster", func() {
 			fetched.Status.CurrentRequestByDatacenter = map[string]ProvisioningRequest{
 				"123": wantProvisionRequest,
 			}
-			conditions.MarkTrue(fetched, clusterv1.ReadyCondition)
+			conditions.Set(fetched, metav1.Condition{
+				Type:   clusterv1.ReadyV1Beta2Condition,
+				Status: metav1.ConditionTrue,
+				Reason: clusterv1.ReadyV1Beta2Condition,
+			})
 
 			By("updating the cluster status")
 			Expect(k8sClient.Status().Update(context.Background(), fetched)).To(Succeed())
@@ -173,7 +182,7 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(fetched.Status.CurrentRequestByDatacenter).To(HaveLen(1))
 			Expect(fetched.Status.CurrentRequestByDatacenter["123"]).To(Equal(wantProvisionRequest))
 			Expect(fetched.Status.Conditions).To(HaveLen(1))
-			Expect(conditions.IsTrue(fetched, clusterv1.ReadyCondition)).To(BeTrue())
+			Expect(fetched.Status.Conditions[0].Status).To(Equal(metav1.ConditionTrue))
 
 			By("Removing the entry from the status again")
 			delete(fetched.Status.CurrentRequestByDatacenter, "123")
