@@ -28,7 +28,6 @@ import (
 
 	"k8s.io/client-go/util/retry"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions"
 	conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -203,16 +202,12 @@ func (c *Cluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
 // PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
 func (c *Cluster) PatchObject() error {
-	// always set the v1beta1 ready condition summary
-	v1beta1conditions.SetSummary(c.IonosCluster,
-		v1beta1conditions.WithConditions(infrav1.IonosCloudClusterReady))
-
-	// always set the v1beta2 ready condition summary
+	// always set the ready condition summary
 	if err := conditions.SetSummaryCondition(
 		c.IonosCluster,
 		c.IonosCluster,
 		clusterv1.ReadyV1Beta2Condition,
-		conditions.ForConditionTypes{string(infrav1.IonosCloudClusterReady)},
+		conditions.ForConditionTypes{infrav1.IonosCloudClusterReady},
 	); err != nil {
 		return err
 	}
@@ -224,16 +219,10 @@ func (c *Cluster) PatchObject() error {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster,
-		patch.WithOwnedConditions{
-			Conditions: []clusterv1.ConditionType{
-				clusterv1.ReadyCondition,
-				infrav1.IonosCloudClusterReady,
-			},
-		},
 		patch.WithOwnedV1Beta2Conditions{
 			Conditions: []string{
 				clusterv1.ReadyV1Beta2Condition,
-				string(infrav1.IonosCloudClusterReady),
+				infrav1.IonosCloudClusterReady,
 			},
 		},
 	)
