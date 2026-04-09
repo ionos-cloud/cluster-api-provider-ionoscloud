@@ -27,7 +27,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/conditions"
 	conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -303,9 +302,6 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	// Make sure the infrastructure is ready.
 	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
 		log.Info("Cluster infrastructure is not ready yet")
-		v1beta1conditions.MarkFalse(ms.IonosMachine, infrav1.MachineProvisionedCondition,
-			infrav1.WaitingForClusterInfrastructureReason, clusterv1.ConditionSeverityInfo,
-			"Waiting for cluster infrastructure to become ready")
 		conditions.Set(ms.IonosMachine, metav1.Condition{
 			Type:    string(infrav1.MachineProvisionedCondition),
 			Status:  metav1.ConditionFalse,
@@ -319,9 +315,6 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	// Make sure to wait until the data secret was created
 	if ms.Machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret is not available yet")
-		v1beta1conditions.MarkFalse(ms.IonosMachine, infrav1.MachineProvisionedCondition,
-			infrav1.WaitingForBootstrapDataReason, clusterv1.ConditionSeverityInfo,
-			"Waiting for bootstrap data to become available")
 		conditions.Set(ms.IonosMachine, metav1.Condition{
 			Type:    string(infrav1.MachineProvisionedCondition),
 			Status:  metav1.ConditionFalse,
