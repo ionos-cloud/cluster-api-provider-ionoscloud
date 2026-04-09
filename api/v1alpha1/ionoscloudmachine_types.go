@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
@@ -37,7 +36,7 @@ const (
 
 	// MachineProvisionedCondition documents the status of the provisioning of a IonosCloudMachine and
 	// the underlying VM.
-	MachineProvisionedCondition clusterv1.ConditionType = "MachineProvisioned"
+	MachineProvisionedCondition = "MachineProvisioned"
 
 	// WaitingForClusterInfrastructureReason (Severity=Info) indicates that the IonosCloudMachine is currently
 	// waiting for the cluster infrastructure to become ready.
@@ -297,11 +296,9 @@ type IonosCloudMachineStatus struct {
 
 	// Conditions defines current service state of the IonosCloudMachine.
 	//+optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
-
-	// V1Beta2 groups all status fields that will be used when the CAPI contract moves to v1beta2.
-	//+optional
-	V1Beta2 *IonosCloudMachineV1Beta2Status `json:"v1beta2,omitempty"`
+	//+listType=map
+	//+listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// CurrentRequest shows the current provisioning request for any
 	// cloud resource that is being provisioned.
@@ -311,15 +308,6 @@ type IonosCloudMachineStatus struct {
 	// Location is the location of the datacenter the VM is provisioned in.
 	//+optional
 	Location string `json:"location"`
-}
-
-// IonosCloudMachineV1Beta2Status groups all status fields that will be used when the CAPI contract moves to v1beta2.
-type IonosCloudMachineV1Beta2Status struct {
-	// Conditions represents the observations of the current state of the IonosCloudMachine.
-	//+optional
-	//+listType=map
-	//+listMapKey=type
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // MachineNetworkInfo contains information about the network configuration of the VM.
@@ -380,30 +368,14 @@ type IonosCloudMachineList struct {
 	Items           []IonosCloudMachine `json:"items"`
 }
 
-// GetConditions returns the observations of the operational state of the IonosCloudMachine resource.
-func (m *IonosCloudMachine) GetConditions() clusterv1.Conditions {
-	return m.Status.Conditions
-}
-
-// SetConditions sets the underlying service state of the IonosCloudMachine to the predescribed clusterv1.Conditions.
-func (m *IonosCloudMachine) SetConditions(conditions clusterv1.Conditions) {
-	m.Status.Conditions = conditions
-}
-
 // GetV1Beta2Conditions returns the v1beta2 conditions from the status.
 func (m *IonosCloudMachine) GetV1Beta2Conditions() []metav1.Condition {
-	if m.Status.V1Beta2 == nil {
-		return nil
-	}
-	return m.Status.V1Beta2.Conditions
+	return m.Status.Conditions
 }
 
 // SetV1Beta2Conditions sets the v1beta2 conditions in the status.
 func (m *IonosCloudMachine) SetV1Beta2Conditions(conditions []metav1.Condition) {
-	if m.Status.V1Beta2 == nil {
-		m.Status.V1Beta2 = &IonosCloudMachineV1Beta2Status{}
-	}
-	m.Status.V1Beta2.Conditions = conditions
+	m.Status.Conditions = conditions
 }
 
 // ExtractServerID extracts the server ID from the provider ID.

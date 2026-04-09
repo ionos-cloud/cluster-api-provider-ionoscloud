@@ -28,7 +28,7 @@ const (
 	ClusterFinalizer = "ionoscloudcluster.infrastructure.cluster.x-k8s.io"
 
 	// IonosCloudClusterReady is the condition for the IonosCloudCluster, which indicates that the cluster is ready.
-	IonosCloudClusterReady clusterv1.ConditionType = "ClusterReady"
+	IonosCloudClusterReady = "ClusterReady"
 
 	// IonosCloudClusterKind is the string resource kind of the IonosCloudCluster resource.
 	IonosCloudClusterKind = "IonosCloudCluster"
@@ -70,7 +70,9 @@ type IonosCloudClusterStatus struct {
 
 	// Conditions defines current service state of the IonosCloudCluster.
 	//+optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	//+listType=map
+	//+listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// CurrentRequestByDatacenter maps data center IDs to a pending provisioning request made during reconciliation.
 	//+optional
@@ -83,19 +85,6 @@ type IonosCloudClusterStatus struct {
 	// ControlPlaneEndpointIPBlockID is the IONOS Cloud UUID for the control plane endpoint IP block.
 	//+optional
 	ControlPlaneEndpointIPBlockID string `json:"controlPlaneEndpointIPBlockID,omitempty"`
-
-	// V1Beta2 groups all status fields that will be used when the CAPI contract moves to v1beta2.
-	//+optional
-	V1Beta2 *IonosCloudClusterV1Beta2Status `json:"v1beta2,omitempty"`
-}
-
-// IonosCloudClusterV1Beta2Status groups all status fields that will be used when the CAPI contract moves to v1beta2.
-type IonosCloudClusterV1Beta2Status struct {
-	// Conditions represents the observations of the current state of the IonosCloudCluster.
-	//+optional
-	//+listType=map
-	//+listMapKey=type
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -127,30 +116,14 @@ func init() {
 	objectTypes = append(objectTypes, &IonosCloudCluster{}, &IonosCloudClusterList{})
 }
 
-// GetConditions returns the conditions from the status.
-func (i *IonosCloudCluster) GetConditions() clusterv1.Conditions {
-	return i.Status.Conditions
-}
-
-// SetConditions sets the conditions in the status.
-func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
-	i.Status.Conditions = conditions
-}
-
 // GetV1Beta2Conditions returns the v1beta2 conditions from the status.
 func (i *IonosCloudCluster) GetV1Beta2Conditions() []metav1.Condition {
-	if i.Status.V1Beta2 == nil {
-		return nil
-	}
-	return i.Status.V1Beta2.Conditions
+	return i.Status.Conditions
 }
 
 // SetV1Beta2Conditions sets the v1beta2 conditions in the status.
 func (i *IonosCloudCluster) SetV1Beta2Conditions(conditions []metav1.Condition) {
-	if i.Status.V1Beta2 == nil {
-		i.Status.V1Beta2 = &IonosCloudClusterV1Beta2Status{}
-	}
-	i.Status.V1Beta2.Conditions = conditions
+	i.Status.Conditions = conditions
 }
 
 // SetCurrentClusterRequest sets the current provisioning request for the cluster.
