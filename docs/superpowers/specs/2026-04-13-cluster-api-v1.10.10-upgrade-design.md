@@ -57,6 +57,12 @@ Two PRs, merged in order.
 - Add RBAC markers for CRD and custom resource management.
 - Reference: PR #353 implementation, CAPI PR #11889.
 
+### README Compatibility Table
+
+Update the compatibility table in `README.md` to add a `Cluster API v1beta1 (v1.10)` column.
+The next CAPIC release row (v0.7 or whatever the release version will be) should show compatibility
+with v1.10. Existing rows for older CAPIC versions should show `☓` for v1.10.
+
 ### E2E / Config Updates
 
 - Update CAPI component URLs in `test/e2e/config/ionoscloud.yaml` to v1.10.10.
