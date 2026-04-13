@@ -138,9 +138,6 @@ issues:
   exclude-use-default: false
   exclude-rules:
     - linters:
-        - staticcheck
-      text: 'SA1019: "sigs.k8s.io/cluster-api/errors" is deprecated'
-    - linters:
         - containedctx
       path: '(.+)_test\.go'
     - linters:
