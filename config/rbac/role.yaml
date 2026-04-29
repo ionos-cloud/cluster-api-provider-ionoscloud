@@ -31,15 +31,30 @@ rules:
   verbs:
   - get
   - list
-  - patch
   - watch
 - apiGroups:
   - apiextensions.k8s.io
+  resourceNames:
+  - ionoscloudclusters.infrastructure.cluster.x-k8s.io
+  - ionoscloudclustertemplates.infrastructure.cluster.x-k8s.io
+  - ionoscloudmachines.infrastructure.cluster.x-k8s.io
+  - ionoscloudmachinetemplates.infrastructure.cluster.x-k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - apiextensions.k8s.io
+  resourceNames:
+  - ionoscloudclusters.infrastructure.cluster.x-k8s.io
+  - ionoscloudclustertemplates.infrastructure.cluster.x-k8s.io
+  - ionoscloudmachines.infrastructure.cluster.x-k8s.io
+  - ionoscloudmachinetemplates.infrastructure.cluster.x-k8s.io
   resources:
   - customresourcedefinitions/status
   verbs:
-  - get
-  - patch
+  - update
 - apiGroups:
   - authentication.k8s.io
   resources:

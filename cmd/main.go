@@ -71,8 +71,9 @@ func init() {
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 
 // Add RBAC for CRDMigrator controller.
-// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;patch
-// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions/status,verbs=get;patch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=patch;update,resourceNames=ionoscloudclusters.infrastructure.cluster.x-k8s.io;ionoscloudclustertemplates.infrastructure.cluster.x-k8s.io;ionoscloudmachines.infrastructure.cluster.x-k8s.io;ionoscloudmachinetemplates.infrastructure.cluster.x-k8s.io
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions/status,verbs=update,resourceNames=ionoscloudclusters.infrastructure.cluster.x-k8s.io;ionoscloudclustertemplates.infrastructure.cluster.x-k8s.io;ionoscloudmachines.infrastructure.cluster.x-k8s.io;ionoscloudmachinetemplates.infrastructure.cluster.x-k8s.io
 
 func main() {
 	ctrl.SetLogger(klog.Background())
@@ -110,8 +111,8 @@ func main() {
 
 	ctx := ctrl.SetupSignalHandler()
 
-	if err = setupControllers(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to setup controllers")
+	if err = setUpControllers(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to set up controllers")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
@@ -132,7 +133,7 @@ func main() {
 	}
 }
 
-func setupControllers(ctx context.Context, mgr ctrl.Manager) error {
+func setUpControllers(ctx context.Context, mgr ctrl.Manager) error {
 	skipPhases := make([]crdmigrator.Phase, 0, len(skipCRDMigrationPhases))
 	for _, p := range skipCRDMigrationPhases {
 		skipPhases = append(skipPhases, crdmigrator.Phase(p))
@@ -178,7 +179,7 @@ func initFlags() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	pflag.StringArrayVar(&skipCRDMigrationPhases, "skip-crd-migration-phases", []string{},
-		"CRD migration phases to skip. Use when the CAPI CRDMigrator handles migration.")
+		"CRD migration phases to skip. Valid values are: StorageVersionMigration, CleanupManagedFields.")
 	pflag.IntVar(&icClusterConcurrency, "ionoscloudcluster-concurrency", 1,
 		"Number of IonosCloudClusters to process simultaneously")
 	pflag.IntVar(&icMachineConcurrency, "ionoscloudmachine-concurrency", 1,
