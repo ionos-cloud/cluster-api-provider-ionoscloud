@@ -13,7 +13,7 @@ jobs:
       CONTROL_PLANE_ENDPOINT_LOCATION: ${{ vars.CONTROL_PLANE_ENDPOINT_LOCATION }}
       IONOSCLOUD_CUBE_TEMPLATE_ID: ${{ vars.IONOSCLOUD_CUBE_TEMPLATE_ID }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Go environment
         uses: actions/setup-go@v5
