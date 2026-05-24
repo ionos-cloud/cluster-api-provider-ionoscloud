@@ -27,8 +27,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	ipamv1 "sigs.k8s.io/cluster-api/api/ipam/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -98,8 +98,8 @@ func (s *IpamTestSuite) SetupTest() {
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: s.capiCluster.Name,
-			Version:     ptr.To("v1.26.12"),
-			ProviderID:  ptr.To("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),
+			Version:     "v1.26.12",
+			ProviderID:  "ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf",
 		},
 	}
 	s.infraMachine = &infrav1.IonosCloudMachine{
@@ -320,10 +320,10 @@ func defaultIPv4Address(claim *ipamv1.IPAddressClaim, poolRef *corev1.TypedLocal
 			Namespace: "default",
 		},
 		Spec: ipamv1.IPAddressSpec{
-			ClaimRef: *localRef(claim),
-			PoolRef:  *poolRef,
+			ClaimRef: ipamv1.IPAddressClaimReference{Name: claim.GetName()},
+			PoolRef:  toIPPoolReference(poolRef),
 			Address:  "10.0.0.2",
-			Prefix:   16,
+			Prefix:   ptr.To[int32](16),
 		},
 	}
 }
@@ -336,10 +336,10 @@ func defaultIPv6Address(claim *ipamv1.IPAddressClaim, poolRef *corev1.TypedLocal
 			Namespace: "default",
 		},
 		Spec: ipamv1.IPAddressSpec{
-			ClaimRef: *localRef(claim),
-			PoolRef:  *poolRef,
+			ClaimRef: ipamv1.IPAddressClaimReference{Name: claim.GetName()},
+			PoolRef:  toIPPoolReference(poolRef),
 			Address:  "2001:db8::",
-			Prefix:   42,
+			Prefix:   ptr.To[int32](42),
 		},
 	}
 }
@@ -398,8 +398,13 @@ func defaultPrimaryIPv6Claim() *ipamv1.IPAddressClaim {
 	}
 }
 
-func localRef(obj client.Object) *corev1.LocalObjectReference {
-	return &corev1.LocalObjectReference{
-		Name: obj.GetName(),
+func toIPPoolReference(ref *corev1.TypedLocalObjectReference) ipamv1.IPPoolReference {
+	r := ipamv1.IPPoolReference{
+		Name: ref.Name,
+		Kind: ref.Kind,
 	}
+	if ref.APIGroup != nil {
+		r.APIGroup = *ref.APIGroup
+	}
+	return r
 }

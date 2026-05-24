@@ -23,14 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capierrors "sigs.k8s.io/cluster-api/errors"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 func exampleParams(t *testing.T) MachineParams {
@@ -95,20 +93,6 @@ func TestMachineParamsNilLockerShouldFail(t *testing.T) {
 	scope, err := NewMachine(params)
 	require.Nil(t, scope, "returned machine scope should be nil")
 	require.Error(t, err)
-}
-
-func TestMachineHasFailedFailureMessage(t *testing.T) {
-	scope, err := NewMachine(exampleParams(t))
-	require.NoError(t, err)
-	scope.IonosMachine.Status.FailureMessage = ptr.To("¯\\_(ツ)_/¯")
-	require.True(t, scope.HasFailed())
-}
-
-func TestMachineHasFailedFailureReason(t *testing.T) {
-	scope, err := NewMachine(exampleParams(t))
-	require.NoError(t, err)
-	scope.IonosMachine.Status.FailureReason = (*capierrors.MachineStatusError)(ptr.To("¯\\_(ツ)_/¯"))
-	require.True(t, scope.HasFailed())
 }
 
 func TestCountMachinesWithDifferentLabels(t *testing.T) {
