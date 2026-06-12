@@ -202,15 +202,14 @@ func (c *Cluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
 // PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
 func (c *Cluster) PatchObject() error {
-	// always set the ready condition summary
-	if err := conditions.SetSummaryCondition(
+	// always set the ready condition summary; capture the error but do not return early —
+	// the patch must be attempted regardless (see NOTE below).
+	summaryErr := conditions.SetSummaryCondition(
 		c.IonosCluster,
 		c.IonosCluster,
 		string(clusterv1.ReadyCondition),
 		conditions.ForConditionTypes{string(infrav1.IonosCloudClusterReady)},
-	); err != nil {
-		return err
-	}
+	)
 
 	// NOTE(piepmatz): We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
 	//  aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation
@@ -218,7 +217,7 @@ func (c *Cluster) PatchObject() error {
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster,
+	if patchErr := c.patchHelper.Patch(timeoutCtx, c.IonosCluster,
 		patch.WithOwnedV1Beta1Conditions{
 			Conditions: []clusterv1.ConditionType{clusterv1.ReadyCondition},
 		},
@@ -228,7 +227,10 @@ func (c *Cluster) PatchObject() error {
 				string(infrav1.IonosCloudClusterReady),
 			},
 		},
-	)
+	); patchErr != nil {
+		return patchErr
+	}
+	return summaryErr
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudCluster.
