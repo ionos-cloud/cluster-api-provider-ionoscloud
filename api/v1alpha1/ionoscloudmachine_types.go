@@ -47,6 +47,9 @@ const (
 	// creating the bootstrap data secret and store it in the Cluster API Machine.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
 
+	// MachineProvisionedReason documents that the IonosCloudMachine has been successfully provisioned.
+	MachineProvisionedReason = "Provisioned"
+
 	// CloudResourceConfigAuto is a constant to indicate that the cloud resource should be managed by the
 	// Cluster API provider implementation.
 	CloudResourceConfigAuto = "AUTO"
