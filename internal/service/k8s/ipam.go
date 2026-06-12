@@ -102,7 +102,8 @@ func (h *Helper) ReconcileIPAddressClaimsDeletion(ctx context.Context, machineSc
 	log.V(4).Info("removing finalizers from IPAddressClaims.")
 
 	formats := []string{ipV4Format, ipV6Format}
-	nicNames := []string{fmt.Sprintf(primaryNICFormat, machineScope.IonosMachine.Name)}
+	nicNames := make([]string, 0, 1+len(machineScope.IonosMachine.Spec.AdditionalNetworks))
+	nicNames = append(nicNames, fmt.Sprintf(primaryNICFormat, machineScope.IonosMachine.Name))
 
 	for _, network := range machineScope.IonosMachine.Spec.AdditionalNetworks {
 		nicName := fmt.Sprintf(additionalNICFormat, machineScope.IonosMachine.Name, network.NetworkID)

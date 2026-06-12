@@ -26,7 +26,6 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 type ipBlockTestSuite struct {
@@ -59,8 +58,8 @@ func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockSingleMatch() {
 			*exampleIPBlock(),
 			{
 				Properties: &sdk.IpBlockProperties{
-					Name:     ptr.To(exampleIPBlockName),
-					Location: ptr.To("es/vit"),
+					Name:     new(exampleIPBlockName),
+					Location: new("es/vit"),
 				},
 			},
 		},
@@ -75,14 +74,14 @@ func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockSingleMatch() {
 
 func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockUserSetIP() {
 	s.clusterScope.IonosCluster.Spec.ControlPlaneEndpoint.Host = exampleEndpointIP
-	name := ptr.To("random name")
-	location := ptr.To(exampleLocation)
+	name := new("random name")
+	location := new(exampleLocation)
 	s.mockListIPBlocksCall().Return(&sdk.IpBlocks{
 		Items: &[]sdk.IpBlock{
 			{
-				Id: ptr.To(exampleIPBlockID),
+				Id: new(exampleIPBlockID),
 				Metadata: &sdk.DatacenterElementMetadata{
-					State: ptr.To(sdk.Available),
+					State: new(sdk.Available),
 				},
 				Properties: &sdk.IpBlockProperties{
 					Name:     name,
@@ -110,7 +109,7 @@ func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockUserSetIP() {
 func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockPreviouslySetID() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleIPBlockID
 	s.mockGetIPBlockByIDCall(exampleIPBlockID).Return(&sdk.IpBlock{
-		Id: ptr.To(exampleIPBlockID),
+		Id: new(exampleIPBlockID),
 	}, nil).Once()
 
 	block, err := s.service.getControlPlaneEndpointIPBlock(s.ctx, s.clusterScope)
@@ -137,8 +136,8 @@ func (s *ipBlockTestSuite) TestGetControlPlaneEndpointIPBlockNoMatch() {
 		Items: &[]sdk.IpBlock{
 			{
 				Properties: &sdk.IpBlockProperties{
-					Name:     ptr.To(exampleIPBlockName),
-					Location: ptr.To("de/fra"),
+					Name:     new(exampleIPBlockName),
+					Location: new("de/fra"),
 				},
 			},
 		},
@@ -249,7 +248,7 @@ func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointUnavailable() {
 
 func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointUserSetIP() {
 	block := exampleIPBlock()
-	block.Properties.Name = ptr.To("asdf")
+	block.Properties.Name = new("asdf")
 	block.Properties.Ips = &[]string{
 		"another IP",
 		exampleEndpointIP,
@@ -324,7 +323,7 @@ func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionCreationPend
 func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithIPBlockID() {
 	s.clusterScope.IonosCluster.Status.ControlPlaneEndpointIPBlockID = exampleIPBlockID
 	s.mockGetIPBlockByIDCall(exampleIPBlockID).Return(&sdk.IpBlock{
-		Id: ptr.To(exampleIPBlockID),
+		Id: new(exampleIPBlockID),
 	}, nil).Once()
 	requeue, err := s.service.ReconcileControlPlaneEndpointDeletion(s.ctx, s.clusterScope)
 	s.False(requeue)
@@ -333,7 +332,7 @@ func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWit
 
 func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionUserSetIPWithoutIPBlockID() {
 	block := exampleIPBlock()
-	block.Properties.Name = ptr.To("aaaa")
+	block.Properties.Name = new("aaaa")
 	block.Properties.Ips = &[]string{
 		"an IP",
 		exampleEndpointIP,
@@ -398,7 +397,7 @@ func (s *ipBlockTestSuite) TestReconcileControlPlaneEndpointDeletionErrorOnDupli
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletion() {
-	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = new(infrav1.CloudResourceConfigAuto)
 	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
 
 	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil).Once()
@@ -413,11 +412,11 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletion() {
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionSkipped() {
-	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = new(infrav1.CloudResourceConfigAuto)
 	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
 	lan := s.exampleLAN()
 	lan.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(exampleEndpointIP),
+		Ip:      new(exampleEndpointIP),
 		NicUuid: nil,
 	}}
 
@@ -432,7 +431,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionSkipped() {
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingCreation() {
-	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = new(infrav1.CloudResourceConfigAuto)
 
 	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil).Once()
 	s.mockListIPBlocksCall().Return(nil, nil).Once()
@@ -448,7 +447,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingCreation()
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingDeletion() {
-	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = new(infrav1.CloudResourceConfigAuto)
 	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
 
 	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil).Once()
@@ -476,7 +475,7 @@ func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionPendingDeletion()
 }
 
 func (s *ipBlockTestSuite) TestReconcileFailoverIPBlockDeletionDeletionFinished() {
-	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = new(infrav1.CloudResourceConfigAuto)
 	ipBlock := exampleIPBlockWithName(s.service.failoverIPBlockName(s.machineScope))
 
 	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil).Once()
@@ -517,13 +516,13 @@ func exampleIPBlock() *sdk.IpBlock {
 
 func exampleIPBlockWithName(name string) *sdk.IpBlock {
 	return &sdk.IpBlock{
-		Id: ptr.To(exampleIPBlockID),
+		Id: new(exampleIPBlockID),
 		Metadata: &sdk.DatacenterElementMetadata{
-			State: ptr.To(sdk.Available),
+			State: new(sdk.Available),
 		},
 		Properties: &sdk.IpBlockProperties{
-			Name:     ptr.To(name),
-			Location: ptr.To(exampleLocation),
+			Name:     new(name),
+			Location: new(exampleLocation),
 			Ips: &[]string{
 				exampleEndpointIP,
 			},

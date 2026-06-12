@@ -120,7 +120,7 @@ func getMatchingRequest[T any](
 	}
 
 	// As we later on ignore query parameters in found requests, we need to do the same here for consistency.
-	urlWithoutQueryParams := strings.Split(url, "?")[0]
+	urlWithoutQueryParams, _, _ := strings.Cut(url, "?")
 
 	requests, err := s.ionosClient.GetRequests(ctx, method, urlWithoutQueryParams)
 	if err != nil {
@@ -142,7 +142,7 @@ requestLoop:
 		// The reason for comparing here at all is that the received requests can contain some that only contain the
 		// desired URL as substring, e.g. a request for /resource/123/action will also be returned when looking
 		// for /resource/123. We want to ignore those.
-		trimmedRequestURL := strings.Split(*req.GetProperties().GetUrl(), "?")[0]
+		trimmedRequestURL, _, _ := strings.Cut(*req.GetProperties().GetUrl(), "?")
 		trimmedRequestURL = strings.TrimSuffix(trimmedRequestURL, "/")
 		trimmedURL := strings.TrimSuffix(urlWithoutQueryParams, "/")
 		if !strings.HasSuffix(trimmedRequestURL, trimmedURL) {

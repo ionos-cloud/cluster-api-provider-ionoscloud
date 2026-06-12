@@ -30,13 +30,13 @@ import (
 
 // IonosCloudInfraFinalizersAssertion maps IONOS Cloud infrastructure resource types to their expected finalizers.
 var IonosCloudInfraFinalizersAssertion = map[string]func(types.NamespacedName) []string{
-	"IonosCloudMachine": func(types.NamespacedName) []string { return []string{infrav1.MachineFinalizer} },
-	"IonosCloudCluster": func(types.NamespacedName) []string { return []string{infrav1.ClusterFinalizer} },
+	"IonosCloudMachine":   func(types.NamespacedName) []string { return []string{infrav1.MachineFinalizer} },
+	kindIonosCloudCluster: func(types.NamespacedName) []string { return []string{infrav1.ClusterFinalizer} },
 }
 
 // ExpFinalizersAssertion maps experimental resource types to their expected finalizers.
 var ExpFinalizersAssertion = map[string]func(types.NamespacedName) []string{
-	"ClusterResourceSet": func(types.NamespacedName) []string { return []string{addonsv1.ClusterResourceSetFinalizer} },
+	kindClusterResourceSet: func(types.NamespacedName) []string { return []string{addonsv1.ClusterResourceSetFinalizer} },
 }
 
 // KubernetesFinalizersAssertion maps Kubernetes resource types to their expected finalizers.
@@ -46,7 +46,7 @@ func KubernetesFinalizersAssertion(clusters *infrav1.IonosCloudClusterList) map[
 	assertions := map[string]func(types.NamespacedName) []string{}
 
 	if clusters != nil {
-		secretAssertions := make([]string, 0)
+		secretAssertions := make([]string, 0, len(clusters.Items))
 		for _, cluster := range clusters.Items {
 			secretAssertions = append(secretAssertions, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))
 		}
