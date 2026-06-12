@@ -189,7 +189,6 @@ func (m *Machine) PatchObject() error {
 		m.IonosMachine,
 		patch.WithOwnedV1Beta1Conditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
-			infrav1.MachineProvisionedCondition,
 		}},
 		patch.WithOwnedConditions{Conditions: []string{
 			string(clusterv1.ReadyCondition),
