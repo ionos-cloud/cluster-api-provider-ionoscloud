@@ -84,10 +84,16 @@ linters-settings:
       - pkg: sigs.k8s.io/controller-runtime
         alias: ctrl
       # Cluster API
-      - pkg: sigs.k8s.io/cluster-api/api/v1beta1
+      - pkg: sigs.k8s.io/cluster-api/api/core/v1beta2
         alias: clusterv1
       - pkg: "sigs.k8s.io/cluster-api/test/e2e"
         alias: capie2e
+      - pkg: "sigs.k8s.io/cluster-api/util/conditions"
+        alias: conditions
+      - pkg: "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
+        alias: deprecatedv1beta1conditions
+      - pkg: "sigs.k8s.io/cluster-api/api/ipam/v1beta2"
+        alias: ipamv1
       # Own module
       - pkg: github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1
         alias: infrav1
@@ -120,6 +126,8 @@ linters-settings:
         disabled: true
       - name: range-val-address
         disabled: true # Obsolete since Go 1.22
+      - name: redundant-import-alias
+        disabled: true # Conflicts with importas which enforces explicit aliases
       - name: struct-tag
         arguments:
           - json,inline
@@ -146,7 +154,7 @@ issues:
     - linters:
         - revive
       text: "comment-spacings: no space between comment delimiter and comment text"
-      source: "//(\\+(kubebuilder|optional|required)|#nosec)"
+      source: "//(\\+(kubebuilder|optional|required|list)|#nosec)"
     - linters:
         - revive
       text: "exported: exported method .*\\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported"
@@ -205,4 +213,4 @@ run:
     - e2e
   timeout: 10m
   allow-parallel-runners: true
-  go: "1.22"
+  go: "1.25"
