@@ -25,11 +25,12 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -42,6 +43,7 @@ import (
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -172,8 +174,20 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		}
 	}
 
-	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
-	clusterScope.IonosCluster.Status.Ready = true
+	conditions.Set(clusterScope.IonosCluster, metav1.Condition{
+		Type:   string(infrav1.IonosCloudClusterReady),
+		Status: metav1.ConditionTrue,
+		Reason: string(infrav1.IonosCloudClusterReady),
+	})
+	clusterScope.IonosCluster.Status.Initialization.Provisioned = ptr.To(true)
+	// Set deprecated v1beta1 ready field for backwards compatibility.
+	if clusterScope.IonosCluster.Status.Deprecated == nil {
+		clusterScope.IonosCluster.Status.Deprecated = &infrav1.IonosCloudClusterDeprecatedStatus{}
+	}
+	if clusterScope.IonosCluster.Status.Deprecated.V1Beta1 == nil {
+		clusterScope.IonosCluster.Status.Deprecated.V1Beta1 = &infrav1.IonosCloudClusterV1Beta1DeprecatedStatus{}
+	}
+	clusterScope.IonosCluster.Status.Deprecated.V1Beta1.Ready = true //nolint:staticcheck // Intentionally setting deprecated field for v1beta1 backwards compatibility.
 	return ctrl.Result{}, nil
 }
 
@@ -261,7 +275,7 @@ func (r *IonosCloudClusterReconciler) SetupWithManager(
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.IonosCloudCluster{}).
-		WithEventFilter(predicates.ResourceNotPaused(mgr.GetScheme(), ctrl.LoggerFrom(ctx))).
+		WithEventFilter(predicates.ResourceNotPaused(r.scheme, ctrl.LoggerFrom(ctx))).
 		Watches(&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.ClusterToInfrastructureMapFunc(
@@ -270,7 +284,7 @@ func (r *IonosCloudClusterReconciler) SetupWithManager(
 					r.Client, &infrav1.IonosCloudCluster{},
 				),
 			),
-			builder.WithPredicates(predicates.ClusterUnpaused(mgr.GetScheme(), ctrl.LoggerFrom(ctx))),
+			builder.WithPredicates(predicates.ClusterUnpaused(r.scheme, ctrl.LoggerFrom(ctx))),
 		).
 		Complete(reconcile.AsReconciler[*infrav1.IonosCloudCluster](r.Client, r))
 }

@@ -99,7 +99,7 @@ func (s *imageTestSuite) TestLookupImageMissingMachineVersion() {
 	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "test", "loc"), nil).Once()
 	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
 
-	s.capiMachine.Spec.Version = ptr.To("")
+	s.capiMachine.Spec.Version = ""
 
 	_, err := s.service.lookupImageID(s.ctx, s.machineScope)
 	s.ErrorIs(err, errMissingMachineVersion)
@@ -115,7 +115,7 @@ func (s *imageTestSuite) TestLookupImageIgnoreMissingMachineVersion() {
 	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
 
 	s.infraMachine.Spec.Disk.Image.Selector.UseMachineVersion = ptr.To(false)
-	s.capiMachine.Spec.Version = ptr.To("")
+	s.capiMachine.Spec.Version = ""
 
 	imageID, err := s.service.lookupImageID(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -158,7 +158,7 @@ func (s *imageTestSuite) TestLookupImageNewestOK() {
 }
 
 func (s *imageTestSuite) makeTestImage(id, namePrefix, location string) *sdk.Image {
-	return makeTestImage(id, namePrefix+*s.capiMachine.Spec.Version, location)
+	return makeTestImage(id, namePrefix+s.capiMachine.Spec.Version, location)
 }
 
 func (s *imageTestSuite) makeTestImageWithDate(id, namePrefix, location string, createdDate time.Time) *sdk.Image {

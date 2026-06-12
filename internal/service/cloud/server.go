@@ -29,7 +29,8 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -144,8 +145,20 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 
 // FinalizeMachineProvisioning marks the machine as provisioned.
 func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
-	ms.IonosMachine.Status.Ready = true
-	conditions.MarkTrue(ms.IonosMachine, infrav1.MachineProvisionedCondition)
+	ms.IonosMachine.Status.Initialization.Provisioned = ptr.To(true)
+	// Set deprecated v1beta1 ready field for backwards compatibility.
+	if ms.IonosMachine.Status.Deprecated == nil {
+		ms.IonosMachine.Status.Deprecated = &infrav1.IonosCloudMachineDeprecatedStatus{}
+	}
+	if ms.IonosMachine.Status.Deprecated.V1Beta1 == nil {
+		ms.IonosMachine.Status.Deprecated.V1Beta1 = &infrav1.IonosCloudMachineV1Beta1DeprecatedStatus{}
+	}
+	ms.IonosMachine.Status.Deprecated.V1Beta1.Ready = true //nolint:staticcheck // Intentionally setting deprecated field for v1beta1 backwards compatibility.
+	conditions.Set(ms.IonosMachine, metav1.Condition{
+		Type:   string(infrav1.MachineProvisionedCondition),
+		Status: metav1.ConditionTrue,
+		Reason: string(infrav1.MachineProvisionedCondition),
+	})
 	return false, nil
 }
 
