@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -172,7 +173,12 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		}
 	}
 
-	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
+	conditions.Set(clusterScope.IonosCluster, &clusterv1.Condition{
+		Type:    infrav1.IonosCloudClusterReady,
+		Status:  corev1.ConditionTrue,
+		Reason:  infrav1.ClusterProvisionedReason,
+		Message: "IonosCloud cluster infrastructure is provisioned and ready",
+	})
 	clusterScope.IonosCluster.Status.Ready = true
 	return ctrl.Result{}, nil
 }
