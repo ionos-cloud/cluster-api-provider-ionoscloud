@@ -27,7 +27,6 @@ import (
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/test/e2e/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -42,8 +41,8 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 			BootstrapClusterProxy:    bootstrapClusterProxy,
 			ArtifactFolder:           artifactFolder,
 			SkipCleanup:              skipCleanup,
-			ControlPlaneMachineCount: ptr.To[int64](3),
-			WorkerMachineCount:       ptr.To[int64](2),
+			ControlPlaneMachineCount: new(int64(3)),
+			WorkerMachineCount:       new(int64(2)),
 			PostNamespaceCreated:     cloudEnv.createCredentialsSecretPNC,
 			PostMachinesProvisioned: func(proxy framework.ClusterProxy, namespace, clusterName string) {
 				// This check ensures that owner references are resilient - i.e. correctly re-reconciled - when removed.
@@ -107,11 +106,11 @@ var _ = Describe("Should be able to create a cluster with 1 control-plane using 
 	capie2e.QuickStartSpec(ctx, func() capie2e.QuickStartSpecInput {
 		return capie2e.QuickStartSpecInput{
 			E2EConfig:                e2eConfig,
-			ControlPlaneMachineCount: ptr.To(int64(1)),
-			WorkerMachineCount:       ptr.To(int64(0)),
+			ControlPlaneMachineCount: new(int64(1)),
+			WorkerMachineCount:       new(int64(0)),
 			ClusterctlConfigPath:     clusterctlConfigPath,
 			BootstrapClusterProxy:    bootstrapClusterProxy,
-			Flavor:                   ptr.To("ipam"),
+			Flavor:                   new("ipam"),
 			ArtifactFolder:           artifactFolder,
 			SkipCleanup:              skipCleanup,
 			PostNamespaceCreated:     cloudEnv.createCredentialsSecretPNC,

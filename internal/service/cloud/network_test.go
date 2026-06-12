@@ -31,7 +31,6 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 const (
@@ -103,7 +102,7 @@ func (s *lanSuite) TestNetworkGetLAN_ExistingLAN() {
 	lan := s.exampleLAN()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 
-	s.machineScope.IonosMachine.Spec.NetworkID = ptr.To("42")
+	s.machineScope.IonosMachine.Spec.NetworkID = new("42")
 	foundLAN, err := s.service.getLAN(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.NotNil(foundLAN)
@@ -114,7 +113,7 @@ func (s *lanSuite) TestNetworkGetLAN_LANIDNotFound() {
 	lan := s.exampleLAN()
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 
-	s.machineScope.IonosMachine.Spec.NetworkID = ptr.To("2")
+	s.machineScope.IonosMachine.Spec.NetworkID = new("2")
 	foundLAN, err := s.service.getLAN(s.ctx, s.machineScope)
 	s.EqualError(err, "LAN with ID 2 not found")
 	s.Nil(foundLAN)
@@ -165,7 +164,7 @@ func (s *lanSuite) TestNetworkReconcileLANExistingLAN() {
 
 func (s *lanSuite) TestNetworkReconcileLANExistingLANUnavailable() {
 	lan := s.exampleLAN()
-	lan.Metadata.State = ptr.To("BUSY")
+	lan.Metadata.State = new("BUSY")
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 	requeue, err := s.service.ReconcileLAN(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -183,7 +182,7 @@ func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsNoOthe
 
 func (s *lanSuite) TestNetworkReconcileLANDeleteLANExistsNoPendingRequestsHasOtherUsersNoDelete() {
 	lan := s.exampleLAN()
-	lan.Entities.Nics.Items = &[]sdk.Nic{{Id: ptr.To("1")}}
+	lan.Entities.Nics.Items = &[]sdk.Nic{{Id: new("1")}}
 	s.mockListLANsCall().Return(&sdk.Lans{Items: &[]sdk.Lan{lan}}, nil).Once()
 	s.mockGetLANDeletionRequestsCall().Return([]sdk.Request{}, nil).Once()
 	requeue, err := s.service.ReconcileLANDeletion(s.ctx, s.machineScope)
@@ -232,8 +231,8 @@ func (s *lanSuite) TestReconcileIPFailoverNICNotInFailoverGroup() {
 
 	props := sdk.LanProperties{
 		IpFailover: &[]sdk.IPFailover{{
-			Ip:      ptr.To(exampleEndpointIP),
-			NicUuid: ptr.To(exampleNICID),
+			Ip:      new(exampleEndpointIP),
+			NicUuid: new(exampleNICID),
 		}},
 	}
 
@@ -249,8 +248,8 @@ func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
 	testLAN := s.exampleLAN()
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(exampleEndpointIP),
-		NicUuid: ptr.To(exampleNICID),
+		Ip:      new(exampleEndpointIP),
+		NicUuid: new(exampleNICID),
 	}}
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
@@ -266,7 +265,7 @@ func (s *lanSuite) TestReconcileIPFailoverNICAlreadyInFailoverGroup() {
 func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 	const deploymentLabel = "test-deployment"
 	s.infraMachine.SetLabels(map[string]string{clusterv1.MachineDeploymentNameLabel: deploymentLabel})
-	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = new(infrav1.CloudResourceConfigAuto)
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleWorkerFailoverIP)
 	testLAN := s.exampleLAN()
 	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil)
@@ -293,8 +292,8 @@ func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 	s.mockGetLANPatchRequestCall().Return([]sdk.Request{patchRequest}, nil).Once()
 	s.mockPatchLANCall(sdk.LanProperties{
 		IpFailover: &[]sdk.IPFailover{{
-			NicUuid: ptr.To(exampleNICID),
-			Ip:      ptr.To(exampleWorkerFailoverIP),
+			NicUuid: new(exampleNICID),
+			Ip:      new(exampleWorkerFailoverIP),
 		}},
 	}).Return(*patchRequest.GetMetadata().GetRequestStatus().GetHref(), nil).Once()
 	s.mockWaitForRequestCall(*patchRequest.GetMetadata().GetRequestStatus().GetHref()).Return(nil).Once()
@@ -305,7 +304,7 @@ func (s *lanSuite) TestReconcileIPFailoverForWorkerWithAUTOSettings() {
 func (s *lanSuite) TestReconcileIPFailoverReserveIPBlock() {
 	const deploymentLabel = "test-deployment"
 	s.infraMachine.SetLabels(map[string]string{clusterv1.MachineDeploymentNameLabel: deploymentLabel})
-	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = new(infrav1.CloudResourceConfigAuto)
 
 	s.mockGetDatacenterLocationByIDCall(exampleDatacenterID).Return(exampleLocation, nil).Once()
 	s.mockListIPBlocksCall().Return(nil, nil).Once()
@@ -327,12 +326,12 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
 		// we expect that the first entry will also be included in the Patch request.
-		Ip:      ptr.To(exampleArbitraryIP),
-		NicUuid: ptr.To(arbitraryNICID),
+		Ip:      new(exampleArbitraryIP),
+		NicUuid: new(arbitraryNICID),
 	}, {
 		// LAN contains the NIC but has an incorrect IP
-		Ip:      ptr.To(exampleUnexpectedIP),
-		NicUuid: ptr.To(exampleNICID),
+		Ip:      new(exampleUnexpectedIP),
+		NicUuid: new(exampleNICID),
 	}}
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
@@ -342,11 +341,11 @@ func (s *lanSuite) TestReconcileIPFailoverNICHasWrongIPInFailoverGroup() {
 	// expect a patch request to update the IP
 	props := sdk.LanProperties{
 		IpFailover: &[]sdk.IPFailover{{
-			Ip:      ptr.To(exampleArbitraryIP),
-			NicUuid: ptr.To(arbitraryNICID),
+			Ip:      new(exampleArbitraryIP),
+			NicUuid: new(arbitraryNICID),
 		}, {
-			Ip:      ptr.To(exampleEndpointIP),
-			NicUuid: ptr.To(exampleNICID),
+			Ip:      new(exampleEndpointIP),
+			NicUuid: new(exampleNICID),
 		}},
 	}
 
@@ -369,12 +368,12 @@ func (s *lanSuite) TestReconcileIPFailoverAnotherNICInFailoverGroup() {
 	testLAN := s.exampleLAN()
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(exampleArbitraryIP),
-		NicUuid: ptr.To(arbitraryNICID),
+		Ip:      new(exampleArbitraryIP),
+		NicUuid: new(arbitraryNICID),
 	}, {
-		Ip: ptr.To(exampleEndpointIP),
+		Ip: new(exampleEndpointIP),
 		// arbitrary NIC ID with the correct endpoint IP
-		NicUuid: ptr.To("f3b3f8e4-1f3d-11ec-82a8-0242ac130003"),
+		NicUuid: new("f3b3f8e4-1f3d-11ec-82a8-0242ac130003"),
 	}}
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
@@ -401,8 +400,8 @@ func (s *lanSuite) reconcileIPFailoverDeletion(testServer *sdk.Server, testLAN s
 
 	props := sdk.LanProperties{
 		IpFailover: &[]sdk.IPFailover{{
-			Ip:      ptr.To(exampleArbitraryIP),
-			NicUuid: ptr.To(arbitraryNICID),
+			Ip:      new(exampleArbitraryIP),
+			NicUuid: new(arbitraryNICID),
 		}},
 	}
 
@@ -416,18 +415,18 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionWorker() {
 	labels[clusterv1.MachineDeploymentNameLabel] = deploymentLabel
 	s.infraMachine.SetLabels(labels)
 
-	s.infraMachine.Spec.FailoverIP = ptr.To(infrav1.CloudResourceConfigAuto)
+	s.infraMachine.Spec.FailoverIP = new(infrav1.CloudResourceConfigAuto)
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleWorkerFailoverIP)
 
 	s.NoError(s.k8sClient.Update(s.ctx, s.infraMachine))
 	testLAN := s.exampleLAN()
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(exampleArbitraryIP),
-		NicUuid: ptr.To(arbitraryNICID),
+		Ip:      new(exampleArbitraryIP),
+		NicUuid: new(arbitraryNICID),
 	}, {
-		Ip:      ptr.To(exampleWorkerFailoverIP),
-		NicUuid: ptr.To(exampleNICID),
+		Ip:      new(exampleWorkerFailoverIP),
+		NicUuid: new(exampleNICID),
 	}}
 
 	s.assertSuccessfulDeletion(s.reconcileIPFailoverDeletion(testServer, testLAN))
@@ -444,11 +443,11 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlane() {
 	testLAN := s.exampleLAN()
 
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(exampleArbitraryIP),
-		NicUuid: ptr.To(arbitraryNICID),
+		Ip:      new(exampleArbitraryIP),
+		NicUuid: new(arbitraryNICID),
 	}, {
-		Ip:      ptr.To(exampleEndpointIP),
-		NicUuid: ptr.To(exampleNICID),
+		Ip:      new(exampleEndpointIP),
+		NicUuid: new(exampleNICID),
 	}}
 
 	s.assertSuccessfulDeletion(s.reconcileIPFailoverDeletion(testServer, testLAN))
@@ -465,23 +464,23 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlaneSwitchNIC() {
 	newIonosMachine.SetName("test-machine-2")
 	newIonosMachine.SetResourceVersion("")
 	newIonosMachine.SetCreationTimestamp(metav1.NewTime(time.Now()))
-	newIonosMachine.Spec.ProviderID = ptr.To("ionos://" + exampleSecondaryServerID)
+	newIonosMachine.Spec.ProviderID = new("ionos://" + exampleSecondaryServerID)
 	err = s.k8sClient.Create(s.ctx, newIonosMachine)
 	s.NoError(err)
 
 	testLAN := s.exampleLAN()
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(exampleArbitraryIP),
-		NicUuid: ptr.To(arbitraryNICID),
+		Ip:      new(exampleArbitraryIP),
+		NicUuid: new(arbitraryNICID),
 	}, {
-		Ip:      ptr.To(exampleEndpointIP),
-		NicUuid: ptr.To(exampleNICID),
+		Ip:      new(exampleEndpointIP),
+		NicUuid: new(exampleNICID),
 	}}
 
 	testServer := s.defaultServer(s.infraMachine, exampleDHCPIP, exampleEndpointIP)
 	testSecondaryServer := s.defaultServer(newIonosMachine, exampleSecondaryDHCPIP, exampleEndpointIP)
-	testSecondaryServer.Id = ptr.To(exampleSecondaryServerID)
-	(*testSecondaryServer.Entities.Nics.Items)[0].Id = ptr.To(exampleSecondaryNICID)
+	testSecondaryServer.Id = new(exampleSecondaryServerID)
+	(*testSecondaryServer.Entities.Nics.Items)[0].Id = new(exampleSecondaryNICID)
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
 	s.mockGetServerCall(exampleSecondaryServerID).Return(testSecondaryServer, nil).Once()
@@ -491,11 +490,11 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlaneSwitchNIC() {
 
 	props := sdk.LanProperties{
 		IpFailover: &[]sdk.IPFailover{{
-			Ip:      ptr.To(exampleArbitraryIP),
-			NicUuid: ptr.To(arbitraryNICID),
+			Ip:      new(exampleArbitraryIP),
+			NicUuid: new(arbitraryNICID),
 		}, {
-			Ip:      ptr.To(exampleEndpointIP),
-			NicUuid: ptr.To(exampleSecondaryNICID),
+			Ip:      new(exampleEndpointIP),
+			NicUuid: new(exampleSecondaryNICID),
 		}},
 	}
 
@@ -511,7 +510,7 @@ func (s *lanSuite) TestReconcileFailoverDeletionWorkerNoSwap() {
 	labels[clusterv1.MachineDeploymentNameLabel] = deploymentLabel
 	s.infraMachine.SetLabels(labels)
 
-	s.infraMachine.Spec.FailoverIP = ptr.To(exampleWorkerFailoverIP)
+	s.infraMachine.Spec.FailoverIP = new(exampleWorkerFailoverIP)
 
 	secondaryMachine := s.infraMachine.DeepCopy()
 	secondaryMachine.SetName("test-machine-2")
@@ -524,11 +523,11 @@ func (s *lanSuite) TestReconcileFailoverDeletionWorkerNoSwap() {
 
 	testLAN := s.exampleLAN()
 	testLAN.Properties.IpFailover = &[]sdk.IPFailover{{
-		Ip:      ptr.To(exampleArbitraryIP),
-		NicUuid: ptr.To(arbitraryNICID),
+		Ip:      new(exampleArbitraryIP),
+		NicUuid: new(arbitraryNICID),
 	}, {
-		Ip:      ptr.To(exampleWorkerFailoverIP),
-		NicUuid: ptr.To(exampleSecondaryNICID),
+		Ip:      new(exampleWorkerFailoverIP),
+		NicUuid: new(exampleSecondaryNICID),
 	}}
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
@@ -580,7 +579,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionPrimaryNICNotFound() {
 	s.NoError(err)
 
 	testServer := &sdk.Server{
-		Id: ptr.To(exampleServerID),
+		Id: new(exampleServerID),
 	}
 
 	s.mockGetServerCall(exampleServerID).Return(testServer, nil).Once()
@@ -600,14 +599,14 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionOnWorker() {
 
 func (s *lanSuite) exampleIPBlock() sdk.IpBlock {
 	return sdk.IpBlock{
-		Id: ptr.To(exampleIPBlockID),
+		Id: new(exampleIPBlockID),
 		Properties: &sdk.IpBlockProperties{
 			Ips:      &[]string{exampleWorkerFailoverIP},
-			Location: ptr.To(s.clusterScope.Location()),
-			Name:     ptr.To(s.service.failoverIPBlockName(s.machineScope)),
+			Location: new(s.clusterScope.Location()),
+			Name:     new(s.service.failoverIPBlockName(s.machineScope)),
 		},
 		Metadata: &sdk.DatacenterElementMetadata{
-			State: ptr.To(sdk.Available),
+			State: new(sdk.Available),
 		},
 	}
 }
@@ -651,9 +650,9 @@ func (s *lanSuite) examplePatchRequest(status string) sdk.Request {
 
 func (s *lanSuite) mockCreateLANCall() *clienttest.MockClient_CreateLAN_Call {
 	return s.ionosClient.EXPECT().CreateLAN(s.ctx, s.machineScope.DatacenterID(), sdk.LanProperties{
-		Name:          ptr.To(s.service.lanName(s.clusterScope.Cluster)),
-		Public:        ptr.To(true),
-		Ipv6CidrBlock: ptr.To("AUTO"),
+		Name:          new(s.service.lanName(s.clusterScope.Cluster)),
+		Public:        new(true),
+		Ipv6CidrBlock: new("AUTO"),
 	})
 }
 

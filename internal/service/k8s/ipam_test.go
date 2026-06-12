@@ -36,7 +36,6 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -112,12 +111,12 @@ func (s *IpamTestSuite) SetupTest() {
 			},
 		},
 		Spec: infrav1.IonosCloudMachineSpec{
-			ProviderID:       ptr.To("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),
+			ProviderID:       new("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),
 			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
 			MemoryMB:         4096,
-			CPUFamily:        ptr.To("AMD_OPTERON"),
+			CPUFamily:        new("AMD_OPTERON"),
 			Disk: &infrav1.Volume{
 				Name:             "test-machine-hdd",
 				DiskType:         infrav1.VolumeDiskTypeHDD,
@@ -298,7 +297,7 @@ func (s *IpamTestSuite) TestReconcileIPAddressesAdditionalIpv6GetIPFromClaim() {
 
 func defaultInClusterIPv4PoolRef() *corev1.TypedLocalObjectReference {
 	return &corev1.TypedLocalObjectReference{
-		APIGroup: ptr.To("ipam.cluster.x-k8s.io"),
+		APIGroup: new("ipam.cluster.x-k8s.io"),
 		Kind:     "InClusterIPPool",
 		Name:     "incluster-ipv4-pool",
 	}
@@ -306,7 +305,7 @@ func defaultInClusterIPv4PoolRef() *corev1.TypedLocalObjectReference {
 
 func defaultInClusterIPv6PoolRef() *corev1.TypedLocalObjectReference {
 	return &corev1.TypedLocalObjectReference{
-		APIGroup: ptr.To("ipam.cluster.x-k8s.io"),
+		APIGroup: new("ipam.cluster.x-k8s.io"),
 		Kind:     "InClusterIPPool",
 		Name:     "incluster-ipv6-pool",
 	}
@@ -323,7 +322,7 @@ func defaultIPv4Address(claim *ipamv1.IPAddressClaim, poolRef *corev1.TypedLocal
 			ClaimRef: ipamv1.IPAddressClaimReference{Name: claim.GetName()},
 			PoolRef:  toIPPoolReference(poolRef),
 			Address:  "10.0.0.2",
-			Prefix:   ptr.To[int32](16),
+			Prefix:   new(int32(16)),
 		},
 	}
 }
@@ -339,7 +338,7 @@ func defaultIPv6Address(claim *ipamv1.IPAddressClaim, poolRef *corev1.TypedLocal
 			ClaimRef: ipamv1.IPAddressClaimReference{Name: claim.GetName()},
 			PoolRef:  toIPPoolReference(poolRef),
 			Address:  "2001:db8::",
-			Prefix:   ptr.To[int32](42),
+			Prefix:   new(int32(42)),
 		},
 	}
 }
