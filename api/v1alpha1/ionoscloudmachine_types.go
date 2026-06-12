@@ -429,6 +429,17 @@ func (m *IonosCloudMachine) SetV1Beta1Conditions(conditions clusterv1.Conditions
 	m.Status.Deprecated.V1Beta1.Conditions = conditions
 }
 
+// SetV1Beta1Ready sets the deprecated v1beta1 ready field.
+func (m *IonosCloudMachine) SetV1Beta1Ready(ready bool) {
+	if m.Status.Deprecated == nil {
+		m.Status.Deprecated = &IonosCloudMachineDeprecatedStatus{}
+	}
+	if m.Status.Deprecated.V1Beta1 == nil {
+		m.Status.Deprecated.V1Beta1 = &IonosCloudMachineV1Beta1DeprecatedStatus{}
+	}
+	m.Status.Deprecated.V1Beta1.Ready = ready //nolint:staticcheck // Intentionally setting deprecated field.
+}
+
 // GetConditions returns the v1beta2 conditions from status.conditions.
 func (m *IonosCloudMachine) GetConditions() []metav1.Condition {
 	return m.Status.Conditions
