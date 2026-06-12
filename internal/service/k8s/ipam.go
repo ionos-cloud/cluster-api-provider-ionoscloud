@@ -269,14 +269,6 @@ func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, 
 		return nil
 	}
 
-	ipPoolRef := ipamv1.IPPoolReference{
-		Name: poolRef.Name,
-		Kind: poolRef.Kind,
-	}
-	if poolRef.APIGroup != nil {
-		ipPoolRef.APIGroup = *poolRef.APIGroup
-	}
-
 	desired := &ipamv1.IPAddressClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      claimRef.Name,
@@ -284,7 +276,7 @@ func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, 
 			Labels:    map[string]string{clusterv1.ClusterNameLabel: cluster},
 		},
 		Spec: ipamv1.IPAddressClaimSpec{
-			PoolRef: ipPoolRef,
+			PoolRef: toIPPoolRef(poolRef),
 		},
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, h.client, desired, func() error {
@@ -315,4 +307,18 @@ func (h *Helper) GetIPAddressClaim(ctx context.Context, key client.ObjectKey) (*
 	}
 
 	return out, nil
+}
+
+// toIPPoolRef converts a corev1.TypedLocalObjectReference to an ipamv1.IPPoolReference.
+// If APIGroup is nil it is left empty; callers that require a non-empty APIGroup must
+// validate poolRef before calling this function.
+func toIPPoolRef(ref *corev1.TypedLocalObjectReference) ipamv1.IPPoolReference {
+	r := ipamv1.IPPoolReference{
+		Name: ref.Name,
+		Kind: ref.Kind,
+	}
+	if ref.APIGroup != nil {
+		r.APIGroup = *ref.APIGroup
+	}
+	return r
 }
