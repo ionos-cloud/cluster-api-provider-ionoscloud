@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -174,9 +175,10 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 	}
 
 	conditions.Set(clusterScope.IonosCluster, metav1.Condition{
-		Type:   string(infrav1.IonosCloudClusterReady),
-		Status: metav1.ConditionTrue,
-		Reason: string(infrav1.IonosCloudClusterReady),
+		Type:    string(infrav1.IonosCloudClusterReady),
+		Status:  metav1.ConditionTrue,
+		Reason:  infrav1.ClusterProvisionedReason,
+		Message: "IonosCloud cluster infrastructure is provisioned and ready.",
 	})
 	clusterScope.IonosCluster.Status.Initialization.Provisioned = new(true)
 	// Set deprecated v1beta1 ready field for backwards compatibility.
