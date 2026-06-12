@@ -36,6 +36,16 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 )
 
+// ownedClusterConditions is the single source of truth for the v2 condition types owned by the
+// cluster controller. WithOwnedV1Beta1Conditions is derived from this list (only ReadyCondition
+// is carried into v1beta1; provider-specific conditions are v2-only). Keeping both lists adjacent
+// and derived from one variable makes it structurally impossible to add a condition to one side
+// while forgetting the other.
+var ownedClusterConditions = []string{
+	string(clusterv1.ReadyCondition),
+	string(infrav1.IonosCloudClusterReady),
+}
+
 // resolver is able to look up IP addresses from a given host name.
 // The net.Resolver type (found at net.DefaultResolver) implements this interface.
 // This is intended for testing.
@@ -219,14 +229,14 @@ func (c *Cluster) PatchObject() error {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster,
+		// V1Beta1 ownership covers only the cross-cutting Ready condition; provider-specific
+		// conditions (IonosCloudClusterReady) are v2-only and intentionally omitted here.
 		patch.WithOwnedV1Beta1Conditions{
 			Conditions: []clusterv1.ConditionType{clusterv1.ReadyCondition},
 		},
+		// V2 ownership is derived from ownedClusterConditions — the single source of truth.
 		patch.WithOwnedConditions{
-			Conditions: []string{
-				string(clusterv1.ReadyCondition),
-				string(infrav1.IonosCloudClusterReady),
-			},
+			Conditions: ownedClusterConditions,
 		},
 	)
 }
