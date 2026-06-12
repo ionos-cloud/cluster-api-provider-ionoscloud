@@ -147,13 +147,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
 	ms.IonosMachine.Status.Initialization.Provisioned = new(true)
 	// Set deprecated v1beta1 ready field for backwards compatibility.
-	if ms.IonosMachine.Status.Deprecated == nil {
-		ms.IonosMachine.Status.Deprecated = &infrav1.IonosCloudMachineDeprecatedStatus{}
-	}
-	if ms.IonosMachine.Status.Deprecated.V1Beta1 == nil {
-		ms.IonosMachine.Status.Deprecated.V1Beta1 = &infrav1.IonosCloudMachineV1Beta1DeprecatedStatus{}
-	}
-	ms.IonosMachine.Status.Deprecated.V1Beta1.Ready = true //nolint:staticcheck // Intentionally setting deprecated field for v1beta1 backwards compatibility.
+	ms.IonosMachine.SetV1Beta1Ready(true) //nolint:staticcheck // Intentionally setting deprecated field for v1beta1 backwards compatibility.
 	conditions.Set(ms.IonosMachine, metav1.Condition{
 		Type:    string(infrav1.MachineProvisionedCondition),
 		Status:  metav1.ConditionTrue,
