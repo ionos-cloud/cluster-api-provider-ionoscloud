@@ -269,12 +269,13 @@ func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, 
 		return nil
 	}
 
-	ipPoolRef := ipamv1.IPPoolReference{
-		Name: poolRef.Name,
-		Kind: poolRef.Kind,
+	if poolRef.APIGroup == nil {
+		return fmt.Errorf("pool reference for IPAddressClaim %q has no APIGroup", claimRef.Name)
 	}
-	if poolRef.APIGroup != nil {
-		ipPoolRef.APIGroup = *poolRef.APIGroup
+	ipPoolRef := ipamv1.IPPoolReference{
+		Name:     poolRef.Name,
+		Kind:     poolRef.Kind,
+		APIGroup: *poolRef.APIGroup,
 	}
 
 	desired := &ipamv1.IPAddressClaim{
