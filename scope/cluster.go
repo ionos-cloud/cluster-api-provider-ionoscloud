@@ -27,8 +27,8 @@ import (
 	"time"
 
 	"k8s.io/client-go/util/retry"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -202,9 +202,15 @@ func (c *Cluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
 // PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
 func (c *Cluster) PatchObject() error {
-	// always set the ready condition
-	conditions.SetSummary(c.IonosCluster,
-		conditions.WithConditions(infrav1.IonosCloudClusterReady))
+	// always set the ready condition summary
+	if err := conditions.SetSummaryCondition(
+		c.IonosCluster,
+		c.IonosCluster,
+		string(clusterv1.ReadyCondition),
+		conditions.ForConditionTypes{string(infrav1.IonosCloudClusterReady)},
+	); err != nil {
+		return err
+	}
 
 	// NOTE(piepmatz): We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
 	//  aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation
@@ -212,11 +218,17 @@ func (c *Cluster) PatchObject() error {
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster, patch.WithOwnedConditions{
-		Conditions: []clusterv1.ConditionType{
-			clusterv1.ReadyCondition,
+	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster,
+		patch.WithOwnedV1Beta1Conditions{
+			Conditions: []clusterv1.ConditionType{clusterv1.ReadyCondition},
 		},
-	})
+		patch.WithOwnedConditions{
+			Conditions: []string{
+				string(clusterv1.ReadyCondition),
+				string(infrav1.IonosCloudClusterReady),
+			},
+		},
+	)
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudCluster.
