@@ -171,14 +171,12 @@ func (m *Machine) FindLatestMachine(
 // PatchObject will apply all changes from the IonosMachine.
 // It will also make sure to patch the status subresource.
 func (m *Machine) PatchObject() error {
-	if err := conditions.SetSummaryCondition(
+	summaryErr := conditions.SetSummaryCondition(
 		m.IonosMachine,
 		m.IonosMachine,
 		string(clusterv1.ReadyCondition),
 		conditions.ForConditionTypes{string(infrav1.MachineProvisionedCondition)},
-	); err != nil {
-		return err
-	}
+	)
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -186,7 +184,7 @@ func (m *Machine) PatchObject() error {
 	// We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
 	// aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation
 	// would cause the patch to be aborted as well.
-	return m.patchHelper.Patch(
+	if patchErr := m.patchHelper.Patch(
 		timeoutCtx,
 		m.IonosMachine,
 		patch.WithOwnedV1Beta1Conditions{Conditions: []clusterv1.ConditionType{
@@ -197,7 +195,10 @@ func (m *Machine) PatchObject() error {
 			string(clusterv1.ReadyCondition),
 			string(infrav1.MachineProvisionedCondition),
 		}},
-	)
+	); patchErr != nil {
+		return patchErr
+	}
+	return summaryErr
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudMachine.
