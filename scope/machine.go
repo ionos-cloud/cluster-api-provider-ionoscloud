@@ -35,6 +35,16 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
+// ownedMachineConditions is the single source of truth for the v2 condition types owned by the
+// machine controller. WithOwnedV1Beta1Conditions is derived from this list (only ReadyCondition
+// is carried into v1beta1; provider-specific conditions are v2-only). Keeping both lists adjacent
+// and derived from one variable makes it structurally impossible to add a condition to one side
+// while forgetting the other.
+var ownedMachineConditions = []string{
+	string(clusterv1.ReadyCondition),
+	string(infrav1.MachineProvisionedCondition),
+}
+
 // Machine defines a basic machine context for primary use in IonosCloudMachineReconciler.
 type Machine struct {
 	client      client.Client
@@ -187,13 +197,13 @@ func (m *Machine) PatchObject() error {
 	if patchErr := m.patchHelper.Patch(
 		timeoutCtx,
 		m.IonosMachine,
+		// V1Beta1 ownership covers only the cross-cutting Ready condition; provider-specific
+		// conditions (MachineProvisionedCondition) are v2-only and intentionally omitted here.
 		patch.WithOwnedV1Beta1Conditions{Conditions: []clusterv1.ConditionType{
 			clusterv1.ReadyCondition,
 		}},
-		patch.WithOwnedConditions{Conditions: []string{
-			string(clusterv1.ReadyCondition),
-			string(infrav1.MachineProvisionedCondition),
-		}},
+		// V2 ownership is derived from ownedMachineConditions — the single source of truth.
+		patch.WithOwnedConditions{Conditions: ownedMachineConditions},
 	); patchErr != nil {
 		return patchErr
 	}
