@@ -30,6 +30,9 @@ const (
 	// IonosCloudClusterReady is the condition for the IonosCloudCluster, which indicates that the cluster is ready.
 	IonosCloudClusterReady clusterv1.ConditionType = "ClusterReady"
 
+	// ClusterProvisionedReason documents that the IonosCloudCluster infrastructure has been fully provisioned and is ready.
+	ClusterProvisionedReason = "Provisioned"
+
 	// IonosCloudClusterKind is the string resource kind of the IonosCloudCluster resource.
 	IonosCloudClusterKind = "IonosCloudCluster"
 )
