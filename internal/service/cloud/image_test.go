@@ -29,7 +29,6 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 type imageTestSuite struct {
@@ -114,7 +113,7 @@ func (s *imageTestSuite) TestLookupImageIgnoreMissingMachineVersion() {
 	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "test", "loc"), nil).Once()
 	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
 
-	s.infraMachine.Spec.Disk.Image.Selector.UseMachineVersion = ptr.To(false)
+	s.infraMachine.Spec.Disk.Image.Selector.UseMachineVersion = new(false)
 	s.capiMachine.Spec.Version = ""
 
 	imageID, err := s.service.lookupImageID(s.ctx, s.machineScope)
@@ -233,7 +232,7 @@ func makeTestImage(id, name, location string) *sdk.Image {
 
 func makeTestLabel(typ, id, key, value string) sdk.Label {
 	return sdk.Label{
-		Id: ptr.To(fmt.Sprintf("urn:label:%s:%s:%s", typ, id, key)),
+		Id: new(fmt.Sprintf("urn:label:%s:%s:%s", typ, id, key)),
 		Properties: &sdk.LabelProperties{
 			Key:          &key,
 			Value:        &value,

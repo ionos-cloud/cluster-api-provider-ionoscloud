@@ -190,9 +190,9 @@ func (s *Service) createLAN(ctx context.Context, ms *scope.Machine) error {
 	log := s.logger.WithName("createLAN")
 
 	lanProperties := sdk.LanProperties{
-		Name:          ptr.To(s.lanName(ms.ClusterScope.Cluster)),
-		Public:        ptr.To(true),
-		Ipv6CidrBlock: ptr.To("AUTO"), // IPv6 is enabled by default.
+		Name:          new(s.lanName(ms.ClusterScope.Cluster)),
+		Public:        new(true),
+		Ipv6CidrBlock: new("AUTO"), // IPv6 is enabled by default.
 	}
 
 	requestPath, err := s.ionosClient.CreateLAN(ctx, ms.DatacenterID(), lanProperties)

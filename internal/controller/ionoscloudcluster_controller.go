@@ -43,7 +43,6 @@ import (
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -179,7 +178,7 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		Status: metav1.ConditionTrue,
 		Reason: string(infrav1.IonosCloudClusterReady),
 	})
-	clusterScope.IonosCluster.Status.Initialization.Provisioned = ptr.To(true)
+	clusterScope.IonosCluster.Status.Initialization.Provisioned = new(true)
 	// Set deprecated v1beta1 ready field for backwards compatibility.
 	if clusterScope.IonosCluster.Status.Deprecated == nil {
 		clusterScope.IonosCluster.Status.Deprecated = &infrav1.IonosCloudClusterDeprecatedStatus{}

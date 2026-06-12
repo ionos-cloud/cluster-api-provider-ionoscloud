@@ -27,8 +27,6 @@ import (
 	deprecatedv1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -156,7 +154,7 @@ var _ = Describe("IonosCloudCluster", func() {
 			Expect(fetched.GetV1Beta1Conditions()).To(BeEmpty())
 
 			By("retrieving the cluster and setting the status")
-			fetched.Status.Initialization = IonosCloudClusterInitializationStatus{Provisioned: ptr.To(true)}
+			fetched.Status.Initialization = IonosCloudClusterInitializationStatus{Provisioned: new(true)}
 			wantProvisionRequest := ProvisioningRequest{
 				Method:      "POST",
 				RequestPath: "/path/to/resource",
