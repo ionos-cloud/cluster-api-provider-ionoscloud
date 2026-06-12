@@ -320,7 +320,7 @@ func defaultIPv4Address(claim *ipamv1.IPAddressClaim, poolRef *corev1.TypedLocal
 		},
 		Spec: ipamv1.IPAddressSpec{
 			ClaimRef: ipamv1.IPAddressClaimReference{Name: claim.GetName()},
-			PoolRef:  toIPPoolReference(poolRef),
+			PoolRef:  toIPPoolRef(poolRef),
 			Address:  "10.0.0.2",
 			Prefix:   new(int32(16)),
 		},
@@ -336,7 +336,7 @@ func defaultIPv6Address(claim *ipamv1.IPAddressClaim, poolRef *corev1.TypedLocal
 		},
 		Spec: ipamv1.IPAddressSpec{
 			ClaimRef: ipamv1.IPAddressClaimReference{Name: claim.GetName()},
-			PoolRef:  toIPPoolReference(poolRef),
+			PoolRef:  toIPPoolRef(poolRef),
 			Address:  "2001:db8::",
 			Prefix:   new(int32(42)),
 		},
@@ -397,13 +397,3 @@ func defaultPrimaryIPv6Claim() *ipamv1.IPAddressClaim {
 	}
 }
 
-func toIPPoolReference(ref *corev1.TypedLocalObjectReference) ipamv1.IPPoolReference {
-	r := ipamv1.IPPoolReference{
-		Name: ref.Name,
-		Kind: ref.Kind,
-	}
-	if ref.APIGroup != nil {
-		r.APIGroup = *ref.APIGroup
-	}
-	return r
-}
