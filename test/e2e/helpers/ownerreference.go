@@ -32,7 +32,6 @@ import (
 
 // Kind names of resource types this provider asserts on.
 const (
-	kindIonosCloudCluster  = "IonosCloudCluster"
 	kindClusterResourceSet = "ClusterResourceSet"
 )
 
@@ -40,12 +39,12 @@ const (
 var (
 	coreGroupVersion = clusterv1.GroupVersion.String()
 
-	clusterOwner      = metav1.OwnerReference{Kind: "Cluster", APIVersion: coreGroupVersion}
-	clusterController = metav1.OwnerReference{Kind: "Cluster", APIVersion: coreGroupVersion, Controller: new(true)}
+	clusterOwner      = metav1.OwnerReference{Kind: clusterv1.ClusterKind, APIVersion: coreGroupVersion}
+	clusterController = metav1.OwnerReference{Kind: clusterv1.ClusterKind, APIVersion: coreGroupVersion, Controller: new(true)}
 	machineController = metav1.OwnerReference{Kind: "Machine", APIVersion: coreGroupVersion, Controller: new(true)}
 )
 
-var ionosCloudClusterController = metav1.OwnerReference{Kind: kindIonosCloudCluster, APIVersion: infrav1.GroupVersion.String(), Controller: new(false)}
+var ionosCloudClusterController = metav1.OwnerReference{Kind: infrav1.IonosCloudClusterKind, APIVersion: infrav1.GroupVersion.String(), Controller: new(false)}
 
 var clusterResourceSetOwner = metav1.OwnerReference{Kind: kindClusterResourceSet, APIVersion: addonsv1.GroupVersion.String()}
 
@@ -72,7 +71,7 @@ var IonosCloudInfraOwnerReferenceAssertions = map[string]func(types.NamespacedNa
 	"IonosCloudMachineTemplate": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		return framework.HasExactOwners(owners, clusterOwner)
 	},
-	kindIonosCloudCluster: func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
+	infrav1.IonosCloudClusterKind: func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		// IonosCloudCluster must be owned and controlled by a Cluster.
 		return framework.HasExactOwners(owners, clusterController)
 	},
