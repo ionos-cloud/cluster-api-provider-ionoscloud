@@ -85,6 +85,22 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 	})
 })
 
+var _ = Describe("Should be able to create a cluster with CUBE worker nodes", func() {
+	capie2e.QuickStartSpec(ctx, func() capie2e.QuickStartSpecInput {
+		return capie2e.QuickStartSpecInput{
+			E2EConfig:                e2eConfig,
+			ClusterctlConfigPath:     clusterctlConfigPath,
+			BootstrapClusterProxy:    bootstrapClusterProxy,
+			Flavor:                   ptr.To("cube"),
+			ArtifactFolder:           artifactFolder,
+			SkipCleanup:              skipCleanup,
+			ControlPlaneMachineCount: ptr.To[int64](1),
+			WorkerMachineCount:       ptr.To[int64](1),
+			PostNamespaceCreated:     cloudEnv.createCredentialsSecretPNC,
+		}
+	})
+})
+
 var _ = Describe("Should be able to create a cluster with 1 control-plane and 1 worker node and scale it", func() {
 	capie2e.MachineDeploymentScaleSpec(ctx, func() capie2e.MachineDeploymentScaleSpecInput {
 		return capie2e.MachineDeploymentScaleSpecInput{

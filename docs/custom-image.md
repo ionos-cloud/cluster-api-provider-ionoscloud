@@ -32,9 +32,15 @@ export PACKER_FLAGS="--var 'kubernetes_rpm_version=1.28.3' --var 'kubernetes_sem
 
 Now you can build the image:
 ```sh
-make build-qemu-ubuntu-2204
+make build-qemu-ubuntu-2404
 ```
-In this case, for Ubuntu 22.04. Works also for `1804` or `2004`.   
+
+For efi support (required to use GPUs) build the image like this:
+```sh
+make build-qemu-ubuntu-2404-efi
+```
+
+In this case, for Ubuntu 24.04. Works also for `2204`.   
 The image creation takes quite some time, so be patient.   
 
 The image will be created in the `output` directory.
@@ -69,6 +75,20 @@ To enable cloud-init functionality for your image, you need to make some adjustm
 You can also do that via Cloud API:
 ```sh
 ionosctl img update --image-id <image-id> --cloudinit V1 --licence-type LINUX
+```
+
+### Enabling efi support for your image
+
+Important: you **must** build your image with EFI support for this to work!   
+To enable UEFI functionality for your image, you need to make an adjustment in DCD:
+
+1. Go to Management -> Images & Snapshots -> select your image.
+2. Set UEFI Support to "Image is UEFI-compatible" and save your changes.
+
+You can also do that via Cloud API:
+
+```sh
+ionosctl img update --image-id <image-id> --require-legacy-bios=false
 ```
 
 ### Enabling disk serial exposure
