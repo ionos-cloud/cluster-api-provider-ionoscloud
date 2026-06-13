@@ -306,7 +306,7 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 			Type:    string(infrav1.MachineProvisionedCondition),
 			Status:  metav1.ConditionFalse,
 			Reason:  infrav1.WaitingForClusterInfrastructureReason,
-			Message: "Waiting for IonosCloudCluster to have Initialized=true.",
+			Message: "Waiting for Cluster.Status.Initialization.InfrastructureProvisioned to become true.",
 		})
 
 		return false

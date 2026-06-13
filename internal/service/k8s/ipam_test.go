@@ -396,4 +396,3 @@ func defaultPrimaryIPv6Claim() *ipamv1.IPAddressClaim {
 		},
 	}
 }
-
