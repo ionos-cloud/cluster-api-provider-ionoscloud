@@ -30,8 +30,8 @@ import (
 
 // IonosCloudInfraFinalizersAssertion maps IONOS Cloud infrastructure resource types to their expected finalizers.
 var IonosCloudInfraFinalizersAssertion = map[string]func(types.NamespacedName) []string{
-	"IonosCloudMachine":   func(types.NamespacedName) []string { return []string{infrav1.MachineFinalizer} },
-	kindIonosCloudCluster: func(types.NamespacedName) []string { return []string{infrav1.ClusterFinalizer} },
+	"IonosCloudMachine":           func(types.NamespacedName) []string { return []string{infrav1.MachineFinalizer} },
+	infrav1.IonosCloudClusterKind: func(types.NamespacedName) []string { return []string{infrav1.ClusterFinalizer} },
 }
 
 // ExpFinalizersAssertion maps experimental resource types to their expected finalizers.
