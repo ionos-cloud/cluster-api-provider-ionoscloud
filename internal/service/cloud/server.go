@@ -149,10 +149,9 @@ func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine
 	// Set deprecated v1beta1 ready field for backwards compatibility.
 	ms.IonosMachine.SetV1Beta1Ready(true)
 	conditions.Set(ms.IonosMachine, metav1.Condition{
-		Type:    string(infrav1.MachineProvisionedCondition),
-		Status:  metav1.ConditionTrue,
-		Reason:  infrav1.MachineProvisionedReason,
-		Message: "Machine infrastructure is fully provisioned.",
+		Type:   string(infrav1.MachineProvisionedCondition),
+		Status: metav1.ConditionTrue,
+		Reason: infrav1.MachineProvisionedReason,
 	})
 	return false, nil
 }

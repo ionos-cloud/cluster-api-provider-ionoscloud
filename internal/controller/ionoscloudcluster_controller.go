@@ -174,10 +174,9 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 	}
 
 	conditions.Set(clusterScope.IonosCluster, metav1.Condition{
-		Type:    string(infrav1.IonosCloudClusterReady),
-		Status:  metav1.ConditionTrue,
-		Reason:  infrav1.ClusterProvisionedReason,
-		Message: "IonosCloud cluster infrastructure is provisioned and ready.",
+		Type:   string(infrav1.IonosCloudClusterReady),
+		Status: metav1.ConditionTrue,
+		Reason: infrav1.ClusterProvisionedReason,
 	})
 	clusterScope.IonosCluster.Status.Initialization.Provisioned = new(true)
 	// Set deprecated v1beta1 ready field for backwards compatibility.
