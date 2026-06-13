@@ -21,11 +21,6 @@ limitations under the License.
 // Dependabot to create a new PR for a version update.
 package ptr
 
-// To returns a pointer to the given value.
-func To[T any](v T) *T {
-	return &v
-}
-
 // Deref attempts to dereference a pointer and return the value.
 // If the pointer is nil, the provided default value will be returned instead.
 func Deref[T any](ptr *T, def T) T {

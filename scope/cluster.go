@@ -27,14 +27,24 @@ import (
 	"time"
 
 	"k8s.io/client-go/util/retry"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 )
+
+// ownedClusterConditions is the single source of truth for the v2 condition types owned by the
+// cluster controller. WithOwnedV1Beta1Conditions is derived from this list (only ReadyCondition
+// is carried into v1beta1; provider-specific conditions are v2-only). Keeping both lists adjacent
+// and derived from one variable makes it structurally impossible to add a condition to one side
+// while forgetting the other.
+var ownedClusterConditions = []string{
+	string(clusterv1.ReadyCondition),
+	string(infrav1.IonosCloudClusterReady),
+}
 
 // resolver is able to look up IP addresses from a given host name.
 // The net.Resolver type (found at net.DefaultResolver) implements this interface.
@@ -202,9 +212,14 @@ func (c *Cluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
 // PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
 func (c *Cluster) PatchObject() error {
-	// always set the ready condition
-	conditions.SetSummary(c.IonosCluster,
-		conditions.WithConditions(infrav1.IonosCloudClusterReady))
+	// always set the ready condition summary; capture the error but do not return early —
+	// the patch must be attempted regardless (see NOTE below).
+	summaryErr := conditions.SetSummaryCondition(
+		c.IonosCluster,
+		c.IonosCluster,
+		string(clusterv1.ReadyCondition),
+		conditions.ForConditionTypes{string(infrav1.IonosCloudClusterReady)},
+	)
 
 	// NOTE(piepmatz): We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
 	//  aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation
@@ -212,11 +227,20 @@ func (c *Cluster) PatchObject() error {
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster, patch.WithOwnedConditions{
-		Conditions: []clusterv1.ConditionType{
-			clusterv1.ReadyCondition,
+	// V1Beta1 ownership covers only the cross-cutting Ready condition; provider-specific
+	// conditions (IonosCloudClusterReady) are v2-only and intentionally omitted here.
+	if patchErr := c.patchHelper.Patch(timeoutCtx, c.IonosCluster,
+		patch.WithOwnedV1Beta1Conditions{
+			Conditions: []clusterv1.ConditionType{clusterv1.ReadyCondition},
 		},
-	})
+		// V2 ownership is derived from ownedClusterConditions — the single source of truth.
+		patch.WithOwnedConditions{
+			Conditions: ownedClusterConditions,
+		},
+	); patchErr != nil {
+		return patchErr
+	}
+	return summaryErr
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudCluster.

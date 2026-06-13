@@ -23,10 +23,8 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	deprecatedv1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -39,12 +37,12 @@ func defaultMachine() *IonosCloudMachine {
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: IonosCloudMachineSpec{
-			ProviderID:       ptr.To("ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
+			ProviderID:       new("ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
 			DatacenterID:     "ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
 			NumCores:         1,
 			AvailabilityZone: AvailabilityZoneTwo,
 			MemoryMB:         2048,
-			CPUFamily:        ptr.To("AMD_OPTERON"),
+			CPUFamily:        new("AMD_OPTERON"),
 			Disk: &Volume{
 				Name:             "disk",
 				DiskType:         VolumeDiskTypeSSDStandard,
@@ -65,7 +63,7 @@ func defaultMachine() *IonosCloudMachine {
 
 func setInvalidPoolRef(m *IonosCloudMachine, poolType string, kind, apiGroup, name string) {
 	ref := &corev1.TypedLocalObjectReference{
-		APIGroup: ptr.To(apiGroup),
+		APIGroup: new(apiGroup),
 		Kind:     kind,
 		Name:     name,
 	}
@@ -380,7 +378,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			DescribeTable("should allow IPv4PoolRef.Kind GlobalInClusterIPPool and InClusterIPPool", func(kind string) {
 				m := defaultMachine()
 				m.Spec.AdditionalNetworks[0].IPv4PoolRef = &corev1.TypedLocalObjectReference{
-					APIGroup: ptr.To("ipam.cluster.x-k8s.io"),
+					APIGroup: new("ipam.cluster.x-k8s.io"),
 					Kind:     kind,
 					Name:     "ipv4-pool",
 				}
@@ -392,7 +390,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			DescribeTable("should allow IPv6PoolRef.Kind GlobalInClusterIPPool and InClusterIPPool", func(kind string) {
 				m := defaultMachine()
 				m.Spec.AdditionalNetworks[0].IPv6PoolRef = &corev1.TypedLocalObjectReference{
-					APIGroup: ptr.To("ipam.cluster.x-k8s.io"),
+					APIGroup: new("ipam.cluster.x-k8s.io"),
 					Kind:     kind,
 					Name:     "ipv6-pool",
 				}
@@ -424,15 +422,15 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 	Context("FailoverIP", func() {
 		It("should allow setting AUTO as the value", func() {
 			m := defaultMachine()
-			m.Spec.FailoverIP = ptr.To(CloudResourceConfigAuto)
+			m.Spec.FailoverIP = new(CloudResourceConfigAuto)
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(m.Spec.FailoverIP).To(Equal(ptr.To(CloudResourceConfigAuto)))
+			Expect(m.Spec.FailoverIP).To(Equal(new(CloudResourceConfigAuto)))
 		})
 		It("should allow setting a valid IPv4 address", func() {
 			m := defaultMachine()
-			m.Spec.FailoverIP = ptr.To("203.0.113.1")
+			m.Spec.FailoverIP = new("203.0.113.1")
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(m.Spec.FailoverIP).To(Equal(ptr.To("203.0.113.1")))
+			Expect(m.Spec.FailoverIP).To(Equal(new("203.0.113.1")))
 		})
 		It("should allow setting null", func() {
 			m := defaultMachine()
@@ -452,26 +450,26 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		)
 		It("should require AUTO to be in capital letters", func() {
 			m := defaultMachine()
-			m.Spec.FailoverIP = ptr.To("Auto")
+			m.Spec.FailoverIP = new("Auto")
 			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 		})
 		It("should be immutable", func() {
 			m := defaultMachine()
-			m.Spec.FailoverIP = ptr.To(CloudResourceConfigAuto)
+			m.Spec.FailoverIP = new(CloudResourceConfigAuto)
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(m.Spec.FailoverIP).To(Equal(ptr.To(CloudResourceConfigAuto)))
-			m.Spec.FailoverIP = ptr.To("127.0.0.1")
+			Expect(m.Spec.FailoverIP).To(Equal(new(CloudResourceConfigAuto)))
+			m.Spec.FailoverIP = new("127.0.0.1")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
-			m.Spec.FailoverIP = ptr.To("")
+			m.Spec.FailoverIP = new("")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 		})
 	})
 	Context("NetworkID", func() {
 		It("should allow setting an existing NetworkID in the spec", func() {
 			m := defaultMachine()
-			m.Spec.NetworkID = ptr.To("1")
+			m.Spec.NetworkID = new("1")
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(m.Spec.NetworkID).To(Equal(ptr.To("1")))
+			Expect(m.Spec.NetworkID).To(Equal(new("1")))
 		})
 		It("should allow setting null", func() {
 			m := defaultMachine()
@@ -480,17 +478,17 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		})
 		It("should not allow setting empty NetworkID", func() {
 			m := defaultMachine()
-			m.Spec.NetworkID = ptr.To("")
+			m.Spec.NetworkID = new("")
 			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 		})
 		It("should be immutable", func() {
 			m := defaultMachine()
-			m.Spec.NetworkID = ptr.To("1")
+			m.Spec.NetworkID = new("1")
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(m.Spec.NetworkID).To(Equal(ptr.To("1")))
-			m.Spec.NetworkID = ptr.To("2")
+			Expect(m.Spec.NetworkID).To(Equal(new("1")))
+			m.Spec.NetworkID = new("2")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
-			m.Spec.NetworkID = ptr.To("")
+			m.Spec.NetworkID = new("")
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 			m.Spec.NetworkID = nil
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
@@ -511,7 +509,7 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 		})
 		It("should fail if cpuFamily is set and type is VCPU", func() {
 			m := defaultMachine()
-			m.Spec.CPUFamily = ptr.To("some-cpu-family")
+			m.Spec.CPUFamily = new("some-cpu-family")
 			m.Spec.Type = ServerTypeVCPU
 			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
 		})
@@ -535,13 +533,13 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			// Calls SetConditions with required fields
-			conditions.MarkTrue(m, MachineProvisionedCondition)
+			deprecatedv1beta1conditions.MarkTrue(m, MachineProvisionedCondition)
 
 			Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
 			Expect(k8sClient.Get(context.Background(),
 				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
-			machineConditions := m.GetConditions()
+			machineConditions := m.GetV1Beta1Conditions()
 			Expect(machineConditions).To(HaveLen(1))
 			Expect(machineConditions[0].Type).To(Equal(MachineProvisionedCondition))
 			Expect(machineConditions[0].Status).To(Equal(corev1.ConditionTrue))
@@ -554,8 +552,8 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(k8sClient.Get(context.Background(),
 				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
-			m.Status.Ready = true
-			conditions.MarkTrue(m, MachineProvisionedCondition)
+			m.Status.Initialization = IonosCloudMachineInitializationStatus{Provisioned: new(true)}
+			deprecatedv1beta1conditions.MarkTrue(m, MachineProvisionedCondition)
 			m.Status.CurrentRequest = &ProvisioningRequest{
 				Method:      "GET",
 				RequestPath: "path/to/resource",

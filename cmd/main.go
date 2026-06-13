@@ -21,7 +21,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/spf13/pflag"
@@ -30,9 +29,9 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	ipamv1 "sigs.k8s.io/cluster-api/api/ipam/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/crdmigrator"
-	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,6 +41,8 @@ import (
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	iccontroller "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/controller"
 )
+
+const errMsgUnableToCreateController = "unable to create controller"
 
 var (
 	scheme                 = runtime.NewScheme()
@@ -57,8 +58,8 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 
+	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(infrav1.AddToScheme(scheme))
 	utilruntime.Must(ipamv1.AddToScheme(scheme))
@@ -70,11 +71,11 @@ func init() {
 // +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 
-// Add CRD RBAC for CRD Migrator.
+// Add RBAC for CRDMigrator controller.
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions;customresourcedefinitions/status,verbs=update;patch,resourceNames=ionoscloudclusters.infrastructure.cluster.x-k8s.io;ionoscloudclustertemplates.infrastructure.cluster.x-k8s.io;ionoscloudmachines.infrastructure.cluster.x-k8s.io;ionoscloudmachinetemplates.infrastructure.cluster.x-k8s.io
 
-// Add CR RBAC for CRD Migrator.
+// Add RBAC for template CRs (needed by CRDMigrator for storage version migration).
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ionoscloudclustertemplates;ionoscloudmachinetemplates,verbs=get;list;watch;patch;update
 
 func main() {
@@ -113,8 +114,23 @@ func main() {
 
 	ctx := ctrl.SetupSignalHandler()
 
-	if err = setUpControllers(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to set up controllers")
+	if err = iccontroller.NewIonosCloudClusterReconciler(mgr).SetupWithManager(
+		ctx,
+		mgr,
+		controller.Options{MaxConcurrentReconciles: icClusterConcurrency},
+	); err != nil {
+		setupLog.Error(err, errMsgUnableToCreateController, "controller", "IonosCloudCluster")
+		os.Exit(1)
+	}
+	if err = iccontroller.NewIonosCloudMachineReconciler(mgr).SetupWithManager(
+		mgr,
+		controller.Options{MaxConcurrentReconciles: icMachineConcurrency},
+	); err != nil {
+		setupLog.Error(err, errMsgUnableToCreateController, "controller", "IonosCloudMachine")
+		os.Exit(1)
+	}
+	if err := setupCRDMigrator(ctx, mgr); err != nil {
+		setupLog.Error(err, errMsgUnableToCreateController, "controller", "CRDMigrator")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
@@ -135,39 +151,24 @@ func main() {
 	}
 }
 
-func setUpControllers(ctx context.Context, mgr ctrl.Manager) error {
-	skipPhases := make([]crdmigrator.Phase, 0, len(skipCRDMigrationPhases))
-	for _, p := range skipCRDMigrationPhases {
-		skipPhases = append(skipPhases, crdmigrator.Phase(p))
+func setupCRDMigrator(ctx context.Context, mgr ctrl.Manager) error {
+	crdMigratorConfig := map[client.Object]crdmigrator.ByObjectConfig{
+		&infrav1.IonosCloudCluster{}:         {UseCache: true, UseStatusForStorageVersionMigration: true},
+		&infrav1.IonosCloudMachine{}:         {UseCache: true, UseStatusForStorageVersionMigration: true},
+		&infrav1.IonosCloudClusterTemplate{}: {UseCache: false},
+		&infrav1.IonosCloudMachineTemplate{}: {UseCache: false},
 	}
-	if err := (&crdmigrator.CRDMigrator{
+	crdMigratorSkipPhases := make([]crdmigrator.Phase, 0, len(skipCRDMigrationPhases))
+	for _, p := range skipCRDMigrationPhases {
+		crdMigratorSkipPhases = append(crdMigratorSkipPhases, crdmigrator.Phase(p))
+	}
+	return (&crdmigrator.CRDMigrator{
 		Client:                 mgr.GetClient(),
 		APIReader:              mgr.GetAPIReader(),
-		SkipCRDMigrationPhases: skipPhases,
-		Config: map[client.Object]crdmigrator.ByObjectConfig{
-			&infrav1.IonosCloudCluster{}:         {UseCache: true},
-			&infrav1.IonosCloudClusterTemplate{}: {UseCache: false},
-			&infrav1.IonosCloudMachine{}:         {UseCache: true},
-			&infrav1.IonosCloudMachineTemplate{}: {UseCache: false},
-		},
-	}).SetupWithManager(ctx, mgr, controller.Options{}); err != nil {
-		return fmt.Errorf("unable to create CRDMigrator controller: %w", err)
-	}
-
-	if err := iccontroller.NewIonosCloudClusterReconciler(mgr).SetupWithManager(
-		ctx,
-		mgr,
-		controller.Options{MaxConcurrentReconciles: icClusterConcurrency},
-	); err != nil {
-		return fmt.Errorf("unable to create IonosCloudCluster controller: %w", err)
-	}
-	if err := iccontroller.NewIonosCloudMachineReconciler(mgr).SetupWithManager(
-		mgr,
-		controller.Options{MaxConcurrentReconciles: icMachineConcurrency},
-	); err != nil {
-		return fmt.Errorf("unable to create IonosCloudMachine controller: %w", err)
-	}
-	return nil
+		SkipCRDMigrationPhases: crdMigratorSkipPhases,
+		Config:                 crdMigratorConfig,
+		// Run with concurrency 1 to avoid overwhelming the apiserver.
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: 1})
 }
 
 // initFlags parses the command line flags.
@@ -181,7 +182,7 @@ func initFlags() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	pflag.StringArrayVar(&skipCRDMigrationPhases, "skip-crd-migration-phases", []string{},
-		"CRD migration phases to skip. Valid values are: StorageVersionMigration, CleanupManagedFields.")
+		"CRD migration phases to skip. Use when the CAPI CRDMigrator handles migration.")
 	pflag.IntVar(&icClusterConcurrency, "ionoscloudcluster-concurrency", 1,
 		"Number of IonosCloudClusters to process simultaneously")
 	pflag.IntVar(&icMachineConcurrency, "ionoscloudmachine-concurrency", 1,

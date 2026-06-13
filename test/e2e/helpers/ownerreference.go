@@ -21,39 +21,43 @@ package helpers
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	addonsv1 "sigs.k8s.io/cluster-api/api/addons/v1beta1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
-	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
+	addonsv1 "sigs.k8s.io/cluster-api/api/addons/v1beta2"
+	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
+	controlplanev1 "sigs.k8s.io/cluster-api/api/controlplane/kubeadm/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
+)
+
+// Kind names of resource types this provider asserts on.
+const (
+	kindClusterResourceSet = "ClusterResourceSet"
 )
 
 // Kinds and Owners for types in the core API package.
 var (
 	coreGroupVersion = clusterv1.GroupVersion.String()
 
-	clusterOwner      = metav1.OwnerReference{Kind: "Cluster", APIVersion: coreGroupVersion}
-	clusterController = metav1.OwnerReference{Kind: "Cluster", APIVersion: coreGroupVersion, Controller: ptr.To(true)}
-	machineController = metav1.OwnerReference{Kind: "Machine", APIVersion: coreGroupVersion, Controller: ptr.To(true)}
+	clusterOwner      = metav1.OwnerReference{Kind: clusterv1.ClusterKind, APIVersion: coreGroupVersion}
+	clusterController = metav1.OwnerReference{Kind: clusterv1.ClusterKind, APIVersion: coreGroupVersion, Controller: new(true)}
+	machineController = metav1.OwnerReference{Kind: "Machine", APIVersion: coreGroupVersion, Controller: new(true)}
 )
 
-var ionosCloudClusterController = metav1.OwnerReference{Kind: "IonosCloudCluster", APIVersion: infrav1.GroupVersion.String(), Controller: ptr.To(false)}
+var ionosCloudClusterController = metav1.OwnerReference{Kind: infrav1.IonosCloudClusterKind, APIVersion: infrav1.GroupVersion.String(), Controller: new(false)}
 
-var clusterResourceSetOwner = metav1.OwnerReference{Kind: "ClusterResourceSet", APIVersion: addonsv1.GroupVersion.String()}
+var clusterResourceSetOwner = metav1.OwnerReference{Kind: kindClusterResourceSet, APIVersion: addonsv1.GroupVersion.String()}
 
 // Kind and Owners for types in the Kubeadm ControlPlane package.
 var (
 	kubeadmControlPlaneGroupVersion = controlplanev1.GroupVersion.String()
-	kubeadmControlPlaneController   = metav1.OwnerReference{Kind: "KubeadmControlPlane", APIVersion: kubeadmControlPlaneGroupVersion, Controller: ptr.To(true)}
+	kubeadmControlPlaneController   = metav1.OwnerReference{Kind: "KubeadmControlPlane", APIVersion: kubeadmControlPlaneGroupVersion, Controller: new(true)}
 )
 
 // Owners and kinds for types in the Kubeadm Bootstrap package.
 var (
 	kubeadmConfigGroupVersion = bootstrapv1.GroupVersion.String()
-	kubeadmConfigController   = metav1.OwnerReference{Kind: "KubeadmConfig", APIVersion: kubeadmConfigGroupVersion, Controller: ptr.To(true)}
+	kubeadmConfigController   = metav1.OwnerReference{Kind: "KubeadmConfig", APIVersion: kubeadmConfigGroupVersion, Controller: new(true)}
 )
 
 // IonosCloudInfraOwnerReferenceAssertions maps IONOS Cloud Infrastructure types to functions which return an error if the passed
@@ -67,7 +71,7 @@ var IonosCloudInfraOwnerReferenceAssertions = map[string]func(types.NamespacedNa
 	"IonosCloudMachineTemplate": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		return framework.HasExactOwners(owners, clusterOwner)
 	},
-	"IonosCloudCluster": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
+	infrav1.IonosCloudClusterKind: func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		// IonosCloudCluster must be owned and controlled by a Cluster.
 		return framework.HasExactOwners(owners, clusterController)
 	},
@@ -78,7 +82,7 @@ var IonosCloudInfraOwnerReferenceAssertions = map[string]func(types.NamespacedNa
 // Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/tree/main/docs/book/src/reference/owner_references.md.
 // That document should be updated if these references change.
 var ExpOwnerReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
-	"ClusterResourceSet": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
+	kindClusterResourceSet: func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		// ClusterResourcesSet doesn't have ownerReferences (it is a clusterctl move-hierarchy root).
 		return framework.HasExactOwners(owners)
 	},
