@@ -440,7 +440,7 @@ func (m *IonosCloudMachine) SetV1Beta1Ready(ready bool) {
 	if m.Status.Deprecated.V1Beta1 == nil {
 		m.Status.Deprecated.V1Beta1 = &IonosCloudMachineV1Beta1DeprecatedStatus{}
 	}
-	m.Status.Deprecated.V1Beta1.Ready = ready //nolint:staticcheck // Intentionally setting deprecated field.
+	m.Status.Deprecated.V1Beta1.Ready = ready
 }
 
 // GetConditions returns the v1beta2 conditions from status.conditions.
