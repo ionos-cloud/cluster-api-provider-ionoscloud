@@ -42,6 +42,8 @@ import (
 	iccontroller "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/controller"
 )
 
+const errMsgUnableToCreateController = "unable to create controller"
+
 var (
 	scheme                 = runtime.NewScheme()
 	setupLog               = ctrl.Log.WithName("setup")
@@ -117,18 +119,18 @@ func main() {
 		mgr,
 		controller.Options{MaxConcurrentReconciles: icClusterConcurrency},
 	); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudCluster")
+		setupLog.Error(err, errMsgUnableToCreateController, "controller", "IonosCloudCluster")
 		os.Exit(1)
 	}
 	if err = iccontroller.NewIonosCloudMachineReconciler(mgr).SetupWithManager(
 		mgr,
 		controller.Options{MaxConcurrentReconciles: icMachineConcurrency},
 	); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IonosCloudMachine")
+		setupLog.Error(err, errMsgUnableToCreateController, "controller", "IonosCloudMachine")
 		os.Exit(1)
 	}
 	if err := setupCRDMigrator(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "CRDMigrator")
+		setupLog.Error(err, errMsgUnableToCreateController, "controller", "CRDMigrator")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
