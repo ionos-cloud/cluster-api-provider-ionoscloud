@@ -273,7 +273,6 @@ func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, 
 		return fmt.Errorf("pool reference for IPAddressClaim %q has no APIGroup", claimRef.Name)
 	}
 
-
 	desired := &ipamv1.IPAddressClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      claimRef.Name,
