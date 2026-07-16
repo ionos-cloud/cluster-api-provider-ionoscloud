@@ -464,7 +464,7 @@ func (s *lanSuite) TestReconcileIPFailoverDeletionControlPlaneSwitchNIC() {
 	newIonosMachine.SetName("test-machine-2")
 	newIonosMachine.SetResourceVersion("")
 	newIonosMachine.SetCreationTimestamp(metav1.NewTime(time.Now()))
-	newIonosMachine.Spec.ProviderID = new("ionos://" + exampleSecondaryServerID)
+	newIonosMachine.Spec.ProviderID = "ionos://" + exampleSecondaryServerID
 	err = s.k8sClient.Create(s.ctx, newIonosMachine)
 	s.NoError(err)
 
