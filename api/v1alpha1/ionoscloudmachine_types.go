@@ -21,8 +21,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 const (
@@ -113,7 +111,7 @@ type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
 	//+optional
-	ProviderID *string `json:"providerID,omitempty"`
+	ProviderID string `json:"providerID,omitempty"`
 
 	// DatacenterID is the ID of the data center where the VM should be created in.
 	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
@@ -388,6 +386,7 @@ type NICInfo struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=ionoscloudmachines,scope=Namespaced,categories=cluster-api;ionoscloud,shortName=icm
+//+kubebuilder:metadata:annotations="cluster.x-k8s.io/v1beta2=v1alpha1"
 //+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
 //+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.initialization.provisioned",description="Machine is ready"
 //+kubebuilder:printcolumn:name="IPv4 Addresses",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].ipv4Addresses"
@@ -456,11 +455,11 @@ func (m *IonosCloudMachine) SetConditions(conditions []metav1.Condition) {
 // ExtractServerID extracts the server ID from the provider ID.
 // if the provider ID is empty, an empty string will be returned instead.
 func (m *IonosCloudMachine) ExtractServerID() string {
-	if m.Spec.ProviderID == nil || *m.Spec.ProviderID == "" {
+	if m.Spec.ProviderID == "" {
 		return ""
 	}
 
-	before, after, _ := strings.Cut(ptr.Deref(m.Spec.ProviderID, ""), "://")
+	before, after, _ := strings.Cut(m.Spec.ProviderID, "://")
 	// if the provider ID does not start with "ionos", we can assume that it is not a valid provider ID.
 	if before != "ionos" {
 		return ""
