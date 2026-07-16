@@ -129,7 +129,7 @@ func (m *Machine) DatacenterID() string {
 
 // SetProviderID sets the provider ID for the IonosCloudMachine.
 func (m *Machine) SetProviderID(id string) {
-	m.IonosMachine.Spec.ProviderID = new("ionos://" + id)
+	m.IonosMachine.Spec.ProviderID = "ionos://" + id
 }
 
 // CountMachines returns the number of existing IonosCloudMachines in the same namespace

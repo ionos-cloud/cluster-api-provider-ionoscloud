@@ -184,7 +184,7 @@ func (s *serverSuite) TestReconcileServerAdditionalNetworks() {
 	s.mockCreateServerCall(properties, entities).Return(&sdk.Server{Id: new("12345")}, "location/to/server", nil)
 
 	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
-	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
+	s.Equal("ionos://12345", s.machineScope.IonosMachine.Spec.ProviderID)
 	s.NoError(err)
 	s.True(requeue)
 }
@@ -202,7 +202,7 @@ func (s *serverSuite) TestReconcileEnterpriseServerNoRequest() {
 	}}}, nil)
 
 	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
-	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
+	s.Equal("ionos://12345", s.machineScope.IonosMachine.Spec.ProviderID)
 	s.NoError(err)
 	s.True(requeue)
 }
@@ -224,7 +224,7 @@ func (s *serverSuite) TestReconcileVCPUServerNoRequest() {
 
 	s.infraMachine.Spec.Type = infrav1.ServerTypeVCPU
 	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
-	s.Equal("ionos://12345", ptr.Deref(s.machineScope.IonosMachine.Spec.ProviderID, ""))
+	s.Equal("ionos://12345", s.machineScope.IonosMachine.Spec.ProviderID)
 	s.NoError(err)
 	s.True(requeue)
 }
@@ -244,7 +244,7 @@ func (s *serverSuite) prepareReconcileServerRequestTest() {
 	s.NoError(s.k8sClient.Create(s.ctx, bootstrapSecret))
 
 	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = new("test")
-	s.machineScope.IonosMachine.Spec.ProviderID = nil
+	s.machineScope.IonosMachine.Spec.ProviderID = ""
 	s.mockListServersCall().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
 }
 
@@ -432,7 +432,7 @@ func (s *serverSuite) TestGetServerWithProviderIDNotFound() {
 }
 
 func (s *serverSuite) TestGetServerWithoutProviderIDFoundInList() {
-	s.machineScope.IonosMachine.Spec.ProviderID = nil
+	s.machineScope.IonosMachine.Spec.ProviderID = ""
 	s.mockListServersCall().Return(&sdk.Servers{Items: &[]sdk.Server{
 		{
 			Properties: &sdk.ServerProperties{
