@@ -37,7 +37,7 @@ func defaultMachine() *IonosCloudMachine {
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: IonosCloudMachineSpec{
-			ProviderID:       new("ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a"),
+			ProviderID:       "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
 			DatacenterID:     "ee090ff2-1eef-48ec-a246-a51a33aa4f3a",
 			NumCores:         1,
 			AvailabilityZone: AvailabilityZoneTwo,
@@ -97,13 +97,13 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			It("should work if not set", func() {
 				m := defaultMachine()
 				want := ""
-				m.Spec.ProviderID = &want
+				m.Spec.ProviderID = want
 				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-				Expect(*m.Spec.ProviderID).To(Equal(want))
+				Expect(m.Spec.ProviderID).To(Equal(want))
 			})
 			DescribeTable("tests for extraction of provider IDs", func(providerID, want string) {
 				m := defaultMachine()
-				m.Spec.ProviderID = &providerID
+				m.Spec.ProviderID = providerID
 				Expect(m.ExtractServerID()).To(Equal(want))
 			},
 				Entry("valid ID", "ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a",

@@ -111,7 +111,7 @@ func (s *IpamTestSuite) SetupTest() {
 			},
 		},
 		Spec: infrav1.IonosCloudMachineSpec{
-			ProviderID:       new("ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf"),
+			ProviderID:       "ionos://dd426c63-cd1d-4c02-aca3-13b4a27c2ebf",
 			DatacenterID:     "ccf27092-34e8-499e-a2f5-2bdee9d34a12",
 			NumCores:         2,
 			AvailabilityZone: infrav1.AvailabilityZoneAuto,
