@@ -23,7 +23,6 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	deprecatedv1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -525,26 +524,6 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Entry("VCPU", ServerTypeVCPU),
 		)
 	})
-	Context("Conditions", func() {
-		It("should correctly set and get the conditions", func() {
-			m := defaultMachine()
-			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
-			Expect(k8sClient.Get(
-				context.Background(), client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
-
-			// Calls SetConditions with required fields
-			deprecatedv1beta1conditions.MarkTrue(m, MachineProvisionedCondition)
-
-			Expect(k8sClient.Status().Update(context.Background(), m)).To(Succeed())
-			Expect(k8sClient.Get(context.Background(),
-				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
-
-			machineConditions := m.GetV1Beta1Conditions()
-			Expect(machineConditions).To(HaveLen(1))
-			Expect(machineConditions[0].Type).To(Equal(MachineProvisionedCondition))
-			Expect(machineConditions[0].Status).To(Equal(corev1.ConditionTrue))
-		})
-	})
 	Context("Status", func() {
 		It("should correctly set and get the status", func() {
 			m := defaultMachine()
@@ -553,7 +532,6 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				client.ObjectKey{Name: m.Name, Namespace: m.Namespace}, m)).To(Succeed())
 
 			m.Status.Initialization = IonosCloudMachineInitializationStatus{Provisioned: new(true)}
-			deprecatedv1beta1conditions.MarkTrue(m, MachineProvisionedCondition)
 			m.Status.CurrentRequest = &ProvisioningRequest{
 				Method:      "GET",
 				RequestPath: "path/to/resource",
