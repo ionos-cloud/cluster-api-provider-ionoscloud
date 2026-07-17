@@ -40,6 +40,8 @@ Empirical validation lives in the e2e upgrade suite (PR #379), which exercises t
 
 ## References
 
+- CAPI v1.10 → v1.11 provider migration guide:
+  https://cluster-api.sigs.k8s.io/developer/providers/migrations/v1.10-to-v1.11
 - CAPI v1.11 → v1.12 provider migration guide:
   https://cluster-api.sigs.k8s.io/developer/providers/migrations/v1.11-to-v1.12
 - Design spec: `docs/superpowers/specs/2026-07-17-drop-v1beta1-pure-v1beta2-design.md`
