@@ -314,10 +314,6 @@ type IonosCloudMachineStatus struct {
 	// Location is the location of the datacenter the VM is provisioned in.
 	//+optional
 	Location string `json:"location"`
-
-	// Deprecated groups all status fields deprecated and scheduled for removal when v1beta1 contract support is dropped.
-	//+optional
-	Deprecated *IonosCloudMachineDeprecatedStatus `json:"deprecated,omitempty"`
 }
 
 // IonosCloudMachineInitializationStatus provides observations of the IonosCloudMachine initialization process.
@@ -328,29 +324,6 @@ type IonosCloudMachineInitializationStatus struct {
 	// The value of this field is never updated after initial provisioning is completed.
 	//+optional
 	Provisioned *bool `json:"provisioned,omitempty"`
-}
-
-// IonosCloudMachineDeprecatedStatus groups all status fields deprecated and scheduled for removal when
-// v1beta1 contract support is dropped.
-type IonosCloudMachineDeprecatedStatus struct {
-	// V1Beta1 groups all v1beta1 status fields that are deprecated and scheduled for removal.
-	//+optional
-	V1Beta1 *IonosCloudMachineV1Beta1DeprecatedStatus `json:"v1beta1,omitempty"`
-}
-
-// IonosCloudMachineV1Beta1DeprecatedStatus contains deprecated v1beta1 fields.
-type IonosCloudMachineV1Beta1DeprecatedStatus struct {
-	// Ready indicates the VM has been provisioned and is ready.
-	//
-	// Deprecated: Use Initialization.Provisioned instead.
-	//+optional
-	Ready bool `json:"ready,omitempty"`
-
-	// Conditions defines current service state of the IonosCloudMachine using the deprecated v1beta1 condition type.
-	//
-	// Deprecated: Use the top-level conditions field instead.
-	//+optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // MachineNetworkInfo contains information about the network configuration of the VM.
@@ -410,36 +383,6 @@ type IonosCloudMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []IonosCloudMachine `json:"items"`
-}
-
-// GetV1Beta1Conditions returns the deprecated v1beta1 conditions from status.deprecated.v1beta1.conditions.
-func (m *IonosCloudMachine) GetV1Beta1Conditions() clusterv1.Conditions {
-	if m.Status.Deprecated == nil || m.Status.Deprecated.V1Beta1 == nil {
-		return nil
-	}
-	return m.Status.Deprecated.V1Beta1.Conditions
-}
-
-// SetV1Beta1Conditions sets the deprecated v1beta1 conditions in status.deprecated.v1beta1.conditions.
-func (m *IonosCloudMachine) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
-	if m.Status.Deprecated == nil {
-		m.Status.Deprecated = &IonosCloudMachineDeprecatedStatus{}
-	}
-	if m.Status.Deprecated.V1Beta1 == nil {
-		m.Status.Deprecated.V1Beta1 = &IonosCloudMachineV1Beta1DeprecatedStatus{}
-	}
-	m.Status.Deprecated.V1Beta1.Conditions = conditions
-}
-
-// SetV1Beta1Ready sets the deprecated v1beta1 ready field.
-func (m *IonosCloudMachine) SetV1Beta1Ready(ready bool) {
-	if m.Status.Deprecated == nil {
-		m.Status.Deprecated = &IonosCloudMachineDeprecatedStatus{}
-	}
-	if m.Status.Deprecated.V1Beta1 == nil {
-		m.Status.Deprecated.V1Beta1 = &IonosCloudMachineV1Beta1DeprecatedStatus{}
-	}
-	m.Status.Deprecated.V1Beta1.Ready = ready
 }
 
 // GetConditions returns the v1beta2 conditions from status.conditions.
