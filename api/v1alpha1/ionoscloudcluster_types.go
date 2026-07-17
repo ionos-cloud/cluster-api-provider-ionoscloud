@@ -92,10 +92,6 @@ type IonosCloudClusterStatus struct {
 	// ControlPlaneEndpointIPBlockID is the IONOS Cloud UUID for the control plane endpoint IP block.
 	//+optional
 	ControlPlaneEndpointIPBlockID string `json:"controlPlaneEndpointIPBlockID,omitempty"`
-
-	// Deprecated groups all status fields deprecated and scheduled for removal when v1beta1 contract support is dropped.
-	//+optional
-	Deprecated *IonosCloudClusterDeprecatedStatus `json:"deprecated,omitempty"`
 }
 
 // IonosCloudClusterInitializationStatus provides observations of the IonosCloudCluster initialization process.
@@ -106,29 +102,6 @@ type IonosCloudClusterInitializationStatus struct {
 	// The value of this field is never updated after initial provisioning is completed.
 	//+optional
 	Provisioned *bool `json:"provisioned,omitempty"`
-}
-
-// IonosCloudClusterDeprecatedStatus groups all status fields deprecated and scheduled for removal when
-// v1beta1 contract support is dropped.
-type IonosCloudClusterDeprecatedStatus struct {
-	// V1Beta1 groups all v1beta1 status fields that are deprecated and scheduled for removal.
-	//+optional
-	V1Beta1 *IonosCloudClusterV1Beta1DeprecatedStatus `json:"v1beta1,omitempty"`
-}
-
-// IonosCloudClusterV1Beta1DeprecatedStatus contains deprecated v1beta1 fields.
-type IonosCloudClusterV1Beta1DeprecatedStatus struct {
-	// Ready indicates that the cluster is ready.
-	//
-	// Deprecated: Use Initialization.Provisioned instead.
-	//+optional
-	Ready bool `json:"ready,omitempty"`
-
-	// Conditions defines current service state of the IonosCloudCluster using the deprecated v1beta1 condition type.
-	//
-	// Deprecated: Use the top-level conditions field instead.
-	//+optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -159,25 +132,6 @@ type IonosCloudClusterList struct {
 
 func init() {
 	objectTypes = append(objectTypes, &IonosCloudCluster{}, &IonosCloudClusterList{})
-}
-
-// GetV1Beta1Conditions returns the deprecated v1beta1 conditions from status.deprecated.v1beta1.conditions.
-func (i *IonosCloudCluster) GetV1Beta1Conditions() clusterv1.Conditions {
-	if i.Status.Deprecated == nil || i.Status.Deprecated.V1Beta1 == nil {
-		return nil
-	}
-	return i.Status.Deprecated.V1Beta1.Conditions
-}
-
-// SetV1Beta1Conditions sets the deprecated v1beta1 conditions in status.deprecated.v1beta1.conditions.
-func (i *IonosCloudCluster) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
-	if i.Status.Deprecated == nil {
-		i.Status.Deprecated = &IonosCloudClusterDeprecatedStatus{}
-	}
-	if i.Status.Deprecated.V1Beta1 == nil {
-		i.Status.Deprecated.V1Beta1 = &IonosCloudClusterV1Beta1DeprecatedStatus{}
-	}
-	i.Status.Deprecated.V1Beta1.Conditions = conditions
 }
 
 // GetConditions returns the v1beta2 conditions from status.conditions.
