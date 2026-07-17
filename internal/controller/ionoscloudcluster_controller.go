@@ -179,14 +179,6 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		Reason: infrav1.ClusterProvisionedReason,
 	})
 	clusterScope.IonosCluster.Status.Initialization.Provisioned = new(true)
-	// Set deprecated v1beta1 ready field for backwards compatibility.
-	if clusterScope.IonosCluster.Status.Deprecated == nil {
-		clusterScope.IonosCluster.Status.Deprecated = &infrav1.IonosCloudClusterDeprecatedStatus{}
-	}
-	if clusterScope.IonosCluster.Status.Deprecated.V1Beta1 == nil {
-		clusterScope.IonosCluster.Status.Deprecated.V1Beta1 = &infrav1.IonosCloudClusterV1Beta1DeprecatedStatus{}
-	}
-	clusterScope.IonosCluster.Status.Deprecated.V1Beta1.Ready = true //nolint:staticcheck // Intentionally setting deprecated field for v1beta1 backwards compatibility.
 	return ctrl.Result{}, nil
 }
 
