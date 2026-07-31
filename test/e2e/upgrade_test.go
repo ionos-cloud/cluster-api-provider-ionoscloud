@@ -19,9 +19,8 @@ limitations under the License.
 package e2e
 
 import (
-	"sigs.k8s.io/cluster-api/test/framework"
-
 	capie2e "sigs.k8s.io/cluster-api/test/e2e"
+	"sigs.k8s.io/cluster-api/test/framework"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/test/e2e/helpers"
 
