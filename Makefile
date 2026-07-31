@@ -283,7 +283,10 @@ GINKGO_NODES ?= 1
 GINKGO_FOCUS ?=
 GINKGO_TIMEOUT ?= 2h
 GINKGO_NOCOLOR ?= false
-GINKGO_LABEL ?= "!Conformance"
+# Exclude the "upgrade" label by default: the provider-upgrade suite is heavy
+# (spins up its own kind management cluster and installs old providers per block)
+# and is run separately via `make test-e2e-upgrade`.
+GINKGO_LABEL ?= "!Conformance && !upgrade"
 
 GINKGO_SKIP ?=
 # To set multiple ginkgo skip flags, if any
@@ -302,6 +305,16 @@ test-e2e: docker-build-e2e ## Run the end-to-end tests
 	-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --focus="$(GINKGO_FOCUS)" --fail-fast \
 	$(_SKIP_ARGS) --nodes=$(GINKGO_NODES) --label-filter=$(GINKGO_LABEL) --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
 	--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) $(ROOT_DIR)/$(TEST_DIR)/e2e -- \
+	-e2e.artifacts-folder="$(ARTIFACTS)" -e2e.config="$(E2E_CONF_FILE)" \
+	-e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) -e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER)
+
+.PHONY: test-e2e-upgrade
+test-e2e-upgrade: docker-build-e2e ## Run only the provider-upgrade e2e tests (Label "upgrade")
+	CGO_ENABLED=1 go run github.com/onsi/ginkgo/v2/ginkgo -v --trace \
+	-poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) \
+	-poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) --tags=e2e --fail-fast \
+	--nodes=1 --label-filter="upgrade" --timeout=$(GINKGO_TIMEOUT) --no-color=$(GINKGO_NOCOLOR) \
+	--output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_upgrade.1.xml" $(GINKGO_ARGS) $(ROOT_DIR)/$(TEST_DIR)/e2e -- \
 	-e2e.artifacts-folder="$(ARTIFACTS)" -e2e.config="$(E2E_CONF_FILE)" \
 	-e2e.skip-resource-cleanup=$(SKIP_RESOURCE_CLEANUP) -e2e.use-existing-cluster=$(USE_EXISTING_CLUSTER)
 

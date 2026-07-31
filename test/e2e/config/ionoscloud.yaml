@@ -14,6 +14,33 @@ providers:
           new: --metrics-addr=:8443
       files:
         - sourcePath: "../data/shared/v1.12/metadata.yaml"
+    - name: "v1.11.11"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.11/core-components.yaml"
+      type: url
+      contract: v1beta2
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8443
+      files:
+        - sourcePath: "../data/shared/v1.11/metadata.yaml"
+    - name: "v1.10.10"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.10/core-components.yaml"
+      type: url
+      contract: v1beta1
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8443
+      files:
+        - sourcePath: "../data/shared/v1.10/metadata.yaml"
+    - name: "v1.8.12"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.12/core-components.yaml"
+      type: url
+      contract: v1beta1
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8443
+      files:
+        - sourcePath: "../data/shared/v1.8/metadata.yaml"
   - name: kubeadm
     type: BootstrapProvider
     versions:
@@ -26,6 +53,33 @@ providers:
           new: --metrics-addr=:8443
       files:
         - sourcePath: "../data/shared/v1.12/metadata.yaml"
+    - name: "v1.11.11"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.11/bootstrap-components.yaml"
+      type: url
+      contract: v1beta2
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8443
+      files:
+        - sourcePath: "../data/shared/v1.11/metadata.yaml"
+    - name: "v1.10.10"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.10/bootstrap-components.yaml"
+      type: url
+      contract: v1beta1
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8443
+      files:
+        - sourcePath: "../data/shared/v1.10/metadata.yaml"
+    - name: "v1.8.12"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.12/bootstrap-components.yaml"
+      type: url
+      contract: v1beta1
+      replacements:
+        - old: --metrics-addr=127.0.0.1:8080
+          new: --metrics-addr=:8443
+      files:
+        - sourcePath: "../data/shared/v1.8/metadata.yaml"
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
@@ -38,6 +92,33 @@ providers:
             new: --metrics-addr=:8443
         files:
           - sourcePath: "../data/shared/v1.12/metadata.yaml"
+      - name: "v1.11.11"
+        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.11/control-plane-components.yaml"
+        type: url
+        contract: v1beta2
+        replacements:
+          - old: --metrics-addr=127.0.0.1:8080
+            new: --metrics-addr=:8443
+        files:
+          - sourcePath: "../data/shared/v1.11/metadata.yaml"
+      - name: "v1.10.10"
+        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.10/control-plane-components.yaml"
+        type: url
+        contract: v1beta1
+        replacements:
+          - old: --metrics-addr=127.0.0.1:8080
+            new: --metrics-addr=:8443
+        files:
+          - sourcePath: "../data/shared/v1.10/metadata.yaml"
+      - name: "v1.8.12"
+        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.12/control-plane-components.yaml"
+        type: url
+        contract: v1beta1
+        replacements:
+          - old: --metrics-addr=127.0.0.1:8080
+            new: --metrics-addr=:8443
+        files:
+          - sourcePath: "../data/shared/v1.8/metadata.yaml"
   - name: in-cluster
     type: IPAMProvider
     versions:
@@ -54,7 +135,23 @@ providers:
   - name: ionoscloud
     type: InfrastructureProvider
     versions:
-      - name: v0.6.99
+      - name: v0.6.3
+        value: "https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/releases/download/v0.6.3/infrastructure-components.yaml"
+        type: url
+        contract: v1beta1
+        files:
+          - sourcePath: "../data/infrastructure-ionoscloud/cluster-template.yaml"
+      - name: v0.7.0
+        value: "https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/releases/download/v0.7.0/infrastructure-components.yaml"
+        type: url
+        contract: v1beta1
+        files:
+          # The published v0.7.0 metadata.yaml is missing its own "0.7" releaseSeries
+          # entry, so clusterctl can't resolve the version's contract and init fails.
+          # Override it with the repo metadata.yaml, which declares 0.7 as v1beta1.
+          - sourcePath: "../../../metadata.yaml"
+          - sourcePath: "../data/infrastructure-ionoscloud/cluster-template.yaml"
+      - name: v0.8.99
         value: "../../../config/default"
         replacements:
           - old: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:dev
@@ -72,6 +169,7 @@ variables:
   # The following Kubernetes versions should be the latest versions with already published kindest/node images.
   # This avoids building node images in the default case which improves the test duration significantly.
   KUBERNETES_VERSION: "v1.30.6"
+  IP_FAMILY: "ipv4"
   CNI: "./data/cni/calico.yaml"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   CLUSTER_NAME: "e2e-cluster-${RANDOM}"

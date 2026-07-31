@@ -1,0 +1,37 @@
+name: End-to-end upgrade tests
+on:
+  schedule:
+    # Weekly, matching the conformance suite's cadence. Offset to Tuesday to
+    # avoid contending for IONOS Cloud resources with conformance (Mondays).
+    - cron: "0 5 * * 2"
+  workflow_dispatch: {}
+jobs:
+  e2e-upgrade:
+    runs-on: ubuntu-latest
+    environment: e2e
+    env:
+      IONOS_TOKEN: ${{ secrets.IONOS_TOKEN }}
+      IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
+      CONTROL_PLANE_ENDPOINT_LOCATION: ${{ vars.CONTROL_PLANE_ENDPOINT_LOCATION }}
+      IONOSCLOUD_CUBE_TEMPLATE_ID: ${{ vars.IONOSCLOUD_CUBE_TEMPLATE_ID }}
+      # Real IONOS Cloud cluster provisioning across multiple upgrade hops is very
+      # likely to exceed the Makefile's 2h default; override for this scheduled run.
+      GINKGO_TIMEOUT: "4h"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go environment
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Run e2e upgrade tests
+        run: make test-e2e-upgrade
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: logs-upgrade
+          path: _artifacts
+          retention-days: 7
