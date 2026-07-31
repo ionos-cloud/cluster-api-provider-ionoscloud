@@ -14,6 +14,9 @@ jobs:
       IONOSCLOUD_MACHINE_IMAGE_ID: ${{ vars.IONOSCLOUD_MACHINE_IMAGE_ID }}
       CONTROL_PLANE_ENDPOINT_LOCATION: ${{ vars.CONTROL_PLANE_ENDPOINT_LOCATION }}
       IONOSCLOUD_CUBE_TEMPLATE_ID: ${{ vars.IONOSCLOUD_CUBE_TEMPLATE_ID }}
+      # Real IONOS Cloud cluster provisioning across multiple upgrade hops is very
+      # likely to exceed the Makefile's 2h default; override for this scheduled run.
+      GINKGO_TIMEOUT: "4h"
     steps:
       - uses: actions/checkout@v4
 

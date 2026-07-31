@@ -19,6 +19,8 @@ limitations under the License.
 package e2e
 
 import (
+	"sigs.k8s.io/cluster-api/test/framework"
+
 	capie2e "sigs.k8s.io/cluster-api/test/e2e"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/test/e2e/helpers"
@@ -36,7 +38,14 @@ func upgradeSpecBaseInput() capie2e.ClusterctlUpgradeSpecInput {
 		ArtifactFolder:              artifactFolder,
 		SkipCleanup:                 skipCleanup,
 		UseKindForManagementCluster: true,
-		PostNamespaceCreated:        cloudEnv.createCredentialsSecretPNC,
+		// Without this, the framework defaults to its own package-private initScheme(),
+		// which registers only the default CAPI schemes and not our infrav1 types — every
+		// PostUpgrade hook that lists IonosCloudCluster/IonosCloudMachine objects against
+		// this proxy would fail with "no kind registered for type v1alpha1...".
+		KindManagementClusterNewClusterProxyFunc: func(name, kubeconfigPath string) framework.ClusterProxy {
+			return framework.NewClusterProxy(name, kubeconfigPath, initScheme(), framework.WithMachineLogCollector(framework.DockerLogCollector{}))
+		},
+		PostNamespaceCreated: cloudEnv.createCredentialsSecretPNC,
 		// InitWithKubernetesVersion is required by ClusterctlUpgradeSpec: it is the
 		// Kubernetes version of the secondary (kind) management cluster the old
 		// providers are installed into. Reuse the suite's configured version.
@@ -45,7 +54,7 @@ func upgradeSpecBaseInput() capie2e.ClusterctlUpgradeSpecInput {
 	}
 }
 
-var _ = Describe("Should migrate CAPIC conditions from v1beta1 to metav1.Condition on the staged v0.6.3 -> v0.7.0 -> v0.8 provider upgrade", Label("upgrade", "single-hop"), func() {
+var _ = Describe("Should stage a v1.8-created cluster through v1.10 (real v0.7.0 release), v1.11 (v1beta1-conditions migration) and v1.12 (full v1beta2 migration)", Label("upgrade", "staged"), func() {
 	capie2e.ClusterctlUpgradeSpec(ctx, func() capie2e.ClusterctlUpgradeSpecInput {
 		in := upgradeSpecBaseInput()
 		in.InitWithBinary = "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.12/clusterctl-{OS}-{ARCH}"
@@ -63,58 +72,32 @@ var _ = Describe("Should migrate CAPIC conditions from v1beta1 to metav1.Conditi
 				// pure-v1beta2 v0.8 cut is applied.
 				WithBinary:              "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.10/clusterctl-{OS}-{ARCH}",
 				CoreProvider:            "cluster-api:v1.10.10",
+				BootstrapProviders:      []string{"kubeadm:v1.10.10"},
+				ControlPlaneProviders:   []string{"kubeadm:v1.10.10"},
 				InfrastructureProviders: []string{"ionoscloud:v0.7.0"},
 				PostUpgrade:             helpers.AssertV1Beta1ClusterAndMachinesHealthy(ctx),
 			},
 			{
 				// This hop lands the pure-v1beta2 v0.8 provider (local build) on a
-				// v0.7.0-created cluster and proves the legacy v1beta1 conditions
-				// (empty Reason) are backfilled, not rejected by the new schema.
+				// v0.7.0-created cluster and proves both: the legacy v1beta1 conditions
+				// (empty Reason) are backfilled, not rejected by the new schema, and the
+				// CAPI core v1beta2 type migration itself completes cleanly.
 				CoreProvider:            "cluster-api:v1.11.11",
+				BootstrapProviders:      []string{"kubeadm:v1.11.11"},
+				ControlPlaneProviders:   []string{"kubeadm:v1.11.11"},
 				InfrastructureProviders: []string{"ionoscloud:v0.8.99"},
-				PostUpgrade:             helpers.AssertConditionsMigration(ctx),
+				PostUpgrade: func(proxy framework.ClusterProxy, namespace, clusterName string) {
+					helpers.AssertConditionsMigration(ctx)(proxy, namespace, clusterName)
+					helpers.AssertCAPIV1Beta2Migration(ctx)(proxy, namespace, clusterName)
+				},
 			},
 			{
 				// Extra hop bumping CAPI core to v1.12.10. The v0.8.99 provider is
 				// already built against v1.12.10, so this exercises the v1.11 -> v1.12
 				// core upgrade and confirms the migrated conditions stay intact.
 				CoreProvider:            "cluster-api:v1.12.10",
-				InfrastructureProviders: []string{"ionoscloud:v0.8.99"},
-				PostUpgrade:             helpers.AssertCAPIV1Beta2Migration(ctx),
-			},
-		}
-		return in
-	})
-})
-
-var _ = Describe("Should keep a v1.8-created cluster reconcilable after staging the upgrade through v1.10 and v1.11 before reaching v1.12", Label("upgrade", "multi-hop"), func() {
-	capie2e.ClusterctlUpgradeSpec(ctx, func() capie2e.ClusterctlUpgradeSpecInput {
-		in := upgradeSpecBaseInput()
-		in.InitWithBinary = "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.12/clusterctl-{OS}-{ARCH}"
-		in.InitWithCoreProvider = "cluster-api:v1.8.12"
-		in.InitWithBootstrapProviders = []string{"kubeadm:v1.8.12"}
-		in.InitWithControlPlaneProviders = []string{"kubeadm:v1.8.12"}
-		in.InitWithInfrastructureProviders = []string{"ionoscloud:v0.6.3"}
-		in.Upgrades = []capie2e.ClusterctlUpgradeSpecInputUpgrade{
-			{
-				// Landing point this block validates. Must not be the last entry (v1.10 has
-				// no v1beta2 API). WithBinary is required too: the in-process v1.12.10
-				// clusterctl client refuses to move the core provider anywhere but v1beta2.
-				WithBinary:              "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.10/clusterctl-{OS}-{ARCH}",
-				CoreProvider:            "cluster-api:v1.10.10",
-				InfrastructureProviders: []string{"ionoscloud:v0.7.0"},
-				PostUpgrade:             helpers.AssertV1Beta1ClusterAndMachinesHealthy(ctx),
-			},
-			{
-				// Intermediate v1beta2 landing at v1.11 before the final v1.12 hop.
-				CoreProvider:            "cluster-api:v1.11.11",
-				InfrastructureProviders: []string{"ionoscloud:v0.8.99"},
-				PostUpgrade:             helpers.AssertCAPIV1Beta2Migration(ctx),
-			},
-			{
-				// Final hop bumping CAPI core to v1.12.10 (the version v0.8.99 is built
-				// against). Also satisfies the framework's mandatory last-step v1beta2 checks.
-				CoreProvider:            "cluster-api:v1.12.10",
+				BootstrapProviders:      []string{"kubeadm:v1.12.10"},
+				ControlPlaneProviders:   []string{"kubeadm:v1.12.10"},
 				InfrastructureProviders: []string{"ionoscloud:v0.8.99"},
 				PostUpgrade:             helpers.AssertCAPIV1Beta2Migration(ctx),
 			},
@@ -125,7 +108,7 @@ var _ = Describe("Should keep a v1.8-created cluster reconcilable after staging 
 
 // Overlaps with the staged block's second hop on purpose: starting fresh at v1.10.10
 // isolates a real v1.10->v1.11 bug from one caused by the staged block's carried-over state.
-var _ = Describe("Should handle CAPI core v1beta2 type migration when upgrading from v1.10 through v1.11 to v1.12", Label("upgrade", "single-hop"), func() {
+var _ = Describe("Should handle CAPI core v1beta2 type migration when upgrading from v1.10 through v1.11 to v1.12", Label("upgrade", "isolated-hop"), func() {
 	capie2e.ClusterctlUpgradeSpec(ctx, func() capie2e.ClusterctlUpgradeSpecInput {
 		in := upgradeSpecBaseInput()
 		in.InitWithBinary = "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.10/clusterctl-{OS}-{ARCH}"
@@ -137,6 +120,8 @@ var _ = Describe("Should handle CAPI core v1beta2 type migration when upgrading 
 		in.Upgrades = []capie2e.ClusterctlUpgradeSpecInputUpgrade{
 			{
 				CoreProvider:            "cluster-api:v1.11.11",
+				BootstrapProviders:      []string{"kubeadm:v1.11.11"},
+				ControlPlaneProviders:   []string{"kubeadm:v1.11.11"},
 				InfrastructureProviders: []string{"ionoscloud:v0.8.99"},
 				PostUpgrade:             helpers.AssertCAPIV1Beta2Migration(ctx),
 			},
@@ -144,6 +129,8 @@ var _ = Describe("Should handle CAPI core v1beta2 type migration when upgrading 
 				// Extra hop bumping CAPI core to v1.12.10 (the version v0.8.99 is built
 				// against) to validate the v1.11 -> v1.12 core upgrade.
 				CoreProvider:            "cluster-api:v1.12.10",
+				BootstrapProviders:      []string{"kubeadm:v1.12.10"},
+				ControlPlaneProviders:   []string{"kubeadm:v1.12.10"},
 				InfrastructureProviders: []string{"ionoscloud:v0.8.99"},
 				PostUpgrade:             helpers.AssertCAPIV1Beta2Migration(ctx),
 			},
