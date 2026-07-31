@@ -51,7 +51,7 @@ type IonosCloudMachineTemplateResource struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	//+optional
-	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
+	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
 	// Spec is the IonosCloudMachineSpec for the IonosCloudMachineTemplate.
 	Spec IonosCloudMachineSpec `json:"spec"`
 }
