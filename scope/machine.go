@@ -85,6 +85,12 @@ func NewMachine(params MachineParams) (*Machine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init patch helper: %w", err)
 	}
+
+	// Backfill any condition left over from CAPIC <= v0.7 (empty Reason under the old v1beta1
+	// conditions API) now that the helper's "before" snapshot has already been captured, so the
+	// backfill shows up as a genuine, patchable change instead of being resent verbatim.
+	params.IonosMachine.Status.Conditions = infrav1.BackfillLegacyConditionReasons(params.IonosMachine.Status.Conditions)
+
 	return &Machine{
 		client:       params.Client,
 		patchHelper:  helper,
