@@ -16,12 +16,13 @@ first release to implement v1beta2, and it does so as a clean cut.
 ## What v0.8 changes
 
 - Declares the **v1beta2** contract (`metadata.yaml`), matching the CRD
-  `cluster.x-k8s.io/v1beta2` annotation.
+  `cluster.x-k8s.io/v1beta2` label set via `config/crd/kustomization.yaml`'s `commonLabels`.
+  (The `+kubebuilder:metadata:annotations` marker on the Go types produces an *annotation*,
+  which CAPI's contract resolution does not consult — the label is what's load-bearing.)
 - Implements the v1beta2 status contract: `status.initialization.provisioned` and
   `status.conditions` (`[]metav1.Condition`).
-- **Removes** all v1beta1 residue: the `status.deprecated.v1beta1.*` fields, the
-  `Get/SetV1Beta1Conditions` / `SetV1Beta1Ready` helpers, and the v1beta1 condition
-  ownership in the patch helpers.
+- **Removes** `status.ready` and the v1beta1 `status.conditions` shape in place, on the same
+  `v1alpha1` CRD apiVersion (no new stored version, no conversion webhook).
 
 ## Supported upgrade path
 
@@ -34,6 +35,18 @@ Staged, in place: **v0.6 → v0.7 → v0.8** (upgrade the CAPI core to v1.11+ al
   not-provisioned until the v0.8 controller reconciles them (self-heals on controller startup).
 - **Breaking:** `.status.ready` and the v1beta1 `status.conditions` are removed. Any external
   tooling reading them must move to `status.initialization.provisioned` / `status.conditions`.
+- **Residual risk of the in-place schema change:** objects written by v0.6/v0.7 can have
+  `spec.controlPlaneEndpoint: {host: "", port: 0}` and conditions with an empty `reason` — both
+  valid under the old schema, both rejected by the new one. The v0.8 controller backfills
+  condition reasons and omits a zero `controlPlaneEndpoint` on its own writes
+  (`api/v1alpha1/conditions_migration.go`, the `omitzero` tag on `ControlPlaneEndpoint`), and an
+  in-place `Update` of an untouched legacy endpoint keeps working (Kubernetes CRD validation
+  ratcheting allows an unchanged, already-invalid field to persist across an update). What still
+  breaks: a fresh `Create` of the legacy zero-value shape — e.g. `clusterctl move`, which reads
+  the object on the source cluster and re-creates it on the target, where there is no stored
+  value to ratchet against. Verified empirically against a real apiserver (envtest, CRD swapped
+  in place): a status-only patch of a legacy object round-trips cleanly, an in-place spec `Update`
+  of the untouched endpoint succeeds, but a `Create` carrying the same legacy shape is rejected.
 
 Empirical validation lives in the e2e upgrade suite (PR #379), which exercises the staged
 `v0.6.3 → v0.7.0 → v0.8` path.
