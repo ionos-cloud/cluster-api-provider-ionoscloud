@@ -46,7 +46,7 @@ type IonosCloudClusterSpec struct {
 	//
 	// TODO(gfariasalves): as of now, IP must be provided by the user as we still don't insert the
 	// provider-provided block IP into the kube-vip manifest.
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty,omitzero"`
 
 	// Location is the location where the data centers should be located.
 	//

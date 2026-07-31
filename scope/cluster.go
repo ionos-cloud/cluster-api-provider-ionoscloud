@@ -92,6 +92,11 @@ func NewCluster(params ClusterParams) (*Cluster, error) {
 		return nil, fmt.Errorf("failed to init patch helper: %w", err)
 	}
 
+	// Backfill any condition left over from CAPIC <= v0.7 (empty Reason under the old v1beta1
+	// conditions API) now that the helper's "before" snapshot has already been captured, so the
+	// backfill shows up as a genuine, patchable change instead of being resent verbatim.
+	params.IonosCluster.Status.Conditions = infrav1.BackfillLegacyConditionReasons(params.IonosCluster.Status.Conditions)
+
 	clusterScope := &Cluster{
 		client:       params.Client,
 		Cluster:      params.Cluster,
