@@ -23,7 +23,6 @@ import (
 	sdk "github.com/ionos-cloud/sdk-go/v6"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -562,8 +561,6 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 				RequestPath: "path/to/resource",
 				State:       sdk.RequestStatusRunning,
 			}
-			m.Status.FailureReason = ptr.To(errors.InvalidConfigurationMachineError)
-			m.Status.FailureMessage = ptr.To("Failure message")
 			m.Status.Location = "de/fra"
 
 			m.Status.MachineNetworkInfo = &MachineNetworkInfo{

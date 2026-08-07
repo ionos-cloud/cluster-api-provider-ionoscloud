@@ -168,12 +168,6 @@ func (m *Machine) FindLatestMachine(
 	return &latestMachine, nil
 }
 
-// HasFailed checks if the IonosCloudMachine is in a failed state.
-func (m *Machine) HasFailed() bool {
-	status := m.IonosMachine.Status
-	return status.FailureReason != nil || status.FailureMessage != nil
-}
-
 // PatchObject will apply all changes from the IonosMachine.
 // It will also make sure to patch the status subresource.
 func (m *Machine) PatchObject() error {

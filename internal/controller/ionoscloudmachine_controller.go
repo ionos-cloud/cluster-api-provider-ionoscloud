@@ -147,11 +147,6 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 	log := ctrl.LoggerFrom(ctx)
 	log.V(4).Info("Reconciling IonosCloudMachine")
 
-	if machineScope.HasFailed() {
-		log.Info("Error state detected, skipping reconciliation")
-		return ctrl.Result{}, nil
-	}
-
 	if !r.isInfrastructureReady(ctx, machineScope) {
 		return ctrl.Result{}, nil
 	}
