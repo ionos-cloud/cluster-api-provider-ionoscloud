@@ -3,13 +3,13 @@ module github.com/ionos-cloud/cluster-api-provider-ionoscloud
 go 1.25.0
 
 require (
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/ionos-cloud/sdk-go/v6 v6.3.8
-	github.com/jarcoal/httpmock v1.4.1
-	github.com/onsi/ginkgo/v2 v2.30.0
-	github.com/onsi/gomega v1.40.0
+	github.com/ionos-cloud/sdk-go/v6 v6.3.11
+	github.com/jarcoal/httpmock v1.4.2
+	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/gomega v1.42.1
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
 	k8s.io/api v0.32.13
