@@ -61,7 +61,7 @@ This provider's versions are compatible with the following versions of Cluster A
 > `status.conditions` instead. Upgrade existing clusters via the staged path
 > `v0.6 → v0.7 → v0.8`.
 
-### Kubernetes Versions 
+### Kubernetes Versions
 
 The IONOS Cloud provider is able to install and manage the [versions of Kubernetes supported by the Cluster API (CAPI) project](https://cluster-api.sigs.k8s.io/reference/versions.html#supported-kubernetes-versions).
 
