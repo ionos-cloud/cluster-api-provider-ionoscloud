@@ -62,7 +62,7 @@ var (
 
 // IonosCloudInfraOwnerReferenceAssertions maps IONOS Cloud Infrastructure types to functions which return an error if the passed
 // OwnerReferences aren't as expected.
-// Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/tree/main/docs/book/src/reference/owner_references.md.
+// Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/book/src/reference/api/owner-references.md.
 // That document should be updated if these references change.
 var IonosCloudInfraOwnerReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
 	"IonosCloudMachine": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
@@ -79,7 +79,7 @@ var IonosCloudInfraOwnerReferenceAssertions = map[string]func(types.NamespacedNa
 
 // ExpOwnerReferenceAssertions maps experimental types to functions which return an error if the passed OwnerReferences
 // aren't as expected.
-// Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/tree/main/docs/book/src/reference/owner_references.md.
+// Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/book/src/reference/api/owner-references.md.
 // That document should be updated if these references change.
 var ExpOwnerReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
 	kindClusterResourceSet: func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
@@ -94,7 +94,7 @@ var ExpOwnerReferenceAssertions = map[string]func(types.NamespacedName, []metav1
 
 // KubernetesReferenceAssertions maps Kubernetes types to functions which return an error if the passed OwnerReferences
 // aren't as expected.
-// Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/tree/main/docs/book/src/reference/owner_references.md.
+// Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/book/src/reference/api/owner-references.md.
 // That document should be updated if these references change.
 var KubernetesReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
 	"Secret": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
