@@ -65,7 +65,7 @@ var (
 // Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/book/src/reference/api/owner-references.md.
 // That document should be updated if these references change.
 var IonosCloudInfraOwnerReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
-	"IonosCloudMachine": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
+	infrav1.IonosCloudMachineType: func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
 		return framework.HasExactOwners(owners, machineController)
 	},
 	"IonosCloudMachineTemplate": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
