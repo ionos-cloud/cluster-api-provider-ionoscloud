@@ -182,7 +182,7 @@ func initFlags() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	pflag.StringArrayVar(&skipCRDMigrationPhases, "skip-crd-migration-phases", []string{},
-		"CRD migration phases to skip. Use when the CAPI CRDMigrator handles migration.")
+		"CRD migration phases to skip. Valid values are: All, StorageVersionMigration, CleanupManagedFields.")
 	pflag.IntVar(&icClusterConcurrency, "ionoscloudcluster-concurrency", 1,
 		"Number of IonosCloudClusters to process simultaneously")
 	pflag.IntVar(&icMachineConcurrency, "ionoscloudmachine-concurrency", 1,
