@@ -35,7 +35,7 @@ const (
 
 	// MachineProvisionedCondition documents the status of the provisioning of a IonosCloudMachine and
 	// the underlying VM.
-	MachineProvisionedCondition clusterv1.ConditionType = "MachineProvisioned"
+	MachineProvisionedCondition clusterv1.ConditionType = "MachineProvisioned" //nolint:staticcheck // Intentionally setting deprecated field for v1beta1 backwards compatibility.
 
 	// WaitingForClusterInfrastructureReason (Severity=Info) indicates that the IonosCloudMachine is currently
 	// waiting for the cluster infrastructure to become ready.

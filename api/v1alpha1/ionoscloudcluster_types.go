@@ -28,7 +28,7 @@ const (
 	ClusterFinalizer = "ionoscloudcluster.infrastructure.cluster.x-k8s.io"
 
 	// IonosCloudClusterReady is the condition for the IonosCloudCluster, which indicates that the cluster is ready.
-	IonosCloudClusterReady clusterv1.ConditionType = "ClusterReady"
+	IonosCloudClusterReady clusterv1.ConditionType = "ClusterReady" //nolint:staticcheck // Intentionally setting deprecated field for v1beta1 backwards compatibility.
 
 	// ClusterProvisionedReason documents that the IonosCloudCluster infrastructure has been fully provisioned and is ready.
 	ClusterProvisionedReason = "Provisioned"

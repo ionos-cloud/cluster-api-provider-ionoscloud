@@ -51,7 +51,7 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 					helpers.ExpOwnerReferenceAssertions,
 					helpers.IonosCloudInfraOwnerReferenceAssertions,
 					framework.KubeadmBootstrapOwnerReferenceAssertions,
-					framework.KubeadmControlPlaneOwnerReferenceAssertions,
+					framework.KubeadmControlPlaneOwnerReferenceAssertions(true),
 					helpers.KubernetesReferenceAssertions,
 				)
 				// This check ensures that owner references are correctly updated to the correct apiVersion.
@@ -60,7 +60,7 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 					helpers.ExpOwnerReferenceAssertions,
 					helpers.IonosCloudInfraOwnerReferenceAssertions,
 					framework.KubeadmBootstrapOwnerReferenceAssertions,
-					framework.KubeadmControlPlaneOwnerReferenceAssertions,
+					framework.KubeadmControlPlaneOwnerReferenceAssertions(true),
 					helpers.KubernetesReferenceAssertions,
 				)
 
