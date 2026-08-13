@@ -60,6 +60,18 @@ type IonosCloudClusterSpec struct {
 	// LoadBalancerProviderRef is a reference to the load balancer provider configuration.
 	// An empty loadBalancerProviderRef field is allowed and means to disable any load balancer logic.
 	LoadBalancerProviderRef *corev1.LocalObjectReference `json:"loadBalancerProviderRef,omitempty"`
+
+	// FailureDomains is the list of availability zones that Machines can be spread across for
+	// higher availability. When set, Cluster API assigns one of these zones to each Machine's
+	// spec.failureDomain, and the IonosCloudMachine controller uses that assignment to set the
+	// VM's availabilityZone instead of the default AUTO placement.
+	//
+	// Leave unset to keep the current behavior of letting IONOS Cloud automatically place VMs.
+	//+kubebuilder:validation:MaxItems=2
+	//+kubebuilder:validation:XValidation:rule="self.all(z, z in ['ZONE_1', 'ZONE_2'])",message="failureDomains may only contain ZONE_1 or ZONE_2"
+	//+kubebuilder:validation:XValidation:rule="size(self) < 2 || self[0] != self[1]",message="failureDomains may not contain duplicate zones"
+	//+optional
+	FailureDomains []AvailabilityZone `json:"failureDomains,omitempty"`
 }
 
 // IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
@@ -83,6 +95,13 @@ type IonosCloudClusterStatus struct {
 	// ControlPlaneEndpointIPBlockID is the IONOS Cloud UUID for the control plane endpoint IP block.
 	//+optional
 	ControlPlaneEndpointIPBlockID string `json:"controlPlaneEndpointIPBlockID,omitempty"`
+
+	// FailureDomains lists the failure domains available to Machines assigned to this cluster,
+	// mirrored from spec.failureDomains. Cluster API core controllers read this field to
+	// distribute Machines (and, for domains marked ControlPlane, control plane Machines) across
+	// the listed zones.
+	//+optional
+	FailureDomains clusterv1.FailureDomains `json:"failureDomains,omitempty"`
 }
 
 //+kubebuilder:object:root=true

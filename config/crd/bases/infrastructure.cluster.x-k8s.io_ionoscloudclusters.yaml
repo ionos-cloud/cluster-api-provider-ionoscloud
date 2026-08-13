@@ -97,6 +97,25 @@ spec:
                 x-kubernetes-validations:
                 - message: credentialsRef.name must be provided
                   rule: has(self.name) && self.name != ''
+              failureDomains:
+                description: |-
+                  FailureDomains is the list of availability zones that Machines can be spread across for
+                  higher availability. When set, Cluster API assigns one of these zones to each Machine's
+                  spec.failureDomain, and the IonosCloudMachine controller uses that assignment to set the
+                  VM's availabilityZone instead of the default AUTO placement.
+
+                  Leave unset to keep the current behavior of letting IONOS Cloud automatically place VMs.
+                items:
+                  description: AvailabilityZone is the availability zone where different
+                    cloud resources are created in.
+                  type: string
+                maxItems: 2
+                type: array
+                x-kubernetes-validations:
+                - message: failureDomains may only contain ZONE_1 or ZONE_2
+                  rule: self.all(z, z in ['ZONE_1', 'ZONE_2'])
+                - message: failureDomains may not contain duplicate zones
+                  rule: size(self) < 2 || self[0] != self[1]
               loadBalancerProviderRef:
                 description: |-
                   LoadBalancerProviderRef is a reference to the load balancer provider configuration.
@@ -237,6 +256,29 @@ spec:
                   type: object
                 description: CurrentRequestByDatacenter maps data center IDs to a
                   pending provisioning request made during reconciliation.
+                type: object
+              failureDomains:
+                additionalProperties:
+                  description: |-
+                    FailureDomainSpec is the Schema for Cluster API failure domains.
+                    It allows controllers to understand how many failure domains a cluster can optionally span across.
+                  properties:
+                    attributes:
+                      additionalProperties:
+                        type: string
+                      description: attributes is a free form map of attributes an
+                        infrastructure provider might use or require.
+                      type: object
+                    controlPlane:
+                      description: controlPlane determines if this failure domain
+                        is suitable for use by control plane machines.
+                      type: boolean
+                  type: object
+                description: |-
+                  FailureDomains lists the failure domains available to Machines assigned to this cluster,
+                  mirrored from spec.failureDomains. Cluster API core controllers read this field to
+                  distribute Machines (and, for domains marked ControlPlane, control plane Machines) across
+                  the listed zones.
                 type: object
               ready:
                 description: Ready indicates that the cluster is ready.
