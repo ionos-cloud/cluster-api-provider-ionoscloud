@@ -69,6 +69,7 @@ type IonosCloudClusterSpec struct {
 	// Leave unset to keep the current behavior of letting IONOS Cloud automatically place VMs.
 	//+kubebuilder:validation:MaxItems=2
 	//+kubebuilder:validation:XValidation:rule="self.all(z, z in ['ZONE_1', 'ZONE_2'])",message="failureDomains may only contain ZONE_1 or ZONE_2"
+	//+kubebuilder:validation:XValidation:rule="size(self) < 2 || self[0] != self[1]",message="failureDomains may not contain duplicate zones"
 	//+optional
 	FailureDomains []AvailabilityZone `json:"failureDomains,omitempty"`
 }

@@ -114,6 +114,8 @@ spec:
                 x-kubernetes-validations:
                 - message: failureDomains may only contain ZONE_1 or ZONE_2
                   rule: self.all(z, z in ['ZONE_1', 'ZONE_2'])
+                - message: failureDomains may not contain duplicate zones
+                  rule: size(self) < 2 || self[0] != self[1]
               loadBalancerProviderRef:
                 description: |-
                   LoadBalancerProviderRef is a reference to the load balancer provider configuration.
