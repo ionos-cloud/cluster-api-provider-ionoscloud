@@ -382,8 +382,10 @@ func resolveAvailabilityZone(ms *scope.Machine, current infrav1.AvailabilityZone
 
 	failureDomain := ptr.Deref(ms.Machine.Spec.FailureDomain, "")
 	switch infrav1.AvailabilityZone(failureDomain) {
-	case infrav1.AvailabilityZoneOne, infrav1.AvailabilityZoneTwo:
+	case infrav1.AvailabilityZoneOne, infrav1.AvailabilityZoneTwo, infrav1.AvailabilityZoneThree:
 		return infrav1.AvailabilityZone(failureDomain)
+	case infrav1.AvailabilityZoneAuto:
+		return current
 	default:
 		return current
 	}
