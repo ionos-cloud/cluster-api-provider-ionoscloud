@@ -140,6 +140,8 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 	controllerutil.AddFinalizer(clusterScope.IonosCluster, infrav1.ClusterFinalizer)
 	log.V(4).Info("Reconciling IonosCloudCluster")
 
+	syncFailureDomains(clusterScope.IonosCluster)
+
 	requeue, err := r.checkRequestStatus(ctx, clusterScope, cloudService)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error when trying to determine in-flight request states: %w", err)
@@ -175,6 +177,22 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
 	clusterScope.IonosCluster.Status.Ready = true
 	return ctrl.Result{}, nil
+}
+
+// syncFailureDomains mirrors spec.FailureDomains into status.FailureDomains, marking every
+// domain suitable for control plane Machines. Cluster API's core controllers read
+// status.FailureDomains to distribute Machines (via Machine.Spec.FailureDomain) across them.
+func syncFailureDomains(ionosCluster *infrav1.IonosCloudCluster) {
+	if len(ionosCluster.Spec.FailureDomains) == 0 {
+		ionosCluster.Status.FailureDomains = nil
+		return
+	}
+
+	failureDomains := make(clusterv1.FailureDomains, len(ionosCluster.Spec.FailureDomains))
+	for _, zone := range ionosCluster.Spec.FailureDomains {
+		failureDomains[zone.String()] = clusterv1.FailureDomainSpec{ControlPlane: true}
+	}
+	ionosCluster.Status.FailureDomains = failureDomains
 }
 
 func (r *IonosCloudClusterReconciler) reconcileDelete(

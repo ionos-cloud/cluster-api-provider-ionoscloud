@@ -48,6 +48,30 @@ func (s *serverSuite) TestVolumeName() {
 	s.Equal(expected, volumeName)
 }
 
+func (s *serverSuite) TestResolveAvailabilityZoneUsesFailureDomainWhenAuto() {
+	s.machineScope.Machine.Spec.FailureDomain = ptr.To("ZONE_2")
+	zone := resolveAvailabilityZone(s.machineScope, infrav1.AvailabilityZoneAuto)
+	s.Equal(infrav1.AvailabilityZoneTwo, zone)
+}
+
+func (s *serverSuite) TestResolveAvailabilityZoneKeepsExplicitZone() {
+	s.machineScope.Machine.Spec.FailureDomain = ptr.To("ZONE_2")
+	zone := resolveAvailabilityZone(s.machineScope, infrav1.AvailabilityZoneOne)
+	s.Equal(infrav1.AvailabilityZoneOne, zone)
+}
+
+func (s *serverSuite) TestResolveAvailabilityZoneIgnoresUnknownFailureDomain() {
+	s.machineScope.Machine.Spec.FailureDomain = ptr.To("not-a-zone")
+	zone := resolveAvailabilityZone(s.machineScope, infrav1.AvailabilityZoneAuto)
+	s.Equal(infrav1.AvailabilityZoneAuto, zone)
+}
+
+func (s *serverSuite) TestResolveAvailabilityZoneNoFailureDomainSet() {
+	s.machineScope.Machine.Spec.FailureDomain = nil
+	zone := resolveAvailabilityZone(s.machineScope, infrav1.AvailabilityZoneAuto)
+	s.Equal(infrav1.AvailabilityZoneAuto, zone)
+}
+
 func (s *serverSuite) TestReconcileServerNoBootstrapSecret() {
 	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
 	s.True(requeue)

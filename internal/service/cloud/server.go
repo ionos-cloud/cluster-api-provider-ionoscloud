@@ -336,6 +336,7 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 
 	renderedData := s.renderUserData(ms, string(bootstrapData))
 	copySpec := ms.IonosMachine.Spec.DeepCopy()
+	copySpec.AvailabilityZone = resolveAvailabilityZone(ms, copySpec.AvailabilityZone)
 	entityParams := serverEntityParams{
 		boostrapData: renderedData,
 		machineSpec:  *copySpec,
@@ -366,6 +367,26 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 
 	log.V(4).Info("Done creating server")
 	return nil
+}
+
+// resolveAvailabilityZone returns the availability zone the server should be created in.
+//
+// An explicit, non-AUTO zone in the IonosCloudMachine spec always takes precedence. Otherwise,
+// if Cluster API assigned a failure domain to the owning Machine (see the IonosCloudCluster's
+// status.failureDomains), that zone is used instead of the default AUTO placement, spreading
+// Machines across the failure domains configured on the cluster.
+func resolveAvailabilityZone(ms *scope.Machine, current infrav1.AvailabilityZone) infrav1.AvailabilityZone {
+	if current != infrav1.AvailabilityZoneAuto {
+		return current
+	}
+
+	failureDomain := ptr.Deref(ms.Machine.Spec.FailureDomain, "")
+	switch infrav1.AvailabilityZone(failureDomain) {
+	case infrav1.AvailabilityZoneOne, infrav1.AvailabilityZoneTwo:
+		return infrav1.AvailabilityZone(failureDomain)
+	default:
+		return current
+	}
 }
 
 // buildServerProperties returns the server properties for the expected cloud server resource.
