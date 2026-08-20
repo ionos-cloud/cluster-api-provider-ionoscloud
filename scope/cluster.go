@@ -27,14 +27,21 @@ import (
 	"time"
 
 	"k8s.io/client-go/util/retry"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 )
+
+// ownedClusterConditions is the single source of truth for the condition types owned by the
+// cluster controller.
+var ownedClusterConditions = []string{
+	string(clusterv1.ReadyCondition),
+	string(infrav1.IonosCloudClusterReady),
+}
 
 // resolver is able to look up IP addresses from a given host name.
 // The net.Resolver type (found at net.DefaultResolver) implements this interface.
@@ -84,6 +91,11 @@ func NewCluster(params ClusterParams) (*Cluster, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init patch helper: %w", err)
 	}
+
+	// Backfill any condition left over from CAPIC <= v0.7 (empty Reason under the old v1beta1
+	// conditions API) now that the helper's "before" snapshot has already been captured, so the
+	// backfill shows up as a genuine, patchable change instead of being resent verbatim.
+	params.IonosCluster.Status.Conditions = infrav1.BackfillLegacyConditionReasons(params.IonosCluster.Status.Conditions)
 
 	clusterScope := &Cluster{
 		client:       params.Client,
@@ -202,9 +214,14 @@ func (c *Cluster) DeleteCurrentRequestByDatacenter(datacenterID string) {
 // PatchObject will apply all changes from the IonosCloudCluster.
 // It will also make sure to patch the status subresource.
 func (c *Cluster) PatchObject() error {
-	// always set the ready condition
-	conditions.SetSummary(c.IonosCluster,
-		conditions.WithConditions(infrav1.IonosCloudClusterReady))
+	// always set the ready condition summary; capture the error but do not return early —
+	// the patch must be attempted regardless (see NOTE below).
+	summaryErr := conditions.SetSummaryCondition(
+		c.IonosCluster,
+		c.IonosCluster,
+		string(clusterv1.ReadyCondition),
+		conditions.ForConditionTypes{string(infrav1.IonosCloudClusterReady)},
+	)
 
 	// NOTE(piepmatz): We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
 	//  aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation
@@ -212,11 +229,15 @@ func (c *Cluster) PatchObject() error {
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	return c.patchHelper.Patch(timeoutCtx, c.IonosCluster, patch.WithOwnedConditions{
-		Conditions: []clusterv1.ConditionType{
-			clusterv1.ReadyCondition,
+	// Ownership is derived from ownedClusterConditions — the single source of truth.
+	if patchErr := c.patchHelper.Patch(timeoutCtx, c.IonosCluster,
+		patch.WithOwnedConditions{
+			Conditions: ownedClusterConditions,
 		},
-	})
+	); patchErr != nil {
+		return patchErr
+	}
+	return summaryErr
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudCluster.

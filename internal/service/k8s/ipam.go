@@ -27,8 +27,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	ipamv1 "sigs.k8s.io/cluster-api/exp/ipam/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	ipamv1 "sigs.k8s.io/cluster-api/api/ipam/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -102,7 +102,8 @@ func (h *Helper) ReconcileIPAddressClaimsDeletion(ctx context.Context, machineSc
 	log.V(4).Info("removing finalizers from IPAddressClaims.")
 
 	formats := []string{ipV4Format, ipV6Format}
-	nicNames := []string{fmt.Sprintf(primaryNICFormat, machineScope.IonosMachine.Name)}
+	nicNames := make([]string, 0, 1+len(machineScope.IonosMachine.Spec.AdditionalNetworks))
+	nicNames = append(nicNames, fmt.Sprintf(primaryNICFormat, machineScope.IonosMachine.Name))
 
 	for _, network := range machineScope.IonosMachine.Spec.AdditionalNetworks {
 		nicName := fmt.Sprintf(additionalNICFormat, machineScope.IonosMachine.Name, network.NetworkID)
@@ -268,6 +269,10 @@ func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, 
 		return nil
 	}
 
+	if poolRef.APIGroup == nil {
+		return fmt.Errorf("pool reference for IPAddressClaim %q has no APIGroup", claimRef.Name)
+	}
+
 	desired := &ipamv1.IPAddressClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      claimRef.Name,
@@ -275,7 +280,7 @@ func (h *Helper) CreateIPAddressClaim(ctx context.Context, owner client.Object, 
 			Labels:    map[string]string{clusterv1.ClusterNameLabel: cluster},
 		},
 		Spec: ipamv1.IPAddressClaimSpec{
-			PoolRef: *poolRef,
+			PoolRef: toIPPoolRef(poolRef),
 		},
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, h.client, desired, func() error {
@@ -306,4 +311,18 @@ func (h *Helper) GetIPAddressClaim(ctx context.Context, key client.ObjectKey) (*
 	}
 
 	return out, nil
+}
+
+// toIPPoolRef converts a corev1.TypedLocalObjectReference to an ipamv1.IPPoolReference.
+// If APIGroup is nil it is left empty; callers that require a non-empty APIGroup must
+// validate poolRef before calling this function.
+func toIPPoolRef(ref *corev1.TypedLocalObjectReference) ipamv1.IPPoolReference {
+	r := ipamv1.IPPoolReference{
+		Name: ref.Name,
+		Kind: ref.Kind,
+	}
+	if ref.APIGroup != nil {
+		r.APIGroup = *ref.APIGroup
+	}
+	return r
 }

@@ -63,7 +63,7 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 	}
 
 	if ptr.Deref(imageSpec.Selector.UseMachineVersion, true) {
-		version := ptr.Deref(ms.Machine.Spec.Version, "")
+		version := ms.Machine.Spec.Version
 		if version == "" {
 			return "", errMissingMachineVersion
 		}

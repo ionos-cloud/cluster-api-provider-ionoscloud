@@ -14,23 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ptr
+package v1alpha1
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Test_PtrDeref(t *testing.T) {
-	type testType struct{}
+func Test_BackfillLegacyConditionReasons(t *testing.T) {
+	conditions := []metav1.Condition{
+		{Type: "Ready", Status: metav1.ConditionTrue, Reason: ""},
+		{Type: "MachineProvisioned", Status: metav1.ConditionTrue, Reason: "Provisioned"},
+	}
 
-	testTypeInstance := &testType{}
-	// check result types
-	require.IsType(t, testType{}, Deref(&testType{}, testType{}))
-	require.IsType(t, &testType{}, Deref(&testTypeInstance, &testType{}))
-	// validate that deref returns default when passing a nil value
-	var nilTestType *testType
-	require.Equal(t, testType{}, Deref(nilTestType, testType{}))
-	require.Equal(t, testType{}, Deref(nil, testType{}))
+	got := BackfillLegacyConditionReasons(conditions)
+
+	require.Equal(t, LegacyConditionMigratedReason, got[0].Reason,
+		"a condition written by CAPIC <= v0.7 (empty Reason) must be backfilled")
+	require.Equal(t, "Provisioned", got[1].Reason,
+		"a condition that already carries a Reason must be left untouched")
 }

@@ -22,11 +22,12 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -134,7 +135,7 @@ func (r *IonosCloudMachineReconciler) Reconcile(
 		return ctrl.Result{}, fmt.Errorf("failed to create ionos client: %w", err)
 	}
 
-	if !ionosCloudMachine.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !ionosCloudMachine.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, machineScope, cloudService)
 	}
 
@@ -299,13 +300,14 @@ func (*IonosCloudMachineReconciler) checkRequestStates(
 func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, ms *scope.Machine) bool {
 	log := ctrl.LoggerFrom(ctx)
 	// Make sure the infrastructure is ready.
-	if !ms.ClusterScope.Cluster.Status.InfrastructureReady {
+	if ms.ClusterScope.Cluster.Status.Initialization.InfrastructureProvisioned == nil || !*ms.ClusterScope.Cluster.Status.Initialization.InfrastructureProvisioned {
 		log.Info("Cluster infrastructure is not ready yet")
-		conditions.MarkFalse(
-			ms.IonosMachine,
-			infrav1.MachineProvisionedCondition,
-			infrav1.WaitingForClusterInfrastructureReason,
-			clusterv1.ConditionSeverityInfo, "")
+		conditions.Set(ms.IonosMachine, metav1.Condition{
+			Type:    string(infrav1.MachineProvisionedCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.WaitingForClusterInfrastructureReason,
+			Message: "Waiting for Cluster.Status.Initialization.InfrastructureProvisioned to become true.",
+		})
 
 		return false
 	}
@@ -313,12 +315,12 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	// Make sure to wait until the data secret was created
 	if ms.Machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret is not available yet")
-		conditions.MarkFalse(
-			ms.IonosMachine,
-			infrav1.MachineProvisionedCondition,
-			infrav1.WaitingForBootstrapDataReason,
-			clusterv1.ConditionSeverityInfo, "",
-		)
+		conditions.Set(ms.IonosMachine, metav1.Condition{
+			Type:    string(infrav1.MachineProvisionedCondition),
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.WaitingForBootstrapDataReason,
+			Message: "Waiting for bootstrap data secret to be available.",
+		})
 
 		return false
 	}
@@ -351,7 +353,7 @@ func (r *IonosCloudMachineReconciler) getClusterScope(
 		Name:      cluster.Spec.InfrastructureRef.Name,
 	}
 
-	if err := r.Client.Get(ctx, infraClusterName, ionosCloudCluster); err != nil {
+	if err := r.Get(ctx, infraClusterName, ionosCloudCluster); err != nil {
 		if apierrors.IsNotFound(err) {
 			// Cluster has not yet been created
 			return nil, nil

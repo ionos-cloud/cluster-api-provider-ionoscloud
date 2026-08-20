@@ -29,7 +29,6 @@ import (
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 type imageTestSuite struct {
@@ -99,7 +98,7 @@ func (s *imageTestSuite) TestLookupImageMissingMachineVersion() {
 	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "test", "loc"), nil).Once()
 	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
 
-	s.capiMachine.Spec.Version = ptr.To("")
+	s.capiMachine.Spec.Version = ""
 
 	_, err := s.service.lookupImageID(s.ctx, s.machineScope)
 	s.ErrorIs(err, errMissingMachineVersion)
@@ -114,8 +113,8 @@ func (s *imageTestSuite) TestLookupImageIgnoreMissingMachineVersion() {
 	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(s.makeTestImage("image-1", "test", "loc"), nil).Once()
 	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
 
-	s.infraMachine.Spec.Disk.Image.Selector.UseMachineVersion = ptr.To(false)
-	s.capiMachine.Spec.Version = ptr.To("")
+	s.infraMachine.Spec.Disk.Image.Selector.UseMachineVersion = new(false)
+	s.capiMachine.Spec.Version = ""
 
 	imageID, err := s.service.lookupImageID(s.ctx, s.machineScope)
 	s.NoError(err)
@@ -158,7 +157,7 @@ func (s *imageTestSuite) TestLookupImageNewestOK() {
 }
 
 func (s *imageTestSuite) makeTestImage(id, namePrefix, location string) *sdk.Image {
-	return makeTestImage(id, namePrefix+*s.capiMachine.Spec.Version, location)
+	return makeTestImage(id, namePrefix+s.capiMachine.Spec.Version, location)
 }
 
 func (s *imageTestSuite) makeTestImageWithDate(id, namePrefix, location string, createdDate time.Time) *sdk.Image {
@@ -233,7 +232,7 @@ func makeTestImage(id, name, location string) *sdk.Image {
 
 func makeTestLabel(typ, id, key, value string) sdk.Label {
 	return sdk.Label{
-		Id: ptr.To(fmt.Sprintf("urn:label:%s:%s:%s", typ, id, key)),
+		Id: new(fmt.Sprintf("urn:label:%s:%s:%s", typ, id, key)),
 		Properties: &sdk.LabelProperties{
 			Key:          &key,
 			Value:        &value,

@@ -5,39 +5,39 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: "v1.10.10"
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.10/core-components.yaml"
+    - name: "v1.11.11"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.11/core-components.yaml"
       type: url
-      contract: v1beta1
+      contract: v1beta2
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8443
       files:
-        - sourcePath: "../data/shared/v1.10/metadata.yaml"
+        - sourcePath: "../data/shared/v1.11/metadata.yaml"
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: "v1.10.10"
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.10/bootstrap-components.yaml"
+    - name: "v1.11.11"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.11/bootstrap-components.yaml"
       type: url
-      contract: v1beta1
+      contract: v1beta2
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8443
       files:
-        - sourcePath: "../data/shared/v1.10/metadata.yaml"
+        - sourcePath: "../data/shared/v1.11/metadata.yaml"
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-      - name: "v1.10.10"
-        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.10.10/control-plane-components.yaml"
+      - name: "v1.11.11"
+        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.11.11/control-plane-components.yaml"
         type: url
-        contract: v1beta1
+        contract: v1beta2
         replacements:
           - old: --metrics-addr=127.0.0.1:8080
             new: --metrics-addr=:8443
         files:
-          - sourcePath: "../data/shared/v1.10/metadata.yaml"
+          - sourcePath: "../data/shared/v1.11/metadata.yaml"
   - name: in-cluster
     type: IPAMProvider
     versions:
@@ -54,7 +54,7 @@ providers:
   - name: ionoscloud
     type: InfrastructureProvider
     versions:
-      - name: v0.7.99
+      - name: v0.8.99
         value: "../../../config/default"
         replacements:
           - old: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:dev
@@ -94,6 +94,7 @@ intervals:
   default/wait-worker-nodes: [ "30m", "10s" ]
   default/wait-delete-cluster: [ "30m", "10s" ]
   default/wait-nodes-ready: ["30m", "10s"]
+  default/wait-resource-versions-become-stable: ["5m", "10s"]
   scale/wait-cluster: ["30m", "10s"]
   scale/wait-control-plane: ["30m", "10s"]
   scale/wait-worker-nodes: ["30m", "10s"]

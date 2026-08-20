@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 const (
@@ -29,6 +29,9 @@ const (
 
 	// IonosCloudClusterReady is the condition for the IonosCloudCluster, which indicates that the cluster is ready.
 	IonosCloudClusterReady clusterv1.ConditionType = "ClusterReady"
+
+	// ClusterProvisionedReason documents that the IonosCloudCluster infrastructure has been fully provisioned and is ready.
+	ClusterProvisionedReason = "Provisioned"
 
 	// IonosCloudClusterKind is the string resource kind of the IonosCloudCluster resource.
 	IonosCloudClusterKind = "IonosCloudCluster"
@@ -43,7 +46,7 @@ type IonosCloudClusterSpec struct {
 	//
 	// TODO(gfariasalves): as of now, IP must be provided by the user as we still don't insert the
 	// provider-provided block IP into the kube-vip manifest.
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty,omitzero"`
 
 	// Location is the location where the data centers should be located.
 	//
@@ -64,13 +67,19 @@ type IonosCloudClusterSpec struct {
 
 // IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
 type IonosCloudClusterStatus struct {
-	// Ready indicates that the cluster is ready.
+	// Initialization provides observations of the IonosCloudCluster initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial
+	// cluster provisioning. The value of these fields is never updated after initial provisioning is completed.
+	// Use conditions to monitor the operational state of the cluster's infrastructure.
 	//+optional
-	Ready bool `json:"ready,omitempty"`
+	Initialization IonosCloudClusterInitializationStatus `json:"initialization,omitempty,omitzero"`
 
-	// Conditions defines current service state of the IonosCloudCluster.
+	// Conditions represents the observations of the current state of the IonosCloudCluster.
 	//+optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	//+listType=map
+	//+listMapKey=type
+	//+kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// CurrentRequestByDatacenter maps data center IDs to a pending provisioning request made during reconciliation.
 	//+optional
@@ -85,11 +94,22 @@ type IonosCloudClusterStatus struct {
 	ControlPlaneEndpointIPBlockID string `json:"controlPlaneEndpointIPBlockID,omitempty"`
 }
 
+// IonosCloudClusterInitializationStatus provides observations of the IonosCloudCluster initialization process.
+// +kubebuilder:validation:MinProperties=1
+type IonosCloudClusterInitializationStatus struct {
+	// Provisioned is true when the infrastructure cluster is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract and is used to orchestrate provisioning.
+	// The value of this field is never updated after initial provisioning is completed.
+	//+optional
+	Provisioned *bool `json:"provisioned,omitempty"`
+}
+
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=ionoscloudclusters,scope=Namespaced,categories=cluster-api;ionoscloud,shortName=icc
+//+kubebuilder:metadata:annotations="cluster.x-k8s.io/v1beta2=v1alpha1"
 //+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
-//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Cluster infrastructure is ready"
+//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.initialization.provisioned",description="Cluster infrastructure is ready"
 //+kubebuilder:printcolumn:name="Endpoint",type="string",JSONPath=".spec.controlPlaneEndpoint",description="API Endpoint"
 
 // IonosCloudCluster is the Schema for the ionoscloudclusters API.
@@ -114,13 +134,13 @@ func init() {
 	objectTypes = append(objectTypes, &IonosCloudCluster{}, &IonosCloudClusterList{})
 }
 
-// GetConditions returns the conditions from the status.
-func (i *IonosCloudCluster) GetConditions() clusterv1.Conditions {
+// GetConditions returns the v1beta2 conditions from status.conditions.
+func (i *IonosCloudCluster) GetConditions() []metav1.Condition {
 	return i.Status.Conditions
 }
 
-// SetConditions sets the conditions in the status.
-func (i *IonosCloudCluster) SetConditions(conditions clusterv1.Conditions) {
+// SetConditions sets the v1beta2 conditions in status.conditions.
+func (i *IonosCloudCluster) SetConditions(conditions []metav1.Condition) {
 	i.Status.Conditions = conditions
 }
 
