@@ -21,7 +21,10 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
+	"slices"
+	"strings"
 
 	"github.com/spf13/pflag"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -43,6 +46,29 @@ import (
 )
 
 const errMsgUnableToCreateController = "unable to create controller"
+
+// validSkipCRDMigrationPhases are the phases accepted by --skip-crd-migration-phases. It is
+// derived from the CAPI constants that crdmigrator.setup() switches on, so the flag's help text
+// and validation cannot drift from what the migrator actually accepts.
+var validSkipCRDMigrationPhases = []string{
+	string(crdmigrator.StorageVersionMigrationPhase),
+	string(crdmigrator.CleanupManagedFieldsPhase),
+}
+
+// validateSkipCRDMigrationPhases rejects unknown --skip-crd-migration-phases values at startup.
+// crdmigrator.setup() also rejects them, but only during controller setup, after the manager has
+// been built, and it surfaces as a generic "unable to create controller" that does not say which
+// value was wrong.
+func validateSkipCRDMigrationPhases(phases []string) error {
+	for _, phase := range phases {
+		if !slices.Contains(validSkipCRDMigrationPhases, phase) {
+			return fmt.Errorf("invalid --skip-crd-migration-phases value %q: valid values are %s",
+				phase, strings.Join(validSkipCRDMigrationPhases, ", "))
+		}
+	}
+
+	return nil
+}
 
 var (
 	scheme                 = runtime.NewScheme()
@@ -82,6 +108,11 @@ func main() {
 	ctrl.SetLogger(klog.Background())
 	initFlags()
 	pflag.Parse()
+
+	if err := validateSkipCRDMigrationPhases(skipCRDMigrationPhases); err != nil {
+		setupLog.Error(err, "invalid flag value")
+		os.Exit(1)
+	}
 
 	_, metricsOptions, err := flags.GetManagerOptions(managerOptions)
 	if err != nil {
@@ -182,7 +213,7 @@ func initFlags() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	pflag.StringArrayVar(&skipCRDMigrationPhases, "skip-crd-migration-phases", []string{},
-		"CRD migration phases to skip. Valid values are: All, StorageVersionMigration, CleanupManagedFields.")
+		"CRD migration phases to skip. Valid values are: "+strings.Join(validSkipCRDMigrationPhases, ", ")+".")
 	pflag.IntVar(&icClusterConcurrency, "ionoscloudcluster-concurrency", 1,
 		"Number of IonosCloudClusters to process simultaneously")
 	pflag.IntVar(&icMachineConcurrency, "ionoscloudmachine-concurrency", 1,
