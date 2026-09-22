@@ -47,18 +47,15 @@ import (
 
 const errMsgUnableToCreateController = "unable to create controller"
 
-// validSkipCRDMigrationPhases are the phases accepted by --skip-crd-migration-phases. It is
-// derived from the CAPI constants that crdmigrator.setup() switches on, so the flag's help text
-// and validation cannot drift from what the migrator actually accepts.
+// validSkipCRDMigrationPhases are the phases crdmigrator.setup() accepts. Derived from its
+// constants so the help text and validation cannot drift.
 var validSkipCRDMigrationPhases = []string{
 	string(crdmigrator.StorageVersionMigrationPhase),
 	string(crdmigrator.CleanupManagedFieldsPhase),
 }
 
-// validateSkipCRDMigrationPhases rejects unknown --skip-crd-migration-phases values at startup.
-// crdmigrator.setup() also rejects them, but only during controller setup, after the manager has
-// been built, and it surfaces as a generic "unable to create controller" that does not say which
-// value was wrong.
+// validateSkipCRDMigrationPhases rejects unknown values at startup, where the error can name the
+// offending value, rather than during controller setup where crdmigrator reports it generically.
 func validateSkipCRDMigrationPhases(phases []string) error {
 	for _, phase := range phases {
 		if !slices.Contains(validSkipCRDMigrationPhases, phase) {

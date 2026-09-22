@@ -168,18 +168,10 @@ variables:
   # allowing the same e2e config file to be reused in different Prow jobs e.g. each one with a K8s version permutation.
   # The following Kubernetes versions should be the latest versions with already published kindest/node images.
   # This avoids building node images in the default case which improves the test duration significantly.
-  #
-  # KUBERNETES_VERSION is the workload cluster version. It must match the IONOS node image
-  # the machines boot (IONOSCLOUD_MACHINE_IMAGE_ID), otherwise kubeadm and kubelet on the
-  # node disagree with the requested control plane version and the suite waits for nodes
-  # that never appear. v1.30 remains supported for workload clusters on CAPI v1.12.
+  # Workload version: must match the IONOS node image (IONOSCLOUD_MACHINE_IMAGE_ID).
   KUBERNETES_VERSION: "v1.30.6"
   IP_FAMILY: "ipv4"
-  # KUBERNETES_VERSION_MANAGEMENT is the kind bootstrap cluster version (suite_test.go).
-  # It has different constraints: it must sit inside the CAPI release's supported
-  # management range -- v1.31 to v1.34 for v1.12, where v1.29/v1.30 are workload-only --
-  # and have a pre-built kindest/node image in cluster-api/test's kind mapper, since
-  # GetMapping needs an exact patch match and otherwise falls back to an unpinned tag.
+  # Management (kind) version: must be in CAPI's supported management range, v1.31-v1.34 for v1.12.
   KUBERNETES_VERSION_MANAGEMENT: "v1.33.7"
   CNI: "./data/cni/calico.yaml"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
@@ -204,12 +196,9 @@ intervals:
   default/wait-delete-cluster: [ "30m", "10s" ]
   default/wait-nodes-ready: ["30m", "10s"]
   default/wait-resource-versions-become-stable: ["5m", "10s"]
-  # Read by ClusterctlUpgradeSpec. A missing key makes GetIntervals return nil, which
-  # Eventually silently treats as Gomega's ~1s default -- producing near-instant timeouts
-  # that look like product bugs rather than a config gap.
+  # Upgrade spec intervals; values match upstream's docker.yaml. A missing key yields nil,
+  # which Eventually treats as Gomega's ~1s default.
   default/wait-resource-versions-remain-stable: ["2m", "5s"]
-  # Read by cluster_upgrade.go, cluster_upgrade_runtimesdk.go and self_hosted.go. Values
-  # match upstream's docker.yaml so the upgrade specs behave the same here.
   default/wait-control-plane-upgrade: ["15m", "10s"]
   default/wait-machine-deployment-upgrade: ["10m", "10s"]
   scale/wait-cluster: ["30m", "10s"]
