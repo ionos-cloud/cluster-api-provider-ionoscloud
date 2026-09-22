@@ -39,7 +39,7 @@ import (
 // machine controller.
 var ownedMachineConditions = []string{
 	string(clusterv1.ReadyCondition),
-	string(infrav1.MachineProvisionedCondition),
+	infrav1.MachineProvisionedCondition,
 }
 
 // Machine defines a basic machine context for primary use in IonosCloudMachineReconciler.
@@ -188,7 +188,7 @@ func (m *Machine) PatchObject() error {
 		m.IonosMachine,
 		m.IonosMachine,
 		string(clusterv1.ReadyCondition),
-		conditions.ForConditionTypes{string(infrav1.MachineProvisionedCondition)},
+		conditions.ForConditionTypes{infrav1.MachineProvisionedCondition},
 	)
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)

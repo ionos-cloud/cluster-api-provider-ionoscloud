@@ -40,7 +40,7 @@ import (
 // cluster controller.
 var ownedClusterConditions = []string{
 	string(clusterv1.ReadyCondition),
-	string(infrav1.IonosCloudClusterReady),
+	infrav1.IonosCloudClusterReady,
 }
 
 // resolver is able to look up IP addresses from a given host name.
@@ -220,7 +220,7 @@ func (c *Cluster) PatchObject() error {
 		c.IonosCluster,
 		c.IonosCluster,
 		string(clusterv1.ReadyCondition),
-		conditions.ForConditionTypes{string(infrav1.IonosCloudClusterReady)},
+		conditions.ForConditionTypes{infrav1.IonosCloudClusterReady},
 	)
 
 	// NOTE(piepmatz): We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
