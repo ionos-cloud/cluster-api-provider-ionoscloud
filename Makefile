@@ -174,8 +174,8 @@ KUBECTL ?= kubectl
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-GOLANGCI ?= go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
-MOCKERY ?= go run github.com/vektra/mockery/v2@v2.53.5
+GOLANGCI ?= go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
+MOCKERY ?= go run github.com/vektra/mockery/v2@v2.53.7
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.7.1
