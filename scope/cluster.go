@@ -239,10 +239,8 @@ func (c *Cluster) PatchObject() error {
 		return patchErr
 	}
 
-	// Logged, not returned: Finalize retries on any error, so a persistent summary failure
-	// would re-patch on every backoff step without ever resolving. The condition is
-	// observability only -- CAPI mirrors it onto Cluster InfrastructureReady but falls back
-	// to status.initialization.provisioned when it is absent.
+	// Logged, not returned: Finalize retries on any error, and the condition is observability
+	// only -- CAPI falls back to status.initialization.provisioned when it is absent.
 	if summaryErr != nil {
 		ctrl.Log.WithName("scope.Cluster").Error(summaryErr,
 			"failed to set the Ready summary condition",
