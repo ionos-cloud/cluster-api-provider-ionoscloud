@@ -122,13 +122,13 @@ providers:
   - name: in-cluster
     type: IPAMProvider
     versions:
-      - name: v1.0.0
+      - name: v1.1.1
         # Use manifest from source files
-        value: "https://github.com/kubernetes-sigs/cluster-api-ipam-provider-in-cluster/releases/download/v1.0.0/ipam-components.yaml"
+        value: "https://github.com/kubernetes-sigs/cluster-api-ipam-provider-in-cluster/releases/download/v1.1.1/ipam-components.yaml"
         type: url
-        contract: v1beta1
+        contract: v1beta2
         files:
-          - sourcePath: "../data/shared/capi-ipam/v1.0/metadata.yaml"
+          - sourcePath: "../data/shared/capi-ipam/v1.1/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
@@ -168,8 +168,19 @@ variables:
   # allowing the same e2e config file to be reused in different Prow jobs e.g. each one with a K8s version permutation.
   # The following Kubernetes versions should be the latest versions with already published kindest/node images.
   # This avoids building node images in the default case which improves the test duration significantly.
+  #
+  # KUBERNETES_VERSION is the workload cluster version. It must match the IONOS node image
+  # the machines boot (IONOSCLOUD_MACHINE_IMAGE_ID), otherwise kubeadm and kubelet on the
+  # node disagree with the requested control plane version and the suite waits for nodes
+  # that never appear. v1.30 remains supported for workload clusters on CAPI v1.12.
   KUBERNETES_VERSION: "v1.30.6"
   IP_FAMILY: "ipv4"
+  # KUBERNETES_VERSION_MANAGEMENT is the kind bootstrap cluster version (suite_test.go).
+  # It has different constraints: it must sit inside the CAPI release's supported
+  # management range -- v1.31 to v1.34 for v1.12, where v1.29/v1.30 are workload-only --
+  # and have a pre-built kindest/node image in cluster-api/test's kind mapper, since
+  # GetMapping needs an exact patch match and otherwise falls back to an unpinned tag.
+  KUBERNETES_VERSION_MANAGEMENT: "v1.33.7"
   CNI: "./data/cni/calico.yaml"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   CLUSTER_NAME: "e2e-cluster-${RANDOM}"
@@ -192,6 +203,7 @@ intervals:
   default/wait-worker-nodes: [ "30m", "10s" ]
   default/wait-delete-cluster: [ "30m", "10s" ]
   default/wait-nodes-ready: ["30m", "10s"]
+  default/wait-resource-versions-become-stable: ["5m", "10s"]
   scale/wait-cluster: ["30m", "10s"]
   scale/wait-control-plane: ["30m", "10s"]
   scale/wait-worker-nodes: ["30m", "10s"]

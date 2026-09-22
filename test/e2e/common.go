@@ -27,9 +27,16 @@ import (
 
 // Test suite constants for e2e config variables.
 const (
-	CNIPath           = "CNI"
-	CNIResources      = "CNI_RESOURCES"
+	CNIPath      = "CNI"
+	CNIResources = "CNI_RESOURCES"
+	// KubernetesVersion is the version of the workload clusters the specs create.
 	KubernetesVersion = "KUBERNETES_VERSION"
+	// KubernetesVersionManagement is the version of the kind bootstrap cluster. It is kept
+	// separate from KubernetesVersion because the two have different constraints: the
+	// management cluster must be within the CAPI release's supported management range and
+	// have a pre-built kindest/node image, while the workload version must match the IONOS
+	// node image the machines boot.
+	KubernetesVersionManagement = "KUBERNETES_VERSION_MANAGEMENT"
 
 	defaultCloudResourceNamePrefix = "capic-e2e-test-"
 )

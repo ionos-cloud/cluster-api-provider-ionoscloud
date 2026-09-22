@@ -28,6 +28,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -205,7 +206,15 @@ func (m *Machine) PatchObject() error {
 	); patchErr != nil {
 		return patchErr
 	}
-	return summaryErr
+
+	// Logged, not returned: see the equivalent note in scope/cluster.go PatchObject.
+	if summaryErr != nil {
+		ctrl.Log.WithName("scope.Machine").Error(summaryErr,
+			"failed to set the Ready summary condition",
+			"ionoscloudmachine", m.IonosMachine.Name, "namespace", m.IonosMachine.Namespace)
+	}
+
+	return nil
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudMachine.
