@@ -25,15 +25,23 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/patch"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
+
+// ownedMachineConditions is the single source of truth for the condition types owned by the
+// machine controller.
+var ownedMachineConditions = []string{
+	string(clusterv1.ReadyCondition),
+	string(infrav1.MachineProvisionedCondition),
+}
 
 // Machine defines a basic machine context for primary use in IonosCloudMachineReconciler.
 type Machine struct {
@@ -78,6 +86,12 @@ func NewMachine(params MachineParams) (*Machine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init patch helper: %w", err)
 	}
+
+	// Backfill any condition left over from CAPIC <= v0.7 (empty Reason under the old v1beta1
+	// conditions API) now that the helper's "before" snapshot has already been captured, so the
+	// backfill shows up as a genuine, patchable change instead of being resent verbatim.
+	params.IonosMachine.Status.Conditions = infrav1.BackfillLegacyConditionReasons(params.IonosMachine.Status.Conditions)
+
 	return &Machine{
 		client:       params.Client,
 		patchHelper:  helper,
@@ -119,7 +133,7 @@ func (m *Machine) DatacenterID() string {
 
 // SetProviderID sets the provider ID for the IonosCloudMachine.
 func (m *Machine) SetProviderID(id string) {
-	m.IonosMachine.Spec.ProviderID = ptr.To("ionos://" + id)
+	m.IonosMachine.Spec.ProviderID = "ionos://" + id
 }
 
 // CountMachines returns the number of existing IonosCloudMachines in the same namespace
@@ -171,9 +185,12 @@ func (m *Machine) FindLatestMachine(
 // PatchObject will apply all changes from the IonosMachine.
 // It will also make sure to patch the status subresource.
 func (m *Machine) PatchObject() error {
-	conditions.SetSummary(m.IonosMachine,
-		conditions.WithConditions(
-			infrav1.MachineProvisionedCondition))
+	summaryErr := conditions.SetSummaryCondition(
+		m.IonosMachine,
+		m.IonosMachine,
+		string(clusterv1.ReadyCondition),
+		conditions.ForConditionTypes{string(infrav1.MachineProvisionedCondition)},
+	)
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -181,13 +198,23 @@ func (m *Machine) PatchObject() error {
 	// We don't accept and forward a context here. This is on purpose: Even if a reconciliation is
 	// aborted, we want to make sure that the final patch is applied. Reusing the context from the reconciliation
 	// would cause the patch to be aborted as well.
-	return m.patchHelper.Patch(
+	if patchErr := m.patchHelper.Patch(
 		timeoutCtx,
 		m.IonosMachine,
-		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
-			clusterv1.ReadyCondition,
-			infrav1.MachineProvisionedCondition,
-		}})
+		// Ownership is derived from ownedMachineConditions — the single source of truth.
+		patch.WithOwnedConditions{Conditions: ownedMachineConditions},
+	); patchErr != nil {
+		return patchErr
+	}
+
+	// Logged, not returned: see the equivalent note in scope/cluster.go PatchObject.
+	if summaryErr != nil {
+		ctrl.Log.WithName("scope.Machine").Error(summaryErr,
+			"failed to set the Ready summary condition",
+			"ionoscloudmachine", m.IonosMachine.Name, "namespace", m.IonosMachine.Namespace)
+	}
+
+	return nil
 }
 
 // Finalize will make sure to apply a patch to the current IonosCloudMachine.

@@ -62,8 +62,7 @@ func isNotFound(err error) bool {
 		return false
 	}
 
-	var target sdk.GenericOpenAPIError
-	if errors.As(err, &target) {
+	if target, ok := errors.AsType[sdk.GenericOpenAPIError](err); ok {
 		return target.StatusCode() == http.StatusNotFound
 	}
 

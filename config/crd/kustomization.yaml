@@ -8,8 +8,14 @@ resources:
 - bases/infrastructure.cluster.x-k8s.io_ionoscloudmachinetemplates.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
+# https://cluster-api.sigs.k8s.io/developer/providers/contracts.html#api-version-labels
+# Only v1beta2 is advertised: v0.8 dropped status.ready, which is the field the v1beta1
+# contract reads for provisioning (CAPI internal/contract/infrastructure_cluster.go
+# Provisioned("v1beta1") -> status.ready). Keeping the v1beta1 label would make a
+# v1beta1-only core accept this provider and then poll a field that no longer exists,
+# hanging silently instead of failing with "no versions matching contract".
 commonLabels:
-  cluster.x-k8s.io/v1beta1: v1alpha1 #https://cluster-api.sigs.k8s.io/developer/providers/contracts.html#api-version-labels
+  cluster.x-k8s.io/v1beta2: v1alpha1
 
 patches:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
