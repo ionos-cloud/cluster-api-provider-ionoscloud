@@ -82,6 +82,7 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 					ClusterProxy:             proxy,
 					Namespace:                namespace,
 					OwnerGraphFilterFunction: clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
+					WaitToBecomeStable:       e2eConfig.GetIntervals("default", "wait-resource-versions-become-stable"),
 				})
 			},
 		}
