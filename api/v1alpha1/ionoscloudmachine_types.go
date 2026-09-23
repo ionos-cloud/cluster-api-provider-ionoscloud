@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 const (
@@ -35,7 +34,7 @@ const (
 
 	// MachineProvisionedCondition documents the status of the provisioning of a IonosCloudMachine and
 	// the underlying VM.
-	MachineProvisionedCondition clusterv1.ConditionType = "MachineProvisioned"
+	MachineProvisionedCondition string = "MachineProvisioned"
 
 	// WaitingForClusterInfrastructureReason (Severity=Info) indicates that the IonosCloudMachine is currently
 	// waiting for the cluster infrastructure to become ready.
