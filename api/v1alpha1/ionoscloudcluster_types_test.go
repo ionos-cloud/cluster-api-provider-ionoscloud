@@ -100,13 +100,22 @@ var _ = Describe("IonosCloudCluster", func() {
 		})
 
 		When("trying to update the control plane endpoint", func() {
-			It("should fail when attempting to set an invalid port number", func() {
+			It("should fail when attempting to set an out-of-range port number", func() {
 				cluster := defaultCluster()
 				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
 
-				cluster.Spec.ControlPlaneEndpoint.Port = 0
+				cluster.Spec.ControlPlaneEndpoint.Port = 65536
 				Expect(k8sClient.Update(context.Background(), cluster)).
-					Should(MatchError(ContainSubstring("port must be within 1-65535")))
+					Should(MatchError(ContainSubstring("65535")))
+			})
+			It("should allow clearing the port, which the provider defaults to 6443", func() {
+				cluster := defaultCluster()
+				Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+				// v1beta2 made APIEndpoint.Port optional, so 0 serialises as absent and
+				// means "unset" rather than "invalid".
+				cluster.Spec.ControlPlaneEndpoint.Port = 0
+				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
 			})
 			It("should not fail when updating the endpoint correctly", func() {
 				cluster := defaultCluster()
