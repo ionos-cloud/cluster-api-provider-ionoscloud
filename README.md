@@ -47,19 +47,22 @@ This provider requires **Go 1.26 or newer**. The exact version is specified in `
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|                       | Cluster API v1beta1 (v1.8) | Cluster API v1beta1 (v1.9) | Cluster API v1beta1 (v1.10) | Cluster API v1beta1/v1beta2 (v1.11) |
-|-----------------------|:--------------------------:|:--------------------------:|:---------------------------:|:-----------------------------------:|
-| CAPIC v1alpha1 (v0.4) |             ✓              |             ☓              |              ☓              |                  ☓                  |
-| CAPIC v1alpha1 (v0.5) |             ✓              |             ☓              |              ☓              |                  ☓                  |
-| CAPIC v1alpha1 (v0.6) |             ✓              |             ✓              |              ✓              |                  ✓                  |
-| CAPIC v1alpha1 (v0.7) |             ☓              |             ☓              |              ✓              |                  ✓                  |
-| CAPIC v1alpha1 (v0.8) |             ☓              |             ☓              |              ☓              |                  ✓                  |
+|                       | Cluster API v1beta1 (v1.8) | Cluster API v1beta1 (v1.9) | Cluster API v1beta1 (v1.10) | Cluster API v1beta1/v1beta2 (v1.11) | Cluster API v1beta1/v1beta2 (v1.12) |
+|-----------------------|:--------------------------:|:--------------------------:|:---------------------------:|:-----------------------------------:|:-----------------------------------:|
+| CAPIC v1alpha1 (v0.4) |             ✓              |             ☓              |              ☓              |                  ☓                  |                  ☓                  |
+| CAPIC v1alpha1 (v0.5) |             ✓              |             ☓              |              ☓              |                  ☓                  |                  ☓                  |
+| CAPIC v1alpha1 (v0.6) |             ✓              |             ✓              |              ✓              |                  ✓                  |                  ☓                  |
+| CAPIC v1alpha1 (v0.7) |             ☓              |             ☓              |              ✓              |                  ✓                  |                  ✓                  |
+| CAPIC v1alpha1 (v0.8) |             ☓              |             ☓              |              ☓              |                  ✓                  |                  ✓                  |
 
 > **v0.8 declares the Cluster API `v1beta2` contract and drops `v1beta1`.** It requires a
 > `v1beta2`-capable core (CAPI v1.11+). The deprecated `status.ready` and v1beta1
 > `status.conditions` fields are removed — read `status.initialization.provisioned` and
 > `status.conditions` instead. Upgrade existing clusters via the staged path
 > `v0.6 → v0.7 → v0.8`.
+
+> `☓` means not validated. CAPI v1.11–v1.13 still accept the `v1beta1` contract, so
+> older CAPIC releases may keep working past their last `✓` column — just untested.
 
 ### Kubernetes Versions
 
