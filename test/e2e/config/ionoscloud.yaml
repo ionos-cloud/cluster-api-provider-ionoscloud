@@ -73,7 +73,7 @@ variables:
   # This avoids building node images in the default case which improves the test duration significantly.
   # Workload version: must match the IONOS node image (IONOSCLOUD_MACHINE_IMAGE_ID).
   KUBERNETES_VERSION: "v1.30.6"
-  # Management (kind) version: must be in CAPI's supported management range, v1.31-v1.34 for v1.12.
+  # Management (kind) version: must be in CAPI's supported management range, v1.31-v1.35 for v1.12.
   KUBERNETES_VERSION_MANAGEMENT: "v1.33.7"
   CNI: "./data/cni/calico.yaml"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
