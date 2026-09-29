@@ -201,7 +201,6 @@ func setupCRDMigrator(ctx context.Context, mgr ctrl.Manager) error {
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: 1})
 }
 
-// initFlags parses the command line flags.
 // controllerOptions returns the options for one of the provider's controllers.
 // controller-runtime v0.23 defaults to a per-item-only rate limiter when the priority queue is on.
 // Keep the classic one (per-item backoff plus a global 10 qps / 100 burst bucket) so shared failures,
@@ -214,6 +213,7 @@ func controllerOptions(concurrency int) controller.Options {
 	}
 }
 
+// initFlags parses the command line flags.
 func initFlags() {
 	klog.InitFlags(nil)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
