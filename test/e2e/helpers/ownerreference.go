@@ -40,7 +40,6 @@ var (
 	coreGroupVersion = clusterv1.GroupVersion.String()
 
 	clusterOwner      = metav1.OwnerReference{Kind: clusterv1.ClusterKind, APIVersion: coreGroupVersion}
-	clusterController = metav1.OwnerReference{Kind: clusterv1.ClusterKind, APIVersion: coreGroupVersion, Controller: new(true)}
 	machineController = metav1.OwnerReference{Kind: "Machine", APIVersion: coreGroupVersion, Controller: new(true)}
 )
 
@@ -72,8 +71,9 @@ var IonosCloudInfraOwnerReferenceAssertions = map[string]func(types.NamespacedNa
 		return framework.HasExactOwners(owners, clusterOwner)
 	},
 	infrav1.IonosCloudClusterKind: func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
-		// IonosCloudCluster must be owned and controlled by a Cluster.
-		return framework.HasExactOwners(owners, clusterController)
+		// Since CAPI v1.13 the Cluster only controls its InfraCluster when spec.topology is set
+		// (kubernetes-sigs/cluster-api#13332); our templates don't use a ClusterClass.
+		return framework.HasExactOwners(owners, clusterOwner)
 	},
 }
 
