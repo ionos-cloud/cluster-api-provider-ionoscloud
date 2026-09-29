@@ -44,6 +44,13 @@ const (
 	// creating the bootstrap data secret and store it in the Cluster API Machine.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
 
+	// MachineProvisioningReason indicates that provisioning of the IonosCloudMachine is in progress.
+	MachineProvisioningReason = "Provisioning"
+
+	// MachineProvisioningFailedReason indicates that the last provisioning attempt failed.
+	// The condition message carries the error; provisioning is retried.
+	MachineProvisioningFailedReason = "ProvisioningFailed"
+
 	// MachineProvisionedReason documents that the IonosCloudMachine has been successfully provisioned.
 	MachineProvisionedReason = "Provisioned"
 

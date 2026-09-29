@@ -39,6 +39,7 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/k8s"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -183,10 +184,13 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		{"FinalizeMachineProvisioning", cloudService.FinalizeMachineProvisioning},
 	}
 
+	setProvisioningCondition(machineScope.IonosMachine, nil)
+
 	for _, step := range reconcileSequence {
 		if requeue, err := step.fn(ctx, machineScope); err != nil || requeue {
 			if err != nil {
 				err = fmt.Errorf("error in step %s: %w", step.name, err)
+				setProvisioningCondition(machineScope.IonosMachine, err)
 			}
 
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
@@ -326,6 +330,25 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	}
 
 	return true
+}
+
+// setProvisioningCondition keeps MachineProvisioned in step with the current provisioning attempt, so it
+// doesn't keep showing an earlier "waiting" reason. Once provisioned it stays True: a transient API error
+// must not mark a running machine as unprovisioned.
+func setProvisioningCondition(ionosMachine *infrav1.IonosCloudMachine, err error) {
+	if ptr.Deref(ionosMachine.Status.Initialization.Provisioned, false) {
+		return
+	}
+	condition := metav1.Condition{
+		Type:   infrav1.MachineProvisionedCondition,
+		Status: metav1.ConditionFalse,
+		Reason: infrav1.MachineProvisioningReason,
+	}
+	if err != nil {
+		condition.Reason = infrav1.MachineProvisioningFailedReason
+		condition.Message = err.Error()
+	}
+	conditions.Set(ionosMachine, condition)
 }
 
 // SetupWithManager sets up the controller with the Manager.
