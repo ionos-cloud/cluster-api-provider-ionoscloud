@@ -147,7 +147,7 @@ func (s *Service) ReconcileServerDeletion(ctx context.Context, ms *scope.Machine
 func (*Service) FinalizeMachineProvisioning(_ context.Context, ms *scope.Machine) (bool, error) {
 	ms.IonosMachine.Status.Initialization.Provisioned = new(true)
 	conditions.Set(ms.IonosMachine, metav1.Condition{
-		Type:   string(infrav1.MachineProvisionedCondition),
+		Type:   infrav1.MachineProvisionedCondition,
 		Status: metav1.ConditionTrue,
 		Reason: infrav1.MachineProvisionedReason,
 	})
