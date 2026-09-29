@@ -48,7 +48,7 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 				// This check ensures that owner references are resilient - i.e. correctly re-reconciled - when removed.
 				framework.ValidateOwnerReferencesResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
 					framework.CoreOwnerReferenceAssertion,
-					helpers.ExpOwnerReferenceAssertions,
+					framework.ExpOwnerReferenceAssertions,
 					helpers.IonosCloudInfraOwnerReferenceAssertions,
 					framework.KubeadmBootstrapOwnerReferenceAssertions,
 					framework.KubeadmControlPlaneOwnerReferenceAssertions(false),
@@ -57,7 +57,7 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 				// This check ensures that owner references are correctly updated to the correct apiVersion.
 				framework.ValidateOwnerReferencesOnUpdate(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
 					framework.CoreOwnerReferenceAssertion,
-					helpers.ExpOwnerReferenceAssertions,
+					framework.ExpOwnerReferenceAssertions,
 					helpers.IonosCloudInfraOwnerReferenceAssertions,
 					framework.KubeadmBootstrapOwnerReferenceAssertions,
 					framework.KubeadmControlPlaneOwnerReferenceAssertions(false),
@@ -72,7 +72,7 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 					framework.CoreFinalizersAssertionWithLegacyClusters,
 					framework.KubeadmControlPlaneFinalizersAssertion,
 					helpers.IonosCloudInfraFinalizersAssertion,
-					helpers.ExpFinalizersAssertion,
+					framework.ExpFinalizersAssertion,
 					helpers.KubernetesFinalizersAssertion(clusters),
 				)
 

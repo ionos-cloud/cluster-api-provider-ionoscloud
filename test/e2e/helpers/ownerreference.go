@@ -19,20 +19,14 @@ limitations under the License.
 package helpers
 
 import (
+	"maps"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	addonsv1 "sigs.k8s.io/cluster-api/api/addons/v1beta2"
-	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
-	controlplanev1 "sigs.k8s.io/cluster-api/api/controlplane/kubeadm/v1beta2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
-)
-
-// Kind names of resource types this provider asserts on.
-const (
-	kindClusterResourceSet = "ClusterResourceSet"
 )
 
 // Kinds and Owners for types in the core API package.
@@ -44,20 +38,6 @@ var (
 )
 
 var ionosCloudClusterController = metav1.OwnerReference{Kind: infrav1.IonosCloudClusterKind, APIVersion: infrav1.GroupVersion.String(), Controller: new(false)}
-
-var clusterResourceSetOwner = metav1.OwnerReference{Kind: kindClusterResourceSet, APIVersion: addonsv1.GroupVersion.String()}
-
-// Kind and Owners for types in the Kubeadm ControlPlane package.
-var (
-	kubeadmControlPlaneGroupVersion = controlplanev1.GroupVersion.String()
-	kubeadmControlPlaneController   = metav1.OwnerReference{Kind: "KubeadmControlPlane", APIVersion: kubeadmControlPlaneGroupVersion, Controller: new(true)}
-)
-
-// Owners and kinds for types in the Kubeadm Bootstrap package.
-var (
-	kubeadmConfigGroupVersion = bootstrapv1.GroupVersion.String()
-	kubeadmConfigController   = metav1.OwnerReference{Kind: "KubeadmConfig", APIVersion: kubeadmConfigGroupVersion, Controller: new(true)}
-)
 
 // IonosCloudInfraOwnerReferenceAssertions maps IONOS Cloud Infrastructure types to functions which return an error if the passed
 // OwnerReferences aren't as expected.
@@ -77,38 +57,18 @@ var IonosCloudInfraOwnerReferenceAssertions = map[string]func(types.NamespacedNa
 	},
 }
 
-// ExpOwnerReferenceAssertions maps experimental types to functions which return an error if the passed OwnerReferences
-// aren't as expected.
-// Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/book/src/reference/api/owner-references.md.
-// That document should be updated if these references change.
-var ExpOwnerReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
-	kindClusterResourceSet: func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
-		// ClusterResourcesSet doesn't have ownerReferences (it is a clusterctl move-hierarchy root).
-		return framework.HasExactOwners(owners)
-	},
-	// ClusterResourcesSetBinding has ClusterResourceSet set as owners on creation.
-	"ClusterResourceSetBinding": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
-		return framework.HasOneOfExactOwners(owners, []metav1.OwnerReference{clusterResourceSetOwner}, []metav1.OwnerReference{clusterResourceSetOwner, clusterResourceSetOwner})
-	},
-}
-
-// KubernetesReferenceAssertions maps Kubernetes types to functions which return an error if the passed OwnerReferences
-// aren't as expected.
-// Note: These relationships are documented in https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/book/src/reference/api/owner-references.md.
-// That document should be updated if these references change.
-var KubernetesReferenceAssertions = map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
-	"Secret": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
-		// Secrets for cluster certificates must be owned and controlled by the KubeadmControlPlane.
-		// The bootstrap secret should be owned and controlled by a KubeadmControlPlane.
-		// The cluster IONOS Cloud credentials secret should be owned and controlled by IonosCloudClusterController
-		return framework.HasOneOfExactOwners(owners,
-			[]metav1.OwnerReference{kubeadmControlPlaneController},
-			[]metav1.OwnerReference{kubeadmConfigController},
-			[]metav1.OwnerReference{ionosCloudClusterController},
-		)
-	},
-	"ConfigMap": func(_ types.NamespacedName, owners []metav1.OwnerReference) error {
-		// The only configMaps considered here are those owned by a ClusterResourceSet.
-		return framework.HasExactOwners(owners, clusterResourceSetOwner)
-	},
-}
+// KubernetesReferenceAssertions is framework.KubernetesReferenceAssertions, plus the cluster's
+// IONOS Cloud credentials Secret, which is owned by the IonosCloudCluster.
+// AssertOwnerReferences runs every assertion registered for a kind, so the upstream Secret
+// rule has to be replaced rather than complemented by a second map.
+var KubernetesReferenceAssertions = func() map[string]func(types.NamespacedName, []metav1.OwnerReference) error {
+	assertions := maps.Clone(framework.KubernetesReferenceAssertions)
+	upstreamSecret := assertions["Secret"]
+	assertions["Secret"] = func(nn types.NamespacedName, owners []metav1.OwnerReference) error {
+		if framework.HasExactOwners(owners, ionosCloudClusterController) == nil {
+			return nil
+		}
+		return upstreamSecret(nn, owners)
+	}
+	return assertions
+}()
