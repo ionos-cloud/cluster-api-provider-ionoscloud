@@ -34,7 +34,7 @@ const (
 
 	// MachineProvisionedCondition documents the status of the provisioning of a IonosCloudMachine and
 	// the underlying VM.
-	MachineProvisionedCondition string = "MachineProvisioned"
+	MachineProvisionedCondition = "MachineProvisioned"
 
 	// WaitingForClusterInfrastructureReason (Severity=Info) indicates that the IonosCloudMachine is currently
 	// waiting for the cluster infrastructure to become ready.
