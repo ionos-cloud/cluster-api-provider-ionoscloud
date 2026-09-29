@@ -187,10 +187,10 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
-		log.Error(errors.New("deletion was requested but owning cluster wasn't deleted"),
-			"unable to delete IonosCloudCluster")
-		// No need to reconcile again until the owning cluster was deleted.
-		return ctrl.Result{}, nil
+		// The owning Cluster may already be deleted while the cache doesn't show it yet.
+		// The Cluster watch filters out deletion updates, so requeue instead of waiting for it.
+		log.Info("Waiting for the owning Cluster to be deleted")
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
 	requeue, err := r.checkRequestStatus(ctx, clusterScope, cloudService)
