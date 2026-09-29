@@ -28,7 +28,9 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	conditions "sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -353,6 +355,11 @@ func setProvisioningCondition(ionosMachine *infrav1.IonosCloudMachine, err error
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	clusterToIonosCloudMachines, err := util.ClusterToTypedObjectsMapper(r.Client, &infrav1.IonosCloudMachineList{}, mgr.GetScheme())
+	if err != nil {
+		return fmt.Errorf("failed to create Cluster to IonosCloudMachines mapper: %w", err)
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.IonosCloudMachine{}).
@@ -360,6 +367,14 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options
 			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind(infrav1.IonosCloudMachineType)))).
+		// Reconcile the machines when their Cluster is unpaused or its infrastructure becomes ready.
+		// Reconciles skipped for those reasons don't requeue, so without this watch a machine can wait
+		// for an unrelated Machine event, e.g. when a reconcile read a stale paused Cluster from the cache.
+		Watches(
+			&clusterv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(clusterToIonosCloudMachines),
+			builder.WithPredicates(predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), mgr.GetLogger())),
+		).
 		Complete(reconcile.AsReconciler(r.Client, r))
 }
 
