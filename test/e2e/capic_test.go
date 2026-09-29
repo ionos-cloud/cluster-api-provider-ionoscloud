@@ -21,6 +21,8 @@ package e2e
 import (
 	"os"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	clusterctlcluster "sigs.k8s.io/cluster-api/cmd/clusterctl/client/cluster"
 	capie2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -45,30 +47,25 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 			WorkerMachineCount:       new(int64(2)),
 			PostNamespaceCreated:     cloudEnv.createCredentialsSecretPNC,
 			PostMachinesProvisioned: func(proxy framework.ClusterProxy, namespace, clusterName string) {
+				ownerGraphFilter := clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName)
+				ownerRefAssertions := []map[string]func(types.NamespacedName, []metav1.OwnerReference) error{
+					framework.CoreOwnerReferenceAssertion,
+					framework.ExpOwnerReferenceAssertions,
+					helpers.IonosCloudInfraOwnerReferenceAssertions,
+					framework.KubeadmBootstrapOwnerReferenceAssertions,
+					framework.KubeadmControlPlaneOwnerReferenceAssertions(false), // not topology-managed
+					helpers.KubernetesReferenceAssertions,
+				}
 				// This check ensures that owner references are resilient - i.e. correctly re-reconciled - when removed.
-				framework.ValidateOwnerReferencesResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
-					framework.CoreOwnerReferenceAssertion,
-					framework.ExpOwnerReferenceAssertions,
-					helpers.IonosCloudInfraOwnerReferenceAssertions,
-					framework.KubeadmBootstrapOwnerReferenceAssertions,
-					framework.KubeadmControlPlaneOwnerReferenceAssertions(false),
-					helpers.KubernetesReferenceAssertions,
-				)
+				framework.ValidateOwnerReferencesResilience(ctx, proxy, namespace, clusterName, ownerGraphFilter, ownerRefAssertions...)
 				// This check ensures that owner references are correctly updated to the correct apiVersion.
-				framework.ValidateOwnerReferencesOnUpdate(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
-					framework.CoreOwnerReferenceAssertion,
-					framework.ExpOwnerReferenceAssertions,
-					helpers.IonosCloudInfraOwnerReferenceAssertions,
-					framework.KubeadmBootstrapOwnerReferenceAssertions,
-					framework.KubeadmControlPlaneOwnerReferenceAssertions(false),
-					helpers.KubernetesReferenceAssertions,
-				)
+				framework.ValidateOwnerReferencesOnUpdate(ctx, proxy, namespace, clusterName, ownerGraphFilter, ownerRefAssertions...)
 
 				clusters := &infrav1.IonosCloudClusterList{}
 				Expect(proxy.GetClient().List(ctx, clusters, runtimeclient.InNamespace(namespace))).NotTo(HaveOccurred())
 
 				// This check ensures that finalizers are resilient - i.e. correctly re-reconciled - when removed.
-				framework.ValidateFinalizersResilience(ctx, proxy, namespace, clusterName, clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
+				framework.ValidateFinalizersResilience(ctx, proxy, namespace, clusterName, ownerGraphFilter,
 					framework.CoreFinalizersAssertionWithLegacyClusters,
 					framework.KubeadmControlPlaneFinalizersAssertion,
 					helpers.IonosCloudInfraFinalizersAssertion,
@@ -81,7 +78,7 @@ var _ = Describe("Quickstart: Should be able to create a cluster with 3 control-
 				framework.ValidateResourceVersionStable(ctx, framework.ValidateResourceVersionStableInput{
 					ClusterProxy:             proxy,
 					Namespace:                namespace,
-					OwnerGraphFilterFunction: clusterctlcluster.FilterClusterObjectsWithNameFilter(clusterName),
+					OwnerGraphFilterFunction: ownerGraphFilter,
 					WaitToBecomeStable:       e2eConfig.GetIntervals("default", "wait-resource-versions-become-stable"),
 				})
 			},
