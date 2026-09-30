@@ -20,10 +20,6 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/errors"
-
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 const (
@@ -38,15 +34,25 @@ const (
 
 	// MachineProvisionedCondition documents the status of the provisioning of a IonosCloudMachine and
 	// the underlying VM.
-	MachineProvisionedCondition clusterv1.ConditionType = "MachineProvisioned"
+	MachineProvisionedCondition = "MachineProvisioned"
 
-	// WaitingForClusterInfrastructureReason (Severity=Info) indicates that the IonosCloudMachine is currently
+	// WaitingForClusterInfrastructureReason indicates that the IonosCloudMachine is currently
 	// waiting for the cluster infrastructure to become ready.
 	WaitingForClusterInfrastructureReason = "WaitingForClusterInfrastructure"
 
-	// WaitingForBootstrapDataReason (Severity=Info) indicates that the bootstrap provider has not yet finished
+	// WaitingForBootstrapDataReason indicates that the bootstrap provider has not yet finished
 	// creating the bootstrap data secret and store it in the Cluster API Machine.
 	WaitingForBootstrapDataReason = "WaitingForBootstrapData"
+
+	// MachineProvisioningReason indicates that provisioning of the IonosCloudMachine is in progress.
+	MachineProvisioningReason = "Provisioning"
+
+	// MachineProvisioningFailedReason indicates that the last provisioning attempt failed.
+	// The condition message carries the error; provisioning is retried.
+	MachineProvisioningFailedReason = "ProvisioningFailed"
+
+	// MachineProvisionedReason documents that the IonosCloudMachine has been successfully provisioned.
+	MachineProvisionedReason = "Provisioned"
 
 	// CloudResourceConfigAuto is a constant to indicate that the cloud resource should be managed by the
 	// Cluster API provider implementation.
@@ -111,7 +117,7 @@ type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
 	//+optional
-	ProviderID *string `json:"providerID,omitempty"`
+	ProviderID string `json:"providerID,omitempty"`
 
 	// DatacenterID is the ID of the data center where the VM should be created in.
 	//+kubebuilder:validation:XValidation:rule="self == oldSelf",message="datacenterID is immutable"
@@ -288,55 +294,23 @@ type ImageSelector struct {
 
 // IonosCloudMachineStatus defines the observed state of IonosCloudMachine.
 type IonosCloudMachineStatus struct {
-	// Ready indicates the VM has been provisioned and is ready.
+	// Initialization provides observations of the IonosCloudMachine initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial
+	// machine provisioning. The value of these fields is never updated after initial provisioning is completed.
+	// Use conditions to monitor the operational state of the machine's infrastructure.
 	//+optional
-	Ready bool `json:"ready"`
+	Initialization IonosCloudMachineInitializationStatus `json:"initialization,omitempty,omitzero"`
 
 	// MachineNetworkInfo contains information about the network configuration of the VM.
 	//+optional
 	MachineNetworkInfo *MachineNetworkInfo `json:"machineNetworkInfo,omitempty"`
 
-	// FailureReason will be set in the event that there is a terminal problem
-	// reconciling the Machine and will contain a succinct value suitable
-	// for machine interpretation.
-	//
-	// This field should not be set for transitive errors that a controller
-	// faces that are expected to be fixed automatically over
-	// time (like service outages), but instead indicate that something is
-	// fundamentally wrong with the Machine's spec or the configuration of
-	// the controller, and that manual intervention is required. Examples
-	// of terminal errors would be invalid combinations of settings in the
-	// spec, values that are unsupported by the controller, or the
-	// responsible controller itself being critically misconfigured.
-	//
-	// Any transient errors that occur during the reconciliation of IonosCloudMachines
-	// can be added as events to the IonosCloudMachine object and/or logged in the
-	// controller's output.
+	// Conditions represents the observations of the current state of the IonosCloudMachine.
 	//+optional
-	FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
-
-	// FailureMessage will be set in the event that there is a terminal problem
-	// reconciling the Machine and will contain a more verbose string suitable
-	// for logging and human consumption.
-	//
-	// This field should not be set for transitive errors that a controller
-	// faces that are expected to be fixed automatically over
-	// time (like service outages), but instead indicate that something is
-	// fundamentally wrong with the Machine's spec or the configuration of
-	// the controller, and that manual intervention is required. Examples
-	// of terminal errors would be invalid combinations of settings in the
-	// spec, values that are unsupported by the controller, or the
-	// responsible controller itself being critically misconfigured.
-	//
-	// Any transient errors that occur during the reconciliation of IonosCloudMachines
-	// can be added as events to the IonosCloudMachine object and/or logged in the
-	// controller's output.
-	//+optional
-	FailureMessage *string `json:"failureMessage,omitempty"`
-
-	// Conditions defines current service state of the IonosCloudMachine.
-	//+optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	//+listType=map
+	//+listMapKey=type
+	//+kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// CurrentRequest shows the current provisioning request for any
 	// cloud resource that is being provisioned.
@@ -346,6 +320,16 @@ type IonosCloudMachineStatus struct {
 	// Location is the location of the datacenter the VM is provisioned in.
 	//+optional
 	Location string `json:"location"`
+}
+
+// IonosCloudMachineInitializationStatus provides observations of the IonosCloudMachine initialization process.
+// +kubebuilder:validation:MinProperties=1
+type IonosCloudMachineInitializationStatus struct {
+	// Provisioned is true when the machine infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract and is used to orchestrate provisioning.
+	// The value of this field is never updated after initial provisioning is completed.
+	//+optional
+	Provisioned *bool `json:"provisioned,omitempty"`
 }
 
 // MachineNetworkInfo contains information about the network configuration of the VM.
@@ -381,8 +365,9 @@ type NICInfo struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=ionoscloudmachines,scope=Namespaced,categories=cluster-api;ionoscloud,shortName=icm
+//+kubebuilder:metadata:annotations="cluster.x-k8s.io/v1beta2=v1alpha1"
 //+kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
-//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine is ready"
+//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.initialization.provisioned",description="Machine is ready"
 //+kubebuilder:printcolumn:name="IPv4 Addresses",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].ipv4Addresses"
 //+kubebuilder:printcolumn:name="Machine Connected Networks",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].networkID"
 //+kubebuilder:printcolumn:name="IPv6 Addresses",type="string",JSONPath=".status.machineNetworkInfo.nicInfo[*].ipv6Addresses",priority=1
@@ -406,24 +391,24 @@ type IonosCloudMachineList struct {
 	Items           []IonosCloudMachine `json:"items"`
 }
 
-// GetConditions returns the observations of the operational state of the IonosCloudMachine resource.
-func (m *IonosCloudMachine) GetConditions() clusterv1.Conditions {
+// GetConditions returns the v1beta2 conditions from status.conditions.
+func (m *IonosCloudMachine) GetConditions() []metav1.Condition {
 	return m.Status.Conditions
 }
 
-// SetConditions sets the underlying service state of the IonosCloudMachine to the predescribed clusterv1.Conditions.
-func (m *IonosCloudMachine) SetConditions(conditions clusterv1.Conditions) {
+// SetConditions sets the v1beta2 conditions in status.conditions.
+func (m *IonosCloudMachine) SetConditions(conditions []metav1.Condition) {
 	m.Status.Conditions = conditions
 }
 
 // ExtractServerID extracts the server ID from the provider ID.
 // if the provider ID is empty, an empty string will be returned instead.
 func (m *IonosCloudMachine) ExtractServerID() string {
-	if m.Spec.ProviderID == nil || *m.Spec.ProviderID == "" {
+	if m.Spec.ProviderID == "" {
 		return ""
 	}
 
-	before, after, _ := strings.Cut(ptr.Deref(m.Spec.ProviderID, ""), "://")
+	before, after, _ := strings.Cut(m.Spec.ProviderID, "://")
 	// if the provider ID does not start with "ionos", we can assume that it is not a valid provider ID.
 	if before != "ionos" {
 		return ""

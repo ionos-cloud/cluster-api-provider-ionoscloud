@@ -8,8 +8,10 @@ resources:
 - bases/infrastructure.cluster.x-k8s.io_ionoscloudmachinetemplates.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
+# https://cluster-api.sigs.k8s.io/developer/providers/contracts.html#api-version-labels
+# Only v1beta2: v0.8 dropped status.ready, which the v1beta1 contract reads.
 commonLabels:
-  cluster.x-k8s.io/v1beta1: v1alpha1 #https://cluster-api.sigs.k8s.io/developer/providers/contracts.html#api-version-labels
+  cluster.x-k8s.io/v1beta2: v1alpha1
 
 patches:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.

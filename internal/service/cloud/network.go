@@ -25,7 +25,7 @@ import (
 	"slices"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -191,9 +191,9 @@ func (s *Service) createLAN(ctx context.Context, ms *scope.Machine) error {
 	log := s.logger.WithName("createLAN")
 
 	lanProperties := sdk.LanProperties{
-		Name:          ptr.To(s.lanName(ms.ClusterScope.Cluster)),
-		Public:        ptr.To(true),
-		Ipv6CidrBlock: ptr.To("AUTO"), // IPv6 is enabled by default.
+		Name:          new(s.lanName(ms.ClusterScope.Cluster)),
+		Public:        new(true),
+		Ipv6CidrBlock: new("AUTO"), // IPv6 is enabled by default.
 	}
 
 	requestPath, err := s.ionosClient.CreateLAN(ctx, ms.DatacenterID(), lanProperties)
@@ -599,7 +599,7 @@ func (s *Service) removeNICFromFailoverGroup(
 
 	// Found the NIC, remove it from the failover group
 	log.V(4).Info("Found NIC in failover group", "nicID", nicID)
-	ipFailoverConfig = append(ipFailoverConfig[:index], ipFailoverConfig[index+1:]...)
+	ipFailoverConfig = slices.Delete(ipFailoverConfig, index, index+1)
 	props := sdk.LanProperties{IpFailover: &ipFailoverConfig}
 
 	log.V(4).Info("Patching LAN failover group to remove NIC", "nicID", nicID)

@@ -2,7 +2,7 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller:dev
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.34.1
+ENVTEST_K8S_VERSION = 1.36.0
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -64,8 +64,7 @@ lint: ## Run lint.
 
 .PHONY: lint-fix
 lint-fix: ## Fix linter problems.
-	# gci collides with gofumpt. But if we run gci before gofumpt, this will solve the issue.
-	$(GOLANGCI) run --timeout 5m -c .golangci.yml --enable-only gci --fix
+	$(GOLANGCI) fmt -c .golangci.yml
 	$(GOLANGCI) run --timeout 5m -c .golangci.yml --fix
 
 .PHONY: vet
@@ -175,12 +174,13 @@ KUBECTL ?= kubectl
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-GOLANGCI ?= go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
-MOCKERY ?= go run github.com/vektra/mockery/v2@v2.53.5
+GOLANGCI ?= go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
+MOCKERY ?= go run github.com/vektra/mockery/v2@v2.53.7
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.7.1
-CONTROLLER_TOOLS_VERSION ?= v0.19.0
+CONTROLLER_TOOLS_VERSION ?= v0.20.0
+ENVTEST_VERSION ?= v0.25.1
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary. If wrong version is installed, it will be removed before downloading.
@@ -200,7 +200,7 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
-	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@$(ENVTEST_VERSION)
 
 .PHONY: mocks
 mocks:

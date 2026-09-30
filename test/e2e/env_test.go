@@ -236,6 +236,6 @@ func (*ionosCloudEnv) writeToGithubOutput(key, value string) {
 	Expect(err).ToNot(HaveOccurred(), "Failed opening GITHUB_OUTPUT file")
 	defer func() { _ = f.Close() }()
 
-	_, err = f.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+	_, err = fmt.Fprintf(f, "%s=%s\n", key, value)
 	Expect(err).ToNot(HaveOccurred(), "Failed writing to GITHUB_OUTPUT file")
 }

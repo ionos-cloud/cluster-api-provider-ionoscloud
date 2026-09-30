@@ -18,7 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // IonosCloudMachineTemplateSpec defines the desired state of IonosCloudMachineTemplate.
@@ -51,7 +51,7 @@ type IonosCloudMachineTemplateResource struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	//+optional
-	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
+	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
 	// Spec is the IonosCloudMachineSpec for the IonosCloudMachineTemplate.
 	Spec IonosCloudMachineSpec `json:"spec"`
 }

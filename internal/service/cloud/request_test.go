@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
-	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 )
 
 const (
@@ -41,11 +40,11 @@ func TestMatcher_MatchByName(t *testing.T) {
 	require.False(t, matchByNameFunc(&sdk.Server{}, sdk.Request{}))
 	testServer := sdk.Server{
 		Properties: &sdk.ServerProperties{
-			Name: ptr.To("test"),
+			Name: new("test"),
 		},
 	}
 	require.True(t, matchByNameFunc(&testServer, sdk.Request{}))
-	testServer.Properties.Name = ptr.To("wrong")
+	testServer.Properties.Name = new("wrong")
 	require.False(t, matchByNameFunc(&testServer, sdk.Request{}))
 
 	// l := (&sdk.Info{}).GetName()
@@ -63,8 +62,8 @@ func TestGetRequestStatusTestSuite(t *testing.T) {
 
 func (s *getRequestStatusSuite) TestGetRequestStatusMissingMetadata() {
 	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
-		Href:     ptr.To(baseTestURL),
-		Id:       ptr.To("12345"),
+		Href:     new(baseTestURL),
+		Id:       new("12345"),
 		Metadata: nil,
 	}, nil).Once()
 
@@ -85,11 +84,11 @@ func (s *getRequestStatusSuite) TestGetRequestStatusMissingMetadata() {
 
 func (s *getRequestStatusSuite) TestGetRequestStatus() {
 	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
-		Href: ptr.To(baseTestURL),
-		Id:   ptr.To("12345"),
+		Href: new(baseTestURL),
+		Id:   new("12345"),
 		Metadata: &sdk.RequestStatusMetadata{
-			Status:  ptr.To(sdk.RequestStatusFailed),
-			Message: ptr.To("Failed to do foo and bar"),
+			Status:  new(sdk.RequestStatusFailed),
+			Message: new("Failed to do foo and bar"),
 		},
 	}, nil).Once()
 
@@ -99,10 +98,10 @@ func (s *getRequestStatusSuite) TestGetRequestStatus() {
 	s.Equal("Failed to do foo and bar", message, "message should be 'Failed to do foo and bar'")
 
 	s.mockCheckRequestStatusCall(baseTestURL).Return(&sdk.RequestStatus{
-		Href: ptr.To(baseTestURL),
-		Id:   ptr.To("12345"),
+		Href: new(baseTestURL),
+		Id:   new("12345"),
 		Metadata: &sdk.RequestStatusMetadata{
-			Status:  ptr.To(sdk.RequestStatusQueued),
+			Status:  new(sdk.RequestStatusQueued),
 			Message: nil,
 		},
 	}, nil).Once()
@@ -155,7 +154,7 @@ func (s *getMatchingRequestSuite) TestUnsupportedResourceType() {
 func (s *getMatchingRequestSuite) TestMatching() {
 	// req1 has a mismatch in its target type
 	req1 := s.examplePostRequest("req1", sdk.RequestStatusQueued)
-	(*req1.Metadata.RequestStatus.Metadata.Targets)[0].Target.Type = ptr.To(sdk.SERVER)
+	(*req1.Metadata.RequestStatus.Metadata.Targets)[0].Target.Type = new(sdk.SERVER)
 
 	// req2 has a mismatch in its URL
 	req2 := s.examplePostRequest("req2", sdk.RequestStatusQueued)
@@ -205,12 +204,12 @@ func TestHasRequestTargetType(t *testing.T) {
 
 	req.Metadata.RequestStatus.Metadata.Targets = &[]sdk.RequestTarget{
 		{
-			Target: &sdk.ResourceReference{Type: ptr.To(sdk.SERVER)},
+			Target: &sdk.ResourceReference{Type: new(sdk.SERVER)},
 		},
 	}
 	require.False(t, hasRequestTargetType(req, sdk.LAN))
 
-	(*req.Metadata.RequestStatus.Metadata.Targets)[0].Target.Type = ptr.To(sdk.LAN)
+	(*req.Metadata.RequestStatus.Metadata.Targets)[0].Target.Type = new(sdk.LAN)
 	require.True(t, hasRequestTargetType(req, sdk.LAN))
 }
 
@@ -225,7 +224,7 @@ func TestFindResourceTestSuite(t *testing.T) {
 func (s *findResourceSuite) TestListingIsEnough() {
 	resource, request, err := findResource(
 		s.ctx,
-		func(_ context.Context) (*int, error) { return ptr.To(42), nil },
+		func(_ context.Context) (*int, error) { return new(42), nil },
 		func(_ context.Context) (*requestInfo, error) { panic("don't call me") },
 	)
 	s.NoError(err)
@@ -257,7 +256,7 @@ func (s *findResourceSuite) TestFoundOnSecondListing() {
 			if listCalls == 1 {
 				return nil, nil
 			}
-			return ptr.To(42), nil
+			return new(42), nil
 		},
 		func(_ context.Context) (*requestInfo, error) { return &requestInfo{status: sdk.RequestStatusDone}, nil },
 	)
@@ -322,8 +321,8 @@ func TestRequestInfo(t *testing.T) {
 }
 
 func TestMetadataHolder(t *testing.T) {
-	lan1 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: ptr.To("BUSY")}}
-	lan2 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: ptr.To(sdk.Available)}}
+	lan1 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: new("BUSY")}}
+	lan2 := &sdk.Lan{Metadata: &sdk.DatacenterElementMetadata{State: new(sdk.Available)}}
 
 	require.False(t, isAvailable(getState(lan1)))
 	require.True(t, isAvailable(getState(lan2)))

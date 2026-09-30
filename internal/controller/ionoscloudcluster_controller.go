@@ -25,11 +25,12 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -172,8 +173,12 @@ func (r *IonosCloudClusterReconciler) reconcileNormal(
 		}
 	}
 
-	conditions.MarkTrue(clusterScope.IonosCluster, infrav1.IonosCloudClusterReady)
-	clusterScope.IonosCluster.Status.Ready = true
+	conditions.Set(clusterScope.IonosCluster, metav1.Condition{
+		Type:   infrav1.IonosCloudClusterReady,
+		Status: metav1.ConditionTrue,
+		Reason: infrav1.ClusterProvisionedReason,
+	})
+	clusterScope.IonosCluster.Status.Initialization.Provisioned = new(true)
 	return ctrl.Result{}, nil
 }
 
@@ -182,10 +187,10 @@ func (r *IonosCloudClusterReconciler) reconcileDelete(
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	if clusterScope.Cluster.DeletionTimestamp.IsZero() {
-		log.Error(errors.New("deletion was requested but owning cluster wasn't deleted"),
-			"unable to delete IonosCloudCluster")
-		// No need to reconcile again until the owning cluster was deleted.
-		return ctrl.Result{}, nil
+		// The owning Cluster may already be deleted while the cache doesn't show it yet.
+		// The Cluster watch filters out deletion updates, so requeue instead of waiting for it.
+		log.Info("Waiting for the owning Cluster to be deleted")
+		return ctrl.Result{RequeueAfter: defaultReconcileDuration}, nil
 	}
 
 	requeue, err := r.checkRequestStatus(ctx, clusterScope, cloudService)
@@ -261,7 +266,7 @@ func (r *IonosCloudClusterReconciler) SetupWithManager(
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.IonosCloudCluster{}).
-		WithEventFilter(predicates.ResourceNotPaused(ctrl.LoggerFrom(ctx))).
+		WithEventFilter(predicates.ResourceNotPaused(r.scheme, ctrl.LoggerFrom(ctx))).
 		Watches(&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.ClusterToInfrastructureMapFunc(
@@ -270,7 +275,7 @@ func (r *IonosCloudClusterReconciler) SetupWithManager(
 					r.Client, &infrav1.IonosCloudCluster{},
 				),
 			),
-			builder.WithPredicates(predicates.ClusterUnpaused(ctrl.LoggerFrom(ctx))),
+			builder.WithPredicates(predicates.ClusterUnpaused(r.scheme, ctrl.LoggerFrom(ctx))),
 		).
 		Complete(reconcile.AsReconciler[*infrav1.IonosCloudCluster](r.Client, r))
 }

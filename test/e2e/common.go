@@ -27,9 +27,12 @@ import (
 
 // Test suite constants for e2e config variables.
 const (
-	CNIPath           = "CNI"
-	CNIResources      = "CNI_RESOURCES"
+	CNIPath      = "CNI"
+	CNIResources = "CNI_RESOURCES"
+	// KubernetesVersion is the workload cluster version.
 	KubernetesVersion = "KUBERNETES_VERSION"
+	// KubernetesVersionManagement is the kind bootstrap cluster version.
+	KubernetesVersionManagement = "KUBERNETES_VERSION_MANAGEMENT"
 
 	defaultCloudResourceNamePrefix = "capic-e2e-test-"
 )

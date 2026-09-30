@@ -5,56 +5,56 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: "v1.8.5"
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.1/core-components.yaml"
+    - name: "v1.13.5"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.5/core-components.yaml"
       type: url
-      contract: v1beta1
+      contract: v1beta2
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8443
       files:
-        - sourcePath: "../data/shared/v1.8/metadata.yaml"
+        - sourcePath: "../data/shared/v1.13/metadata.yaml"
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: "v1.8.5"
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.1/bootstrap-components.yaml"
+    - name: "v1.13.5"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.5/bootstrap-components.yaml"
       type: url
-      contract: v1beta1
+      contract: v1beta2
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8443
       files:
-        - sourcePath: "../data/shared/v1.8/metadata.yaml"
+        - sourcePath: "../data/shared/v1.13/metadata.yaml"
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-      - name: "v1.8.5"
-        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.1/control-plane-components.yaml"
+      - name: "v1.13.5"
+        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.5/control-plane-components.yaml"
         type: url
-        contract: v1beta1
+        contract: v1beta2
         replacements:
           - old: --metrics-addr=127.0.0.1:8080
             new: --metrics-addr=:8443
         files:
-          - sourcePath: "../data/shared/v1.8/metadata.yaml"
+          - sourcePath: "../data/shared/v1.13/metadata.yaml"
   - name: in-cluster
     type: IPAMProvider
     versions:
-      - name: v1.0.0
+      - name: v1.1.1
         # Use manifest from source files
-        value: "https://github.com/kubernetes-sigs/cluster-api-ipam-provider-in-cluster/releases/download/v1.0.0/ipam-components.yaml"
+        value: "https://github.com/kubernetes-sigs/cluster-api-ipam-provider-in-cluster/releases/download/v1.1.1/ipam-components.yaml"
         type: url
-        contract: v1beta1
+        contract: v1beta2
         files:
-          - sourcePath: "../data/shared/capi-ipam/v1.0/metadata.yaml"
+          - sourcePath: "../data/shared/capi-ipam/v1.1/metadata.yaml"
         replacements:
           - old: "imagePullPolicy: Always"
             new: "imagePullPolicy: IfNotPresent"
   - name: ionoscloud
     type: InfrastructureProvider
     versions:
-      - name: v0.6.99
+      - name: v0.8.99
         value: "../../../config/default"
         replacements:
           - old: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:dev
@@ -71,7 +71,10 @@ variables:
   # allowing the same e2e config file to be reused in different Prow jobs e.g. each one with a K8s version permutation.
   # The following Kubernetes versions should be the latest versions with already published kindest/node images.
   # This avoids building node images in the default case which improves the test duration significantly.
-  KUBERNETES_VERSION: "v1.30.6"
+  # Workload version: must match the IONOS node image (IONOSCLOUD_MACHINE_IMAGE_ID).
+  KUBERNETES_VERSION: "v1.34.11"
+  # Management (kind) version: must be in CAPI's supported management range, v1.32-v1.36 for v1.13.
+  KUBERNETES_VERSION_MANAGEMENT: "v1.33.7"
   CNI: "./data/cni/calico.yaml"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
   CLUSTER_NAME: "e2e-cluster-${RANDOM}"
@@ -94,6 +97,7 @@ intervals:
   default/wait-worker-nodes: [ "30m", "10s" ]
   default/wait-delete-cluster: [ "30m", "10s" ]
   default/wait-nodes-ready: ["30m", "10s"]
+  default/wait-resource-versions-become-stable: ["5m", "10s"]
   scale/wait-cluster: ["30m", "10s"]
   scale/wait-control-plane: ["30m", "10s"]
   scale/wait-worker-nodes: ["30m", "10s"]

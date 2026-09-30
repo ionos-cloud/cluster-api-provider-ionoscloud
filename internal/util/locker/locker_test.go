@@ -18,27 +18,13 @@ package locker
 
 import (
 	"context"
-	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func withTimeout(t *testing.T, f func()) {
-	t.Helper()
-	done := make(chan struct{})
-	go func() {
-		f()
-		close(done)
-	}()
-	select {
-	case <-time.After(1 * time.Second):
-		t.Fatal("timed out")
-	case <-done:
-	}
-}
 
 func TestNew(t *testing.T) {
 	locker := New()
@@ -58,105 +44,149 @@ func TestLockWithCounter(t *testing.T) {
 }
 
 func TestLockerLock(t *testing.T) {
-	l := New()
-	require.NoError(t, l.Lock(context.Background(), "test"))
-	lwc := l.locks["test"]
+	synctest.Test(t, func(t *testing.T) {
+		l := New()
+		require.NoError(t, l.Lock(t.Context(), "test"))
+		lockState := l.locks["test"]
 
-	require.EqualValues(t, 0, lwc.count())
+		require.EqualValues(t, 0, lockState.count())
 
-	chDone := make(chan struct{})
-	go func(t *testing.T) {
-		assert.NoError(t, l.Lock(context.Background(), "test"))
-		close(chDone)
-	}(t)
+		// Start a goroutine that will wait for the lock
+		lockAcquired := false
+		go func() {
+			assert.NoError(t, l.Lock(t.Context(), "test"))
+			lockAcquired = true
+		}()
 
-	chWaiting := make(chan struct{})
-	go func() {
-		for range time.Tick(1 * time.Millisecond) {
-			if lwc.count() == 1 {
-				close(chWaiting)
-				break
-			}
-		}
-	}()
+		// Wait for goroutine to enter waiting state
+		synctest.Wait()
+		require.EqualValues(t, 1, lockState.count(), "should have one waiter")
+		require.False(t, lockAcquired, "lock should not have been acquired while still held")
 
-	withTimeout(t, func() {
-		<-chWaiting
+		// Release the lock - waiting goroutine should now acquire it
+		l.Unlock("test")
+		synctest.Wait()
+
+		require.True(t, lockAcquired)
+		require.EqualValues(t, 0, lockState.count())
 	})
-
-	select {
-	case <-chDone:
-		t.Fatal("lock should not have returned while it was still held")
-	default:
-	}
-
-	l.Unlock("test")
-
-	withTimeout(t, func() {
-		<-chDone
-	})
-
-	require.EqualValues(t, 0, lwc.count())
 }
 
 func TestLockerUnlock(t *testing.T) {
-	l := New()
+	synctest.Test(t, func(t *testing.T) {
+		l := New()
 
-	require.NoError(t, l.Lock(context.Background(), "test"))
-	l.Unlock("test")
-
-	require.PanicsWithValue(t, "no such lock: test", func() {
+		require.NoError(t, l.Lock(t.Context(), "test"))
 		l.Unlock("test")
-	})
 
-	withTimeout(t, func() {
-		require.NoError(t, l.Lock(context.Background(), "test"))
+		require.PanicsWithValue(t, "no such lock: test", func() {
+			l.Unlock("test")
+		})
+
+		require.NoError(t, l.Lock(t.Context(), "test"))
 	})
 }
 
 func TestLockerConcurrency(t *testing.T) {
-	l := New()
+	synctest.Test(t, func(t *testing.T) {
+		l := New()
 
-	var wg sync.WaitGroup
-	for range 10_000 {
-		wg.Add(1)
-		go func(t *testing.T) {
-			assert.NoError(t, l.Lock(context.Background(), "test"))
-			// If there is a concurrency issue, it will very likely become visible here.
-			l.Unlock("test")
-			wg.Done()
-		}(t)
-	}
+		const numWorkers = 10_000
+		results := make([]bool, numWorkers)
 
-	withTimeout(t, wg.Wait)
+		for i := range numWorkers {
+			go func() {
+				assert.NoError(t, l.Lock(t.Context(), "test"))
+				results[i] = true
+				l.Unlock("test")
+			}()
+		}
 
-	// Since everything has unlocked the map should be empty.
-	require.Empty(t, l.locks)
+		synctest.Wait()
+
+		for i := range numWorkers {
+			require.True(t, results[i], "worker %d should have acquired lock", i)
+		}
+
+		// Since everything has unlocked the map should be empty.
+		require.Empty(t, l.locks)
+	})
 }
 
 func TestLockerContextCanceled(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
 
-	l := New()
+		l := New()
 
-	withTimeout(t, func() {
 		err := l.Lock(ctx, "test")
 		require.ErrorIs(t, context.Canceled, err)
 	})
 }
 
 func TestLockerContextDeadlineExceeded(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
-	defer cancel()
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 1*time.Millisecond)
+		defer cancel()
 
-	l := New()
-	require.NoError(t, l.Lock(ctx, "test"))
+		l := New()
+		require.NoError(t, l.Lock(ctx, "test"))
 
-	withTimeout(t, func() {
 		err := l.Lock(ctx, "test")
 		require.ErrorIs(t, context.DeadlineExceeded, err)
-	})
 
-	require.NotPanics(t, func() { l.Unlock("test") })
+		require.NotPanics(t, func() { l.Unlock("test") })
+	})
+}
+
+func TestLockerMultipleKeysIsolation(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		l := New()
+
+		require.NoError(t, l.Lock(t.Context(), "key1"))
+		require.EqualValues(t, 0, l.locks["key1"].count())
+
+		// Should be able to lock key2 immediately (different key)
+		require.NoError(t, l.Lock(t.Context(), "key2"))
+		require.EqualValues(t, 0, l.locks["key2"].count())
+
+		l.Unlock("key1")
+		l.Unlock("key2")
+
+		require.Empty(t, l.locks)
+	})
+}
+
+func TestLockerContextCanceledWhileWaiting(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		l := New()
+		require.NoError(t, l.Lock(t.Context(), "test"))
+
+		ctx, cancel := context.WithCancel(t.Context())
+
+		lockCanceled := false
+		go func() {
+			err := l.Lock(ctx, "test")
+			assert.ErrorIs(t, err, context.Canceled)
+			lockCanceled = true
+		}()
+
+		// Wait for goroutine to enter waiting state
+		synctest.Wait()
+		require.EqualValues(t, 1, l.locks["test"].count(), "should have one waiter")
+
+		// Cancel while waiting
+		cancel()
+		synctest.Wait()
+
+		require.True(t, lockCanceled)
+
+		// Lock should still exist (held by main goroutine)
+		require.EqualValues(t, 0, l.locks["test"].count())
+
+		// Unlock and verify cleanup
+		l.Unlock("test")
+		require.Empty(t, l.locks)
+	})
 }
