@@ -342,10 +342,10 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 	renderedData := s.renderUserData(ms, string(bootstrapData))
 	copySpec := ms.IonosMachine.Spec.DeepCopy()
 	entityParams := serverEntityParams{
-		boostrapData: renderedData,
-		machineSpec:  *copySpec,
-		lanID:        int32(lanID),
-		imageID:      imageID,
+		bootstrapData: renderedData,
+		machineSpec:   *copySpec,
+		lanID:         int32(lanID),
+		imageID:       imageID,
 	}
 
 	server, requestLocation, err := s.ionosClient.CreateServer(
@@ -390,10 +390,10 @@ func (*Service) buildServerProperties(
 }
 
 type serverEntityParams struct {
-	boostrapData string
-	machineSpec  infrav1.IonosCloudMachineSpec
-	lanID        int32
-	imageID      string
+	bootstrapData string
+	machineSpec   infrav1.IonosCloudMachineSpec
+	lanID         int32
+	imageID       string
 }
 
 // buildServerEntities returns the server entities for the expected cloud server resource.
@@ -405,7 +405,7 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 			Name:             new(s.volumeName(ms.IonosMachine)),
 			Size:             new(float32(machineSpec.Disk.SizeGB)),
 			Type:             new(machineSpec.Disk.DiskType.String()),
-			UserData:         &params.boostrapData,
+			UserData:         &params.bootstrapData,
 		},
 	}
 
