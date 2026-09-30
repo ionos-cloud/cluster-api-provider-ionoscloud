@@ -40,7 +40,7 @@ import (
 // ownedClusterConditions is the single source of truth for the condition types owned by the
 // cluster controller.
 var ownedClusterConditions = []string{
-	string(clusterv1.ReadyCondition),
+	clusterv1.ReadyCondition,
 	infrav1.IonosCloudClusterReady,
 }
 
@@ -220,7 +220,7 @@ func (c *Cluster) PatchObject() error {
 	summaryErr := conditions.SetSummaryCondition(
 		c.IonosCluster,
 		c.IonosCluster,
-		string(clusterv1.ReadyCondition),
+		clusterv1.ReadyCondition,
 		conditions.ForConditionTypes{infrav1.IonosCloudClusterReady},
 	)
 

@@ -46,10 +46,10 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 	secret, err := ms.GetBootstrapDataSecret(ctx, s.logger)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// Secret not available yet.
-			// Just log the error and resume reconciliation.
+			// Secret not available yet (e.g. not in the cache). Requeue: continuing would let
+			// FinalizeMachineProvisioning mark the machine provisioned before a server exists.
 			log.Info("Bootstrap secret not available yet", "error", err)
-			return false, nil
+			return true, nil
 		}
 		return true, fmt.Errorf("unexpected error when trying to get bootstrap secret: %w", err)
 	}

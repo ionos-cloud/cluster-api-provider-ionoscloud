@@ -39,7 +39,7 @@ import (
 // ownedMachineConditions is the single source of truth for the condition types owned by the
 // machine controller.
 var ownedMachineConditions = []string{
-	string(clusterv1.ReadyCondition),
+	clusterv1.ReadyCondition,
 	infrav1.MachineProvisionedCondition,
 }
 
@@ -188,7 +188,7 @@ func (m *Machine) PatchObject() error {
 	summaryErr := conditions.SetSummaryCondition(
 		m.IonosMachine,
 		m.IonosMachine,
-		string(clusterv1.ReadyCondition),
+		clusterv1.ReadyCondition,
 		conditions.ForConditionTypes{infrav1.MachineProvisionedCondition},
 	)
 

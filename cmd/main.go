@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ipamv1 "sigs.k8s.io/cluster-api/api/ipam/v1beta2"
@@ -40,6 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	iccontroller "github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/controller"
@@ -145,14 +147,14 @@ func main() {
 	if err = iccontroller.NewIonosCloudClusterReconciler(mgr).SetupWithManager(
 		ctx,
 		mgr,
-		controller.Options{MaxConcurrentReconciles: icClusterConcurrency},
+		controllerOptions(icClusterConcurrency),
 	); err != nil {
 		setupLog.Error(err, errMsgUnableToCreateController, "controller", "IonosCloudCluster")
 		os.Exit(1)
 	}
 	if err = iccontroller.NewIonosCloudMachineReconciler(mgr).SetupWithManager(
 		mgr,
-		controller.Options{MaxConcurrentReconciles: icMachineConcurrency},
+		controllerOptions(icMachineConcurrency),
 	); err != nil {
 		setupLog.Error(err, errMsgUnableToCreateController, "controller", "IonosCloudMachine")
 		os.Exit(1)
@@ -197,6 +199,18 @@ func setupCRDMigrator(ctx context.Context, mgr ctrl.Manager) error {
 		Config:                 crdMigratorConfig,
 		// Run with concurrency 1 to avoid overwhelming the apiserver.
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: 1})
+}
+
+// controllerOptions returns the options for one of the provider's controllers.
+// controller-runtime v0.23 defaults to a per-item-only rate limiter when the priority queue is on.
+// Keep the classic one (per-item backoff plus a global 10 qps / 100 burst bucket) so shared failures,
+// e.g. an IONOS Cloud API outage, can't turn into retry bursts that grow with the number of objects.
+// Every call returns a new limiter, so controllers don't share a budget.
+func controllerOptions(concurrency int) controller.Options {
+	return controller.Options{
+		MaxConcurrentReconciles: concurrency,
+		RateLimiter:             workqueue.DefaultTypedControllerRateLimiter[reconcile.Request](),
+	}
 }
 
 // initFlags parses the command line flags.

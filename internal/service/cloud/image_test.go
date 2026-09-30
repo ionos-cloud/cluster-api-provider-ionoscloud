@@ -67,6 +67,20 @@ func (s *imageTestSuite) TestLookupImageNoMatch() {
 	typedErr := new(imageMatchError)
 	s.ErrorAs(err, typedErr)
 	s.Empty(typedErr.imageIDs)
+	s.EqualError(err, `found 0 images matching selector "test=image" in location "loc"`+
+		` with name containing "v1.26.12" (0 before the name filter)`)
+}
+
+func (s *imageTestSuite) TestLookupImageNoMatchingName() {
+	s.ionosClient.EXPECT().ListLabels(s.ctx).Return(
+		[]sdk.Label{makeTestLabel("image", "image-1", "test", "image")}, nil,
+	).Once()
+	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(makeTestImage("image-1", "img-v1.30.6", "loc"), nil).Once()
+
+	_, err := s.service.lookupImageID(s.ctx, s.machineScope)
+	s.EqualError(err, `found 0 images matching selector "test=image" in location "loc"`+
+		` with name containing "v1.26.12" (1 before the name filter)`)
 }
 
 func (s *imageTestSuite) TestLookupImageTooManyMatches() {
