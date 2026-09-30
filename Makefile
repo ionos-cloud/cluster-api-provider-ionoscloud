@@ -2,7 +2,7 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller:dev
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.34.1
+ENVTEST_K8S_VERSION = 1.36.0
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -179,10 +179,8 @@ MOCKERY ?= go run github.com/vektra/mockery/v2@v2.53.7
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.7.1
-CONTROLLER_TOOLS_VERSION ?= v0.19.0
-# Pinned to a commit since setup-envtest has no tag compatible with Go 1.25; proper tags
-# like tools/setup-envtest/v0.24.1 will be available once we're on Go 1.26.
-ENVTEST_VERSION ?= 28c991a58709
+CONTROLLER_TOOLS_VERSION ?= v0.20.0
+ENVTEST_VERSION ?= v0.25.1
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary. If wrong version is installed, it will be removed before downloading.

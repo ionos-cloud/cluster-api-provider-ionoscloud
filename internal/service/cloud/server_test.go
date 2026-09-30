@@ -55,7 +55,7 @@ func (s *serverSuite) TestReconcileServerNoBootstrapSecret() {
 
 	s.machineScope.Machine.Spec.Bootstrap.DataSecretName = new("test")
 	requeue, err = s.service.ReconcileServer(s.ctx, s.machineScope)
-	s.False(requeue)
+	s.True(requeue, "must requeue until the bootstrap secret exists")
 	s.NoError(err)
 }
 

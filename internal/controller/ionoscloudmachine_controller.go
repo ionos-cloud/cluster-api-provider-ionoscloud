@@ -28,7 +28,9 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	conditions "sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -39,6 +41,7 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/k8s"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -183,10 +186,13 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		{"FinalizeMachineProvisioning", cloudService.FinalizeMachineProvisioning},
 	}
 
+	setProvisioningCondition(machineScope.IonosMachine, nil)
+
 	for _, step := range reconcileSequence {
 		if requeue, err := step.fn(ctx, machineScope); err != nil || requeue {
 			if err != nil {
 				err = fmt.Errorf("error in step %s: %w", step.name, err)
+				setProvisioningCondition(machineScope.IonosMachine, err)
 			}
 
 			return ctrl.Result{RequeueAfter: defaultReconcileDuration}, err
@@ -303,7 +309,7 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	if ms.ClusterScope.Cluster.Status.Initialization.InfrastructureProvisioned == nil || !*ms.ClusterScope.Cluster.Status.Initialization.InfrastructureProvisioned {
 		log.Info("Cluster infrastructure is not ready yet")
 		conditions.Set(ms.IonosMachine, metav1.Condition{
-			Type:    string(infrav1.MachineProvisionedCondition),
+			Type:    infrav1.MachineProvisionedCondition,
 			Status:  metav1.ConditionFalse,
 			Reason:  infrav1.WaitingForClusterInfrastructureReason,
 			Message: "Waiting for Cluster.Status.Initialization.InfrastructureProvisioned to become true.",
@@ -316,7 +322,7 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	if ms.Machine.Spec.Bootstrap.DataSecretName == nil {
 		log.Info("Bootstrap data secret is not available yet")
 		conditions.Set(ms.IonosMachine, metav1.Condition{
-			Type:    string(infrav1.MachineProvisionedCondition),
+			Type:    infrav1.MachineProvisionedCondition,
 			Status:  metav1.ConditionFalse,
 			Reason:  infrav1.WaitingForBootstrapDataReason,
 			Message: "Waiting for bootstrap data secret to be available.",
@@ -328,8 +334,32 @@ func (*IonosCloudMachineReconciler) isInfrastructureReady(ctx context.Context, m
 	return true
 }
 
+// setProvisioningCondition keeps MachineProvisioned in step with the current provisioning attempt, so it
+// doesn't keep showing an earlier "waiting" reason. Once provisioned it stays True: a transient API error
+// must not mark a running machine as unprovisioned.
+func setProvisioningCondition(ionosMachine *infrav1.IonosCloudMachine, err error) {
+	if ptr.Deref(ionosMachine.Status.Initialization.Provisioned, false) {
+		return
+	}
+	condition := metav1.Condition{
+		Type:   infrav1.MachineProvisionedCondition,
+		Status: metav1.ConditionFalse,
+		Reason: infrav1.MachineProvisioningReason,
+	}
+	if err != nil {
+		condition.Reason = infrav1.MachineProvisioningFailedReason
+		condition.Message = err.Error()
+	}
+	conditions.Set(ionosMachine, condition)
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	clusterToIonosCloudMachines, err := util.ClusterToTypedObjectsMapper(r.Client, &infrav1.IonosCloudMachineList{}, mgr.GetScheme())
+	if err != nil {
+		return fmt.Errorf("failed to create Cluster to IonosCloudMachines mapper: %w", err)
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&infrav1.IonosCloudMachine{}).
@@ -337,6 +367,14 @@ func (r *IonosCloudMachineReconciler) SetupWithManager(mgr ctrl.Manager, options
 			&clusterv1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(
 				util.MachineToInfrastructureMapFunc(infrav1.GroupVersion.WithKind(infrav1.IonosCloudMachineType)))).
+		// Reconcile the machines when their Cluster is unpaused or its infrastructure becomes ready.
+		// Reconciles skipped for those reasons don't requeue, so without this watch a machine can wait
+		// for an unrelated Machine event, e.g. when a reconcile read a stale paused Cluster from the cache.
+		Watches(
+			&clusterv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(clusterToIonosCloudMachines),
+			builder.WithPredicates(predicates.ClusterPausedTransitionsOrInfrastructureProvisioned(mgr.GetScheme(), mgr.GetLogger())),
+		).
 		Complete(reconcile.AsReconciler(r.Client, r))
 }
 

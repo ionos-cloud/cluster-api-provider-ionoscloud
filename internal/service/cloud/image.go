@@ -38,11 +38,20 @@ var errMissingMachineVersion = errors.New("machine is missing version field")
 type imageMatchError struct {
 	imageIDs []string
 	selector *infrav1.ImageSelector
+	location string
+	// version is the name filter from useMachineVersion; empty if the filter is disabled.
+	version string
+	// labelMatches counts the images that matched the selector in location, before the name filter.
+	labelMatches int
 }
 
 func (e imageMatchError) Error() string {
-	return fmt.Sprintf("found %d images matching selector %q",
-		len(e.imageIDs), labels.SelectorFromSet(e.selector.MatchLabels))
+	msg := fmt.Sprintf("found %d images matching selector %q in location %q",
+		len(e.imageIDs), labels.SelectorFromSet(e.selector.MatchLabels), e.location)
+	if e.version != "" {
+		msg += fmt.Sprintf(" with name containing %q (%d before the name filter)", e.version, e.labelMatches)
+	}
+	return msg
 }
 
 func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string, error) {
@@ -62,6 +71,8 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 		return "", err
 	}
 
+	matchErr := imageMatchError{selector: imageSpec.Selector, location: location, labelMatches: len(images)}
+
 	if ptr.Deref(imageSpec.Selector.UseMachineVersion, true) {
 		version := ms.Machine.Spec.Version
 		if version == "" {
@@ -69,16 +80,18 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 		}
 
 		images = filterImagesByName(images, version)
+		matchErr.version = version
 	}
 
 	if len(images) == 0 {
-		return "", imageMatchError{selector: imageSpec.Selector}
+		return "", matchErr
 	}
 
 	switch imageSpec.Selector.ResolutionPolicy {
 	case infrav1.ResolutionPolicyExact:
 		if len(images) > 1 {
-			return "", imageMatchError{imageIDs: getImageIDs(images), selector: imageSpec.Selector}
+			matchErr.imageIDs = getImageIDs(images)
+			return "", matchErr
 		}
 	case infrav1.ResolutionPolicyNewest:
 		slices.SortFunc(images, func(lhs, rhs *sdk.Image) int {

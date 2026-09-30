@@ -23,7 +23,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-	addonsv1 "sigs.k8s.io/cluster-api/api/addons/v1beta2"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 )
@@ -32,11 +31,6 @@ import (
 var IonosCloudInfraFinalizersAssertion = map[string]func(types.NamespacedName) []string{
 	infrav1.IonosCloudMachineType: func(types.NamespacedName) []string { return []string{infrav1.MachineFinalizer} },
 	infrav1.IonosCloudClusterKind: func(types.NamespacedName) []string { return []string{infrav1.ClusterFinalizer} },
-}
-
-// ExpFinalizersAssertion maps experimental resource types to their expected finalizers.
-var ExpFinalizersAssertion = map[string]func(types.NamespacedName) []string{
-	kindClusterResourceSet: func(types.NamespacedName) []string { return []string{addonsv1.ClusterResourceSetFinalizer} },
 }
 
 // KubernetesFinalizersAssertion maps Kubernetes resource types to their expected finalizers.
