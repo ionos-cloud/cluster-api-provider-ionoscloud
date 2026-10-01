@@ -69,7 +69,7 @@ func NewIonosCloudMachineReconciler(mgr ctrl.Manager) *IonosCloudMachineReconcil
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
 //+kubebuilder:rbac:groups=ipam.cluster.x-k8s.io,resources=ipaddresses,verbs=get;list;watch
 //+kubebuilder:rbac:groups=ipam.cluster.x-k8s.io,resources=ipaddressclaims,verbs=get;list;watch;create;update;delete
-//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;update
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;update;delete
 //+kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
 func (r *IonosCloudMachineReconciler) Reconcile(

@@ -5,39 +5,39 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: "v1.13.5"
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.5/core-components.yaml"
+    - name: "v1.14.2"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.2/core-components.yaml"
       type: url
       contract: v1beta2
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8443
       files:
-        - sourcePath: "../data/shared/v1.13/metadata.yaml"
+        - sourcePath: "../data/shared/v1.14/metadata.yaml"
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: "v1.13.5"
-      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.5/bootstrap-components.yaml"
+    - name: "v1.14.2"
+      value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.2/bootstrap-components.yaml"
       type: url
       contract: v1beta2
       replacements:
         - old: --metrics-addr=127.0.0.1:8080
           new: --metrics-addr=:8443
       files:
-        - sourcePath: "../data/shared/v1.13/metadata.yaml"
+        - sourcePath: "../data/shared/v1.14/metadata.yaml"
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-      - name: "v1.13.5"
-        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.13.5/control-plane-components.yaml"
+      - name: "v1.14.2"
+        value: "https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.14.2/control-plane-components.yaml"
         type: url
         contract: v1beta2
         replacements:
           - old: --metrics-addr=127.0.0.1:8080
             new: --metrics-addr=:8443
         files:
-          - sourcePath: "../data/shared/v1.13/metadata.yaml"
+          - sourcePath: "../data/shared/v1.14/metadata.yaml"
   - name: in-cluster
     type: IPAMProvider
     versions:
@@ -54,7 +54,7 @@ providers:
   - name: ionoscloud
     type: InfrastructureProvider
     versions:
-      - name: v0.8.99
+      - name: v0.9.99
         value: "../../../config/default"
         replacements:
           - old: ghcr.io/ionos-cloud/cluster-api-provider-ionoscloud:dev
@@ -73,7 +73,7 @@ variables:
   # This avoids building node images in the default case which improves the test duration significantly.
   # Workload version: must match the IONOS node image (IONOSCLOUD_MACHINE_IMAGE_ID).
   KUBERNETES_VERSION: "v1.34.11"
-  # Management (kind) version: must be in CAPI's supported management range, v1.32-v1.36 for v1.13.
+  # Management (kind) version: must be in CAPI's supported management range, v1.33-v1.37 for v1.14.
   KUBERNETES_VERSION_MANAGEMENT: "v1.33.7"
   CNI: "./data/cni/calico.yaml"
   KUBETEST_CONFIGURATION: "./data/kubetest/conformance.yaml"
