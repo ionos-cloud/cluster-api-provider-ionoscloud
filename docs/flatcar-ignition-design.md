@@ -52,7 +52,8 @@ Facts we checked:
 - It looks at ext4/xfs-style data partitions only. Flatcar's own OEM (btrfs) and EFI (vfat)
   partitions are not used, and the stock Flatcar ROOT has no marker, so a plain Flatcar volume gets
   nothing.
-- The file name is `config/user_data` (underscore). It is written byte for byte as given in the API.
+- The file name is `config/user_data` (underscore). The API takes `userData` base64-encoded; the
+  image handler decodes it and writes the result unchanged, so the file holds the plain Ignition JSON.
 - It works on **any** volume of the server that has `userData`, not only the boot volume.
 - The volume's image must have `cloudInit: V1`, otherwise IONOS rejects `userData`.
 - The file is written world-readable (`0644`), which is why we detach the volume after the node joined.
@@ -146,7 +147,8 @@ is reproducible, and is uploaded once per IONOS location.
 | `COREOS_IONOSCLOUD_IPV4_DEFAULT` | source address of the default route | the public NIC |
 
 This keeps the usual Flatcar CAPI template pattern working: `kubeadm.service` gets
-`Requires=coreos-metadata.service` and `EnvironmentFile=/run/metadata/flatcar`, and `envsubst` fills
+`Requires=coreos-metadata.service`, `After=coreos-metadata.service` (so it waits until the file exists)
+and `EnvironmentFile=/run/metadata/flatcar`, and `envsubst` fills
 the kubeadm config. CAPIC names servers after their `IonosCloudMachine`, so the host name is the
 machine name, which is what CAPI expects.
 
@@ -182,12 +184,18 @@ machine name, which is what CAPI expects.
 For a machine whose bootstrap secret has `format: ignition`:
 
 1. Leave the bootstrap data untouched. Today CAPIC appends a cloud-init `bootcmd` to it, which breaks
-   Ignition JSON. The host name already comes from DHCP.
+   Ignition JSON. The host name already comes from DHCP. The JSON is only base64-encoded, as the API
+   requires for `userData`.
 2. Create the boot volume **without** `userData` and with `bootOrder: PRIMARY`.
 3. Add a second volume from the `ionos-ignition-config-volume` image with the bootstrap data as
-   `userData` and `bootOrder: NONE`.
+   `userData` and `bootOrder: NONE`. Remember its ID in the machine status.
 4. After the node has joined (the Machine has a `NodeRef`), detach and delete the config volume.
    This also removes the world-readable copy of the bootstrap data.
+5. Delete the config volume when the Machine is deleted, also if it never got a `NodeRef` (for example
+   after a failed bootstrap). This needs explicit handling: when a single Machine is deleted, CAPIC
+   only deletes the boot volume and keeps all other volumes for the CSI driver, so the config volume
+   would otherwise stay behind, billed and holding bootstrap credentials. Only the volume recorded in
+   step 3 is deleted; CSI data volumes are kept.
 
 `format: cloud-config` machines keep today's behaviour.
 
