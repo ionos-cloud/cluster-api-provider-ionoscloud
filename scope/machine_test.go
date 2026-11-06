@@ -204,7 +204,47 @@ func TestFindLatestMachineMachineIsReceiver(t *testing.T) {
 
 	latestMachine, err := scope.FindLatestMachine(t.Context(), controlPlaneLabel)
 	require.NoError(t, err)
-	require.Nil(t, latestMachine)
+	require.NotNil(t, latestMachine)
+	require.Equal(t, "cp-test-2", latestMachine.Name)
+}
+
+func TestFindLatestMachineReceiverIsNewest(t *testing.T) {
+	// The receiver is the newest machine. The result must be the newest of
+	// the other machines, no matter where the receiver is in the list.
+	for _, receiver := range []string{"cp-test-1", "cp-test-2", "cp-test-3"} {
+		t.Run(receiver, func(t *testing.T) {
+			scope, err := NewMachine(exampleParams(t))
+			require.NoError(t, err)
+
+			scope.ClusterScope.Cluster.SetName("test-cluster")
+			scope.IonosMachine.SetName(receiver)
+
+			controlPlaneLabel := client.MatchingLabels{clusterv1.MachineControlPlaneLabel: ""}
+			cpLabels := map[string]string{
+				clusterv1.ClusterNameLabel:         scope.ClusterScope.Cluster.Name,
+				clusterv1.MachineControlPlaneLabel: "",
+			}
+
+			offset := time.Duration(0)
+			var expected string
+			for _, name := range []string{"cp-test-1", "cp-test-2", "cp-test-3"} {
+				if name == receiver {
+					continue
+				}
+				err = scope.client.Create(t.Context(), createMachineWithLabels(name, cpLabels, offset))
+				require.NoError(t, err)
+				expected = name
+				offset += time.Minute
+			}
+			err = scope.client.Create(t.Context(), createMachineWithLabels(receiver, cpLabels, time.Hour))
+			require.NoError(t, err)
+
+			latestMachine, err := scope.FindLatestMachine(t.Context(), controlPlaneLabel)
+			require.NoError(t, err)
+			require.NotNil(t, latestMachine)
+			require.Equal(t, expected, latestMachine.Name)
+		})
+	}
 }
 
 func createMachineWithLabels(name string, labels map[string]string, offset time.Duration) *infrav1.IonosCloudMachine {
