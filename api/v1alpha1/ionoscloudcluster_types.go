@@ -62,7 +62,25 @@ type IonosCloudClusterSpec struct {
 	// LoadBalancerProviderRef is a reference to the load balancer provider configuration.
 	// An empty loadBalancerProviderRef field is allowed and means to disable any load balancer logic.
 	LoadBalancerProviderRef *corev1.LocalObjectReference `json:"loadBalancerProviderRef,omitempty"`
+
+	// LANIPv6 controls whether the LANs the provider creates for this cluster get an IPv6 CIDR block.
+	// It applies to LANs created after it is set; existing LANs are not updated.
+	// Unset means Enabled.
+	//
+	//+optional
+	LANIPv6 LANIPv6Mode `json:"lanIPv6,omitempty"`
 }
+
+// LANIPv6Mode defines whether a LAN created by the provider has IPv6 enabled.
+// +kubebuilder:validation:Enum=Enabled;Disabled
+type LANIPv6Mode string
+
+const (
+	// LANIPv6Enabled creates LANs with an automatically assigned IPv6 CIDR block.
+	LANIPv6Enabled LANIPv6Mode = "Enabled"
+	// LANIPv6Disabled creates LANs without IPv6.
+	LANIPv6Disabled LANIPv6Mode = "Disabled"
+)
 
 // IonosCloudClusterStatus defines the observed state of IonosCloudCluster.
 type IonosCloudClusterStatus struct {
