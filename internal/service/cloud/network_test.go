@@ -72,6 +72,21 @@ func (s *lanSuite) TestNetworkCreateLANSuccessful() {
 	s.Equal(sdk.RequestStatusQueued, req.State, "request status should be stored in status")
 }
 
+func (s *lanSuite) TestNetworkCreateLANIPv6Enabled() {
+	s.infraCluster.Spec.LANIPv6 = infrav1.LANIPv6Enabled
+	s.mockCreateLANCall().Return(exampleRequestPath, nil).Once()
+	s.NoError(s.service.createLAN(s.ctx, s.machineScope))
+}
+
+func (s *lanSuite) TestNetworkCreateLANIPv6Disabled() {
+	s.infraCluster.Spec.LANIPv6 = infrav1.LANIPv6Disabled
+	s.ionosClient.EXPECT().CreateLAN(s.ctx, s.machineScope.DatacenterID(), sdk.LanProperties{
+		Name:   new(s.service.lanName(s.clusterScope.Cluster)),
+		Public: new(true),
+	}).Return(exampleRequestPath, nil).Once()
+	s.NoError(s.service.createLAN(s.ctx, s.machineScope))
+}
+
 func (s *lanSuite) TestNetworkDeleteLANSuccessful() {
 	s.mockDeleteLANCall(exampleLANID).Return(exampleRequestPath, nil).Once()
 	s.NoError(s.service.deleteLAN(s.ctx, s.machineScope, exampleLANID))

@@ -88,6 +88,12 @@ var _ = Describe("IonosCloudCluster", func() {
 			cluster.Spec.ControlPlaneEndpoint.Host = ""
 			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
 		})
+		It("should reject an unknown lanIPv6 value", func() {
+			cluster := defaultCluster()
+			cluster.Spec.LANIPv6 = "AUTO"
+			Expect(k8sClient.Create(context.Background(), cluster)).
+				Should(MatchError(And(ContainSubstring("lanIPv6"), ContainSubstring("Unsupported value"))))
+		})
 	})
 
 	Context("Update", func() {
@@ -97,6 +103,16 @@ var _ = Describe("IonosCloudCluster", func() {
 
 			cluster.Spec.Location = newValueStr
 			Expect(k8sClient.Update(context.Background(), cluster)).ToNot(Succeed())
+		})
+
+		It("should allow setting, changing and removing lanIPv6", func() {
+			cluster := defaultCluster()
+			Expect(k8sClient.Create(context.Background(), cluster)).To(Succeed())
+
+			for _, mode := range []LANIPv6Mode{LANIPv6Disabled, LANIPv6Enabled, ""} {
+				cluster.Spec.LANIPv6 = mode
+				Expect(k8sClient.Update(context.Background(), cluster)).To(Succeed())
+			}
 		})
 
 		When("trying to update the control plane endpoint", func() {
