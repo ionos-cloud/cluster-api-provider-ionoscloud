@@ -227,11 +227,12 @@ Upload both to every location you use (FTP `ftp-<location>.ionos.com/hdd-images/
 | Config volume | `cloudInit: V1` (otherwise IONOS rejects `userData`), `discVirtioHotUnplug: true` (for the detach) |
 
 Add the IONOS labels your image selectors match. This recipe does not include the `ionos-cloud`
-sysext, so the `COREOS_IONOSCLOUD_*` metadata below is not available with it (see open points).
+sysext; images built this way still work with the CAPIC Flatcar template, which falls back to
+computing the metadata itself (see below).
 
 ## Metadata for kubeadm templates
 
-`coreos-metadata.service` writes `/run/metadata/flatcar`:
+The `ionos-cloud` sysext adds a `coreos-metadata.service` drop-in that writes `/run/metadata/flatcar`:
 
 | Variable | Where it comes from | Verified value on IONOS |
 |---|---|---|
@@ -246,6 +247,21 @@ This keeps the usual Flatcar CAPI template pattern working: `kubeadm.service` ge
 and `EnvironmentFile=/run/metadata/flatcar`, and `envsubst` fills
 the kubeadm config. CAPIC names servers after their `IonosCloudMachine`, so the host name is the
 machine name, which is what CAPI expects.
+
+The sysext source moves into this repository (two shell scripts and three systemd units, no
+IONOS-internal dependencies); there is no separate repository for it. IONOS-built images bake it from
+a pinned CAPIC ref, and IONOS cluster templates rely on it. The variable names are a contract: they
+are only ever added to, and a rename or removal needs a new major version of the sysext.
+
+The Flatcar flavor in `templates/` must also work with images built from the recipe above, which have
+no sysext. Without it, `coreos-metadata.service` is skipped on `oem_id=qemu` (a skipped unit still
+meets `Requires=`) and `/run/metadata/flatcar` is not written. The template therefore loads the file
+with `EnvironmentFile=-/run/metadata/flatcar` (optional), and its first `preKubeadmCommands` step
+writes the same variables when the file is missing (the host name from `hostname`, the instance ID
+from `/sys/class/dmi/id/product_uuid`, the private IPv4 address from the interface addresses) and
+sources it with `set -a`. CABPK runs all `preKubeadmCommands` and `kubeadm` in one script
+(`/etc/kubeadm.sh`), so the variables reach `envsubst`. One template then works with and without the
+sysext.
 
 ## What we tested
 
@@ -322,7 +338,8 @@ For a machine whose bootstrap secret has `format: ignition`:
    volume ID in the status is only a cache: if that status update is lost after the server was
    created, the volume is still found and cleaned up. CSI data volumes are never touched.
 7. Add a Flatcar flavor to `templates/` and an e2e test for `format: ignition`, so the new path stays
-   tested.
+   tested. Add the `ionos-cloud` sysext source (for example under `hack/flatcar/ionos-cloud-sysext/`)
+   with a script that builds the `.raw`.
 8. Match the Machine version in image names with delimiters (for example `-v1.37.1-` or a trailing
    `-`/`.`), so `v1.37.1` no longer matches `v1.37.10`. This affects all images, not only Flatcar.
 
@@ -334,15 +351,6 @@ On the CAPI side, Ignition output must be enabled on the bootstrap provider with
 ## Open points
 
 - Flatcar 4820 is still Beta (4820.1.1 at the time of writing). We pin it until it reaches Stable.
-- The `ionos-cloud` sysext (metadata provider and Harbor fetcher) lives in the internal pipeline, so
-  users who build the image themselves don't get the `COREOS_IONOSCLOUD_*` variables. Two ways out,
-  to be decided later:
-  - **Open-source the sysext** in a separate public repository, so anyone can build or download it.
-    It is small (two shell scripts and three systemd units) and has no IONOS-internal dependencies.
-  - **Don't depend on it in the cluster template.** The template can compute the same values itself
-    in `preKubeadmCommands`: the host name from `hostname`, the instance ID from
-    `/sys/class/dmi/id/product_uuid`, and the node IP from the interface addresses. The image would
-    then work with or without the sysext.
 - The marker-file behaviour of the image handler is not documented publicly. We should agree with its
   owners that `USER_DATA_INJECTION_FLATCAR` → `config/user_data` is a stable contract.
 - Not tested yet: `kubeadm join` of more nodes on IONOS (the join config size is verified, see above),
