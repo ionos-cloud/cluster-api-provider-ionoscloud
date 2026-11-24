@@ -334,9 +334,15 @@ On the CAPI side, Ignition output must be enabled on the bootstrap provider with
 ## Open points
 
 - Flatcar 4820 is still Beta (4820.1.1 at the time of writing). We pin it until it reaches Stable.
-- The `ionos-cloud` sysext (metadata provider and Harbor fetcher) lives in the internal pipeline. Users
-  who build the image themselves need it published, or a Flatcar template that does not depend on the
-  `COREOS_IONOSCLOUD_*` variables.
+- The `ionos-cloud` sysext (metadata provider and Harbor fetcher) lives in the internal pipeline, so
+  users who build the image themselves don't get the `COREOS_IONOSCLOUD_*` variables. Two ways out,
+  to be decided later:
+  - **Open-source the sysext** in a separate public repository, so anyone can build or download it.
+    It is small (two shell scripts and three systemd units) and has no IONOS-internal dependencies.
+  - **Don't depend on it in the cluster template.** The template can compute the same values itself
+    in `preKubeadmCommands`: the host name from `hostname`, the instance ID from
+    `/sys/class/dmi/id/product_uuid`, and the node IP from the interface addresses. The image would
+    then work with or without the sysext.
 - The marker-file behaviour of the image handler is not documented publicly. We should agree with its
   owners that `USER_DATA_INJECTION_FLATCAR` → `config/user_data` is a stable contract.
 - Not tested yet: `kubeadm join` of more nodes on IONOS (the join config size is verified, see above),
