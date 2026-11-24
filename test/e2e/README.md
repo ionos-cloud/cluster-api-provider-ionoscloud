@@ -18,6 +18,13 @@ Besides the tools, the following environment variables need to be set:
 - `IONOSCLOUD_MACHINE_IMAGE_ID`: The ID of the machine image to be used for the nodes. MUST be in the location specified by `CONTROL_PLANE_ENDPOINT_LOCATION`.
 - `CI`: If running the tests locally, this has to be `false`. Otherwise (running in a CI), it has to be `true`.
 
+The Flatcar spec runs only if these are set as well (see [Flatcar](../../docs/flatcar.md)):
+
+- `IONOSCLOUD_FLATCAR_IMAGE_ID`: The ID of the Flatcar node image with the Kubernetes and `ionos-cloud` sysexts.
+- `IONOSCLOUD_BOOTSTRAP_VOLUME_IMAGE_ID`: The ID of the config volume image.
+- `KUBERNETES_VERSION_FLATCAR` (optional): The Kubernetes version of the Flatcar node image. Defaults to the value in
+  `config/ionoscloud.yaml`.
+
 Before running the tests, you need to build the provider image.
 
 ```shell

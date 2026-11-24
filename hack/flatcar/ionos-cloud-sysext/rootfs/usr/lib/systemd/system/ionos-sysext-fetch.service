@@ -1,0 +1,11 @@
+[Unit]
+Description=Fetch systemd-sysext images from an OCI registry (IONOS Cloud)
+ConditionDirectoryNotEmpty=/etc/ionos-cloud/sysext.d
+Wants=network-online.target
+After=network-online.target
+Before=kubeadm.service kubelet.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/ionos-cloud/sysext-fetch

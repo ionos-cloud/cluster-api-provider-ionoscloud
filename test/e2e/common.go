@@ -33,6 +33,12 @@ const (
 	KubernetesVersion = "KUBERNETES_VERSION"
 	// KubernetesVersionManagement is the kind bootstrap cluster version.
 	KubernetesVersionManagement = "KUBERNETES_VERSION_MANAGEMENT"
+	// KubernetesVersionFlatcar is the workload cluster version of the Flatcar spec.
+	KubernetesVersionFlatcar = "KUBERNETES_VERSION_FLATCAR"
+	// FlatcarImageID is the IONOS image ID of the Flatcar node image.
+	FlatcarImageID = "IONOSCLOUD_FLATCAR_IMAGE_ID"
+	// BootstrapVolumeImageID is the IONOS image ID of the Ignition config volume.
+	BootstrapVolumeImageID = "IONOSCLOUD_BOOTSTRAP_VOLUME_IMAGE_ID"
 
 	defaultCloudResourceNamePrefix = "capic-e2e-test-"
 )

@@ -190,6 +190,23 @@ func (e *ionosCloudEnv) waitForDataCenterDeletion(ctx context.Context, datacente
 	Expect(err).ToNot(HaveOccurred(), "failed waiting for data center deletion")
 }
 
+// volumeNames returns the names of all volumes in the data center.
+func (e *ionosCloudEnv) volumeNames(ctx context.Context) ([]string, error) {
+	volumes, _, err := e.api.VolumesApi.DatacentersVolumesGet(ctx, e.datacenterID).Depth(1).Execute()
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	if items := volumes.GetItems(); items != nil {
+		for _, v := range *items {
+			if v.Properties != nil && v.Properties.Name != nil {
+				names = append(names, *v.Properties.Name)
+			}
+		}
+	}
+	return names, nil
+}
+
 // createCredentialsSecretPNC creates a secret with the IONOS Cloud credentials. This secret should be used as the
 // argument for the PostNamespaceCreation attribute of the spec input.
 func (e *ionosCloudEnv) createCredentialsSecretPNC(clusterProxy framework.ClusterProxy, namespace string) {

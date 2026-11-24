@@ -66,6 +66,7 @@ providers:
           - sourcePath: "../data/infrastructure-ionoscloud/cluster-template.yaml"
           - sourcePath: "../data/infrastructure-ionoscloud/cluster-template-ipam.yaml"
           - sourcePath: "../data/infrastructure-ionoscloud/cluster-template-image-selector.yaml"
+          - sourcePath: "../data/infrastructure-ionoscloud/cluster-template-flatcar.yaml"
 variables:
   # Default variables for the e2e test; those values could be overridden via env variables, thus
   # allowing the same e2e config file to be reused in different Prow jobs e.g. each one with a K8s version permutation.
@@ -82,6 +83,7 @@ variables:
   # Note: EXP_CLUSTER_RESOURCE_SET is enabled per default with CAPI v1.7.0.
   # We still have to enable them here for clusterctl upgrade tests that use older versions.
   EXP_CLUSTER_RESOURCE_SET: "true"
+  EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"
   IONOSCLOUD_MACHINE_MEMORY_MB: ""
   IONOSCLOUD_MACHINE_NUM_CORES: ""
   IONOSCLOUD_MACHINE_SSH_KEYS: ""
@@ -89,6 +91,10 @@ variables:
   CONTROL_PLANE_ENDPOINT_IP: ""
   CONTROL_PLANE_ENDPOINT_LOCATION: ""
   IONOSCLOUD_MACHINE_IMAGE_ID: ""
+  # Flatcar spec, skipped unless both image IDs are set. Must match the Flatcar node image.
+  KUBERNETES_VERSION_FLATCAR: "v1.37.1"
+  IONOSCLOUD_FLATCAR_IMAGE_ID: ""
+  IONOSCLOUD_BOOTSTRAP_VOLUME_IMAGE_ID: ""
 
 intervals:
   default/wait-controllers: [ "30m", "10s" ]
@@ -98,6 +104,7 @@ intervals:
   default/wait-delete-cluster: [ "30m", "10s" ]
   default/wait-nodes-ready: ["30m", "10s"]
   default/wait-resource-versions-become-stable: ["5m", "10s"]
+  default/wait-volume-deletion: ["10m", "10s"]
   scale/wait-cluster: ["30m", "10s"]
   scale/wait-control-plane: ["30m", "10s"]
   scale/wait-worker-nodes: ["30m", "10s"]

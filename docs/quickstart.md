@@ -170,11 +170,14 @@ export EXP_CLUSTER_RESOURCE_SET="true"
 
 We provide the following templates:
 
-| Flavor           | Template File                                  | CRS File                        |
-| ---------------- | ---------------------------------------------- | ------------------------------- |
-| default          | templates/cluster-template.yaml                | -                               |
-| calico           | templates/cluster-template-calico.yaml         | templates/crs/cni/calico.yaml   |
-| auto-image       | templates/cluster-template-auto-image.yaml     | -                               |
+| Flavor                       | Template File                                                | CRS File                      |
+| ---------------------------- | ------------------------------------------------------------ | ----------------------------- |
+| default                      | templates/cluster-template.yaml                              | -                             |
+| calico                       | templates/cluster-template-calico.yaml                       | templates/crs/cni/calico.yaml |
+| auto-image                   | templates/cluster-template-auto-image.yaml                   | -                             |
+| flatcar                      | templates/cluster-template-flatcar.yaml                      | -                             |
+| flatcar-without-ionos-sysext | templates/cluster-template-flatcar-without-ionos-sysext.yaml | -                             |
+| flatcar-sysext               | templates/cluster-template-flatcar-sysext.yaml               | -                             |
 
 
 #### Flavor with Calico CNI
@@ -208,6 +211,12 @@ $ kubectl apply -f cluster.yaml
 
 This template makes use of labels on custom built images.
 Please refer to the [custom image docs](/docs/custom-image.md) for more information.
+
+#### Flatcar flavors
+
+The `flatcar*` flavors create Flatcar Container Linux nodes that are bootstrapped with Ignition.
+They need two images and the CABPK feature gate `EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION=true`.
+Please refer to the [Flatcar docs](flatcar.md) for more information.
 
 ### Custom Templates
 
