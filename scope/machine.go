@@ -165,21 +165,18 @@ func (m *Machine) FindLatestMachine(
 		return nil, err
 	}
 
-	if len(machines) <= 1 {
-		return nil, nil
-	}
-
-	latestMachine := machines[0]
-	for _, machine := range machines {
-		if !machine.CreationTimestamp.Before(&latestMachine.CreationTimestamp) && machine.Name != m.IonosMachine.Name {
+	var latestMachine *infrav1.IonosCloudMachine
+	for i := range machines {
+		machine := &machines[i]
+		if machine.Name == m.IonosMachine.Name {
+			continue
+		}
+		if latestMachine == nil || !machine.CreationTimestamp.Before(&latestMachine.CreationTimestamp) {
 			latestMachine = machine
 		}
 	}
-	if latestMachine.Name == m.IonosMachine.Name {
-		return nil, nil
-	}
 
-	return &latestMachine, nil
+	return latestMachine, nil
 }
 
 // PatchObject will apply all changes from the IonosMachine.
