@@ -106,6 +106,11 @@ func ensureSecretControlledByCluster(
 	cluster *infrav1.IonosCloudCluster,
 	secret *corev1.Secret,
 ) error {
+	// A stale read during deletion would otherwise re-add the finalizer after it was removed.
+	if !cluster.DeletionTimestamp.IsZero() {
+		return nil
+	}
+
 	old := secret.DeepCopy()
 
 	finalizerAdded := controllerutil.AddFinalizer(secret, fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, cluster.GetUID()))

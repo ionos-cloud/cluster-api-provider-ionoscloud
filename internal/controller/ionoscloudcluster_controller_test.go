@@ -105,3 +105,30 @@ func requireSecretFinalizer(
 	require.NoError(t, cl.Get(ctx, client.ObjectKeyFromObject(secret), got))
 	require.Equal(t, want, controllerutil.ContainsFinalizer(got, finalizer))
 }
+
+func TestEnsureSecretControlledByClusterSkipsDeletingCluster(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, clientgoscheme.AddToScheme(scheme))
+	require.NoError(t, infrav1.AddToScheme(scheme))
+
+	now := metav1.Now()
+	ionosCluster := &infrav1.IonosCloudCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-cluster",
+			Namespace:         "default",
+			UID:               "ionos-cluster-uid",
+			DeletionTimestamp: &now,
+			Finalizers:        []string{infrav1.ClusterFinalizer},
+		},
+	}
+	credentials := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "credentials", Namespace: "default"},
+	}
+	cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(credentials).Build()
+	ctx := context.Background()
+
+	require.NoError(t, ensureSecretControlledByCluster(ctx, cl, ionosCluster, credentials.DeepCopy()))
+
+	credentialsFinalizer := fmt.Sprintf("%s/%s", infrav1.ClusterFinalizer, ionosCluster.GetUID())
+	requireSecretFinalizer(ctx, t, cl, credentials, credentialsFinalizer, false)
+}
