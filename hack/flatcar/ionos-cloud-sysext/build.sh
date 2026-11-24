@@ -30,10 +30,15 @@ mkdir -p "${stage}/usr/lib/extension-release.d"
   echo "ARCHITECTURE=${arch:-x86-64}"
   echo "VERSION_ID=${version}"
 } > "${stage}/usr/lib/extension-release.d/extension-release.${name}"
+# Modes from the checkout depend on the umask; only the scripts in libexec are executable.
+find "${stage}" -type d -exec chmod 0755 {} +
+find "${stage}" -type f -exec chmod 0644 {} +
+find "${stage}/usr/libexec" -type f -exec chmod 0755 {} +
 
 mkdir -p "${outdir}"
 out="${outdir}/${name}-${version}-${arch:-x86-64}.raw"
-mksquashfs "${stage}" "${out}" -quiet -no-progress -noappend -all-root \
-  -mkfs-time 0 -all-time 0 -no-xattrs >&2
+# mksquashfs refuses -mkfs-time/-all-time together with SOURCE_DATE_EPOCH.
+env -u SOURCE_DATE_EPOCH mksquashfs "${stage}" "${out}" -quiet -no-progress -noappend -comp gzip -b 131072 \
+  -all-root -mkfs-time 0 -all-time 0 -no-xattrs >&2
 echo "sha512: $({ sha512sum "${out}" 2>/dev/null || shasum -a 512 "${out}"; } | cut -d' ' -f1)" >&2
 echo "${out}"

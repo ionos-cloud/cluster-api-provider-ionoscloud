@@ -145,6 +145,7 @@ spec:
             "datacenter-id": "${IONOSCLOUD_DATACENTER_ID}"
           }
     preKubeadmCommands:
+      - 'test -n "$${COREOS_IONOSCLOUD_INSTANCE_ID}" || { echo "no instance ID in /run/metadata/flatcar" >&2; exit 1; }'
       - >-
         (umask 0077; envsubst '$${COREOS_IONOSCLOUD_HOSTNAME} $${COREOS_IONOSCLOUD_INSTANCE_ID} $${COREOS_IONOSCLOUD_IPV4_DEFAULT}'
         < /etc/kubeadm.yml > /etc/kubeadm.yml.tmp)
@@ -277,6 +278,7 @@ spec:
               "datacenter-id": "${IONOSCLOUD_DATACENTER_ID}"
             }
       preKubeadmCommands:
+        - 'test -n "$${COREOS_IONOSCLOUD_INSTANCE_ID}" || { echo "no instance ID in /run/metadata/flatcar" >&2; exit 1; }'
         - >-
           (umask 0077; envsubst '$${COREOS_IONOSCLOUD_HOSTNAME} $${COREOS_IONOSCLOUD_INSTANCE_ID} $${COREOS_IONOSCLOUD_IPV4_DEFAULT}'
           < /etc/kubeadm.yml > /etc/kubeadm.yml.tmp)

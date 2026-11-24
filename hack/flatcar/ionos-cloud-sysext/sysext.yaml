@@ -1,6 +1,6 @@
 # Local sysext: IONOS Cloud metadata provider + OCI sysext fetcher.
 name: ionos-cloud
-version: 1.0.3
+version: 1.0.4
 id: flatcar
 sysext_level: "1.0"
 architecture: x86-64

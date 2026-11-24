@@ -22,8 +22,8 @@ if the volume's image supports it. CAPIC uses this to deliver the Ignition confi
 4. Once the Machine has a node reference, CAPIC deletes the config volume. IONOS hot-unplugs it from the running
    server. Ignition only runs on the first boot, so the node never needs the volume again. The volume holds the
    bootstrap data, which includes the cluster CA keys on control plane nodes, so it must not outlive the join.
-5. When a Machine or the whole cluster is deleted, CAPIC also deletes the config volume if it still exists, for
-   example because the node never joined.
+5. When a Machine is deleted before that, for example because the node never joined, deleting the server detaches
+   the config volume, and CAPIC deletes leftover volumes named `cfg-<machine>`.
 
 If the bootstrap data is in Ignition format and `spec.bootstrapVolume` is not set, CAPIC does not create the server and
 sets the `MachineProvisioned` condition to `False` with the reason `BootstrapVolumeRequired`.
@@ -43,14 +43,18 @@ export EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION=true
 clusterctl init --infrastructure ionoscloud
 ```
 
-This sets the `KubeadmBootstrapFormatIgnition` feature gate on both the kubeadm bootstrap and the kubeadm control
-plane controller. On an existing management cluster, add `--feature-gates=KubeadmBootstrapFormatIgnition=true` to both
-deployments.
+This sets the `KubeadmBootstrapFormatIgnition` feature gate on both the kubeadm bootstrap (CABPK) and the kubeadm
+control plane (KCP) controller. On an existing management cluster, set `KubeadmBootstrapFormatIgnition=true` in the
+existing `--feature-gates` argument of both deployments (it contains `KubeadmBootstrapFormatIgnition=false` by
+default). Do not add a second `--feature-gates` argument: it replaces the first one.
 
 ## Images
 
 Both images must exist in every location you use. The recipe to build them is in the
 [design document](flatcar-ignition-design.md#building-the-images-yourself).
+
+The config volume image must be a private image: IONOS requires a password or an SSH key for volumes from public
+images, CAPIC sets neither, and IONOS rejects the request.
 
 | Image | Content | Required properties |
 |---|---|---|
@@ -62,7 +66,8 @@ and `systemd-sysupdate-reboot.timer`. The templates mask them as well, so nodes 
 Update the OS by rolling out Machines with a new image.
 
 If you select images with `spec.disk.image.selector` or `spec.bootstrapVolume.image.selector`: the config volume image
-name has no Kubernetes version, and CAPIC ignores `useMachineVersion` for it.
+name has no Kubernetes version, and CAPIC ignores `useMachineVersion` for `spec.bootstrapVolume.image`. The CRD still
+shows the default `true` for it.
 
 ## The ionos-cloud sysext
 
@@ -81,7 +86,13 @@ that writes `/run/metadata/flatcar`:
 These names are a contract: variables are only added, never renamed or removed.
 
 The sysext also contains `ionos-sysext-fetch.service`, which pulls sysexts pinned by digest from an OCI registry if
-`/etc/ionos-cloud/sysext.d/<name>.conf` files exist.
+`/etc/ionos-cloud/sysext.d/<name>.conf` files exist. If kubeadm needs a sysext pulled this way, add
+`ionos-sysext-fetch.service` to `Requires=` and `After=` of the `kubeadm.service` drop-in, so kubeadm does not run
+when the fetch fails.
+
+Install the sysext as `/opt/extensions/ionos-cloud/<file>.raw` with the symlink `/etc/extensions/ionos-cloud.raw`
+pointing to it. The name in the extension-release file is `ionos-cloud`, and systemd-sysext only merges the image if
+its file name matches.
 
 The source is in [`hack/flatcar/ionos-cloud-sysext`](../hack/flatcar/ionos-cloud-sysext). Build it on Linux with
 `squashfs-tools` installed:
@@ -108,7 +119,13 @@ All flavors:
 - register the node with the server name, `node-ip` set to the source address of the default route, and
   `provider-id: ionos://<server ID>`. No CCM is needed for the Machine to get its node reference;
 - add the SSH keys to the user `core`;
-- run kube-vip as a static pod on the control plane, as the default flavor does.
+- run kube-vip as a static pod on the control plane, as the default flavor does;
+- stop before kubeadm runs if the server ID is empty, instead of registering the node with an invalid provider ID;
+- run the scripts they write to `/etc` with `bash <script>`: Flatcar 4820 mounts `/etc` as an overlay with `noexec`.
+
+Unlike the default flavor, the Flatcar flavors do not set NTP servers, sysctls, the `ip_vs` kernel modules or the sshd
+hardening. IONOS DHCP sends no NTP server, so `systemd-timesyncd` uses its default pool, which needs egress to the
+internet.
 
 The variables are the ones of the default flavor (see the [quickstart](quickstart.md#environment-variables)), plus:
 

@@ -19,6 +19,7 @@ limitations under the License.
 package e2e
 
 import (
+	"fmt"
 	"os"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -62,9 +63,11 @@ var _ = Describe("Flatcar: Should be able to create a cluster with 1 control-pla
 					}
 				}, e2eConfig.GetIntervals("default", "wait-nodes-ready")...).Should(Succeed())
 
+				servers := make([]string, 0, len(machines.Items))
 				bootVolumes := make([]string, 0, len(machines.Items))
 				configVolumes := make([]string, 0, len(machines.Items))
 				for _, m := range machines.Items {
+					servers = append(servers, m.Spec.InfrastructureRef.Name)
 					bootVolumes = append(bootVolumes, "vol-"+m.Spec.InfrastructureRef.Name)
 					configVolumes = append(configVolumes, "cfg-"+m.Spec.InfrastructureRef.Name)
 				}
@@ -89,9 +92,12 @@ var _ = Describe("Flatcar: Should be able to create a cluster with 1 control-pla
 				}
 				// Runs after QuickStartSpec's AfterEach has deleted the cluster.
 				DeferCleanup(func() {
-					By("Checking that no volume of the deleted cluster remains in the data center")
+					By("Checking that no server or volume of the deleted cluster remains in the data center")
 					Eventually(func(g Gomega) {
-						names, err := cloudEnv.volumeNames(ctx)
+						names, err := cloudEnv.serverNames(ctx)
+						g.Expect(err).NotTo(HaveOccurred())
+						g.Expect(names).NotTo(ContainElement(BeElementOf(servers)))
+						names, err = cloudEnv.volumeNames(ctx)
 						g.Expect(err).NotTo(HaveOccurred())
 						g.Expect(names).NotTo(ContainElement(BeElementOf(append(bootVolumes, configVolumes...))))
 					}, e2eConfig.GetIntervals("default", "wait-volume-deletion")...).Should(Succeed())
@@ -101,10 +107,21 @@ var _ = Describe("Flatcar: Should be able to create a cluster with 1 control-pla
 	})
 })
 
+// flatcarE2EConfig returns the e2e config with KUBERNETES_VERSION set to the version of the Flatcar node image.
+// An empty KUBERNETES_VERSION_FLATCAR env var (an unset CI variable) keeps the config default.
 func flatcarE2EConfig() *clusterctl.E2EConfig {
 	cfg := e2eConfig.DeepCopy()
-	if v := cfg.GetVariableOrEmpty(KubernetesVersionFlatcar); v != "" {
-		cfg.Variables[KubernetesVersion] = v
+	version := os.Getenv(KubernetesVersionFlatcar)
+	if version == "" {
+		version = cfg.Variables[KubernetesVersionFlatcar]
 	}
+	Expect(version).NotTo(BeEmpty(), "%s must be set", KubernetesVersionFlatcar)
+
+	// The framework reads variables from the environment first, so the config value would be ignored.
+	if v, ok := os.LookupEnv(KubernetesVersion); ok && v != version {
+		Fail(fmt.Sprintf("%s=%q overrides the Flatcar version %q; unset it or set %s to the same version",
+			KubernetesVersion, v, version, KubernetesVersionFlatcar))
+	}
+	cfg.Variables[KubernetesVersion] = version
 	return cfg
 }

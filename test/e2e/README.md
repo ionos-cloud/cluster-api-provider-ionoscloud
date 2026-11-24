@@ -23,7 +23,8 @@ The Flatcar spec runs only if these are set as well (see [Flatcar](../../docs/fl
 - `IONOSCLOUD_FLATCAR_IMAGE_ID`: The ID of the Flatcar node image with the Kubernetes and `ionos-cloud` sysexts.
 - `IONOSCLOUD_BOOTSTRAP_VOLUME_IMAGE_ID`: The ID of the config volume image.
 - `KUBERNETES_VERSION_FLATCAR` (optional): The Kubernetes version of the Flatcar node image. Defaults to the value in
-  `config/ionoscloud.yaml`.
+  `config/ionoscloud.yaml` if unset or empty. If `KUBERNETES_VERSION` is set as well, it must be the same version,
+  otherwise the spec fails.
 
 Before running the tests, you need to build the provider image.
 
