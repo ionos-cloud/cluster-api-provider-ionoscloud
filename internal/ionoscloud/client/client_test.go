@@ -249,6 +249,23 @@ func (s *IonosCloudClientTestSuite) TestDeleteIPBlockFailureEmptyID() {
 	s.Empty(requestLocation)
 }
 
+func (s *IonosCloudClientTestSuite) TestListVolumesSuccess() {
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		catchAllMockURL,
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{}),
+	)
+	volumes, err := s.client.ListVolumes(s.ctx, exampleID)
+	s.NoError(err)
+	s.NotNil(volumes)
+}
+
+func (s *IonosCloudClientTestSuite) TestListVolumesFailureEmptyDatacenterID() {
+	volumes, err := s.client.ListVolumes(s.ctx, "")
+	s.ErrorIs(err, errDatacenterIDIsEmpty)
+	s.Nil(volumes)
+}
+
 func TestWithDepth(t *testing.T) {
 	tests := []struct {
 		depth int32

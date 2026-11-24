@@ -37,6 +37,8 @@ type Client interface {
 	// StartServer starts the server that matches the provided serverID in the specified data center.
 	// Returning the location and an error if starting the server fails.
 	StartServer(ctx context.Context, datacenterID, serverID string) (string, error)
+	// ListVolumes returns a list with the volumes in the specified data center.
+	ListVolumes(ctx context.Context, datacenterID string) (*sdk.Volumes, error)
 	// DeleteVolume deletes the volume that matches the provided volumeID in the specified data center.
 	DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error)
 	// CreateLAN creates a new LAN with the provided properties in the specified data center,

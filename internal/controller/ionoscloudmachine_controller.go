@@ -190,6 +190,18 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 
 	for _, step := range reconcileSequence {
 		if requeue, err := step.fn(ctx, machineScope); err != nil || requeue {
+			if errors.Is(err, cloud.ErrBootstrapVolumeRequired) {
+				// Only a spec change can resolve this, which triggers a new reconciliation.
+				log.Info("Not creating a server", "reason", err.Error())
+				conditions.Set(machineScope.IonosMachine, metav1.Condition{
+					Type:    infrav1.MachineProvisionedCondition,
+					Status:  metav1.ConditionFalse,
+					Reason:  infrav1.BootstrapVolumeRequiredReason,
+					Message: "Bootstrap data is in Ignition format, which requires spec.bootstrapVolume to be set.",
+				})
+				return ctrl.Result{}, nil
+			}
+
 			if err != nil {
 				err = fmt.Errorf("error in step %s: %w", step.name, err)
 				setProvisioningCondition(machineScope.IonosMachine, err)
@@ -229,6 +241,7 @@ func (r *IonosCloudMachineReconciler) reconcileDelete(
 		// the IP failover configuration.
 		{"ReconcileIPFailoverDeletion", cloudService.ReconcileIPFailoverDeletion},
 		{"ReconcileServerDeletion", cloudService.ReconcileServerDeletion},
+		{"ReconcileBootstrapVolumeDeletion", cloudService.ReconcileBootstrapVolumeDeletion},
 		{"ReconcileLANDeletion", cloudService.ReconcileLANDeletion},
 		{"ReconcileFailoverIPBlockDeletion", cloudService.ReconcileFailoverIPBlockDeletion},
 		{"ReconcileIPAddressClaimsDeletion", ipamHelper.ReconcileIPAddressClaimsDeletion},

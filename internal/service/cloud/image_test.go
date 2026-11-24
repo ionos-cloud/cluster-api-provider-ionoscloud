@@ -170,6 +170,44 @@ func (s *imageTestSuite) TestLookupImageNewestOK() {
 	s.Equal("image-2", imageID)
 }
 
+func (s *imageTestSuite) TestLookupBootstrapVolumeImageByID() {
+	s.infraMachine.Spec.BootstrapVolume = &infrav1.BootstrapVolume{Image: &infrav1.ImageSpec{ID: "image-1"}}
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(makeTestImage("image-1", "cfg", "loc"), nil).Once()
+
+	image, err := s.service.lookupBootstrapVolumeImage(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.Equal("image-1", *image.Id)
+}
+
+func (s *imageTestSuite) TestLookupBootstrapVolumeImageIgnoresMachineVersion() {
+	s.infraMachine.Spec.BootstrapVolume = &infrav1.BootstrapVolume{Image: &infrav1.ImageSpec{
+		Selector: &infrav1.ImageSelector{
+			MatchLabels:       map[string]string{"test": "image"},
+			ResolutionPolicy:  infrav1.ResolutionPolicyNewest,
+			UseMachineVersion: new(true),
+		},
+	}}
+	s.capiMachine.Spec.Version = ""
+	s.ionosClient.EXPECT().ListLabels(s.ctx).Return(
+		[]sdk.Label{
+			makeTestLabel("image", "image-1", "test", "image"),
+			makeTestLabel("image", "image-2", "test", "image"),
+		}, nil,
+	).Once()
+	s.ionosClient.EXPECT().GetDatacenterLocationByID(s.ctx, s.infraMachine.Spec.DatacenterID).Return("loc", nil).Once()
+	baseTime := time.Now().Round(time.Second)
+	image1 := makeTestImage("image-1", "cfg-1", "loc")
+	image1.Metadata.CreatedDate = &sdk.IonosTime{Time: baseTime}
+	image2 := makeTestImage("image-2", "cfg-2", "loc")
+	image2.Metadata.CreatedDate = &sdk.IonosTime{Time: baseTime.Add(time.Minute)}
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-1").Return(image1, nil).Once()
+	s.ionosClient.EXPECT().GetImage(s.ctx, "image-2").Return(image2, nil).Once()
+
+	image, err := s.service.lookupBootstrapVolumeImage(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.Equal("image-2", *image.Id)
+}
+
 func (s *imageTestSuite) makeTestImage(id, namePrefix, location string) *sdk.Image {
 	return makeTestImage(id, namePrefix+s.capiMachine.Spec.Version, location)
 }

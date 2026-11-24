@@ -30,6 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	bootstrapv1 "sigs.k8s.io/cluster-api/api/bootstrap/kubeadm/v1beta2"
 	conditions "sigs.k8s.io/cluster-api/util/conditions"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -93,6 +94,14 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 	}
 
 	ms.IonosMachine.Status.MachineNetworkInfo = netInfo
+
+	// The node has joined, so the bootstrap data is no longer needed.
+	if ms.Machine.Status.NodeRef.IsDefined() {
+		found, err := s.removeAttachedBootstrapVolume(ctx, ms, server)
+		if found || err != nil {
+			return true, err
+		}
+	}
 
 	log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
 	// server exists and is available.
@@ -250,6 +259,12 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, server *s
 	serverID := ptr.Deref(server.GetId(), "")
 
 	deleteVolumes := ms.ClusterScope.IsDeleted()
+	if !deleteVolumes {
+		if found, err := s.removeAttachedBootstrapVolume(ctx, ms, server); found || err != nil {
+			return err
+		}
+	}
+
 	bootVolumeID := server.GetProperties().GetBootVolume().GetId()
 	if !deleteVolumes && bootVolumeID != nil {
 		// We need to make sure to only delete volumes if the cluster is being deleted.
@@ -323,6 +338,11 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 		return errors.New("unable to obtain bootstrap data from secret")
 	}
 
+	isIgnition := bootstrapv1.Format(secret.Data["format"]) == bootstrapv1.Ignition
+	if isIgnition && ms.IonosMachine.Spec.BootstrapVolume == nil {
+		return ErrBootstrapVolumeRequired
+	}
+
 	lan, err := s.getLAN(ctx, ms)
 	if err != nil {
 		return err
@@ -339,13 +359,20 @@ func (s *Service) createServer(ctx context.Context, secret *corev1.Secret, ms *s
 		return fmt.Errorf("image lookup: %w", err)
 	}
 
-	renderedData := s.renderUserData(ms, string(bootstrapData))
 	copySpec := ms.IonosMachine.Spec.DeepCopy()
 	entityParams := serverEntityParams{
-		bootstrapData: renderedData,
-		machineSpec:   *copySpec,
-		lanID:         int32(lanID),
-		imageID:       imageID,
+		machineSpec: *copySpec,
+		lanID:       int32(lanID),
+		imageID:     imageID,
+	}
+
+	if isIgnition {
+		entityParams.bootstrapVolume, err = s.buildBootstrapVolume(ctx, ms, bootstrapData)
+		if err != nil {
+			return err
+		}
+	} else {
+		entityParams.bootstrapData = s.renderUserData(ms, string(bootstrapData))
 	}
 
 	server, requestLocation, err := s.ionosClient.CreateServer(
@@ -390,32 +417,16 @@ func (*Service) buildServerProperties(
 }
 
 type serverEntityParams struct {
-	bootstrapData string
-	machineSpec   infrav1.IonosCloudMachineSpec
-	lanID         int32
-	imageID       string
+	bootstrapData   string
+	machineSpec     infrav1.IonosCloudMachineSpec
+	lanID           int32
+	imageID         string
+	bootstrapVolume *sdk.Volume
 }
 
 // buildServerEntities returns the server entities for the expected cloud server resource.
 func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityParams) sdk.ServerEntities {
-	machineSpec := params.machineSpec
-	bootVolume := sdk.Volume{
-		Properties: &sdk.VolumeProperties{
-			AvailabilityZone: new(machineSpec.Disk.AvailabilityZone.String()),
-			Name:             new(s.volumeName(ms.IonosMachine)),
-			Size:             new(float32(machineSpec.Disk.SizeGB)),
-			Type:             new(machineSpec.Disk.DiskType.String()),
-			UserData:         &params.bootstrapData,
-		},
-	}
-
-	if params.imageID != "" {
-		bootVolume.Properties.Image = &params.imageID
-	}
-
-	serverVolumes := sdk.AttachedVolumes{
-		Items: &[]sdk.Volume{bootVolume},
-	}
+	serverVolumes := s.buildServerVolumes(ms, params)
 
 	primaryNIC := sdk.Nic{
 		Properties: &sdk.NicProperties{
@@ -467,6 +478,31 @@ func (s *Service) buildServerEntities(ms *scope.Machine, params serverEntityPara
 		Nics:    &serverNICs,
 		Volumes: &serverVolumes,
 	}
+}
+
+func (s *Service) buildServerVolumes(ms *scope.Machine, params serverEntityParams) sdk.AttachedVolumes {
+	machineSpec := params.machineSpec
+	bootVolume := sdk.Volume{
+		Properties: &sdk.VolumeProperties{
+			AvailabilityZone: new(machineSpec.Disk.AvailabilityZone.String()),
+			Name:             new(s.volumeName(ms.IonosMachine)),
+			Size:             new(float32(machineSpec.Disk.SizeGB)),
+			Type:             new(machineSpec.Disk.DiskType.String()),
+			UserData:         &params.bootstrapData,
+		},
+	}
+
+	if params.imageID != "" {
+		bootVolume.Properties.Image = &params.imageID
+	}
+
+	if params.bootstrapVolume == nil {
+		return sdk.AttachedVolumes{Items: &[]sdk.Volume{bootVolume}}
+	}
+
+	bootVolume.Properties.UserData = nil
+	bootVolume.Properties.BootOrder = new(bootOrderPrimary)
+	return sdk.AttachedVolumes{Items: &[]sdk.Volume{bootVolume, *params.bootstrapVolume}}
 }
 
 func (*Service) renderUserData(ms *scope.Machine, input string) string {

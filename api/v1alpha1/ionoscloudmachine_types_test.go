@@ -463,6 +463,78 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
 		})
 	})
+	Context("BootstrapVolume", func() {
+		withBootstrapVolume := func() *IonosCloudMachine {
+			m := defaultMachine()
+			m.Spec.BootstrapVolume = &BootstrapVolume{
+				Image: &ImageSpec{ID: "1eef-48ec-a246-a51a33aa4f3b"},
+			}
+			return m
+		}
+		It("should be optional", func() {
+			m := defaultMachine()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.BootstrapVolume).To(BeNil())
+		})
+		It("should work with an image ID and default the disk type to HDD", func() {
+			m := withBootstrapVolume()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.BootstrapVolume.DiskType).To(Equal(VolumeDiskTypeHDD))
+		})
+		It("should work with an image selector", func() {
+			m := withBootstrapVolume()
+			m.Spec.BootstrapVolume.Image = &ImageSpec{Selector: &ImageSelector{
+				MatchLabels: map[string]string{"flatcar": "config"},
+			}}
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			Expect(m.Spec.BootstrapVolume.Image.Selector.ResolutionPolicy).To(Equal(ResolutionPolicyExact))
+		})
+		It("should fail if the image is not set", func() {
+			m := withBootstrapVolume()
+			m.Spec.BootstrapVolume.Image = nil
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+		It("should fail if the image has neither ID nor selector", func() {
+			m := withBootstrapVolume()
+			m.Spec.BootstrapVolume.Image = &ImageSpec{}
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+		It("should fail if the image has both ID and selector", func() {
+			m := withBootstrapVolume()
+			m.Spec.BootstrapVolume.Image.Selector = &ImageSelector{
+				MatchLabels: map[string]string{"flatcar": "config"},
+			}
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+		It("should fail if the disk type is not part of the enum", func() {
+			m := withBootstrapVolume()
+			m.Spec.BootstrapVolume.DiskType = "tape"
+			Expect(k8sClient.Create(context.Background(), m)).ToNot(Succeed())
+		})
+		DescribeTable("should work for disk type",
+			func(diskType VolumeDiskType) {
+				m := withBootstrapVolume()
+				m.Spec.BootstrapVolume.DiskType = diskType
+				Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+				Expect(m.Spec.BootstrapVolume.DiskType).To(Equal(diskType))
+			},
+			Entry("HDD", VolumeDiskTypeHDD),
+			Entry("SSD Standard", VolumeDiskTypeSSDStandard),
+			Entry("SSD Premium", VolumeDiskTypeSSDPremium),
+		)
+		It("should allow adding it after creation", func() {
+			m := defaultMachine()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			m.Spec.BootstrapVolume = &BootstrapVolume{Image: &ImageSpec{ID: "1eef-48ec-a246-a51a33aa4f3b"}}
+			Expect(k8sClient.Update(context.Background(), m)).To(Succeed())
+		})
+		It("should not allow removing it once set", func() {
+			m := withBootstrapVolume()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			m.Spec.BootstrapVolume = nil
+			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+		})
+	})
 	Context("NetworkID", func() {
 		It("should allow setting an existing NetworkID in the spec", func() {
 			m := defaultMachine()

@@ -61,22 +61,52 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 		return imageSpec.ID, nil
 	}
 
+	var machineVersion *string
+	if ptr.Deref(imageSpec.Selector.UseMachineVersion, true) {
+		machineVersion = &ms.Machine.Spec.Version
+	}
+
+	image, err := s.selectImage(ctx, ms, imageSpec.Selector, machineVersion)
+	if err != nil {
+		return "", err
+	}
+
+	return ptr.Deref(image.GetId(), ""), nil
+}
+
+// lookupBootstrapVolumeImage returns the image of the bootstrap volume.
+// The machine version is never used to filter images, as the volume only carries the bootstrap data.
+func (s *Service) lookupBootstrapVolumeImage(ctx context.Context, ms *scope.Machine) (*sdk.Image, error) {
+	imageSpec := ms.IonosMachine.Spec.BootstrapVolume.Image
+
+	if imageSpec.ID != "" {
+		return s.ionosClient.GetImage(ctx, imageSpec.ID)
+	}
+
+	return s.selectImage(ctx, ms, imageSpec.Selector, nil)
+}
+
+// selectImage returns the image matching the selector. If machineVersion is not nil,
+// only images with a name containing the version are considered.
+func (s *Service) selectImage(
+	ctx context.Context, ms *scope.Machine, selector *infrav1.ImageSelector, machineVersion *string,
+) (*sdk.Image, error) {
 	location, err := s.getLocation(ctx, ms)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	images, err := s.lookupImagesBySelector(ctx, location, imageSpec.Selector)
+	images, err := s.lookupImagesBySelector(ctx, location, selector)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	matchErr := imageMatchError{selector: imageSpec.Selector, location: location, labelMatches: len(images)}
+	matchErr := imageMatchError{selector: selector, location: location, labelMatches: len(images)}
 
-	if ptr.Deref(imageSpec.Selector.UseMachineVersion, true) {
-		version := ms.Machine.Spec.Version
+	if machineVersion != nil {
+		version := *machineVersion
 		if version == "" {
-			return "", errMissingMachineVersion
+			return nil, errMissingMachineVersion
 		}
 
 		images = filterImagesByName(images, version)
@@ -84,14 +114,14 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 	}
 
 	if len(images) == 0 {
-		return "", matchErr
+		return nil, matchErr
 	}
 
-	switch imageSpec.Selector.ResolutionPolicy {
+	switch selector.ResolutionPolicy {
 	case infrav1.ResolutionPolicyExact:
 		if len(images) > 1 {
 			matchErr.imageIDs = getImageIDs(images)
-			return "", matchErr
+			return nil, matchErr
 		}
 	case infrav1.ResolutionPolicyNewest:
 		slices.SortFunc(images, func(lhs, rhs *sdk.Image) int {
@@ -100,7 +130,7 @@ func (s *Service) lookupImageID(ctx context.Context, ms *scope.Machine) (string,
 		})
 	}
 
-	return ptr.Deref(images[0].GetId(), ""), nil
+	return images[0], nil
 }
 
 func (s *Service) lookupImagesBySelector(
