@@ -150,12 +150,15 @@ is reproducible, and is uploaded once per IONOS location.
 CAPIC selects images by IONOS labels and, with `useMachineVersion: true` (the default), keeps only
 images whose **name contains the Machine's version**. The pipeline names node images
 `flatcar-<flatcar version>-ionos-kube-<kubernetes version>-<input hash>.qcow2`, for example
-`flatcar-4820.1.0-ionos-kube-v1.37.1-7b80e7e.qcow2`:
+`flatcar-4820.1.1-ionos-kube-v1.37.1-2e11e69.qcow2`:
 
 - The Kubernetes version in the name makes the default selector work.
 - The input hash changes whenever anything that goes into the image changes, so a fixed image never
   overwrites a released one. Several builds of the same versions can exist side by side, so use
   `resolutionPolicy: Newest`.
+- The match is a plain substring: `v1.37.1` also matches `v1.37.10`, and with `Newest` the wrong
+  Kubernetes version could be picked. Until CAPIC matches the version with delimiters (step 8 below),
+  keep one patch series per selector or add a version label to `matchLabels`.
 - The generic image (Kubernetes pulled at boot) and the config volume image have no Kubernetes
   version in their names, so their selectors need `useMachineVersion: false`.
 
@@ -171,7 +174,9 @@ B=https://beta.release.flatcar-linux.net/amd64-usr/$V
 curl -fLO $B/flatcar_production_qemu_uefi_image.img
 curl -fLO $B/flatcar_production_qemu_uefi_image.img.sig
 curl -fsSL https://www.flatcar.org/security/image-signing-key/Flatcar_Image_Signing_Key.asc | gpg --import
-gpg --verify flatcar_production_qemu_uefi_image.img.sig flatcar_production_qemu_uefi_image.img
+# Require a valid signature from the Flatcar Buildbot key itself, not just any key gpg knows.
+gpg --status-fd 1 --verify flatcar_production_qemu_uefi_image.img.sig flatcar_production_qemu_uefi_image.img \
+  | grep -q '^\[GNUPG:\] VALIDSIG .* F88CFEDEFF29A5B4D9523864E25D9AED0593B34A$' && echo "signature OK"
 
 # Kubernetes sysext; compare with the SHA256SUMS of the sysext-bakery release.
 curl -fLO https://extensions.flatcar.org/extensions/kubernetes-$K-x86-64.raw
@@ -203,7 +208,9 @@ mv flatcar_production_qemu_uefi_image.img flatcar-$V-ionos-kube-$K.qcow2
 # Config volume: GPT disk, one ext4 partition labelled ionos-ignition, only the marker file.
 truncate -s 1G cfg.raw
 printf 'label: gpt\nstart=2048, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name=ionos-ignition\n' | sfdisk cfg.raw
-mkdir -p marker && touch marker/USER_DATA_INJECTION_FLATCAR
+mkdir -p marker
+printf '# DO NOT EDIT FILE\n# MANAGED BY IONOS CLOUD\n#\n# INDICATOR FILE FOR USER DATA INJECTION\n' \
+  > marker/USER_DATA_INJECTION_FLATCAR
 set -- $(sfdisk -l -o Start,Sectors cfg.raw | tail -n1)
 truncate -s $(($2 * 512)) part.ext4
 mkfs.ext4 -L ionos-ignition -d marker part.ext4
@@ -230,7 +237,7 @@ sysext, so the `COREOS_IONOSCLOUD_*` metadata below is not available with it (se
 |---|---|---|
 | `COREOS_IONOSCLOUD_HOSTNAME` | DHCP host name (IONOS sends the server name) | the server name |
 | `COREOS_IONOSCLOUD_INSTANCE_ID` | SMBIOS system UUID | the IONOS server ID |
-| `COREOS_IONOSCLOUD_IPV4_PRIVATE` | first RFC 1918 address | the private LAN NIC |
+| `COREOS_IONOSCLOUD_IPV4_PRIVATE` | first RFC 1918 or RFC 6598 (100.64/10) address | the private LAN NIC |
 | `COREOS_IONOSCLOUD_IPV4_PUBLIC` | first other global address | the public LAN NIC |
 | `COREOS_IONOSCLOUD_IPV4_DEFAULT` | source address of the default route | the public NIC |
 
@@ -285,7 +292,10 @@ For a machine whose bootstrap secret has `format: ignition`:
    behind.
 3. Add a second volume named `cfg-<machine name>` from the config volume image, with the bootstrap data
    as `userData` and `bootOrder: NONE`. The image comes from a new, optional field that reuses
-   `ImageSpec` (an image ID or a label selector, normally with `useMachineVersion: false`):
+   `ImageSpec` (an image ID or a label selector). The CRD default `useMachineVersion: true` applies
+   here too, so a selector must set `useMachineVersion: false` (the config volume image name has no
+   Kubernetes version). `lookupImageID` today always reads `spec.disk.image`, so it needs to take the
+   `ImageSpec` as a parameter:
 
    ```go
    // BootstrapVolume is the volume that carries Ignition bootstrap data. Required when the
@@ -308,11 +318,13 @@ For a machine whose bootstrap secret has `format: ignition`:
    after a failed bootstrap). This needs explicit handling: when a single Machine is deleted, CAPIC
    only deletes the boot volume and keeps all other volumes for the CSI driver, so the config volume
    would otherwise stay behind, billed and holding bootstrap credentials.
-6. Find the config volume by its fixed name, the way `findServer` finds the server by name today. A
+6. Find the config volume by its fixed name, the way `getServer` finds the server by name today. A
    volume ID in the status is only a cache: if that status update is lost after the server was
    created, the volume is still found and cleaned up. CSI data volumes are never touched.
 7. Add a Flatcar flavor to `templates/` and an e2e test for `format: ignition`, so the new path stays
    tested.
+8. Match the Machine version in image names with delimiters (for example `-v1.37.1-` or a trailing
+   `-`/`.`), so `v1.37.1` no longer matches `v1.37.10`. This affects all images, not only Flatcar.
 
 `format: cloud-config` machines keep today's behaviour.
 
