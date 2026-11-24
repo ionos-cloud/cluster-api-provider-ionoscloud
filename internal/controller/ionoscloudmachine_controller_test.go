@@ -39,6 +39,7 @@ import (
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/service/cloud"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/locker"
+	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/scope"
 )
 
@@ -104,6 +105,39 @@ func TestReconcileNormalIgnitionWithoutBootstrapVolume(t *testing.T) {
 		require.Nil(t, ms.IonosMachine.Status.Initialization.Provisioned)
 		require.Empty(t, ms.IonosMachine.Spec.ProviderID)
 	}
+}
+
+func TestReconcileNormalBootstrapVolumeRemovalDoesNotBlockProvisioning(t *testing.T) {
+	r, ms, ionosClient := newIgnitionMachineTestScope(t)
+	ms.IonosMachine.Spec.BootstrapVolume = &infrav1.BootstrapVolume{Image: &infrav1.ImageSpec{ID: "cfg-image-id"}}
+	ms.Machine.Status.NodeRef = clusterv1.MachineNodeReference{Name: ms.Machine.Name}
+	ionosClient.EXPECT().ListLANs(mock.Anything, testDatacenterID).Return(&sdk.Lans{Items: &[]sdk.Lan{{
+		Id:       new(testLANID),
+		Metadata: &sdk.DatacenterElementMetadata{State: new(sdk.Available)},
+	}}}, nil)
+	ionosClient.EXPECT().GetServer(mock.Anything, testDatacenterID, testServerID).Return(&sdk.Server{
+		Id:         new(testServerID),
+		Metadata:   &sdk.DatacenterElementMetadata{State: new(sdk.Available)},
+		Properties: &sdk.ServerProperties{Name: new(ms.IonosMachine.Name), VmState: new("RUNNING")},
+		Entities: &sdk.ServerEntities{Volumes: &sdk.AttachedVolumes{Items: &[]sdk.Volume{{
+			Id:         new("volume-id"),
+			Metadata:   &sdk.DatacenterElementMetadata{State: new(sdk.Available)},
+			Properties: &sdk.VolumeProperties{Name: new("cfg-" + ms.IonosMachine.Name)},
+		}}}},
+	}, nil).Times(2)
+	ionosClient.EXPECT().GetRequests(mock.Anything, http.MethodDelete,
+		path.Join("datacenters", testDatacenterID, "volumes", "volume-id")).Return(nil, nil)
+	ionosClient.EXPECT().DeleteVolume(mock.Anything, testDatacenterID, "volume-id").
+		Return("", sdk.NewGenericOpenAPIError("error", nil, nil, http.StatusInternalServerError))
+
+	res, err := r.reconcileNormal(t.Context(), ms, newCloudService(t, ionosClient))
+	require.ErrorContains(t, err, "error in step ReconcileBootstrapVolume")
+	require.Equal(t, ctrl.Result{RequeueAfter: defaultReconcileDuration}, res)
+	require.True(t, ptr.Deref(ms.IonosMachine.Status.Initialization.Provisioned, false))
+
+	c := conditions.Get(ms.IonosMachine, infrav1.MachineProvisionedCondition)
+	require.NotNil(t, c)
+	require.Equal(t, metav1.ConditionTrue, c.Status)
 }
 
 func TestReconcileDeleteBootstrapVolumeWaitsForServerCreation(t *testing.T) {

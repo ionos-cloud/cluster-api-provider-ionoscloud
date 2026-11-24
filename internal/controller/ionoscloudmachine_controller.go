@@ -184,6 +184,7 @@ func (r *IonosCloudMachineReconciler) reconcileNormal(
 		{"ReconcileServer", cloudService.ReconcileServer},
 		{"ReconcileIPFailover", cloudService.ReconcileIPFailover},
 		{"FinalizeMachineProvisioning", cloudService.FinalizeMachineProvisioning},
+		{"ReconcileBootstrapVolume", cloudService.ReconcileBootstrapVolume},
 	}
 
 	setProvisioningCondition(machineScope.IonosMachine, nil)

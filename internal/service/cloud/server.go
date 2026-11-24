@@ -95,14 +95,6 @@ func (s *Service) ReconcileServer(ctx context.Context, ms *scope.Machine) (reque
 
 	ms.IonosMachine.Status.MachineNetworkInfo = netInfo
 
-	// The node has joined, so the bootstrap data is no longer needed.
-	if ms.Machine.Status.NodeRef.IsDefined() {
-		found, err := s.removeAttachedBootstrapVolume(ctx, ms, server)
-		if found || err != nil {
-			return true, err
-		}
-	}
-
 	log.Info("Server is available", "serverID", ptr.Deref(server.GetId(), ""))
 	// server exists and is available.
 	return false, nil
@@ -259,12 +251,6 @@ func (s *Service) deleteServer(ctx context.Context, ms *scope.Machine, server *s
 	serverID := ptr.Deref(server.GetId(), "")
 
 	deleteVolumes := ms.ClusterScope.IsDeleted()
-	if !deleteVolumes {
-		if found, err := s.removeAttachedBootstrapVolume(ctx, ms, server); found || err != nil {
-			return err
-		}
-	}
-
 	bootVolumeID := server.GetProperties().GetBootVolume().GetId()
 	if !deleteVolumes && bootVolumeID != nil {
 		// We need to make sure to only delete volumes if the cluster is being deleted.

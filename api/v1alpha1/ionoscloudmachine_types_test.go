@@ -532,7 +532,14 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			m := withBootstrapVolume()
 			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
 			m.Spec.BootstrapVolume = nil
-			Expect(k8sClient.Update(context.Background(), m)).ToNot(Succeed())
+			Expect(k8sClient.Update(context.Background(), m)).To(
+				MatchError(ContainSubstring("bootstrapVolume is required once set")))
+		})
+		It("should allow changing it once set", func() {
+			m := withBootstrapVolume()
+			Expect(k8sClient.Create(context.Background(), m)).To(Succeed())
+			m.Spec.BootstrapVolume.DiskType = VolumeDiskTypeSSDStandard
+			Expect(k8sClient.Update(context.Background(), m)).To(Succeed())
 		})
 	})
 	Context("NetworkID", func() {
@@ -631,6 +638,38 @@ var _ = Describe("IonosCloudMachine Tests", func() {
 			// Gomega matcher seems to have issues with comparing the dates.
 			diff := cmp.Diff(want.Status, m.Status)
 			Expect(diff).To(BeEmpty(), "m.Status differs from want.Status (-want +got):\n%s", diff)
+		})
+	})
+})
+
+var _ = Describe("IonosCloudMachineTemplate Tests", func() {
+	defaultTemplate := func() *IonosCloudMachineTemplate {
+		return &IonosCloudMachineTemplate{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-machine-template",
+				Namespace: metav1.NamespaceDefault,
+			},
+			Spec: IonosCloudMachineTemplateSpec{
+				Template: IonosCloudMachineTemplateResource{Spec: defaultMachine().Spec},
+			},
+		}
+	}
+
+	AfterEach(func() {
+		err := k8sClient.Delete(context.Background(), defaultTemplate())
+		Expect(client.IgnoreNotFound(err)).ToNot(HaveOccurred())
+	})
+
+	Context("BootstrapVolume", func() {
+		It("should not allow removing it once set", func() {
+			t := defaultTemplate()
+			t.Spec.Template.Spec.BootstrapVolume = &BootstrapVolume{
+				Image: &ImageSpec{ID: "1eef-48ec-a246-a51a33aa4f3b"},
+			}
+			Expect(k8sClient.Create(context.Background(), t)).To(Succeed())
+			t.Spec.Template.Spec.BootstrapVolume = nil
+			Expect(k8sClient.Update(context.Background(), t)).To(
+				MatchError(ContainSubstring("bootstrapVolume is required once set")))
 		})
 	})
 })

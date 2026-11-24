@@ -42,14 +42,32 @@ const (
 var ErrBootstrapVolumeRequired = errors.New(
 	"bootstrap data is in Ignition format, which requires spec.bootstrapVolume to be set")
 
+// ReconcileBootstrapVolume deletes the bootstrap volume attached to the server once the Machine has a node reference,
+// as the bootstrap data is no longer needed.
+func (s *Service) ReconcileBootstrapVolume(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
+	if ms.IonosMachine.Spec.BootstrapVolume == nil || !ms.Machine.Status.NodeRef.IsDefined() {
+		return false, nil
+	}
+
+	server, err := s.getServer(ctx, ms)
+	if server == nil || err != nil {
+		return false, ignoreNotFound(err)
+	}
+
+	volume := s.attachedBootstrapVolume(ms, server)
+	if volume == nil {
+		return false, nil
+	}
+
+	return true, s.removeBootstrapVolume(ctx, ms, volume)
+}
+
 // ReconcileBootstrapVolumeDeletion deletes bootstrap volumes of the machine that are not attached to a server.
 // It must only run after the server has been deleted.
 func (s *Service) ReconcileBootstrapVolumeDeletion(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	if ms.IonosMachine.Spec.BootstrapVolume == nil {
 		return false, nil
 	}
-
-	log := s.logger.WithName("ReconcileBootstrapVolumeDeletion")
 
 	volumes, err := s.apiWithDepth(1).ListVolumes(ctx, ms.DatacenterID())
 	if err != nil {
@@ -58,45 +76,36 @@ func (s *Service) ReconcileBootstrapVolumeDeletion(ctx context.Context, ms *scop
 
 	name := s.bootstrapVolumeName(ms.IonosMachine)
 	for _, volume := range ptr.Deref(volumes.GetItems(), []sdk.Volume{}) {
-		if ptr.Deref(volume.GetProperties().GetName(), "") != name {
-			continue
+		if ptr.Deref(volume.GetProperties().GetName(), "") == name {
+			return true, s.removeBootstrapVolume(ctx, ms, &volume)
 		}
-
-		volumeID := ptr.Deref(volume.GetId(), "")
-		request, err := s.getLatestVolumeDeletionRequest(ctx, ms.DatacenterID(), volumeID)
-		if err != nil {
-			return false, err
-		}
-
-		if request != nil && request.isPending() {
-			ms.IonosMachine.SetCurrentRequest(http.MethodDelete, request.status, request.location)
-			log.Info("Bootstrap volume deletion request is pending", "location", request.location)
-			return true, nil
-		}
-
-		return true, s.deleteBootstrapVolume(ctx, ms, volumeID)
 	}
 
 	return false, nil
 }
 
-// removeAttachedBootstrapVolume requests the deletion of the bootstrap volume attached to the server.
-// It returns false if the server has no bootstrap volume attached.
-func (s *Service) removeAttachedBootstrapVolume(
-	ctx context.Context, ms *scope.Machine, server *sdk.Server,
-) (found bool, err error) {
-	volume := s.attachedBootstrapVolume(ms, server)
-	if volume == nil {
-		return false, nil
+// removeBootstrapVolume requests the deletion of the bootstrap volume, unless its deletion is already in progress.
+func (s *Service) removeBootstrapVolume(ctx context.Context, ms *scope.Machine, volume *sdk.Volume) error {
+	log := s.logger.WithName("removeBootstrapVolume")
+
+	volumeID := ptr.Deref(volume.GetId(), "")
+	request, err := s.getLatestVolumeDeletionRequest(ctx, ms.DatacenterID(), volumeID)
+	if err != nil {
+		return err
+	}
+
+	if request != nil && request.isPending() {
+		ms.IonosMachine.SetCurrentRequest(http.MethodDelete, request.status, request.location)
+		log.Info("Bootstrap volume deletion request is pending", "location", request.location)
+		return nil
 	}
 
 	if state := getState(volume); state == sdk.Busy || state == sdk.Destroying {
-		s.logger.WithName("removeAttachedBootstrapVolume").
-			V(4).Info("Bootstrap volume is busy", "volumeID", ptr.Deref(volume.GetId(), ""), "state", state)
-		return true, nil
+		log.V(4).Info("Bootstrap volume is busy", "volumeID", volumeID, "state", state)
+		return nil
 	}
 
-	return true, s.deleteBootstrapVolume(ctx, ms, ptr.Deref(volume.GetId(), ""))
+	return s.deleteBootstrapVolume(ctx, ms, volumeID)
 }
 
 func (s *Service) attachedBootstrapVolume(ms *scope.Machine, server *sdk.Server) *sdk.Volume {

@@ -160,82 +160,155 @@ func (s *serverSuite) TestReconcileServerCloudConfigIgnoresBootstrapVolume() {
 	s.True(requeue)
 }
 
-func (s *serverSuite) TestReconcileServerRemovesBootstrapVolumeAfterNodeRef() {
+func (s *serverSuite) TestReconcileServerKeepsBootstrapVolumeAfterNodeRef() {
 	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
 	s.prepareRunningServer()
+	s.setNodeRef()
+	s.mockGetServerCall(exampleServerID).Return(s.runningServer(s.bootstrapVolume(sdk.Available)), nil).Once()
+
+	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.False(requeue)
+	s.Nil(s.infraMachine.Status.CurrentRequest)
+}
+
+func (s *serverSuite) TestReconcileBootstrapVolumeWithoutNodeRef() {
+	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
+
+	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.False(requeue)
+	s.Nil(s.infraMachine.Status.CurrentRequest)
+}
+
+func (s *serverSuite) TestReconcileBootstrapVolumeWithoutBootstrapVolumeSpec() {
+	s.setNodeRef()
+
+	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.False(requeue)
+	s.Nil(s.infraMachine.Status.CurrentRequest)
+}
+
+func (s *serverSuite) TestReconcileBootstrapVolumeRemovesVolumeAfterNodeRef() {
+	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
 	s.setNodeRef()
 
 	// Nothing is kept in memory between create and cleanup, so this also covers a controller restart.
 	s.mockGetServerCall(exampleServerID).Return(s.runningServer(s.bootstrapVolume(sdk.Available)), nil).Once()
+	s.mockGetVolumeDeletionRequestCall(exampleBootstrapVolumeID).Return(nil, nil).Once()
 	s.mockDeleteVolumeCall(exampleBootstrapVolumeID).Return("delete/volume", nil).Once()
 
-	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
-	s.NoError(err)
-	s.True(requeue)
-	s.Equal(http.MethodDelete, s.infraMachine.Status.CurrentRequest.Method)
-	s.Equal("delete/volume", s.infraMachine.Status.CurrentRequest.RequestPath)
+	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+	s.validateSuccessfulDeletionResponse(requeue, err, "delete/volume")
 
 	s.infraMachine.DeleteCurrentRequest()
 	s.mockGetServerCall(exampleServerID).Return(s.runningServer(), nil).Once()
 
-	requeue, err = s.service.ReconcileServer(s.ctx, s.machineScope)
+	requeue, err = s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.False(requeue)
 	s.Nil(s.infraMachine.Status.CurrentRequest)
 }
 
-func (s *serverSuite) TestReconcileServerKeepsBootstrapVolumeWithoutNodeRef() {
+func (s *serverSuite) TestReconcileBootstrapVolumeRequestPending() {
 	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
-	s.prepareRunningServer()
-	s.mockGetServerCall(exampleServerID).Return(s.runningServer(s.bootstrapVolume(sdk.Available)), nil).Once()
-
-	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
-	s.NoError(err)
-	s.False(requeue)
-	s.Nil(s.infraMachine.Status.CurrentRequest)
-}
-
-func (s *serverSuite) TestReconcileServerBootstrapVolumeBusy() {
-	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
-	s.prepareRunningServer()
 	s.setNodeRef()
 	s.mockGetServerCall(exampleServerID).Return(s.runningServer(s.bootstrapVolume(sdk.Busy)), nil).Once()
+	s.mockGetVolumeDeletionRequestCall(exampleBootstrapVolumeID).
+		Return([]sdk.Request{s.exampleVolumeDeleteRequest(sdk.RequestStatusQueued)}, nil).Once()
 
-	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
+	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+	s.validateSuccessfulDeletionResponse(requeue, err, path.Join(exampleRequestPath, exampleBootstrapVolumeID))
+	s.Equal(sdk.RequestStatusQueued, s.infraMachine.Status.CurrentRequest.State)
+}
+
+func (s *serverSuite) TestReconcileBootstrapVolumeRequestFailed() {
+	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
+	s.setNodeRef()
+	s.mockGetServerCall(exampleServerID).Return(s.runningServer(s.bootstrapVolume(sdk.Available)), nil).Once()
+	s.mockGetVolumeDeletionRequestCall(exampleBootstrapVolumeID).
+		Return([]sdk.Request{s.exampleVolumeDeleteRequest(sdk.RequestStatusFailed)}, nil).Once()
+	s.mockDeleteVolumeCall(exampleBootstrapVolumeID).Return("delete/volume", nil).Once()
+
+	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+	s.validateSuccessfulDeletionResponse(requeue, err, "delete/volume")
+	s.Equal(sdk.RequestStatusQueued, s.infraMachine.Status.CurrentRequest.State)
+}
+
+func (s *serverSuite) TestReconcileBootstrapVolumeBusy() {
+	for _, state := range []string{sdk.Busy, sdk.Destroying} {
+		s.Run(state, func() {
+			s.SetupTest()
+			s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
+			s.setNodeRef()
+			s.mockGetServerCall(exampleServerID).Return(s.runningServer(s.bootstrapVolume(state)), nil).Once()
+			s.mockGetVolumeDeletionRequestCall(exampleBootstrapVolumeID).Return(nil, nil).Once()
+
+			requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+			s.NoError(err)
+			s.True(requeue)
+			s.Nil(s.infraMachine.Status.CurrentRequest)
+		})
+	}
+}
+
+func (s *serverSuite) TestReconcileBootstrapVolumeAlreadyGone() {
+	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
+	s.setNodeRef()
+	s.mockGetServerCall(exampleServerID).Return(s.runningServer(s.bootstrapVolume(sdk.Available)), nil).Once()
+	s.mockGetVolumeDeletionRequestCall(exampleBootstrapVolumeID).Return(nil, nil).Once()
+	s.mockDeleteVolumeCall(exampleBootstrapVolumeID).
+		Return("", sdk.NewGenericOpenAPIError("not found", nil, nil, http.StatusNotFound)).Once()
+
+	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.True(requeue)
 	s.Nil(s.infraMachine.Status.CurrentRequest)
 }
 
-func (s *serverSuite) TestReconcileServerWithoutBootstrapVolumeSpecIgnoresVolumeName() {
-	s.prepareRunningServer()
+func (s *serverSuite) TestReconcileBootstrapVolumeDeleteError() {
+	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
 	s.setNodeRef()
 	s.mockGetServerCall(exampleServerID).Return(s.runningServer(s.bootstrapVolume(sdk.Available)), nil).Once()
+	s.mockGetVolumeDeletionRequestCall(exampleBootstrapVolumeID).Return(nil, nil).Once()
+	s.mockDeleteVolumeCall(exampleBootstrapVolumeID).
+		Return("", sdk.NewGenericOpenAPIError("error", nil, nil, http.StatusInternalServerError)).Once()
 
-	requeue, err := s.service.ReconcileServer(s.ctx, s.machineScope)
-	s.NoError(err)
-	s.False(requeue)
+	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+	s.ErrorContains(err, "failed to request bootstrap volume deletion")
+	s.True(requeue)
+	s.Nil(s.infraMachine.Status.CurrentRequest)
 }
 
-func (s *serverSuite) TestReconcileServerDeletionDeletesAttachedBootstrapVolumeFirst() {
+func (s *serverSuite) TestReconcileBootstrapVolumeServerNotFound() {
+	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
+	s.setNodeRef()
+	s.mockGetServerCall(exampleServerID).
+		Return(nil, sdk.NewGenericOpenAPIError("not found", nil, nil, http.StatusNotFound)).Once()
+	s.mockListServersCall().Return(&sdk.Servers{Items: &[]sdk.Server{}}, nil).Once()
+
+	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.False(requeue)
+	s.Nil(s.infraMachine.Status.CurrentRequest)
+}
+
+func (s *serverSuite) TestReconcileServerDeletionIgnoresAttachedBootstrapVolume() {
 	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
 
 	server := s.runningServer(s.bootstrapVolume(sdk.Available))
 	server.Properties.BootVolume = &sdk.ResourceReference{Id: new(exampleBootVolumeID)}
 	s.mockGetServerCall(exampleServerID).Return(server, nil).Once()
 
-	serverWithoutBootstrapVolume := s.runningServer()
-	serverWithoutBootstrapVolume.Properties.BootVolume = &sdk.ResourceReference{Id: new(exampleBootVolumeID)}
-	s.mockGetServerCall(exampleServerID).Return(serverWithoutBootstrapVolume, nil).Once()
+	serverWithoutBootVolume := s.runningServer(s.bootstrapVolume(sdk.Available))
+	s.mockGetServerCall(exampleServerID).Return(serverWithoutBootVolume, nil).Once()
 
-	s.mockGetServerCall(exampleServerID).Return(s.runningServer(), nil).Once()
-
-	s.mockGetServerDeletionRequestCall(exampleServerID).Return(nil, nil).Times(3)
-	s.mockDeleteVolumeCall(exampleBootstrapVolumeID).Return("delete/bootstrap", nil).Once()
+	s.mockGetServerDeletionRequestCall(exampleServerID).Return(nil, nil).Times(2)
 	s.mockDeleteVolumeCall(exampleBootVolumeID).Return("delete/boot", nil).Once()
 	s.mockDeleteServerCall(exampleServerID, false).Return("delete/server", nil).Once()
 
-	for _, location := range []string{"delete/bootstrap", "delete/boot", "delete/server"} {
+	for _, location := range []string{"delete/boot", "delete/server"} {
 		requeue, err := s.service.ReconcileServerDeletion(s.ctx, s.machineScope)
 		s.validateSuccessfulDeletionResponse(requeue, err, location)
 	}
@@ -321,6 +394,24 @@ func (s *serverSuite) TestReconcileBootstrapVolumeDeletionVolumeAlreadyGone() {
 	s.NoError(err)
 	s.True(requeue)
 	s.Nil(s.infraMachine.Status.CurrentRequest)
+}
+
+func (s *serverSuite) TestReconcileBootstrapVolumeDeletionVolumeBusy() {
+	for _, state := range []string{sdk.Busy, sdk.Destroying} {
+		s.Run(state, func() {
+			s.SetupTest()
+			s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
+			volumes := s.datacenterVolumes()
+			(*volumes.Items)[2] = s.bootstrapVolume(state)
+			s.mockListVolumesCall().Return(volumes, nil).Once()
+			s.mockGetVolumeDeletionRequestCall(exampleBootstrapVolumeID).Return(nil, nil).Once()
+
+			requeue, err := s.service.ReconcileBootstrapVolumeDeletion(s.ctx, s.machineScope)
+			s.NoError(err)
+			s.True(requeue)
+			s.Nil(s.infraMachine.Status.CurrentRequest)
+		})
+	}
 }
 
 func (s *serverSuite) TestReconcileBootstrapVolumeDeletionNoVolume() {
