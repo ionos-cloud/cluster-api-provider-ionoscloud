@@ -171,7 +171,7 @@ spec:
         (umask 0077; envsubst '$${COREOS_IONOSCLOUD_HOSTNAME} $${COREOS_IONOSCLOUD_INSTANCE_ID} $${COREOS_IONOSCLOUD_IPV4_DEFAULT}'
         < /etc/kubeadm.yml > /etc/kubeadm.yml.tmp)
       - mv /etc/kubeadm.yml.tmp /etc/kubeadm.yml
-      - /etc/kube-vip-prepare.sh
+      - bash /etc/kube-vip-prepare.sh
     postKubeadmCommands:
       - >-
         sed -i 's#path: /etc/kubernetes/super-admin.conf#path: /etc/kubernetes/admin.conf#'
