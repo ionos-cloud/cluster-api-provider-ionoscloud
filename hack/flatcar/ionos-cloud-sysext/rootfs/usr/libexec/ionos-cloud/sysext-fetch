@@ -4,6 +4,7 @@
 # /etc/ionos-cloud/sysext.d/<name>.conf:
 #   REF=<registry>/<repository>@sha256:<manifest digest>
 # /etc/ionos-cloud/registry-auth (optional, mode 0600):  <user>:<password>
+#   used for the token request (Bearer challenge) or sent directly (Basic challenge)
 #
 # Ignition's HTTP fetcher cannot follow the registry bearer-token challenge, hence this helper.
 set -euo pipefail
@@ -29,16 +30,23 @@ log() { echo "sysext-fetch: $*" >&2; }
 # cfg_quote STRING: prints STRING as a quoted curl config value.
 cfg_quote() { local s=${1//\\/\\\\}; s=${s//\"/\\\"}; printf '"%s"' "${s}"; }
 
-# token REGISTRY REPOSITORY: prints a bearer token, or nothing if the registry needs none. Fails if
-# the registry cannot be reached or a required token cannot be obtained.
-token() {
+# auth_config REGISTRY REPOSITORY: prints the curl config that authenticates manifest and blob requests,
+# or nothing if the registry needs no auth. Fails if the registry cannot be reached or required
+# credentials cannot be obtained.
+auth_config() {
   local registry=$1 repo=$2 headers hdr realm service body tok auth_cfg=""
   # No --fail: the expected answer is a 401 with the challenge. Retries cover network errors and 5xx.
   headers=$(curl -sS -o /dev/null -D - --connect-timeout 10 "${small_opts[@]}" \
               --retry "${SYSEXT_FETCH_RETRIES:-10}" --retry-delay 5 --retry-connrefused \
               "${scheme}://${registry}/v2/") || { log "cannot reach ${scheme}://${registry}/v2/"; return 1; }
-  hdr=$(tr -d '\r' <<< "${headers}" | sed -n 's/^[Ww][Ww][Ww]-[Aa]uthenticate: *[Bb]earer *//p')
-  [ -n "${hdr}" ] || return 0
+  headers=$(tr -d '\r' <<< "${headers}")
+  hdr=$(sed -n 's/^[Ww][Ww][Ww]-[Aa]uthenticate: *[Bb]earer *//p' <<< "${headers}")
+  if [ -z "${hdr}" ]; then
+    grep -qi '^www-authenticate: *basic' <<< "${headers}" || return 0
+    [ -s "${auth_file}" ] || { log "${registry} requires Basic auth, but ${auth_file} is missing"; return 1; }
+    echo "user = $(cfg_quote "$(cat "${auth_file}")")"
+    return 0
+  fi
   realm=$(sed -n 's/.*realm="\([^"]*\)".*/\1/p' <<< "${hdr}")
   service=$(sed -n 's/.*service="\([^"]*\)".*/\1/p' <<< "${hdr}")
   [ -s "${auth_file}" ] && auth_cfg="user = $(cfg_quote "$(cat "${auth_file}")")"
@@ -47,22 +55,21 @@ token() {
     || { log "token request to ${realm} failed"; return 1; }
   tok=$(jq -r '.token // .access_token // empty' <<< "${body}")
   [ -n "${tok}" ] || { log "no token in the response from ${realm}"; return 1; }
-  echo "${tok}"
+  echo "header = $(cfg_quote "Authorization: Bearer ${tok}")"
 }
 
 # sha256_of FILE
 sha256_of() { sha256sum "$1" | cut -d' ' -f1; }
 
 fetch_one() {
-  local name=$1 ref=$2 registry rest repo digest tok tmp manifest layer title dest auth_cfg=""
+  local name=$1 ref=$2 registry rest repo digest tmp manifest layer title dest auth_cfg
   registry=${ref%%/*}
   rest=${ref#*/}
   repo=${rest%@*}
   digest=${rest#*@}
   [[ "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]] || { log "${name}: REF must be pinned by sha256 digest: ${ref}"; return 1; }
 
-  tok=$(token "${registry}" "${repo}") || return 1
-  [ -n "${tok}" ] && auth_cfg="header = $(cfg_quote "Authorization: Bearer ${tok}")"
+  auth_cfg=$(auth_config "${registry}" "${repo}") || return 1
 
   tmp=$(mktemp -d "${tmp_root}/${name}.XXXXXX")
 
