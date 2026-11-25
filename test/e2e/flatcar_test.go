@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -67,9 +69,13 @@ var _ = Describe("Flatcar: Should be able to create a cluster with 1 control-pla
 				bootVolumes := make([]string, 0, len(machines.Items))
 				configVolumes := make([]string, 0, len(machines.Items))
 				for _, m := range machines.Items {
-					servers = append(servers, m.Spec.InfrastructureRef.Name)
-					bootVolumes = append(bootVolumes, "vol-"+m.Spec.InfrastructureRef.Name)
-					configVolumes = append(configVolumes, "cfg-"+m.Spec.InfrastructureRef.Name)
+					infraMachine := &infrav1.IonosCloudMachine{}
+					Expect(proxy.GetClient().Get(ctx, runtimeclient.ObjectKey{
+						Namespace: namespace, Name: m.Spec.InfrastructureRef.Name,
+					}, infraMachine)).To(Succeed())
+					servers = append(servers, infraMachine.Name)
+					bootVolumes = append(bootVolumes, "vol-"+infraMachine.Name)
+					configVolumes = append(configVolumes, "cfg-"+string(infraMachine.UID))
 				}
 
 				By("Checking that the config volumes are deleted once the nodes joined")

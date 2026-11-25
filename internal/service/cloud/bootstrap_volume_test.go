@@ -37,7 +37,7 @@ const (
 )
 
 func (s *serverSuite) TestBootstrapVolumeName() {
-	s.Equal("cfg-"+s.infraMachine.Name, s.service.bootstrapVolumeName(s.infraMachine))
+	s.Equal("cfg-"+string(s.infraMachine.UID), s.service.bootstrapVolumeName(s.infraMachine))
 }
 
 func (s *serverSuite) TestReconcileServerIgnitionCreatesBootstrapVolume() {
@@ -491,7 +491,7 @@ func (s *serverSuite) ignitionServerComponents() (sdk.ServerProperties, sdk.Serv
 			BootOrder:           new("NONE"),
 			DiscVirtioHotUnplug: new(true),
 			Image:               new(exampleBootstrapVolumeImageID),
-			Name:                new("cfg-" + s.infraMachine.Name),
+			Name:                new("cfg-" + string(s.infraMachine.UID)),
 			Size:                new(float32(1)),
 			Type:                new("HDD"),
 			UserData:            new(base64.StdEncoding.EncodeToString([]byte(exampleIgnitionConfig))),

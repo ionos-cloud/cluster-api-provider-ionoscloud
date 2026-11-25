@@ -122,7 +122,7 @@ func TestReconcileNormalBootstrapVolumeRemovalDoesNotBlockProvisioning(t *testin
 		Entities: &sdk.ServerEntities{Volumes: &sdk.AttachedVolumes{Items: &[]sdk.Volume{{
 			Id:         new("volume-id"),
 			Metadata:   &sdk.DatacenterElementMetadata{State: new(sdk.Available)},
-			Properties: &sdk.VolumeProperties{Name: new("cfg-" + ms.IonosMachine.Name)},
+			Properties: &sdk.VolumeProperties{Name: new("cfg-" + string(ms.IonosMachine.UID))},
 		}}}},
 	}, nil).Times(2)
 	ionosClient.EXPECT().GetRequests(mock.Anything, http.MethodDelete,
@@ -165,7 +165,7 @@ func TestReconcileDeleteBootstrapVolumeAfterServerDeletion(t *testing.T) {
 		Return(nil, nil)
 	ionosClient.EXPECT().ListVolumes(mock.Anything, testDatacenterID).Return(&sdk.Volumes{Items: &[]sdk.Volume{{
 		Id:         new("volume-id"),
-		Properties: &sdk.VolumeProperties{Name: new("cfg-" + ms.IonosMachine.Name)},
+		Properties: &sdk.VolumeProperties{Name: new("cfg-" + string(ms.IonosMachine.UID))},
 	}}}, nil)
 	ionosClient.EXPECT().GetRequests(mock.Anything, http.MethodDelete,
 		path.Join("datacenters", testDatacenterID, "volumes", "volume-id")).Return(nil, nil)

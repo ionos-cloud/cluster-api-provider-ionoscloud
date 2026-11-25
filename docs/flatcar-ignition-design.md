@@ -169,6 +169,7 @@ The pipeline is internal, but nothing in it depends on IONOS internals. On Linux
 `libguestfs-tools`, `qemu-utils`, `gpg`, `fdisk` and `e2fsprogs`:
 
 ```sh
+set -euo pipefail
 # Node image: official Flatcar QEMU UEFI image (>= 4820, Ignition >= 2.27), verified.
 V=4820.1.1; K=v1.37.1
 B=https://beta.release.flatcar-linux.net/amd64-usr/$V
@@ -176,11 +177,14 @@ curl -fLO $B/flatcar_production_qemu_uefi_image.img
 curl -fLO $B/flatcar_production_qemu_uefi_image.img.sig
 curl -fsSL https://www.flatcar.org/security/image-signing-key/Flatcar_Image_Signing_Key.asc | gpg --import
 # Require a valid signature from the Flatcar Buildbot key itself, not just any key gpg knows.
-gpg --status-fd 1 --verify flatcar_production_qemu_uefi_image.img.sig flatcar_production_qemu_uefi_image.img \
-  | grep -q '^\[GNUPG:\] VALIDSIG .* F88CFEDEFF29A5B4D9523864E25D9AED0593B34A$' && echo "signature OK"
+status=$(gpg --status-fd 1 --verify flatcar_production_qemu_uefi_image.img.sig flatcar_production_qemu_uefi_image.img)
+grep -q '^\[GNUPG:\] VALIDSIG .* F88CFEDEFF29A5B4D9523864E25D9AED0593B34A$' <<<"$status" \
+  || { echo "image is not signed by the Flatcar Buildbot key" >&2; exit 1; }
 
-# Kubernetes sysext; compare with the SHA256SUMS of the sysext-bakery release.
+# Kubernetes sysext, checked against the SHA256SUMS of the sysext-bakery release.
 curl -fLO https://extensions.flatcar.org/extensions/kubernetes-$K-x86-64.raw
+curl -fsSL https://extensions.flatcar.org/extensions/kubernetes/SHA256SUMS \
+  | grep " kubernetes-$K-x86-64.raw\$" | sha256sum -c -
 
 cat > grub.cfg <<'EOF'
 set oem_id="qemu"
@@ -310,7 +314,8 @@ For a machine whose bootstrap secret has `format: ignition`:
    boot time: `deleteServer` reads the server's boot volume, and if it is unset, deleting a single
    Machine calls `DeleteServer` with `deleteVolumes=false`, so the Flatcar boot volume would stay
    behind.
-3. Add a second volume named `cfg-<machine name>` from the config volume image, with the bootstrap data
+3. Add a second volume named `cfg-<IonosCloudMachine UID>` (machine names are only unique within a
+   namespace, but leftovers are looked up in the whole data center) from the config volume image, with the bootstrap data
    as `userData` and `bootOrder: NONE`. The image comes from a new, optional field that reuses
    `ImageSpec` (an image ID or a label selector). The CRD default `useMachineVersion: true` applies
    here too, so a selector must set `useMachineVersion: false` (the config volume image name has no

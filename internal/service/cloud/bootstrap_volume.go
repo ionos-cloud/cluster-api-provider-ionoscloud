@@ -182,6 +182,8 @@ func (s *Service) buildBootstrapVolume(
 	}, nil
 }
 
+// bootstrapVolumeName uses the UID, as machine names are only unique within a namespace,
+// while leftover bootstrap volumes are looked up in the whole data center.
 func (*Service) bootstrapVolumeName(m *infrav1.IonosCloudMachine) string {
-	return "cfg-" + m.Name
+	return "cfg-" + string(m.UID)
 }

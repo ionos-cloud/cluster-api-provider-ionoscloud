@@ -14,7 +14,7 @@ if the volume's image supports it. CAPIC uses this to deliver the Ignition confi
 
 1. For a Machine whose bootstrap secret has `format: ignition`, CAPIC creates the server with two volumes:
    - `vol-<machine>`: the boot volume from `spec.disk.image`, without `userData`, `bootOrder: PRIMARY`.
-   - `cfg-<machine>`: the config volume from `spec.bootstrapVolume.image`, with the Ignition config as `userData`,
+   - `cfg-<IonosCloudMachine UID>`: the config volume from `spec.bootstrapVolume.image`, with the Ignition config as `userData`,
      `bootOrder: NONE`. Its size is the size of the image.
 2. IONOS writes the config to `config/user_data` on the config volume's `ionos-ignition` partition.
 3. The Flatcar image has the kernel arguments `ignition.config.device=ionos-ignition` and
@@ -23,7 +23,7 @@ if the volume's image supports it. CAPIC uses this to deliver the Ignition confi
    server. Ignition only runs on the first boot, so the node never needs the volume again. The volume holds the
    bootstrap data, which includes the cluster CA keys on control plane nodes, so it must not outlive the join.
 5. When a Machine is deleted before that, for example because the node never joined, deleting the server detaches
-   the config volume, and CAPIC deletes leftover volumes named `cfg-<machine>`.
+   the config volume, and CAPIC deletes leftover volumes named `cfg-<IonosCloudMachine UID>`.
 
 If the bootstrap data is in Ignition format and `spec.bootstrapVolume` is not set, CAPIC does not create the server and
 sets the `MachineProvisioned` condition to `False` with the reason `BootstrapVolumeRequired`.
