@@ -33,6 +33,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -122,7 +123,7 @@ func TestReconcileNormalBootstrapVolumeRemovalDoesNotBlockProvisioning(t *testin
 		Entities: &sdk.ServerEntities{Volumes: &sdk.AttachedVolumes{Items: &[]sdk.Volume{{
 			Id:         new("volume-id"),
 			Metadata:   &sdk.DatacenterElementMetadata{State: new(sdk.Available)},
-			Properties: &sdk.VolumeProperties{Name: new("cfg-" + string(ms.IonosMachine.UID))},
+			Properties: &sdk.VolumeProperties{Name: new("cfg-test-machine-37a8eec1")},
 		}}}},
 	}, nil).Times(2)
 	ionosClient.EXPECT().GetRequests(mock.Anything, http.MethodDelete,
@@ -138,6 +139,15 @@ func TestReconcileNormalBootstrapVolumeRemovalDoesNotBlockProvisioning(t *testin
 	c := conditions.Get(ms.IonosMachine, infrav1.MachineProvisionedCondition)
 	require.NotNil(t, c)
 	require.Equal(t, metav1.ConditionTrue, c.Status)
+
+	require.NoError(t, ms.Finalize())
+	persisted := &infrav1.IonosCloudMachine{}
+	require.NoError(t, r.Get(t.Context(), client.ObjectKeyFromObject(ms.IonosMachine), persisted))
+	c = conditions.Get(persisted, infrav1.BootstrapVolumeRemovedCondition)
+	require.NotNil(t, c)
+	require.Equal(t, metav1.ConditionFalse, c.Status)
+	require.Equal(t, infrav1.BootstrapVolumeRemovalFailedReason, c.Reason)
+	require.Contains(t, c.Message, "failed to request bootstrap volume deletion")
 }
 
 func TestReconcileDeleteBootstrapVolumeWaitsForServerCreation(t *testing.T) {
@@ -165,7 +175,7 @@ func TestReconcileDeleteBootstrapVolumeAfterServerDeletion(t *testing.T) {
 		Return(nil, nil)
 	ionosClient.EXPECT().ListVolumes(mock.Anything, testDatacenterID).Return(&sdk.Volumes{Items: &[]sdk.Volume{{
 		Id:         new("volume-id"),
-		Properties: &sdk.VolumeProperties{Name: new("cfg-" + string(ms.IonosMachine.UID))},
+		Properties: &sdk.VolumeProperties{Name: new("cfg-test-machine-37a8eec1")},
 	}}}, nil)
 	ionosClient.EXPECT().GetRequests(mock.Anything, http.MethodDelete,
 		path.Join("datacenters", testDatacenterID, "volumes", "volume-id")).Return(nil, nil)

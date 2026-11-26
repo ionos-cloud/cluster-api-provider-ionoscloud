@@ -19,6 +19,8 @@ limitations under the License.
 package e2e
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -27,6 +29,7 @@ import (
 	capie2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
@@ -69,13 +72,10 @@ var _ = Describe("Flatcar: Should be able to create a cluster with 1 control-pla
 				bootVolumes := make([]string, 0, len(machines.Items))
 				configVolumes := make([]string, 0, len(machines.Items))
 				for _, m := range machines.Items {
-					infraMachine := &infrav1.IonosCloudMachine{}
-					Expect(proxy.GetClient().Get(ctx, runtimeclient.ObjectKey{
-						Namespace: namespace, Name: m.Spec.InfrastructureRef.Name,
-					}, infraMachine)).To(Succeed())
-					servers = append(servers, infraMachine.Name)
-					bootVolumes = append(bootVolumes, "vol-"+infraMachine.Name)
-					configVolumes = append(configVolumes, "cfg-"+string(infraMachine.UID))
+					name := m.Spec.InfrastructureRef.Name
+					servers = append(servers, name)
+					bootVolumes = append(bootVolumes, "vol-"+name)
+					configVolumes = append(configVolumes, configVolumeName(namespace, name))
 				}
 
 				By("Checking that the config volumes are deleted once the nodes joined")
@@ -84,6 +84,15 @@ var _ = Describe("Flatcar: Should be able to create a cluster with 1 control-pla
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(names).To(ContainElements(bootVolumes))
 					g.Expect(names).NotTo(ContainElement(BeElementOf(configVolumes)))
+
+					for _, name := range servers {
+						infraMachine := &infrav1.IonosCloudMachine{}
+						g.Expect(proxy.GetClient().Get(ctx, runtimeclient.ObjectKey{
+							Namespace: namespace, Name: name,
+						}, infraMachine)).To(Succeed())
+						g.Expect(conditions.IsTrue(infraMachine, infrav1.BootstrapVolumeRemovedCondition)).
+							To(BeTrue(), "IonosCloudMachine %s has not reported its config volume as removed", name)
+					}
 				}, e2eConfig.GetIntervals("default", "wait-volume-deletion")...).Should(Succeed())
 
 				framework.ValidateResourceVersionStable(ctx, framework.ValidateResourceVersionStableInput{
@@ -112,6 +121,12 @@ var _ = Describe("Flatcar: Should be able to create a cluster with 1 control-pla
 		}
 	})
 })
+
+// configVolumeName returns the name of the config volume of an IonosCloudMachine.
+func configVolumeName(namespace, name string) string {
+	namespaceHash := sha256.Sum256([]byte(namespace))
+	return fmt.Sprintf("cfg-%s-%s", name, hex.EncodeToString(namespaceHash[:])[:8])
+}
 
 // flatcarE2EConfig returns the e2e config with KUBERNETES_VERSION set to the version of the Flatcar node image.
 // An empty KUBERNETES_VERSION_FLATCAR env var (an unset CI variable) keeps the config default.

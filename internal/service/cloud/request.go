@@ -185,6 +185,7 @@ requestLoop:
 		return &requestInfo{
 			status:   status,
 			location: *req.Metadata.RequestStatus.Href,
+			message:  ptr.Deref(req.GetMetadata().GetRequestStatus().GetMetadata().GetMessage(), ""),
 		}, nil
 	}
 	return nil, nil
@@ -289,6 +290,7 @@ func findResource[T any](
 type requestInfo struct {
 	status   string
 	location string
+	message  string
 }
 
 // isPending returns true if the request was not finished yet, i.e. it's still queued or currently running.
@@ -299,6 +301,11 @@ func (ri *requestInfo) isPending() bool {
 // isDone returns true if the request was finished successfully.
 func (ri *requestInfo) isDone() bool {
 	return ri.status == sdk.RequestStatusDone
+}
+
+// isFailed returns true if the request has failed.
+func (ri *requestInfo) isFailed() bool {
+	return ri.status == sdk.RequestStatusFailed
 }
 
 type metadataHolder interface {

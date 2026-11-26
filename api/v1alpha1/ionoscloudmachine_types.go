@@ -58,6 +58,21 @@ const (
 	// but spec.bootstrapVolume is not set. No server is created until it is set.
 	BootstrapVolumeRequiredReason = "BootstrapVolumeRequired"
 
+	// BootstrapVolumeRemovedCondition documents the removal of the bootstrap volume from the server
+	// once the Machine has a node reference. It is only set if spec.bootstrapVolume is set.
+	BootstrapVolumeRemovedCondition = "BootstrapVolumeRemoved"
+
+	// BootstrapVolumeRemovalInProgressReason indicates that the bootstrap volume is still attached
+	// to the server and its deletion is in progress.
+	BootstrapVolumeRemovalInProgressReason = "BootstrapVolumeRemovalInProgress"
+
+	// BootstrapVolumeRemovalFailedReason indicates that the last attempt to remove the bootstrap volume failed.
+	// The condition message carries the error; the removal is retried.
+	BootstrapVolumeRemovalFailedReason = "BootstrapVolumeRemovalFailed"
+
+	// BootstrapVolumeRemovedReason documents that the bootstrap volume has been removed from the server.
+	BootstrapVolumeRemovedReason = "BootstrapVolumeRemoved"
+
 	// CloudResourceConfigAuto is a constant to indicate that the cloud resource should be managed by the
 	// Cluster API provider implementation.
 	CloudResourceConfigAuto = "AUTO"

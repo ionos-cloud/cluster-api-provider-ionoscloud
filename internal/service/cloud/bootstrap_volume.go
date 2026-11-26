@@ -19,13 +19,17 @@ package cloud
 import (
 	"cmp"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
 	"path"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/util/ptr"
@@ -43,23 +47,56 @@ var ErrBootstrapVolumeRequired = errors.New(
 	"bootstrap data is in Ignition format, which requires spec.bootstrapVolume to be set")
 
 // ReconcileBootstrapVolume deletes the bootstrap volume attached to the server once the Machine has a node reference,
-// as the bootstrap data is no longer needed.
+// as the bootstrap data is no longer needed. The progress is reported in the BootstrapVolumeRemoved condition.
 func (s *Service) ReconcileBootstrapVolume(ctx context.Context, ms *scope.Machine) (requeue bool, err error) {
 	if ms.IonosMachine.Spec.BootstrapVolume == nil || !ms.Machine.Status.NodeRef.IsDefined() {
 		return false, nil
 	}
 
 	server, err := s.getServer(ctx, ms)
-	if server == nil || err != nil {
-		return false, ignoreNotFound(err)
+	if err != nil && !isNotFound(err) {
+		setBootstrapVolumeRemovedCondition(ms, infrav1.BootstrapVolumeRemovalFailedReason, err.Error())
+		return false, err
+	}
+	if server == nil {
+		return false, nil
 	}
 
 	volume := s.attachedBootstrapVolume(ms, server)
 	if volume == nil {
+		setBootstrapVolumeRemovedCondition(ms, infrav1.BootstrapVolumeRemovedReason, "")
 		return false, nil
 	}
 
-	return true, s.removeBootstrapVolume(ctx, ms, volume)
+	request, err := s.removeBootstrapVolume(ctx, ms, volume)
+	switch {
+	case err != nil:
+		setBootstrapVolumeRemovedCondition(ms, infrav1.BootstrapVolumeRemovalFailedReason, err.Error())
+	case request != nil && request.isFailed():
+		message := "Bootstrap volume deletion request failed"
+		if request.message != "" {
+			message += ": " + request.message
+		}
+		setBootstrapVolumeRemovedCondition(ms, infrav1.BootstrapVolumeRemovalFailedReason, message)
+	default:
+		setBootstrapVolumeRemovedCondition(ms, infrav1.BootstrapVolumeRemovalInProgressReason,
+			"Waiting for the bootstrap volume to be deleted")
+	}
+
+	return true, err
+}
+
+func setBootstrapVolumeRemovedCondition(ms *scope.Machine, reason, message string) {
+	status := metav1.ConditionFalse
+	if reason == infrav1.BootstrapVolumeRemovedReason {
+		status = metav1.ConditionTrue
+	}
+	conditions.Set(ms.IonosMachine, metav1.Condition{
+		Type:    infrav1.BootstrapVolumeRemovedCondition,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
+	})
 }
 
 // ReconcileBootstrapVolumeDeletion deletes bootstrap volumes of the machine that are not attached to a server.
@@ -77,7 +114,8 @@ func (s *Service) ReconcileBootstrapVolumeDeletion(ctx context.Context, ms *scop
 	name := s.bootstrapVolumeName(ms.IonosMachine)
 	for _, volume := range ptr.Deref(volumes.GetItems(), []sdk.Volume{}) {
 		if ptr.Deref(volume.GetProperties().GetName(), "") == name {
-			return true, s.removeBootstrapVolume(ctx, ms, &volume)
+			_, err := s.removeBootstrapVolume(ctx, ms, &volume)
+			return true, err
 		}
 	}
 
@@ -85,27 +123,30 @@ func (s *Service) ReconcileBootstrapVolumeDeletion(ctx context.Context, ms *scop
 }
 
 // removeBootstrapVolume requests the deletion of the bootstrap volume, unless its deletion is already in progress.
-func (s *Service) removeBootstrapVolume(ctx context.Context, ms *scope.Machine, volume *sdk.Volume) error {
+// It returns the latest deletion request of the volume before this call, if any.
+func (s *Service) removeBootstrapVolume(
+	ctx context.Context, ms *scope.Machine, volume *sdk.Volume,
+) (*requestInfo, error) {
 	log := s.logger.WithName("removeBootstrapVolume")
 
 	volumeID := ptr.Deref(volume.GetId(), "")
 	request, err := s.getLatestVolumeDeletionRequest(ctx, ms.DatacenterID(), volumeID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if request != nil && request.isPending() {
 		ms.IonosMachine.SetCurrentRequest(http.MethodDelete, request.status, request.location)
 		log.Info("Bootstrap volume deletion request is pending", "location", request.location)
-		return nil
+		return request, nil
 	}
 
 	if state := getState(volume); state == sdk.Busy || state == sdk.Destroying {
 		log.V(4).Info("Bootstrap volume is busy", "volumeID", volumeID, "state", state)
-		return nil
+		return request, nil
 	}
 
-	return s.deleteBootstrapVolume(ctx, ms, volumeID)
+	return request, s.deleteBootstrapVolume(ctx, ms, volumeID)
 }
 
 func (s *Service) attachedBootstrapVolume(ms *scope.Machine, server *sdk.Server) *sdk.Volume {
@@ -182,8 +223,8 @@ func (s *Service) buildBootstrapVolume(
 	}, nil
 }
 
-// bootstrapVolumeName uses the UID, as machine names are only unique within a namespace,
-// while leftover bootstrap volumes are looked up in the whole data center.
+// bootstrapVolumeName is unique across namespaces and stable across clusterctl move, unlike the UID.
 func (*Service) bootstrapVolumeName(m *infrav1.IonosCloudMachine) string {
-	return "cfg-" + string(m.UID)
+	namespaceHash := sha256.Sum256([]byte(m.Namespace))
+	return fmt.Sprintf("cfg-%s-%s", m.Name, hex.EncodeToString(namespaceHash[:])[:8])
 }

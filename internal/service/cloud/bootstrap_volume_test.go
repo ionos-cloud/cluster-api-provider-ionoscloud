@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	conditions "sigs.k8s.io/cluster-api/util/conditions"
 
 	infrav1 "github.com/ionos-cloud/cluster-api-provider-ionoscloud/api/v1alpha1"
 	"github.com/ionos-cloud/cluster-api-provider-ionoscloud/internal/ionoscloud/clienttest"
@@ -37,7 +38,15 @@ const (
 )
 
 func (s *serverSuite) TestBootstrapVolumeName() {
-	s.Equal("cfg-"+string(s.infraMachine.UID), s.service.bootstrapVolumeName(s.infraMachine))
+	s.Equal("cfg-test-machine-37a8eec1", s.service.bootstrapVolumeName(s.infraMachine))
+
+	moved := s.infraMachine.DeepCopy()
+	moved.UID = "moved-uid"
+	s.Equal(s.service.bootstrapVolumeName(s.infraMachine), s.service.bootstrapVolumeName(moved))
+
+	otherNamespace := s.infraMachine.DeepCopy()
+	otherNamespace.Namespace = "other"
+	s.Equal("cfg-test-machine-d9298a10", s.service.bootstrapVolumeName(otherNamespace))
 }
 
 func (s *serverSuite) TestReconcileServerIgnitionCreatesBootstrapVolume() {
@@ -179,6 +188,7 @@ func (s *serverSuite) TestReconcileBootstrapVolumeWithoutNodeRef() {
 	s.NoError(err)
 	s.False(requeue)
 	s.Nil(s.infraMachine.Status.CurrentRequest)
+	s.Nil(conditions.Get(s.infraMachine, infrav1.BootstrapVolumeRemovedCondition))
 }
 
 func (s *serverSuite) TestReconcileBootstrapVolumeWithoutBootstrapVolumeSpec() {
@@ -188,6 +198,7 @@ func (s *serverSuite) TestReconcileBootstrapVolumeWithoutBootstrapVolumeSpec() {
 	s.NoError(err)
 	s.False(requeue)
 	s.Nil(s.infraMachine.Status.CurrentRequest)
+	s.Nil(conditions.Get(s.infraMachine, infrav1.BootstrapVolumeRemovedCondition))
 }
 
 func (s *serverSuite) TestReconcileBootstrapVolumeRemovesVolumeAfterNodeRef() {
@@ -201,14 +212,22 @@ func (s *serverSuite) TestReconcileBootstrapVolumeRemovesVolumeAfterNodeRef() {
 
 	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
 	s.validateSuccessfulDeletionResponse(requeue, err, "delete/volume")
+	s.assertBootstrapVolumeRemovedCondition(metav1.ConditionFalse, infrav1.BootstrapVolumeRemovalInProgressReason)
 
 	s.infraMachine.DeleteCurrentRequest()
-	s.mockGetServerCall(exampleServerID).Return(s.runningServer(), nil).Once()
+	s.mockGetServerCall(exampleServerID).Return(s.runningServer(), nil).Times(2)
 
 	requeue, err = s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
 	s.NoError(err)
 	s.False(requeue)
 	s.Nil(s.infraMachine.Status.CurrentRequest)
+	s.assertBootstrapVolumeRemovedCondition(metav1.ConditionTrue, infrav1.BootstrapVolumeRemovedReason)
+
+	removed := s.infraMachine.DeepCopy()
+	requeue, err = s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+	s.NoError(err)
+	s.False(requeue)
+	s.Equal(removed.Status, s.infraMachine.Status)
 }
 
 func (s *serverSuite) TestReconcileBootstrapVolumeRequestPending() {
@@ -221,6 +240,7 @@ func (s *serverSuite) TestReconcileBootstrapVolumeRequestPending() {
 	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
 	s.validateSuccessfulDeletionResponse(requeue, err, path.Join(exampleRequestPath, exampleBootstrapVolumeID))
 	s.Equal(sdk.RequestStatusQueued, s.infraMachine.Status.CurrentRequest.State)
+	s.assertBootstrapVolumeRemovedCondition(metav1.ConditionFalse, infrav1.BootstrapVolumeRemovalInProgressReason)
 }
 
 func (s *serverSuite) TestReconcileBootstrapVolumeRequestFailed() {
@@ -234,6 +254,8 @@ func (s *serverSuite) TestReconcileBootstrapVolumeRequestFailed() {
 	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
 	s.validateSuccessfulDeletionResponse(requeue, err, "delete/volume")
 	s.Equal(sdk.RequestStatusQueued, s.infraMachine.Status.CurrentRequest.State)
+	c := s.assertBootstrapVolumeRemovedCondition(metav1.ConditionFalse, infrav1.BootstrapVolumeRemovalFailedReason)
+	s.Equal("Bootstrap volume deletion request failed: test", c.Message)
 }
 
 func (s *serverSuite) TestReconcileBootstrapVolumeBusy() {
@@ -249,6 +271,7 @@ func (s *serverSuite) TestReconcileBootstrapVolumeBusy() {
 			s.NoError(err)
 			s.True(requeue)
 			s.Nil(s.infraMachine.Status.CurrentRequest)
+			s.assertBootstrapVolumeRemovedCondition(metav1.ConditionFalse, infrav1.BootstrapVolumeRemovalInProgressReason)
 		})
 	}
 }
@@ -279,6 +302,35 @@ func (s *serverSuite) TestReconcileBootstrapVolumeDeleteError() {
 	s.ErrorContains(err, "failed to request bootstrap volume deletion")
 	s.True(requeue)
 	s.Nil(s.infraMachine.Status.CurrentRequest)
+	c := s.assertBootstrapVolumeRemovedCondition(metav1.ConditionFalse, infrav1.BootstrapVolumeRemovalFailedReason)
+	s.Equal(err.Error(), c.Message)
+}
+
+func (s *serverSuite) TestReconcileBootstrapVolumeGetRequestsError() {
+	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
+	s.setNodeRef()
+	s.mockGetServerCall(exampleServerID).Return(s.runningServer(s.bootstrapVolume(sdk.Available)), nil).Once()
+	s.mockGetVolumeDeletionRequestCall(exampleBootstrapVolumeID).
+		Return(nil, sdk.NewGenericOpenAPIError("error", nil, nil, http.StatusInternalServerError)).Once()
+
+	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+	s.Error(err)
+	s.True(requeue)
+	c := s.assertBootstrapVolumeRemovedCondition(metav1.ConditionFalse, infrav1.BootstrapVolumeRemovalFailedReason)
+	s.Equal(err.Error(), c.Message)
+}
+
+func (s *serverSuite) TestReconcileBootstrapVolumeGetServerError() {
+	s.setBootstrapVolume(infrav1.ImageSpec{ID: exampleBootstrapVolumeImageID})
+	s.setNodeRef()
+	s.mockGetServerCall(exampleServerID).
+		Return(nil, sdk.NewGenericOpenAPIError("error", nil, nil, http.StatusInternalServerError)).Once()
+
+	requeue, err := s.service.ReconcileBootstrapVolume(s.ctx, s.machineScope)
+	s.Error(err)
+	s.False(requeue)
+	c := s.assertBootstrapVolumeRemovedCondition(metav1.ConditionFalse, infrav1.BootstrapVolumeRemovalFailedReason)
+	s.Equal(err.Error(), c.Message)
 }
 
 func (s *serverSuite) TestReconcileBootstrapVolumeServerNotFound() {
@@ -292,6 +344,7 @@ func (s *serverSuite) TestReconcileBootstrapVolumeServerNotFound() {
 	s.NoError(err)
 	s.False(requeue)
 	s.Nil(s.infraMachine.Status.CurrentRequest)
+	s.Nil(conditions.Get(s.infraMachine, infrav1.BootstrapVolumeRemovedCondition))
 }
 
 func (s *serverSuite) TestReconcileServerDeletionIgnoresAttachedBootstrapVolume() {
@@ -442,6 +495,15 @@ func (s *serverSuite) setBootstrapVolume(image infrav1.ImageSpec) {
 	}
 }
 
+func (s *serverSuite) assertBootstrapVolumeRemovedCondition(status metav1.ConditionStatus, reason string) *metav1.Condition {
+	s.T().Helper()
+	c := conditions.Get(s.infraMachine, infrav1.BootstrapVolumeRemovedCondition)
+	s.Require().NotNil(c)
+	s.Equal(status, c.Status)
+	s.Equal(reason, c.Reason)
+	return c
+}
+
 func (s *serverSuite) setNodeRef() {
 	s.capiMachine.Status.NodeRef = clusterv1.MachineNodeReference{Name: s.capiMachine.Name}
 }
@@ -491,7 +553,7 @@ func (s *serverSuite) ignitionServerComponents() (sdk.ServerProperties, sdk.Serv
 			BootOrder:           new("NONE"),
 			DiscVirtioHotUnplug: new(true),
 			Image:               new(exampleBootstrapVolumeImageID),
-			Name:                new("cfg-" + string(s.infraMachine.UID)),
+			Name:                new(s.service.bootstrapVolumeName(s.infraMachine)),
 			Size:                new(float32(1)),
 			Type:                new("HDD"),
 			UserData:            new(base64.StdEncoding.EncodeToString([]byte(exampleIgnitionConfig))),
@@ -530,10 +592,13 @@ func (s *serverSuite) bootstrapVolume(state string) sdk.Volume {
 }
 
 // datacenterVolumes returns a list of volumes, where the bootstrap volume of the machine is the last one.
+// The first one belongs to a machine with the same name in another namespace.
 func (s *serverSuite) datacenterVolumes() *sdk.Volumes {
+	otherNamespace := s.infraMachine.DeepCopy()
+	otherNamespace.Namespace = "other"
 	return &sdk.Volumes{Items: &[]sdk.Volume{{
 		Id:         new("other-machine-bootstrap-volume"),
-		Properties: &sdk.VolumeProperties{Name: new("cfg-other-machine")},
+		Properties: &sdk.VolumeProperties{Name: new(s.service.bootstrapVolumeName(otherNamespace))},
 	}, {
 		Id:         new("csi-volume"),
 		Properties: &sdk.VolumeProperties{Name: new("pvc-1234")},
