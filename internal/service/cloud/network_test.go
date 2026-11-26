@@ -24,6 +24,7 @@ import (
 	"time"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -80,10 +81,11 @@ func (s *lanSuite) TestNetworkCreateLANIPv6Enabled() {
 
 func (s *lanSuite) TestNetworkCreateLANIPv6Disabled() {
 	s.infraCluster.Spec.LANIPv6 = infrav1.LANIPv6Disabled
-	s.ionosClient.EXPECT().CreateLAN(s.ctx, s.machineScope.DatacenterID(), sdk.LanProperties{
-		Name:   new(s.service.lanName(s.clusterScope.Cluster)),
-		Public: new(true),
-	}).Return(exampleRequestPath, nil).Once()
+	lanName := s.service.lanName(s.clusterScope.Cluster)
+	// Pointer comparison: only &sdk.Nilstring marshals as an explicit null.
+	s.ionosClient.EXPECT().CreateLAN(s.ctx, s.machineScope.DatacenterID(), mock.MatchedBy(func(p sdk.LanProperties) bool {
+		return *p.Name == lanName && *p.Public && p.Ipv6CidrBlock == &sdk.Nilstring
+	})).Return(exampleRequestPath, nil).Once()
 	s.NoError(s.service.createLAN(s.ctx, s.machineScope))
 }
 

@@ -179,7 +179,7 @@ type IonosCloudMachineSpec struct {
 	// A typical use-case is when an existing LAN has a Failover Group and the FailoverIP configured.
 	// This field is used when the Failover Group is created in another LAN.
 	//
-	// The LAN must be public and IPv6 enabled.
+	// The LAN must be public, and IPv6 enabled if ipv6PoolRef is used.
 	// +optional
 	// +immutable
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="networkID is immutable"

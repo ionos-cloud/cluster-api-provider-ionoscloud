@@ -194,7 +194,9 @@ func (s *Service) createLAN(ctx context.Context, ms *scope.Machine) error {
 		Name:   new(s.lanName(ms.ClusterScope.Cluster)),
 		Public: new(true),
 	}
-	if ms.ClusterScope.IonosCluster.Spec.LANIPv6 != infrav1.LANIPv6Disabled {
+	if ms.ClusterScope.IonosCluster.Spec.LANIPv6 == infrav1.LANIPv6Disabled {
+		lanProperties.SetIpv6CidrBlockNil()
+	} else {
 		lanProperties.Ipv6CidrBlock = new("AUTO")
 	}
 
