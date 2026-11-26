@@ -14,23 +14,25 @@ if the volume's image supports it. CAPIC uses this to deliver the Ignition confi
 
 1. For a Machine whose bootstrap secret has `format: ignition`, CAPIC creates the server with two volumes:
    - `vol-<machine>`: the boot volume from `spec.disk.image`, without `userData`, `bootOrder: PRIMARY`.
-   - `cfg-<IonosCloudMachine UID>`: the config volume from `spec.bootstrapVolume.image`, with the Ignition config as `userData`,
+   - `cfg-<machine name>-<namespace hash>`: the bootstrap volume from `spec.bootstrapVolume.image`, with the Ignition config as `userData`,
      `bootOrder: NONE`. Its size is the size of the image.
-2. IONOS writes the config to `config/user_data` on the config volume's `ionos-ignition` partition.
+2. IONOS writes the config to `config/user_data` on the bootstrap volume's `ionos-ignition` partition.
 3. The Flatcar image has the kernel arguments `ignition.config.device=ionos-ignition` and
    `ignition.config.path=config/user_data`, so Ignition reads the config from there on the first boot.
-4. Once the Machine has a node reference, CAPIC deletes the config volume. IONOS hot-unplugs it from the running
+4. Once the Machine has a node reference, CAPIC deletes the bootstrap volume. IONOS hot-unplugs it from the running
    server. Ignition only runs on the first boot, so the node never needs the volume again. The volume holds the
    bootstrap data, which includes the cluster CA keys on control plane nodes, so it must not outlive the join.
+   The `BootstrapVolumeRemoved` condition on the IonosCloudMachine shows the progress, and the error if the removal
+   keeps failing.
 5. When a Machine is deleted before that, for example because the node never joined, deleting the server detaches
-   the config volume, and CAPIC deletes leftover volumes named `cfg-<IonosCloudMachine UID>`.
+   the bootstrap volume, and CAPIC deletes leftover volumes named `cfg-<machine name>-<namespace hash>`.
 
 If the bootstrap data is in Ignition format and `spec.bootstrapVolume` is not set, CAPIC does not create the server and
 sets the `MachineProvisioned` condition to `False` with the reason `BootstrapVolumeRequired`.
 
 Machines with `format: cloud-config` (the default) are not affected; `spec.bootstrapVolume` is ignored for them.
 
-A Flatcar node cannot do its first boot without the config volume: Ignition waits about 30 seconds for the
+A Flatcar node cannot do its first boot without the bootstrap volume: Ignition waits about 30 seconds for the
 `ionos-ignition` device and then fails the boot. The Machine never gets a node reference. Use a MachineHealthCheck
 with `nodeStartupTimeout` to replace such Machines.
 
@@ -53,19 +55,19 @@ default). Do not add a second `--feature-gates` argument: it replaces the first 
 Both images must exist in every location you use. The recipe to build them is in the
 [design document](flatcar-ignition-design.md#building-the-images-yourself).
 
-The config volume image must be a private image: IONOS requires a password or an SSH key for volumes from public
+The bootstrap volume image must be a private image: IONOS requires a password or an SSH key for volumes from public
 images, CAPIC sets neither, and IONOS rejects the request.
 
 | Image | Content | Required properties |
 |---|---|---|
 | Node image | Flatcar 4820 or newer (Ignition 2.27 or newer). OEM `grub.cfg` with `oem_id=qemu` and the two `ignition.config.*` kernel arguments. Depending on the flavor: the Kubernetes sysext and the `ionos-cloud` sysext. | `licenceType: LINUX`, `discVirtioHotPlug: true`, `nicHotPlug: true` |
-| Config volume image | A GPT disk with one ext4 partition labelled `ionos-ignition` that holds only the marker file `USER_DATA_INJECTION_FLATCAR`. No cluster data. | `cloudInit: V1` (otherwise IONOS rejects `userData`), `discVirtioHotUnplug: true` (for the removal after the join) |
+| Bootstrap volume image | A GPT disk with one ext4 partition labelled `ionos-ignition` that holds only the marker file `USER_DATA_INJECTION_FLATCAR`. No cluster data. | `cloudInit: V1` (otherwise IONOS rejects `userData`), `discVirtioHotUnplug: true` (for the removal after the join) |
 
 The node images built by IONOS also mask `update-engine.service`, `locksmithd.service`, `systemd-sysupdate.timer`
 and `systemd-sysupdate-reboot.timer`. The templates mask them as well, so nodes never update or reboot themselves.
 Update the OS by rolling out Machines with a new image.
 
-If you select images with `spec.disk.image.selector` or `spec.bootstrapVolume.image.selector`: the config volume image
+If you select images with `spec.disk.image.selector` or `spec.bootstrapVolume.image.selector`: the bootstrap volume image
 name has no Kubernetes version, and CAPIC ignores `useMachineVersion` for `spec.bootstrapVolume.image`. The CRD still
 shows the default `true` for it.
 
@@ -132,7 +134,7 @@ The variables are the ones of the default flavor (see the [quickstart](quickstar
 | Variable | Flavors | Description |
 |---|---|---|
 | `IONOSCLOUD_MACHINE_IMAGE_ID` | all | The Flatcar node image. |
-| `IONOSCLOUD_BOOTSTRAP_VOLUME_IMAGE_ID` | all | The config volume image. |
+| `IONOSCLOUD_BOOTSTRAP_VOLUME_IMAGE_ID` | all | The bootstrap volume image. |
 | `KUBERNETES_SYSEXT_SHA512` | `flatcar-sysext` | sha512 of `kubernetes-${KUBERNETES_VERSION}-x86-64.raw`. |
 | `FLATCAR_SYSEXT_BASE_URL` | `flatcar-sysext` | Optional. Where to download the Kubernetes sysext from. Defaults to `https://extensions.flatcar.org/extensions`. |
 
@@ -192,5 +194,5 @@ Log in as `core`. Useful places:
 - `journalctl -u kubeadm.service`: the output of `/etc/kubeadm.sh` (pre-kubeadm commands, `kubeadm init/join`).
 - `journalctl -u coreos-metadata.service` and `/run/metadata/flatcar` (flavors with the `ionos-cloud` sysext), or
   `/run/metadata/ionos-cloud` (`flatcar-without-ionos-sysext`).
-- `journalctl -b -t ignition`: Ignition, for example when it did not find the config volume.
+- `journalctl -b -t ignition`: Ignition, for example when it did not find the bootstrap volume.
 - `systemd-sysext status`: the merged sysexts.

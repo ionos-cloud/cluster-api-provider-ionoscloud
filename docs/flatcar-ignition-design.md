@@ -28,9 +28,9 @@ volume into Ignition, without patching Flatcar?
 ```mermaid
 flowchart LR
     CAPI["CAPI / CABPK<br/>bootstrap secret<br/>(format: ignition)"] -->|userData| CAPIC
-    CAPIC -->|"create server<br/>vol 1: Flatcar image<br/>vol 2: config volume + userData"| API[IONOS Cloud API]
+    CAPIC -->|"create server<br/>vol 1: Flatcar image<br/>vol 2: bootstrap volume + userData"| API[IONOS Cloud API]
     API --> INJ["IONOS image handler<br/>(runs before first power-on)"]
-    INJ -->|"finds USER_DATA_INJECTION_FLATCAR,<br/>writes config/user_data"| VOL2[("config volume<br/>label: ionos-ignition")]
+    INJ -->|"finds USER_DATA_INJECTION_FLATCAR,<br/>writes config/user_data"| VOL2[("bootstrap volume<br/>label: ionos-ignition")]
     VOL2 -->|"ignition.config.device=ionos-ignition<br/>ignition.config.path=config/user_data"| IGN[Ignition in the initrd]
     IGN --> NODE[Flatcar node joins the cluster]
 ```
@@ -61,7 +61,7 @@ Facts we checked:
   up to 256 KB (350 KB base64) byte for byte.
 - The risk is not the file mode inside the guest (Ignition mounts the volume for about a second). It is
   that the bootstrap data, which holds the CA keys on control plane nodes, sits on a volume that
-  outlives the join. That is why CAPIC deletes the config volume (see below).
+  outlives the join. That is why CAPIC deletes the bootstrap volume (see below).
 
 The marker-file path was added to the image handler for an earlier Flatcar attempt
 ([flatcar/scripts#2389](https://github.com/flatcar/scripts/pull/2389),
@@ -83,7 +83,7 @@ it takes. Flatcar ships Ignition 2.27.0 from **Flatcar 4820** on (Alpha/Beta at 
 Stable 4757 still has 2.24 and does not work).
 
 Because the arguments are baked into the image, **the image cannot do its first boot without the
-config volume**: Ignition waits 30 seconds for the `ionos-ignition` device and then fails the boot if
+bootstrap volume**: Ignition waits 30 seconds for the `ionos-ignition` device and then fails the boot if
 the device or `config/user_data` is missing. In CAPIC this shows up as a Machine that never gets a
 `NodeRef`, so a MachineHealthCheck with `nodeStartupTimeout` should be used. Later boots never need the
 volume, because Ignition only runs on the first boot.
@@ -93,7 +93,7 @@ sequenceDiagram
     participant FW as UEFI firmware
     participant GRUB
     participant IGN as Ignition (initrd)
-    participant CV as config volume (vdb1)
+    participant CV as bootstrap volume (vdb1)
     participant OS as Flatcar (real root)
     FW->>GRUB: boot from the boot volume
     GRUB->>IGN: kernel args from the OEM partition<br/>ignition.config.device / .path
@@ -105,14 +105,13 @@ sequenceDiagram
     OS->>OS: kubeadm.service (CABPK) runs kubeadm init/join
 ```
 
-The config volume is mounted for less than a second and never again, so it can be detached while the
+The bootstrap volume is mounted for less than a second and never again, so it can be detached while the
 node runs.
 
 ## How the Flatcar image is built
 
-The image is built by the `flatcar-bake` pipeline in ionos-cloud/capi-image-builder
-([PR #111](https://github.com/ionos-cloud/capi-image-builder/pull/111), an IONOS-internal repository),
-in the folder `flatcar-bake/`, separate from the existing image-builder pipeline. It does not boot anything and does
+IONOS builds the image in an internal pipeline (`flatcar-bake`), separate from the existing
+image-builder pipeline; [Building the images yourself](#building-the-images-yourself) does the same by hand. It does not boot anything and does
 not change Flatcar's read-only `/usr`.
 
 ```mermaid
@@ -141,7 +140,7 @@ What is in the image:
 - `oem_id=qemu`. The QEMU platform needs nothing from IONOS, and has no Afterburn step that expects a
   config drive.
 
-The config volume (`ionos-ignition-config-volume`) is built by the same pipeline: a 1 GiB disk with one
+The bootstrap volume (`ionos-ignition-config-volume`) is built by the same pipeline: a 1 GiB disk with one
 ext4 partition labelled `ionos-ignition` that holds only the marker file. It contains no cluster data,
 is reproducible, and is uploaded once per IONOS location.
 
@@ -160,7 +159,7 @@ images whose **name contains the Machine's version**. The pipeline names node im
   Kubernetes version could be picked. Until CAPIC matches the version with delimiters (step 8 below),
   keep one patch series per selector or add a version label to `matchLabels`.
 - The generic image (Kubernetes pulled at boot) has no Kubernetes version in its name, so its selector
-  needs `useMachineVersion: false`. The config volume image has no version either; CAPIC ignores
+  needs `useMachineVersion: false`. The bootstrap volume image has no version either; CAPIC ignores
   `useMachineVersion` for it.
 
 ### Building the images yourself
@@ -210,7 +209,7 @@ upload grub.cfg /grub.cfg
 EOF
 mv flatcar_production_qemu_uefi_image.img flatcar-$V-ionos-kube-$K.qcow2
 
-# Config volume: GPT disk, one ext4 partition labelled ionos-ignition, only the marker file.
+# Bootstrap volume: GPT disk, one ext4 partition labelled ionos-ignition, only the marker file.
 truncate -s 1G cfg.raw
 printf 'label: gpt\nstart=2048, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name=ionos-ignition\n' | sfdisk cfg.raw
 mkdir -p marker
@@ -229,7 +228,7 @@ Upload both to every location you use (FTP `ftp-<location>.ionos.com/hdd-images/
 | Image | Required properties |
 |---|---|
 | Node image | `licenceType: LINUX`, `discVirtioHotPlug: true`, `nicHotPlug: true` |
-| Config volume | `cloudInit: V1` (otherwise IONOS rejects `userData`), `discVirtioHotUnplug: true` (for the detach) |
+| Bootstrap volume | `cloudInit: V1` (otherwise IONOS rejects `userData`), `discVirtioHotUnplug: true` (for the detach) |
 
 Add the IONOS labels your image selectors match. This recipe does not include the `ionos-cloud`
 sysext; images built this way work with the CAPIC `flatcar-without-ionos-sysext` flavor, which
@@ -271,15 +270,15 @@ in one script (`/etc/kubeadm.sh`), so the variables reach `envsubst`. See [Flatc
 
 | Test | Result |
 |---|---|
-| Config volume injection | IONOS wrote `config/user_data` on the second volume, identical to what we sent (same sha256) |
-| Ignition from the config volume | read in about 1 s, all stages applied |
+| Bootstrap volume injection | IONOS wrote `config/user_data` on the second volume, identical to what we sent (same sha256) |
+| Ignition from the bootstrap volume | read in about 1 s, all stages applied |
 | Metadata | all five variables matched the IONOS API exactly (server name, server ID, both NIC IPs) |
 | CABPK-style kubeadm flow | `envsubst` rendered node name, `node-ip`, `provider-id: ionos://<server-id>` and cert SANs; `kubeadm init` ran on its own |
 | Kubernetes v1.37.1 | node `Ready` with a CNI, InternalIP = private NIC, workload and Service working |
-| Ignition spec 2.3 (what CABPK emits) | accepted: Flatcar's Ignition translates 2.x configs, all stages applied (QEMU boot of the baked image with the config on the config volume) |
+| Ignition spec 2.3 (what CABPK emits) | accepted: Flatcar's Ignition translates 2.x configs, all stages applied (QEMU boot of the baked image with the config on the bootstrap volume) |
 | `userData` size | a real CABPK control plane join config (14.8 KB) and a 256 KB payload were both written byte for byte |
 | Two NICs (public + private LAN) | works; the private LAN gives no default gateway, so routing stays on the public NIC |
-| Detach the config volume while running | real hot-unplug, no reboot, no gap in a 1-second in-guest heartbeat, no external probe failures |
+| Detach the bootstrap volume while running | real hot-unplug, no reboot, no gap in a 1-second in-guest heartbeat, no external probe failures |
 | Reboot after the detach | SSH back in 24 s, API ready in 38 s, Ignition did not run again, data and etcd intact |
 | Image boot test in CI | every image boots in QEMU/OVMF with an injected config before it is pushed |
 
@@ -287,7 +286,7 @@ in one script (`/etc/kubeadm.sh`), so the variables reach `envsubst`. See [Flatc
 
 - **Set `bootOrder` on the volumes.** With two volumes, IONOS leaves the server's boot volume unset. The
   UEFI firmware then tries PXE and HTTP boot on every NIC before the disk: about 4.5 minutes per NIC
-  on every boot. Creating the boot volume with `bootOrder: PRIMARY` and the config volume with
+  on every boot. Creating the boot volume with `bootOrder: PRIMARY` and the bootstrap volume with
   `bootOrder: NONE` fixes it (SSH 13 s after the server was available, with two NICs). Setting it later
   also works, but makes IONOS restart the VM.
 - **systemd ≥ 261 no longer writes DHCP lease files.** Flatcar Stable (systemd 260) still has them,
@@ -302,7 +301,7 @@ in one script (`/etc/kubeadm.sh`), so the variables reach `envsubst`. See [Flatc
 ## What CAPIC does
 
 Steps 1 to 7 are implemented, see [Flatcar](flatcar.md); step 8 is still open. Differences from the
-plan below: the `BootstrapVolume` type has no `AvailabilityZone`, the config volume is only found by
+plan below: the `BootstrapVolume` type has no `AvailabilityZone`, the bootstrap volume is only found by
 its name (there is no volume ID in the status), and CAPIC ignores `useMachineVersion` for its image.
 
 For a machine whose bootstrap secret has `format: ignition`:
@@ -314,12 +313,12 @@ For a machine whose bootstrap secret has `format: ignition`:
    boot time: `deleteServer` reads the server's boot volume, and if it is unset, deleting a single
    Machine calls `DeleteServer` with `deleteVolumes=false`, so the Flatcar boot volume would stay
    behind.
-3. Add a second volume named `cfg-<IonosCloudMachine UID>` (machine names are only unique within a
-   namespace, but leftovers are looked up in the whole data center) from the config volume image, with the bootstrap data
+3. Add a second volume named `cfg-<machine name>-<namespace hash>` (machine names are only unique within a
+   namespace and the UID changes on `clusterctl move`, so the name is the machine name plus the first 8 hex
+   characters of the SHA-256 of its namespace; leftovers are looked up in the whole data center) from the bootstrap volume image, with the bootstrap data
    as `userData` and `bootOrder: NONE`. The image comes from a new, optional field that reuses
-   `ImageSpec` (an image ID or a label selector). The CRD default `useMachineVersion: true` applies
-   here too, so a selector must set `useMachineVersion: false` (the config volume image name has no
-   Kubernetes version). `lookupImageID` today always reads `spec.disk.image`, so it needs to take the
+   `ImageSpec` (an image ID or a label selector). CAPIC ignores `useMachineVersion` for this image (its name has no Kubernetes
+   version), although the CRD still shows the default `true`. `lookupImageID` today always reads `spec.disk.image`, so it needs to take the
    `ImageSpec` as a parameter:
 
    ```go
@@ -336,14 +335,15 @@ For a machine whose bootstrap secret has `format: ignition`:
    ```
 
    The image needs `cloudInit: V1` and `discVirtioHotUnplug: true`. If the format is `ignition` and the
-   field is not set, CAPIC sets a condition and emits an event instead of creating a server that can
-   never boot.
-4. After the node has joined (the Machine has a `NodeRef`), detach and delete the config volume.
-5. Delete the config volume when the Machine is deleted, also if it never got a `NodeRef` (for example
+   field is not set, CAPIC sets `MachineProvisioned=False` with reason `BootstrapVolumeRequired` instead of creating a
+   server that can never boot.
+4. After the node has joined (the Machine has a `NodeRef`), detach and delete the bootstrap volume. The
+   condition `BootstrapVolumeRemoved` shows the progress and, if the removal keeps failing, the error.
+5. Delete the bootstrap volume when the Machine is deleted, also if it never got a `NodeRef` (for example
    after a failed bootstrap). This needs explicit handling: when a single Machine is deleted, CAPIC
-   only deletes the boot volume and keeps all other volumes for the CSI driver, so the config volume
+   only deletes the boot volume and keeps all other volumes for the CSI driver, so the bootstrap volume
    would otherwise stay behind, billed and holding bootstrap credentials.
-6. Find the config volume by its fixed name, the way `getServer` finds the server by name today. A
+6. Find the bootstrap volume by its fixed name, the way `getServer` finds the server by name today. A
    volume ID in the status is only a cache: if that status update is lost after the server was
    created, the volume is still found and cleaned up. CSI data volumes are never touched.
 7. Add a Flatcar flavor to `templates/` and an e2e test for `format: ignition`, so the new path stays
@@ -369,7 +369,6 @@ On the CAPI side, Ignition output must be enabled on the bootstrap provider with
 
 ## Links
 
-- Image pipeline: [ionos-cloud/capi-image-builder#111](https://github.com/ionos-cloud/capi-image-builder/pull/111) (IONOS-internal)
 - Ignition device/path kernel arguments: [coreos/ignition#2230](https://github.com/coreos/ignition/pull/2230)
 - Flatcar sysexts: [flatcar/sysext-bakery](https://github.com/flatcar/sysext-bakery)
 - Earlier attempt in CAPIC: [#270](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/pull/270)
