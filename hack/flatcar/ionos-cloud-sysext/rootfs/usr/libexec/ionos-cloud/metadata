@@ -1,0 +1,55 @@
+#!/bin/bash
+# IONOS Cloud has no metadata service; derive the attributes kubeadm templates need from DHCP,
+# SMBIOS and the network interfaces, in the coreos-metadata env-file format.
+set -euo pipefail
+
+out=${1:-/run/metadata/flatcar}
+timeout=${IONOS_METADATA_TIMEOUT:-120}
+
+is_private() {
+  case "$1" in
+    10.*|192.168.*) return 0 ;;
+    172.*) local o=${1#172.}; o=${o%%.*}; [ "${o}" -ge 16 ] && [ "${o}" -le 31 ] ;;
+    100.*) local o=${1#100.}; o=${o%%.*}; [ "${o}" -ge 64 ] && [ "${o}" -le 127 ] ;;
+    *) return 1 ;;
+  esac
+}
+
+# networkd applies the DHCP host name (the IONOS server name) as the kernel host name; systemd >= 261
+# no longer exposes lease files, so the kernel host name is the stable source.
+hostname="" default_ip=""
+for _ in $(seq "${timeout}"); do
+  hostname=$(cat /proc/sys/kernel/hostname)
+  case "${hostname}" in localhost|localhost.*) hostname="" ;; esac
+  default_ip=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i=1;i<NF;i++) if ($i=="src") {print $(i+1); exit}}' || true)
+  [ -n "${hostname}" ] && [ -n "${default_ip}" ] && break
+  sleep 1
+done
+[ -n "${hostname}" ] || { echo "no hostname from DHCP after ${timeout}s" >&2; exit 1; }
+[ -n "${default_ip}" ] || { echo "no default route after ${timeout}s" >&2; exit 1; }
+
+# The kernel hides an all-zero SMBIOS UUID, so the file can be missing outside IONOS.
+instance_id=""
+[ -r /sys/class/dmi/id/product_uuid ] && instance_id=$(tr '[:upper:]' '[:lower:]' < /sys/class/dmi/id/product_uuid)
+
+private_ip="" public_ip=""
+while read -r addr; do
+  addr=${addr%/*}
+  if is_private "${addr}"; then
+    [ -n "${private_ip}" ] || private_ip=${addr}
+  else
+    [ -n "${public_ip}" ] || public_ip=${addr}
+  fi
+done < <(ip -4 -o addr show scope global | awk '{print $4}')
+
+mkdir -p "$(dirname "${out}")"
+tmp=$(mktemp "${out}.XXXXXX")
+{
+  echo "COREOS_IONOSCLOUD_HOSTNAME=${hostname}"
+  echo "COREOS_IONOSCLOUD_INSTANCE_ID=${instance_id}"
+  echo "COREOS_IONOSCLOUD_IPV4_DEFAULT=${default_ip}"
+  echo "COREOS_IONOSCLOUD_IPV4_PRIVATE=${private_ip}"
+  echo "COREOS_IONOSCLOUD_IPV4_PUBLIC=${public_ip}"
+} > "${tmp}"
+chmod 0644 "${tmp}"
+mv -f "${tmp}" "${out}"

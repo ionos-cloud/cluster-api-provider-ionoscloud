@@ -195,6 +195,21 @@ func (c *IonosCloudClient) StartServer(ctx context.Context, datacenterID, server
 	return "", errLocationHeaderEmpty
 }
 
+// ListVolumes returns a list with the volumes in the specified data center.
+func (c *IonosCloudClient) ListVolumes(ctx context.Context, datacenterID string) (*sdk.Volumes, error) {
+	if datacenterID == "" {
+		return nil, errDatacenterIDIsEmpty
+	}
+	volumes, _, err := c.API.VolumesApi.
+		DatacentersVolumesGet(ctx, datacenterID).
+		Depth(c.requestDepth).
+		Execute()
+	if err != nil {
+		return nil, fmt.Errorf(apiCallErrWrapper, err)
+	}
+	return &volumes, nil
+}
+
 // DeleteVolume deletes the volume that matches the provided volumeID in the specified data center.
 func (c *IonosCloudClient) DeleteVolume(ctx context.Context, datacenterID, volumeID string) (string, error) {
 	if datacenterID == "" {

@@ -41,6 +41,7 @@ import (
 var ownedMachineConditions = []string{
 	clusterv1.ReadyCondition,
 	infrav1.MachineProvisionedCondition,
+	infrav1.BootstrapVolumeRemovedCondition,
 }
 
 // Machine defines a basic machine context for primary use in IonosCloudMachineReconciler.

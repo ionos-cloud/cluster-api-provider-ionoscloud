@@ -54,6 +54,25 @@ const (
 	// MachineProvisionedReason documents that the IonosCloudMachine has been successfully provisioned.
 	MachineProvisionedReason = "Provisioned"
 
+	// BootstrapVolumeRequiredReason indicates that the bootstrap data is in Ignition format,
+	// but spec.bootstrapVolume is not set. No server is created until it is set.
+	BootstrapVolumeRequiredReason = "BootstrapVolumeRequired"
+
+	// BootstrapVolumeRemovedCondition documents the removal of the bootstrap volume from the server
+	// once the Machine has a node reference. It is only set if spec.bootstrapVolume is set.
+	BootstrapVolumeRemovedCondition = "BootstrapVolumeRemoved"
+
+	// BootstrapVolumeRemovalInProgressReason indicates that the bootstrap volume is still attached
+	// to the server and its deletion is in progress.
+	BootstrapVolumeRemovalInProgressReason = "BootstrapVolumeRemovalInProgress"
+
+	// BootstrapVolumeRemovalFailedReason indicates that the last attempt to remove the bootstrap volume failed.
+	// The condition message carries the error; the removal is retried.
+	BootstrapVolumeRemovalFailedReason = "BootstrapVolumeRemovalFailed"
+
+	// BootstrapVolumeRemovedReason documents that the bootstrap volume has been removed from the server.
+	BootstrapVolumeRemovedReason = "BootstrapVolumeRemoved"
+
 	// CloudResourceConfigAuto is a constant to indicate that the cloud resource should be managed by the
 	// Cluster API provider implementation.
 	CloudResourceConfigAuto = "AUTO"
@@ -113,6 +132,7 @@ func (a ServerType) String() string {
 
 // IonosCloudMachineSpec defines the desired state of IonosCloudMachine.
 // +kubebuilder:validation:XValidation:rule="!has(oldSelf.networkID) || has(self.networkID)", message="networkID is required once set"
+// +kubebuilder:validation:XValidation:rule="!has(oldSelf.bootstrapVolume) || has(self.bootstrapVolume)", message="bootstrapVolume is required once set"
 type IonosCloudMachineSpec struct {
 	// ProviderID is the IONOS Cloud provider ID
 	// will be in the format ionos://ee090ff2-1eef-48ec-a246-a51a33aa4f3a
@@ -156,6 +176,12 @@ type IonosCloudMachineSpec struct {
 
 	// Disk defines the boot volume of the VM.
 	Disk *Volume `json:"disk"`
+
+	// BootstrapVolume configures the volume that carries the bootstrap data in Ignition format.
+	// It is required when the bootstrap data format is "ignition" and ignored for "cloud-config".
+	// The volume is removed once the Machine has a node reference.
+	//+optional
+	BootstrapVolume *BootstrapVolume `json:"bootstrapVolume,omitempty"`
 
 	// AdditionalNetworks defines the additional network configurations for the VM.
 	//
@@ -241,6 +267,21 @@ type Volume struct {
 
 	// Image is the image to use for the VM.
 	Image *ImageSpec `json:"image"`
+}
+
+// BootstrapVolume is the volume that carries the Ignition bootstrap data.
+type BootstrapVolume struct {
+	// Image is the image of the volume. It must support cloud-init (cloudInit V1),
+	// as only then IONOS Cloud writes the bootstrap data to the volume.
+	// The size of the volume is the size of the image.
+	// useMachineVersion is ignored, as the volume does not depend on the Kubernetes version.
+	Image *ImageSpec `json:"image"`
+
+	// DiskType defines the type of the hard drive.
+	//+kubebuilder:validation:Enum=HDD;SSD Standard;SSD Premium
+	//+kubebuilder:default=HDD
+	//+optional
+	DiskType VolumeDiskType `json:"diskType,omitempty"`
 }
 
 // ImageSpec defines the image to use for the VM.

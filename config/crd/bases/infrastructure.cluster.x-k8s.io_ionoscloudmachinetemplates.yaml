@@ -178,6 +178,71 @@ spec:
                         - ZONE_1
                         - ZONE_2
                         type: string
+                      bootstrapVolume:
+                        description: |-
+                          BootstrapVolume configures the volume that carries the bootstrap data in Ignition format.
+                          It is required when the bootstrap data format is "ignition" and ignored for "cloud-config".
+                          The volume is removed once the Machine has a node reference.
+                        properties:
+                          diskType:
+                            default: HDD
+                            description: DiskType defines the type of the hard drive.
+                            enum:
+                            - HDD
+                            - SSD Standard
+                            - SSD Premium
+                            type: string
+                          image:
+                            description: |-
+                              Image is the image of the volume. It must support cloud-init (cloudInit V1),
+                              as only then IONOS Cloud writes the bootstrap data to the volume.
+                              The size of the volume is the size of the image.
+                              useMachineVersion is ignored, as the volume does not depend on the Kubernetes version.
+                            properties:
+                              id:
+                                description: ID is the ID of the image to use for
+                                  the VM.
+                                type: string
+                              selector:
+                                description: |-
+                                  Selector is used to look up images by name and labels.
+                                  Only images in the IonosCloudCluster's location are considered.
+                                properties:
+                                  matchLabels:
+                                    additionalProperties:
+                                      type: string
+                                    description: MatchLabels is a map of key/value
+                                      pairs.
+                                    minProperties: 1
+                                    type: object
+                                  resolutionPolicy:
+                                    default: Exact
+                                    description: |-
+                                      ResolutionPolicy controls the lookup behavior.
+                                      The default policy 'Exact' will raise an error if the selector resolves to more than 1 image.
+                                      Use policy 'Newest' to select the newest image instead.
+                                    enum:
+                                    - Exact
+                                    - Newest
+                                    type: string
+                                  useMachineVersion:
+                                    default: true
+                                    description: |-
+                                      UseMachineVersion indicates whether to use the parent Machine's version field to look up image names.
+                                      Enabled by default.
+                                    type: boolean
+                                required:
+                                - matchLabels
+                                type: object
+                            type: object
+                            x-kubernetes-validations:
+                            - message: exactly one of the fields in [id selector]
+                                must be set
+                              rule: '[has(self.id),has(self.selector)].filter(x,x==true).size()
+                                == 1'
+                        required:
+                        - image
+                        type: object
                       cpuFamily:
                         description: |-
                           CPUFamily defines the CPU architecture, which will be used for this VM.
@@ -396,6 +461,8 @@ spec:
                     x-kubernetes-validations:
                     - message: networkID is required once set
                       rule: '!has(oldSelf.networkID) || has(self.networkID)'
+                    - message: bootstrapVolume is required once set
+                      rule: '!has(oldSelf.bootstrapVolume) || has(self.bootstrapVolume)'
                 required:
                 - spec
                 type: object
