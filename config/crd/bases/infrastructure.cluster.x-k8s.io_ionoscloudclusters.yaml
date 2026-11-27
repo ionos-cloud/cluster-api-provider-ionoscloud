@@ -95,6 +95,15 @@ spec:
                 x-kubernetes-validations:
                 - message: credentialsRef.name must be provided
                   rule: has(self.name) && self.name != ''
+              lanIPv6:
+                description: |-
+                  LANIPv6 controls whether the LANs the provider creates for this cluster get an IPv6 CIDR block.
+                  It applies to LANs created after it is set; existing LANs are not updated.
+                  Unset means Enabled.
+                enum:
+                - Enabled
+                - Disabled
+                type: string
               loadBalancerProviderRef:
                 description: |-
                   LoadBalancerProviderRef is a reference to the load balancer provider configuration.

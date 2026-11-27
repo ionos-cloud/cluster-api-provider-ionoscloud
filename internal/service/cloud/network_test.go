@@ -24,6 +24,7 @@ import (
 	"time"
 
 	sdk "github.com/ionos-cloud/sdk-go/v6"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -70,6 +71,22 @@ func (s *lanSuite) TestNetworkCreateLANSuccessful() {
 	s.Equal(exampleRequestPath, req.RequestPath, "request path should be stored in status")
 	s.Equal(http.MethodPost, req.Method, "request method should be stored in status")
 	s.Equal(sdk.RequestStatusQueued, req.State, "request status should be stored in status")
+}
+
+func (s *lanSuite) TestNetworkCreateLANIPv6Enabled() {
+	s.infraCluster.Spec.LANIPv6 = infrav1.LANIPv6Enabled
+	s.mockCreateLANCall().Return(exampleRequestPath, nil).Once()
+	s.NoError(s.service.createLAN(s.ctx, s.machineScope))
+}
+
+func (s *lanSuite) TestNetworkCreateLANIPv6Disabled() {
+	s.infraCluster.Spec.LANIPv6 = infrav1.LANIPv6Disabled
+	lanName := s.service.lanName(s.clusterScope.Cluster)
+	// Pointer comparison: only &sdk.Nilstring marshals as an explicit null.
+	s.ionosClient.EXPECT().CreateLAN(s.ctx, s.machineScope.DatacenterID(), mock.MatchedBy(func(p sdk.LanProperties) bool {
+		return *p.Name == lanName && *p.Public && p.Ipv6CidrBlock == &sdk.Nilstring
+	})).Return(exampleRequestPath, nil).Once()
+	s.NoError(s.service.createLAN(s.ctx, s.machineScope))
 }
 
 func (s *lanSuite) TestNetworkDeleteLANSuccessful() {
